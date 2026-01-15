@@ -66,8 +66,8 @@ export default function StoriesPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin text-4xl mb-4">📚</div>
-          <p className="text-gray-500">Đang tải...</p>
+          <div className="animate-spin text-3xl mb-2">📚</div>
+          <p className="text-gray-500 text-sm">Đang tải...</p>
         </div>
       </div>
     );
@@ -77,72 +77,67 @@ export default function StoriesPage() {
     <div className="min-h-screen">
       <Header />
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">📖 Thư viện truyện</h1>
+      <main className="max-w-6xl mx-auto px-3 py-4">
+        <h1 className="text-xl font-bold text-gray-800 mb-3">📖 Thư viện truyện</h1>
 
-        {/* Search & Filters */}
-        <div className="bg-white rounded-2xl p-4 shadow-kid mb-8">
+        {/* Search & Filters - Compact */}
+        <div className="bg-white rounded-xl p-3 shadow-sm mb-4">
           {/* Search */}
-          <div className="mb-4">
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
-              <input
-                type="text"
-                placeholder="Tìm truyện..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-gray-100 focus:border-blue-300 focus:outline-none text-lg"
-              />
-            </div>
+          <div className="relative mb-2">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+            <input
+              type="text"
+              placeholder="Tìm truyện..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:border-blue-400 focus:outline-none text-sm"
+            />
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-3">
-            {/* Level Filter */}
+          {/* Filters - Inline */}
+          <div className="flex flex-wrap gap-2">
             <select
               value={selectedLevel}
               onChange={(e) => setSelectedLevel(e.target.value)}
-              className="px-4 py-2 rounded-xl border-2 border-gray-100 focus:border-blue-300 focus:outline-none font-medium"
+              className="px-2 py-1.5 rounded-lg border border-gray-200 focus:border-blue-400 focus:outline-none text-xs font-medium flex-1 min-w-[100px]"
             >
-              <option value="all">📊 Tất cả Level</option>
+              <option value="all">📊 Level</option>
               <option value="Beginner">🌱 Beginner</option>
               <option value="Elementary">📗 Elementary</option>
               <option value="Intermediate">📘 Intermediate</option>
             </select>
 
-            {/* Topic Filter */}
             <select
               value={selectedTopic}
               onChange={(e) => setSelectedTopic(e.target.value)}
-              className="px-4 py-2 rounded-xl border-2 border-gray-100 focus:border-blue-300 focus:outline-none font-medium"
+              className="px-2 py-1.5 rounded-lg border border-gray-200 focus:border-blue-400 focus:outline-none text-xs font-medium flex-1 min-w-[100px]"
             >
-              <option value="all">🏷️ Tất cả chủ đề</option>
+              <option value="all">🏷️ Chủ đề</option>
               {allTopics.map(topic => (
                 <option key={topic} value={topic}>{topic}</option>
               ))}
             </select>
 
-            {/* Sort */}
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="px-4 py-2 rounded-xl border-2 border-gray-100 focus:border-blue-300 focus:outline-none font-medium"
+              className="px-2 py-1.5 rounded-lg border border-gray-200 focus:border-blue-400 focus:outline-none text-xs font-medium flex-1 min-w-[100px]"
             >
               <option value="recommended">⭐ Đề xuất</option>
-              <option value="new">🆕 Mới nhất</option>
-              <option value="shortest">⏱️ Ngắn nhất</option>
+              <option value="new">🆕 Mới</option>
+              <option value="shortest">⏱️ Ngắn</option>
             </select>
           </div>
         </div>
 
         {/* Results count */}
-        <p className="text-gray-500 mb-4">
+        <p className="text-gray-500 text-xs mb-3">
           Tìm thấy <span className="font-bold text-gray-700">{filteredStories.length}</span> truyện
         </p>
 
-        {/* Stories Grid */}
+        {/* Stories Grid - Compact */}
         {filteredStories.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {filteredStories.map((story: Story) => (
               <StoryCard 
                 key={story.id} 
@@ -152,10 +147,10 @@ export default function StoriesPage() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">�</div>
-            <h3 className="text-xl font-bold text-gray-700 mb-2">Chưa có truyện nào</h3>
-            <p className="text-gray-500 mb-4">Hãy vào Admin để thêm truyện mới!</p>
+          <div className="text-center py-8">
+            <div className="text-4xl mb-2">📭</div>
+            <h3 className="text-base font-bold text-gray-700 mb-1">Chưa có truyện nào</h3>
+            <p className="text-gray-500 text-sm mb-3">Hãy vào Admin để thêm truyện mới!</p>
             <Link 
               href="/admin" 
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -187,11 +182,11 @@ function StoryCard({
 
   return (
     <Link href={`/stories/${story.id}`}>
-      <div className="bg-white rounded-2xl overflow-hidden shadow-kid hover:shadow-kid-lg transition-all hover:scale-[1.02] cursor-pointer relative">
+      <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all hover:scale-[1.02] cursor-pointer relative">
         {/* Completed badge */}
         {progress?.completed && (
-          <div className="absolute top-3 right-3 z-10 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-            ✅ Đã đọc
+          <div className="absolute top-2 right-2 z-10 bg-green-500 text-white p-1 rounded-full text-[10px]">
+            ✅
           </div>
         )}
         
@@ -204,36 +199,27 @@ function StoryCard({
               className="w-full h-full object-cover"
             />
           ) : (
-            <span className="text-6xl">{story.cover_image || '📖'}</span>
+            <span className="text-4xl">{story.cover_image || '📖'}</span>
           )}
         </div>
-        <div className="p-4">
-          <h3 className="font-bold text-gray-800 mb-1">{story.title_en}</h3>
-          <p className="text-sm text-gray-500 mb-3">{story.title_vi}</p>
+        <div className="p-2.5">
+          <h3 className="font-semibold text-gray-800 text-sm leading-tight truncate">{story.title_en}</h3>
+          <p className="text-xs text-gray-500 truncate mb-1.5">{story.title_vi}</p>
           
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${levelColors[story.level]}`}>
+            <div className="flex items-center gap-1.5">
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${levelColors[story.level]}`}>
                 {story.level}
               </span>
-              <span className="text-xs text-gray-400">⏱ {story.estimated_minutes} phút</span>
+              <span className="text-[10px] text-gray-400">⏱{story.estimated_minutes}m</span>
             </div>
             
             {/* Stars earned */}
             {progress && progress.starsEarned > 0 && (
-              <div className="flex items-center gap-1 text-yellow-500">
+              <div className="text-yellow-500 text-xs">
                 {'⭐'.repeat(progress.starsEarned)}
               </div>
             )}
-          </div>
-          
-          {/* Topics */}
-          <div className="flex flex-wrap gap-1 mt-3">
-            {story.topics.map(topic => (
-              <span key={topic} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {topic}
-              </span>
-            ))}
           </div>
         </div>
       </div>

@@ -1,6 +1,8 @@
 // Dictionary API Service
 // Sử dụng Free Dictionary API: https://dictionaryapi.dev/
 
+import { apiRateLimiter } from '@/lib/rate-limit';
+
 export interface DictionaryPhonetic {
   text?: string;
   audio?: string;
@@ -31,110 +33,100 @@ export interface WordInfo {
   partOfSpeech: string;
 }
 
-// Cache để tránh gọi API nhiều lần
-const wordCache = new Map<string, WordInfo>();
-
 /**
- * Lấy thông tin từ vựng từ Free Dictionary API
+ * Lấy thông tin từ vựng từ Free Dictionary API với rate limiting
  */
 export async function lookupWord(word: string): Promise<WordInfo | null> {
   const normalizedWord = word.toLowerCase().trim();
   
-  // Check cache first
-  if (wordCache.has(normalizedWord)) {
-    return wordCache.get(normalizedWord)!;
-  }
+  // Use rate limiter with caching
+  return apiRateLimiter.execute(
+    `word:${normalizedWord}`,
+    async () => {
+      try {
+        const response = await fetch(
+          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(normalizedWord)}`,
+          {
+            // Add timeout
+            signal: AbortSignal.timeout(5000),
+          }
+        );
 
-  try {
-    const response = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(normalizedWord)}`
-    );
-
-    if (!response.ok) {
-      console.warn(`Word not found: ${normalizedWord}`);
-      return null;
-    }
-
-    const data: DictionaryEntry[] = await response.json();
-    
-    if (!data || data.length === 0) {
-      return null;
-    }
-
-    const entry = data[0];
-    
-    // Tìm audio URL (ưu tiên US English)
-    let audioUrl: string | null = null;
-    for (const phonetic of entry.phonetics) {
-      if (phonetic.audio) {
-        audioUrl = phonetic.audio;
-        // Ưu tiên audio US
-        if (phonetic.audio.includes('-us')) {
-          break;
+        if (!response.ok) {
+          console.warn(`Word not found: ${normalizedWord}`);
+          return null;
         }
+
+        const data: DictionaryEntry[] = await response.json();
+        
+        if (!data || data.length === 0) {
+          return null;
+        }
+
+        const entry = data[0];
+        
+        // Tìm audio URL (ưu tiên US English)
+        let audioUrl: string | null = null;
+        for (const phonetic of entry.phonetics) {
+          if (phonetic.audio) {
+            audioUrl = phonetic.audio;
+            // Ưu tiên audio US
+            if (phonetic.audio.includes('-us')) {
+              break;
+            }
+          }
+        }
+
+        // Lấy IPA
+        const ipa = entry.phonetic || 
+          entry.phonetics.find(p => p.text)?.text || 
+          '';
+
+        // Lấy definitions
+        const definitions: string[] = [];
+        const partOfSpeech = entry.meanings[0]?.partOfSpeech || '';
+        
+        for (const meaning of entry.meanings) {
+          for (const def of meaning.definitions.slice(0, 2)) {
+            definitions.push(def.definition);
+          }
+        }
+
+        const wordInfo: WordInfo = {
+          word: entry.word,
+          ipa,
+          audioUrl,
+          definitions: definitions.slice(0, 3),
+          partOfSpeech,
+        };
+
+        return wordInfo;
+      } catch (error) {
+        console.error(`Error looking up word: ${normalizedWord}`, error);
+        return null;
       }
     }
-
-    // Lấy IPA
-    const ipa = entry.phonetic || 
-      entry.phonetics.find(p => p.text)?.text || 
-      '';
-
-    // Lấy definitions
-    const definitions: string[] = [];
-    const partOfSpeech = entry.meanings[0]?.partOfSpeech || '';
-    
-    for (const meaning of entry.meanings) {
-      for (const def of meaning.definitions.slice(0, 2)) {
-        definitions.push(def.definition);
-      }
-    }
-
-    const wordInfo: WordInfo = {
-      word: entry.word,
-      ipa,
-      audioUrl,
-      definitions: definitions.slice(0, 3),
-      partOfSpeech,
-    };
-
-    // Save to cache
-    wordCache.set(normalizedWord, wordInfo);
-
-    return wordInfo;
-  } catch (error) {
-    console.error(`Error looking up word: ${normalizedWord}`, error);
-    return null;
-  }
+  );
 }
 
 /**
- * Lookup nhiều từ cùng lúc
+ * Lookup nhiều từ cùng lúc với batching
  */
 export async function lookupWords(words: string[]): Promise<Map<string, WordInfo>> {
   const results = new Map<string, WordInfo>();
   
-  // Lọc từ đã có trong cache
-  const wordsToFetch = words.filter(w => !wordCache.has(w.toLowerCase().trim()));
-  
-  // Thêm từ cache
-  for (const word of words) {
-    const cached = wordCache.get(word.toLowerCase().trim());
-    if (cached) {
-      results.set(word.toLowerCase().trim(), cached);
-    }
-  }
+  // Fetch all words in parallel using rate limiter
+  const promises = words.map(word => 
+    lookupWord(word).then(info => {
+      if (info) {
+        results.set(word.toLowerCase().trim(), info);
+      }
+    }).catch(err => {
+      console.error(`Failed to lookup word: ${word}`, err);
+    })
+  );
 
-  // Fetch từ còn thiếu (với rate limiting)
-  for (const word of wordsToFetch) {
-    const info = await lookupWord(word);
-    if (info) {
-      results.set(word.toLowerCase().trim(), info);
-    }
-    // Rate limit: chờ 100ms giữa các request
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
+  await Promise.all(promises);
   return results;
 }
 

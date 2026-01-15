@@ -1,15 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { localAdminSignOut } from '@/services/auth';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const isActive = (path: string) => {
     if (path === '/admin' && pathname === '/admin') return true;
     if (path !== '/admin' && pathname.startsWith(path)) return true;
     return false;
+  };
+
+  const handleLogout = () => {
+    localAdminSignOut();
+    router.push('/admin/login');
   };
 
   const menuItems = [
@@ -45,6 +52,14 @@ export default function AdminSidebar() {
             <span className="font-medium">{item.name}</span>
           </Link>
         ))}
+        
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-red-900/20 hover:text-red-400"
+        >
+          <span className="text-xl">🚪</span>
+          <span className="font-medium">Logout</span>
+        </button>
       </nav>
 
       <div className="p-4 border-t border-slate-800">

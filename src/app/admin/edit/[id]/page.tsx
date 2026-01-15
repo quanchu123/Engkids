@@ -76,6 +76,7 @@ export default function EditStoryPage({ params }: PageProps) {
   const [vocabList, setVocabList] = useState<VocabItem[]>([]);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isExtractingVocab, setIsExtractingVocab] = useState(false);
   const [activeTab, setActiveTab] = useState<'info' | 'panels' | 'vocab'>('info');
 
   // Load existing story
@@ -223,15 +224,36 @@ export default function EditStoryPage({ params }: PageProps) {
     }
   };
 
-  // AI: Extract vocabulary from panels - DISABLED
-  // const handleAIExtractVocab = async () => {
-  //   ...
-  // };
+  // AI: Extract vocabulary from panels
+  const handleAIExtractVocab = () => {
+    setIsExtractingVocab(true);
+    
+    // Extract words from all panels (simple extraction without AI)
+    const allWords = new Set<string>();
+    const commonWords = new Set(['the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'shall', 'can', 'need', 'dare', 'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with', 'at', 'by', 'from', 'as', 'into', 'through', 'during', 'before', 'after', 'above', 'below', 'between', 'under', 'again', 'further', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'just', 'and', 'but', 'if', 'or', 'because', 'until', 'while', 'it', 'its', 'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'they', 'them', 'their', 'this', 'that', 'these', 'those', 'what', 'which', 'who', 'whom']);
+    
+    panels.forEach(panel => {
+      const words = panel.sentence_en
+        .toLowerCase()
+        .replace(/[.,!?'"]/g, '')
+        .split(/\s+/)
+        .filter(w => w.length > 2 && !commonWords.has(w));
+      words.forEach(w => allWords.add(w));
+    });
 
-  // AI: Auto translate panels - DISABLED
-  // const handleAITranslate = async () => {
-  //   ...
-  // };
+    // Add extracted words to vocab list (avoid duplicates)
+    const existingWords = new Set(vocabList.map(v => v.en.toLowerCase()));
+    const newVocab = Array.from(allWords)
+      .filter(w => !existingWords.has(w))
+      .slice(0, 10)
+      .map(en => ({ en, vi: '' }));
+
+    if (newVocab.length > 0) {
+      setVocabList(prev => [...prev.filter(v => v.en.trim()), ...newVocab]);
+    }
+
+    setTimeout(() => setIsExtractingVocab(false), 500);
+  };
 
   // Validate and save
   const handleSave = async () => {

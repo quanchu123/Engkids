@@ -2,10 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+/* Font loaded via next/font in layout.tsx for better performance */
 
 :root {
-  --font-primary: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-primary: var(--font-nunito), -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 * {
@@ -19,7 +19,19 @@ html {
 body {
   font-family: var(--font-primary);
   background: linear-gradient(135deg, #fef3c7 0%, #fce7f3 50%, #dbeafe 100%);
+  background-attachment: fixed;
   min-height: 100vh;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Custom Scrollbar */
