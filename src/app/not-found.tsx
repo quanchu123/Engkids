@@ -4,7 +4,7 @@ export default function NotFound(): JSX.Element {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-sky-50 via-white to-amber-50">
       <div className="text-center px-4">
-        <div className="text-8xl mb-4">🔍</div>
+        <div className="text-8xl mb-4">�</div>
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Không tìm thấy trang</h1>
         <p className="text-gray-500 mb-6 max-w-md">
           Trang bạn tìm kiếm không tồn tại hoặc đã bị xóa.

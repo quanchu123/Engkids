@@ -87,13 +87,13 @@ export default function VocabPage({ params }: PageProps) {
     if (isWordSaved(currentWord.word)) {
       unsaveWord(currentWord.word);
     } else {
-      saveWord({
-        word: currentWord.word,
-        vi: currentWord.vi,
-        ipa: currentWordInfo?.ipa || '',
-        savedAt: new Date().toISOString(),
-        storyId: story.id,
-      });
+      saveWord(
+        currentWord.word,
+        currentWord.vi,
+        false,
+        currentWordInfo?.ipa || '',
+        story.id,
+      );
     }
   }, [currentWord, story, isWordSaved, saveWord, unsaveWord, currentWordInfo]);
 
@@ -101,7 +101,7 @@ export default function VocabPage({ params }: PageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">📖</div>
+          <div className="text-6xl mb-4">🦄</div>
           <h1 className="text-2xl font-bold text-gray-700 mb-4">Không tìm thấy truyện</h1>
           <Link href="/stories" className="text-blue-500 hover:underline">
             ← Quay lại thư viện
@@ -185,7 +185,7 @@ export default function VocabPage({ params }: PageProps) {
               onClick={handlePronounce}
               className="flex-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg font-medium text-sm transition-colors"
             >
-              🔊 Phát âm
+              🎵 Phát âm
             </button>
             <button
               onClick={handleToggleSave}
@@ -195,7 +195,7 @@ export default function VocabPage({ params }: PageProps) {
                   : 'bg-yellow-50 hover:bg-yellow-100 text-yellow-600'
               }`}
             >
-              {isWordSaved(currentWord.word) ? '💔 Bỏ lưu' : '❤️ Lưu từ'}
+              {isWordSaved(currentWord.word) ? '💔 Bỏ lưu' : '💖 Lưu từ'}
             </button>
           </div>
 
@@ -231,7 +231,7 @@ export default function VocabPage({ params }: PageProps) {
               href={`/stories/${id}/games`}
               className="mt-4 w-full py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-md hover:shadow-lg transition-all text-center block"
             >
-              🎮 Chơi game ôn tập!
+              � Chơi game ôn tập!
             </Link>
           )}
         </div>

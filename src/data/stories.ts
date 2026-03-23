@@ -97,7 +97,7 @@ export function getAllStoriesSync(): Story[] {
   return cachedStories;
 }
 
-// Save all stories to Supabase
+// Save all stories to Supabase using upsert (safer than delete+insert)
 async function saveAllStoriesToSupabase(stories: Story[]): Promise<void> {
   // Prevent concurrent syncs using promise queue
   if (syncPromise) {
@@ -106,32 +106,28 @@ async function saveAllStoriesToSupabase(stories: Story[]): Promise<void> {
   
   syncPromise = (async () => {
     try {
-      console.log('💾 Saving to Supabase...', stories.length, 'stories');
-      
-      // Delete all existing stories
-      await supabase.from('stories').delete().neq('id', '');
-      
-      // Insert new stories
       if (stories.length > 0) {
+        // Use upsert to safely add/update stories without deleting existing ones
         const { error } = await supabase
           .from('stories')
-          .insert(stories);
+          .upsert(stories, { onConflict: 'id' });
         
         if (error) {
-          console.error('❌ Supabase error:', error);
+          console.error('❌ Supabase upsert error:', error);
           throw error;
         }
-        console.log('✅ Saved to Supabase successfully!');
+        
+        // NOTE: Removed automatic deletion of "old" stories
+        // This was dangerous - it would delete other users' stories!
+        // If cleanup is needed, do it manually in admin panel
       }
       
       cachedStories = stories;
       lastCacheTime = Date.now();
     } catch (err) {
       console.error('❌ Failed to save stories to Supabase:', err);
-      console.log('💾 Fallback: saving to localStorage instead');
       // Fallback: save to localStorage
       saveToLocalStorage(stories);
-      console.log('✅ Saved to localStorage:', stories.length, 'stories');
       throw err; // Re-throw to indicate failure
     } finally {
       syncPromise = null;
@@ -150,13 +146,8 @@ export async function saveAllStories(stories: Story[]): Promise<void> {
   cachedStories = stories;
   lastCacheTime = Date.now();
   
-  // Try to sync to Supabase in background
-  try {
-    await saveAllStoriesToSupabase(stories);
-  } catch (err) {
-    // Already logged in saveAllStoriesToSupabase
-    // Continue - localStorage save succeeded
-  }
+  // Sync to Supabase - throw error if fails so caller knows
+  await saveAllStoriesToSupabase(stories);
 }
 
 // Get single story by ID
@@ -171,28 +162,62 @@ export function clearStoriesCache(): void {
 
 // Add new story
 export async function addStory(story: Story): Promise<void> {
-  const stories = getAllStoriesSync();
-  stories.push(story);
-  await saveAllStories(stories);
+  // IMPORTANT: Fetch all existing stories first to prevent data loss
+  const existingStories = await getAllStories();
+  
+  // Check if story already exists
+  const existingIndex = existingStories.findIndex(s => s.id === story.id);
+  if (existingIndex !== -1) {
+    existingStories[existingIndex] = story;
+  } else {
+    existingStories.push(story);
+  }
+  
+  await saveAllStories(existingStories);
   clearStoriesCache(); // Clear cache after add
 }
 
 // Update existing story
 export async function updateStory(id: string, updatedStory: Story): Promise<void> {
-  const stories = getAllStoriesSync();
+  // IMPORTANT: Fetch all existing stories first to prevent data loss
+  const stories = await getAllStories();
   const index = stories.findIndex(s => s.id === id);
   if (index !== -1) {
     stories[index] = updatedStory;
     await saveAllStories(stories);
     clearStoriesCache(); // Clear cache after update
+  } else {
+    console.warn('Story not found for update:', id);
   }
 }
 
-// Delete story
+// Delete story - xóa trực tiếp từ Supabase
 export async function deleteStory(id: string): Promise<void> {
-  const stories = getAllStoriesSync().filter(s => s.id !== id);
-  await saveAllStories(stories);
-  clearStoriesCache(); // Clear cache after delete
+  try {
+    // Xóa trực tiếp từ Supabase
+    const { error } = await supabase
+      .from('stories')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('❌ Failed to delete story:', error);
+      throw error;
+    }
+
+    // Clear cache to force refresh
+    clearStoriesCache();
+    
+    // Also remove from localStorage
+    if (isClient()) {
+      const localStories = getFromLocalStorage();
+      const filtered = localStories.filter(s => s.id !== id);
+      saveToLocalStorage(filtered);
+    }
+  } catch (err) {
+    console.error('❌ Delete story error:', err);
+    throw err;
+  }
 }
 
 // Filter by level

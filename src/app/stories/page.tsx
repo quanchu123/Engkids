@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { getAllStories, getAllTopics, searchStories } from '@/data/stories';
 import { Story } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
@@ -18,7 +19,7 @@ export default function StoriesPage() {
   const [allTopics, setAllTopics] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   
-  const { progress } = useAppStore();
+  const storiesProgress = useAppStore(state => state.progress.storiesProgress);
 
   // Load stories from Supabase on mount
   useEffect(() => {
@@ -66,7 +67,7 @@ export default function StoriesPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin text-3xl mb-2">📚</div>
+          <div className="animate-spin text-3xl mb-2">🦄</div>
           <p className="text-gray-500 text-sm">Đang tải...</p>
         </div>
       </div>
@@ -78,13 +79,13 @@ export default function StoriesPage() {
       <Header />
 
       <main className="max-w-6xl mx-auto px-3 py-4">
-        <h1 className="text-xl font-bold text-gray-800 mb-3">📖 Thư viện truyện</h1>
+        <h1 className="text-xl font-bold text-gray-800 mb-3">🦄 Thư viện truyện</h1>
 
         {/* Search & Filters - Compact */}
         <div className="bg-white rounded-xl p-3 shadow-sm mb-4">
           {/* Search */}
           <div className="relative mb-2">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">�</span>
             <input
               type="text"
               placeholder="Tìm truyện..."
@@ -101,7 +102,7 @@ export default function StoriesPage() {
               onChange={(e) => setSelectedLevel(e.target.value)}
               className="px-2 py-1.5 rounded-lg border border-gray-200 focus:border-blue-400 focus:outline-none text-xs font-medium flex-1 min-w-[100px]"
             >
-              <option value="all">📊 Level</option>
+              <option value="all">� Level</option>
               <option value="Beginner">🌱 Beginner</option>
               <option value="Elementary">📗 Elementary</option>
               <option value="Intermediate">📘 Intermediate</option>
@@ -123,8 +124,8 @@ export default function StoriesPage() {
               onChange={(e) => setSortBy(e.target.value as SortOption)}
               className="px-2 py-1.5 rounded-lg border border-gray-200 focus:border-blue-400 focus:outline-none text-xs font-medium flex-1 min-w-[100px]"
             >
-              <option value="recommended">⭐ Đề xuất</option>
-              <option value="new">🆕 Mới</option>
+              <option value="recommended">🌟 Đề xuất</option>
+              <option value="new">🐣 Mới</option>
               <option value="shortest">⏱️ Ngắn</option>
             </select>
           </div>
@@ -142,7 +143,7 @@ export default function StoriesPage() {
               <StoryCard 
                 key={story.id} 
                 story={story}
-                progress={progress.storiesProgress[story.id]}
+                progress={storiesProgress[story.id]}
               />
             ))}
           </div>
@@ -150,13 +151,7 @@ export default function StoriesPage() {
           <div className="text-center py-8">
             <div className="text-4xl mb-2">📭</div>
             <h3 className="text-base font-bold text-gray-700 mb-1">Chưa có truyện nào</h3>
-            <p className="text-gray-500 text-sm mb-3">Hãy vào Admin để thêm truyện mới!</p>
-            <Link 
-              href="/admin" 
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              ➕ Thêm truyện
-            </Link>
+            <p className="text-gray-500 text-sm mb-3">Hãy quay lại sau để xem truyện mới nhé!</p>
           </div>
         )}
       </main>
@@ -186,20 +181,22 @@ function StoryCard({
         {/* Completed badge */}
         {progress?.completed && (
           <div className="absolute top-2 right-2 z-10 bg-green-500 text-white p-1 rounded-full text-[10px]">
-            ✅
+            🎀
           </div>
         )}
         
         {/* Cover Image */}
-        <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center overflow-hidden">
+        <div className="aspect-[4/3] bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center overflow-hidden relative">
           {isImageUrl ? (
-            <img 
-              src={story.cover_image} 
+            <Image
+              src={story.cover_image}
               alt={story.title_en}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, 25vw"
             />
           ) : (
-            <span className="text-4xl">{story.cover_image || '📖'}</span>
+            <span className="text-4xl">{story.cover_image || '🦄'}</span>
           )}
         </div>
         <div className="p-2.5">
@@ -217,7 +214,7 @@ function StoryCard({
             {/* Stars earned */}
             {progress && progress.starsEarned > 0 && (
               <div className="text-yellow-500 text-xs">
-                {'⭐'.repeat(progress.starsEarned)}
+                {'🌟'.repeat(progress.starsEarned)}
               </div>
             )}
           </div>

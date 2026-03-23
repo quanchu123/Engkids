@@ -1,10 +1,11 @@
 // Story Types
 export interface Token {
-  display: string;
-  norm: string;
-  vi?: string;
-  ipa?: string;
-  audio?: string;
+  display: string;      // Display text (e.g., "Running")
+  norm: string;         // Normalized (e.g., "running")
+  lemma?: string;       // Base form (e.g., "run")
+  vi?: string;          // Vietnamese translation
+  ipa?: string;         // Pronunciation
+  audio?: string;       // Audio URL
 }
 
 export interface Panel {
@@ -72,9 +73,15 @@ export interface StoryProgress {
 export interface SavedWord {
   word: string;
   vi: string;
-  ipa: string;
+  ipa?: string;
   savedAt: string;
-  storyId: string;
+  storyId?: string;
+  // Enhanced fields for vocabulary system
+  isFavorite?: boolean;
+  masteryLevel?: 0 | 1 | 2 | 3 | 4 | 5;
+  reviewCount?: number;
+  lastReviewedAt?: string;
+  exampleSentence?: string;
 }
 
 export interface GameScore {
@@ -100,4 +107,72 @@ export interface UserSettings {
   fontSize: 'small' | 'medium' | 'large';
   readingSpeed: 'slow' | 'normal' | 'fast';
   autoPlayAudio: boolean;
+}
+
+// ===========================================
+// VIDEO LEARNING TYPES
+// ===========================================
+
+export interface SubtitleCue {
+  id: string;
+  startTime: number;      // seconds (e.g., 1.5)
+  endTime: number;        // seconds (e.g., 4.2)
+  textEn: string;         // English text
+  textVi: string;         // Vietnamese translation
+  words?: ClickableWord[]; // Clickable words in English text
+}
+
+export interface ClickableWord {
+  word: string;
+  startIndex: number;     // position in textEn
+  endIndex: number;
+  startTime?: number;     // for karaoke effect
+  endTime?: number;
+}
+
+export interface SubtitleTrack {
+  id: string;
+  videoId: string;
+  cues: SubtitleCue[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Video {
+  id: string;
+  title: string;
+  titleVi: string;
+  description?: string;
+  thumbnailUrl?: string;
+  
+  // Bunny.net Stream ID
+  bunnyVideoId: string;
+  
+  // Stream URLs (populated after processing)
+  hlsUrl?: string;
+  dashUrl?: string;
+  
+  // Metadata
+  duration: number;        // seconds
+  level: 'Beginner' | 'Elementary' | 'Intermediate';
+  topics: string[];
+  ageGroup?: '3-5' | '6-8' | '9-12';
+  category: 'video' | 'music'; // Distinguish between educational videos and music
+  
+  // Status
+  status: 'uploading' | 'processing' | 'ready' | 'error';
+  
+  // Subtitles stored inline (for simplicity)
+  subtitles: SubtitleCue[];
+  
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserVideoProgress {
+  videoId: string;
+  watchedSeconds: number;
+  completionPercent: number;
+  lastWatchedAt: string;
+  learnedWords: string[];   // words clicked and learned
 }

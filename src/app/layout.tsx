@@ -19,19 +19,27 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'ComicLingua Kids - Học Tiếng Anh Qua Truyện Tranh',
-    template: '%s | ComicLingua Kids',
+    default: 'Engkids - Học Tiếng Anh Vui!',
+    template: '%s | Engkids',
   },
   description: 'Website học tiếng Anh song ngữ qua truyện tranh dành cho trẻ em. Vừa học vừa chơi với flashcards và mini games.',
   keywords: ['học tiếng anh', 'trẻ em', 'truyện tranh', 'song ngữ', 'từ vựng', 'english for kids'],
-  authors: [{ name: 'ComicLingua Team' }],
+  authors: [{ name: 'Engkids Team' }],
   robots: 'index, follow',
+  icons: {
+    icon: [
+      { url: '/engkids-logo.png', type: 'image/png' },
+    ],
+    apple: '/engkids-logo.png',
+    shortcut: '/engkids-logo.png',
+  },
   openGraph: {
     type: 'website',
     locale: 'vi_VN',
-    siteName: 'ComicLingua Kids',
-    title: 'ComicLingua Kids - Học Tiếng Anh Qua Truyện Tranh',
+    siteName: 'Engkids',
+    title: 'Engkids - Học Tiếng Anh Vui!',
     description: 'Học tiếng Anh vui vẻ qua truyện tranh và mini games',
+    images: [{ url: '/engkids-logo.png', width: 800, height: 800, alt: 'Engkids Logo' }],
   },
 };
 

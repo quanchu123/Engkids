@@ -11,15 +11,37 @@ interface QueueItem<T> {
 }
 
 class RateLimiter {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- queue stores heterogeneous generic types
   private queue: QueueItem<any>[] = [];
   private processing = false;
   private requestCounts = new Map<string, number[]>();
-  private cache = new Map<string, { data: any; timestamp: number }>();
+  private cache = new Map<string, { data: unknown; timestamp: number }>();
+  private maxCacheSize: number;
   
   constructor(
     private maxRequestsPerMinute: number = 60,
-    private cacheTTL: number = 30 * 60 * 1000 // 30 minutes
-  ) {}
+    private cacheTTL: number = 30 * 60 * 1000, // 30 minutes
+    maxCacheSize: number = 500
+  ) {
+    this.maxCacheSize = maxCacheSize;
+  }
+
+  /**
+   * Evict oldest cache entries when limit reached
+   */
+  private evictOldCache(): void {
+    if (this.cache.size < this.maxCacheSize) return;
+    
+    // Find and remove oldest entries
+    const entries = Array.from(this.cache.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    
+    // Remove oldest 20%
+    const toRemove = Math.ceil(this.maxCacheSize * 0.2);
+    for (let i = 0; i < toRemove && i < entries.length; i++) {
+      this.cache.delete(entries[i][0]);
+    }
+  }
 
   /**
    * Execute a request with rate limiting
@@ -36,6 +58,7 @@ class RateLimiter {
       this.recordRequest();
       try {
         const result = await fn();
+        this.evictOldCache();
         this.cache.set(key, { data: result, timestamp: Date.now() });
         return result;
       } catch (error) {
@@ -144,39 +167,3 @@ export const apiRateLimiter = new RateLimiter(60, 30 * 60 * 1000); // 60 request
 /**
  * Debounce function for input handlers
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
-
-  return function executedFunction(...args: Parameters<T>) {
-    const later = () => {
-      timeout = null;
-      func(...args);
-    };
-
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-    timeout = setTimeout(later, wait);
-  };
-}
-
-/**
- * Throttle function to limit execution frequency
- */
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  limit: number
-): (...args: Parameters<T>) => void {
-  let inThrottle: boolean;
-
-  return function executedFunction(...args: Parameters<T>) {
-    if (!inThrottle) {
-      func(...args);
-      inThrottle = true;
-      setTimeout(() => (inThrottle = false), limit);
-    }
-  };
-}

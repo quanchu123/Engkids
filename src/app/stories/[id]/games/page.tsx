@@ -24,7 +24,7 @@ export default function GamesPage({ params }: PageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">🎮</div>
+          <div className="text-6xl mb-4">�</div>
           <h1 className="text-2xl font-bold text-gray-700 mb-4">Không tìm thấy truyện</h1>
           <Link href="/stories" className="text-blue-500 hover:underline">
             ← Quay lại thư viện
@@ -80,7 +80,7 @@ export default function GamesPage({ params }: PageProps) {
           <Link href={`/stories/${id}/vocab`} className="text-gray-500 hover:text-gray-700 text-sm">
             ← Flashcards
           </Link>
-          <h1 className="font-bold text-gray-800 text-sm">🎮 Mini Games</h1>
+          <h1 className="font-bold text-gray-800 text-sm">� Mini Games</h1>
           <Link href="/stories" className="text-gray-500 hover:text-gray-700 text-sm">
             Thư viện
           </Link>
@@ -101,7 +101,7 @@ export default function GamesPage({ params }: PageProps) {
               onClick={() => setSelectedGame('match')}
               className="w-full p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white shadow-md hover:shadow-lg transition-all hover:scale-[1.02]"
             >
-              <div className="text-2xl mb-1">🎯</div>
+              <div className="text-2xl mb-1">🐙</div>
               <h3 className="text-lg font-bold">Match Game</h3>
               <p className="text-white/80 text-xs">Nối từ tiếng Anh với nghĩa tiếng Việt</p>
             </button>
@@ -111,7 +111,7 @@ export default function GamesPage({ params }: PageProps) {
               onClick={() => setSelectedGame('fill_blank')}
               className="w-full p-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl text-white shadow-md hover:shadow-lg transition-all hover:scale-[1.02]"
             >
-              <div className="text-2xl mb-1">✏️</div>
+              <div className="text-2xl mb-1">🦊</div>
               <h3 className="text-lg font-bold">Fill in the Blank</h3>
               <p className="text-white/80 text-xs">Điền từ còn thiếu vào câu</p>
             </button>
@@ -122,7 +122,7 @@ export default function GamesPage({ params }: PageProps) {
             href="/stories"
             className="mt-4 w-full py-2.5 rounded-xl font-bold text-sm bg-white shadow-md hover:shadow-lg transition-all text-center block text-gray-700"
           >
-            📚 Đọc truyện khác
+            🦄 Đọc truyện khác
           </Link>
         </div>
       </main>
@@ -201,7 +201,7 @@ function MatchGame({
           <button onClick={onBack} className="text-gray-500 hover:text-gray-700 text-sm">
             ← Quay lại
           </button>
-          <h1 className="font-bold text-gray-800 text-sm">🎯 Match Game</h1>
+          <h1 className="font-bold text-gray-800 text-sm">🐙 Match Game</h1>
           <div className="text-green-600 font-bold text-sm">{score}/{matchItems.length}</div>
         </div>
       </header>
@@ -325,7 +325,7 @@ function FillBlankGame({
           <button onClick={onBack} className="text-gray-500 hover:text-gray-700 text-sm">
             ← Quay lại
           </button>
-          <h1 className="font-bold text-gray-800 text-sm">✏️ Fill in the Blank</h1>
+          <h1 className="font-bold text-gray-800 text-sm">🦊 Fill in the Blank</h1>
           <div className="text-green-600 font-bold text-sm">{score}/{questions.length}</div>
         </div>
       </header>
@@ -401,7 +401,7 @@ function GameComplete({
       <div className="text-center max-w-sm">
         {/* Celebration */}
         <div className="text-4xl mb-2">
-          {isPerfect ? '🎉' : score > total / 2 ? '👏' : '💪'}
+          {isPerfect ? '🦋' : score > total / 2 ? '🐱' : '🐰'}
         </div>
         
         <h1 className="text-2xl font-bold text-gray-800 mb-1">
@@ -415,7 +415,7 @@ function GameComplete({
         {/* Stars earned */}
         {isPerfect && (
           <div className="mb-4">
-            <div className="text-3xl star-earned">⭐</div>
+            <div className="text-3xl star-earned">🌟</div>
             <p className="text-yellow-600 font-medium text-sm">+1 Sao!</p>
           </div>
         )}
@@ -426,14 +426,14 @@ function GameComplete({
             onClick={onBack}
             className="w-full py-2.5 rounded-xl font-bold text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md hover:shadow-lg transition-all"
           >
-            🎮 Chơi lại
+            🎪 Chơi lại
           </button>
           
           <Link
             href="/stories"
             className="w-full py-2.5 rounded-xl font-bold text-sm bg-white shadow-md hover:shadow-lg transition-all text-gray-700 block"
           >
-            📚 Đọc truyện khác
+            🦄 Đọc truyện khác
           </Link>
         </div>
       </div>

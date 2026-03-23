@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { localAdminSignOut } from '@/services/auth';
+import { getSupabaseClient } from '@/lib/auth-client';
 
 export default function AdminSidebar() {
   const pathname = usePathname();
@@ -14,57 +14,59 @@ export default function AdminSidebar() {
     return false;
   };
 
-  const handleLogout = () => {
-    localAdminSignOut();
-    router.push('/admin/login');
+  const handleLogout = async () => {
+    const supabase = getSupabaseClient();
+    await supabase.auth.signOut();
+    router.push('/login');
   };
 
   const menuItems = [
-    { name: 'Dashboard', path: '/admin', icon: '📊' },
-    { name: 'Thêm truyện mới', path: '/admin/new', icon: '✍️' },
-    { name: 'Về trang chủ', path: '/', icon: '🏠' },
+    { name: 'Dashboard', path: '/admin', icon: '�' },
+    { name: 'Stories', path: '/admin/new', icon: '🐝' },
+    { name: 'Videos', path: '/admin/videos', icon: '🎬' },
+    { name: 'Trang chủ', path: '/', icon: '🏠' },
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 h-screen fixed left-0 top-0 overflow-y-auto text-slate-100 flex flex-col shadow-xl z-50">
-      <div className="p-6 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">🛠️</span>
+    <aside className="w-56 bg-gradient-to-b from-purple-900 via-purple-800 to-indigo-900 h-screen fixed left-0 top-0 overflow-y-auto text-white flex flex-col shadow-2xl z-50">
+      <div className="p-4 border-b border-purple-700/50">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🎨</span>
           <div>
-            <h1 className="font-bold text-lg">Admin Panel</h1>
-            <p className="text-xs text-slate-400">ComicLingua Manager</p>
+            <h1 className="font-bold text-base">Admin Panel</h1>
+            <p className="text-[10px] text-purple-300">Manager</p>
           </div>
         </div>
       </div>
 
-      <nav className="p-4 space-y-2 flex-1">
+      <nav className="p-3 space-y-1.5 flex-1">
         {menuItems.map((item) => (
           <Link
             key={item.path}
             href={item.path}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all font-medium text-sm ${
               isActive(item.path)
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-105'
+                : 'text-purple-200 hover:bg-purple-700/50 hover:text-white hover:scale-102'
             }`}
           >
-            <span className="text-xl">{item.icon}</span>
-            <span className="font-medium">{item.name}</span>
+            <span className="text-lg">{item.icon}</span>
+            <span>{item.name}</span>
           </Link>
         ))}
         
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-red-900/20 hover:text-red-400"
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all text-purple-200 hover:bg-red-900/30 hover:text-red-300 font-medium text-sm mt-4"
         >
-          <span className="text-xl">🚪</span>
-          <span className="font-medium">Logout</span>
+          <span className="text-lg">👋</span>
+          <span>Logout</span>
         </button>
       </nav>
 
-      <div className="p-4 border-t border-slate-800">
-        <div className="bg-slate-800/50 rounded-xl p-4">
-          <p className="text-xs text-slate-500 text-center">Version 1.0.0</p>
+      <div className="p-3 border-t border-purple-700/50">
+        <div className="bg-purple-800/30 rounded-lg p-2">
+          <p className="text-[10px] text-purple-300 text-center">v1.0 • Engkids</p>
         </div>
       </div>
     </aside>

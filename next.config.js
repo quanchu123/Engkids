@@ -11,6 +11,8 @@ const nextConfig = {
         hostname: '**',
       },
     ],
+    // Skip optimization - Bunny CDN and Supabase handle their own image optimization
+    unoptimized: true,
   },
   
   // Enable React strict mode for better debugging
@@ -24,10 +26,24 @@ const nextConfig = {
     } : false,
   },
   
+  // Fix webpack ENOENT on Windows paths with special characters (Vietnamese, spaces)
+  webpack: (config) => {
+    config.watchOptions = {
+      ...config.watchOptions,
+      poll: 1000,
+      aggregateTimeout: 300,
+    };
+    return config;
+  },
+
   // Enable experimental features for better performance
   experimental: {
     // Optimize package imports
     optimizePackageImports: ['@supabase/supabase-js', 'zustand'],
+    // Increase server actions body size limit for video uploads
+    serverActions: {
+      bodySizeLimit: '500mb',
+    },
   },
   
   // Headers for security and caching
@@ -43,6 +59,22 @@ const nextConfig = {
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
           },
         ],
       },

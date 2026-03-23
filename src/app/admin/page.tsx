@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Story } from '@/types';
 import { getAllStories, deleteStory } from '@/data/stories';
 
@@ -95,7 +96,7 @@ export default function AdminPage() {
         <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
           {stories.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="text-5xl mb-3">📚</div>
+              <div className="text-5xl mb-3">�</div>
               <p className="text-slate-600 font-medium mb-1">Chưa có truyện nào</p>
               <p className="text-slate-400 text-sm mb-4">Bắt đầu tạo truyện đầu tiên</p>
               <Link
@@ -120,12 +121,12 @@ export default function AdminPage() {
                   <tr key={story.id} className="hover:bg-slate-50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 relative">
                           {story.cover_image?.startsWith('http') || story.cover_image?.startsWith('data:') ? (
-                            <img src={story.cover_image} alt="" className="w-full h-full object-cover" />
+                            <Image src={story.cover_image} alt="" fill className="object-cover" sizes="40px" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-lg">
-                              {story.cover_image || '📖'}
+                              {story.cover_image || '🦄'}
                             </div>
                           )}
                         </div>
@@ -161,7 +162,7 @@ export default function AdminPage() {
                           className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"
                           title="Sửa"
                         >
-                          ✏️
+                          🦊
                         </Link>
                         <button
                           onClick={() => handleDeleteStory(story.id)}

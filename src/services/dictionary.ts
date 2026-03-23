@@ -30,7 +30,9 @@ export interface WordInfo {
   ipa: string;
   audioUrl: string | null;
   definitions: string[];
+  examples: string[];
   partOfSpeech: string;
+  vietnamese?: string;
 }
 
 /**
@@ -82,13 +84,17 @@ export async function lookupWord(word: string): Promise<WordInfo | null> {
           entry.phonetics.find(p => p.text)?.text || 
           '';
 
-        // Lấy definitions
+        // Lấy definitions và examples
         const definitions: string[] = [];
+        const examples: string[] = [];
         const partOfSpeech = entry.meanings[0]?.partOfSpeech || '';
         
         for (const meaning of entry.meanings) {
-          for (const def of meaning.definitions.slice(0, 2)) {
+          for (const def of meaning.definitions.slice(0, 3)) {
             definitions.push(def.definition);
+            if (def.example && examples.length < 3) {
+              examples.push(def.example);
+            }
           }
         }
 
@@ -96,7 +102,8 @@ export async function lookupWord(word: string): Promise<WordInfo | null> {
           word: entry.word,
           ipa,
           audioUrl,
-          definitions: definitions.slice(0, 3),
+          definitions: definitions.slice(0, 2),
+          examples: examples.slice(0, 3),
           partOfSpeech,
         };
 
