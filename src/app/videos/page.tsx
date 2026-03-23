@@ -132,21 +132,18 @@ export default function VideosPage() {
       <Header />
       <main className="min-h-screen bg-gradient-to-b from-amber-50 via-pink-50 to-blue-50 pt-2 pb-12">
         {/* Hero Section */}
-        <section className="relative overflow-hidden mb-8">
+        <section className="relative overflow-hidden mb-6">
           <div className="max-w-7xl mx-auto px-4 md:px-2">
             {/* Hero Banner */}
-            <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-kid-purple via-kid-pink to-kid-orange p-8 md:p-12 shadow-kid-lg">
+            <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-kid-purple via-kid-pink to-kid-orange p-5 md:p-7 shadow-kid-lg">
               {/* Decorative Elements */}
-              <div className="absolute top-4 right-4 text-6xl opacity-20 animate-float">🎬</div>
-              <div className="absolute bottom-4 left-4 text-4xl opacity-20 animate-bounce-slow">⭐</div>
-              <div className="absolute top-1/2 right-1/4 text-3xl opacity-20">✨</div>
+              <div className="absolute top-3 right-3 text-4xl opacity-20 animate-float">🎬</div>
+              <div className="absolute bottom-3 left-3 text-3xl opacity-20 animate-bounce-slow">⭐</div>
               
               <div className="relative z-10 max-w-2xl">
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 drop-shadow-lg">
                   🎬 Học tiếng Anh qua Video
                 </h1>
-                <p className="text-lg md:text-xl text-white/90 mb-6">
-                </p>
               </div>
             </div>
           </div>

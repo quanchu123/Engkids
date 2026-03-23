@@ -216,25 +216,13 @@ export default function GamesPage() {
 
         <div className="relative" style={{ zIndex: 1 }}>
           {/* ── Hero Section ── */}
-          <section className="relative px-4 pt-10 pb-6 text-center overflow-hidden">
+          <section className="relative px-4 pt-6 pb-4 text-center overflow-hidden">
             <div className="max-w-2xl mx-auto">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-5 font-bold text-sm"
-                style={{
-                  background: 'white',
-                  border: '3px solid #c084fc',
-                  boxShadow: '0 4px 16px rgba(192,132,252,0.3)',
-                  color: '#7c3aed',
-                }}>
-                <span className="pulse-dot w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#22c55e' }} />
-                6 GAMES ĐÃ MỞ KHÓA ✨
-              </div>
-
               {/* Hero image + Title centered */}
-              <div className="flex flex-col items-center mb-5">
+              <div className="flex items-center justify-center gap-3 mb-3">
                 {/* Rocket SVG illustration */}
-                <div className="mascot-bounce mb-3">
-                  <svg width="90" height="90" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <div className="mascot-bounce">
+                  <svg width="60" height="60" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="45" cy="45" r="42" fill="#f3e8ff" stroke="#c084fc" strokeWidth="2"/>
                     <ellipse cx="45" cy="30" rx="14" ry="20" fill="#7c3aed"/>
                     <ellipse cx="45" cy="30" rx="8" ry="12" fill="#ddd6fe"/>
@@ -248,22 +236,19 @@ export default function GamesPage() {
                     <ellipse cx="53" cy="68" rx="5" ry="10" fill="#fbbf24" opacity="0.8"/>
                   </svg>
                 </div>
-                <h1 className="rainbow-title text-4xl sm:text-5xl font-black leading-none" style={{ letterSpacing: '-0.02em' }}>
+                <h1 className="rainbow-title text-3xl sm:text-4xl font-black leading-none" style={{ letterSpacing: '-0.02em' }}>
                   Phòng Game Engkids!
                 </h1>
               </div>
 
-              <p className="text-lg sm:text-xl font-bold mb-1" style={{ color: '#0369a1' }}>
-                Chọn game yêu thích và bắt đầu học tiếng Anh thôi!
-              </p>
-              <p className="text-sm font-semibold" style={{ color: '#7c3aed' }}>
-                Mỗi game là một chuyến phiêu lưu mới 🌈
+              <p className="text-base font-semibold" style={{ color: '#0369a1' }}>
+                Chọn game yêu thích và bắt đầu học tiếng Anh thôi! 🎮
               </p>
             </div>
           </section>
 
           {/* ── Game Cards Grid ── */}
-          <section className="max-w-5xl mx-auto px-4 mt-2">
+          <section className="max-w-5xl mx-auto px-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
               {GAMES.map((g) => (
                 <Link key={g.id} href={g.href} className="game-card block rounded-3xl overflow-hidden"
