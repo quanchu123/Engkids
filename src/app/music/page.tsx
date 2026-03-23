@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import { Video } from '@/types';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 const GRADIENTS = ['from-yellow-400 to-orange-400','from-purple-400 to-pink-400','from-green-400 to-teal-400','from-blue-400 to-indigo-400','from-pink-400 to-rose-400','from-amber-400 to-red-400','from-cyan-400 to-blue-400','from-lime-400 to-green-400'];
 const SHADOWS = ['rgba(251,191,36,0.35)','rgba(168,85,247,0.35)','rgba(16,185,129,0.35)','rgba(99,102,241,0.35)','rgba(236,72,153,0.35)','rgba(249,115,22,0.35)','rgba(6,182,212,0.35)','rgba(132,204,22,0.35)'];
@@ -52,96 +53,55 @@ export default function MusicPage() {
         @keyframes pulseDot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.4)} }
       `}</style>
       <Header />
-      <main className="music-page min-h-screen pb-20" style={{ background: 'linear-gradient(160deg, #fce7f3 0%, #f3e8ff 45%, #dbeafe 100%)' }}>
-        <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
-          <div className="absolute top-0 left-0 w-full h-3" style={{ background: 'linear-gradient(90deg, #f97316, #fbbf24, #4ade80, #60a5fa, #a78bfa, #f472b6)' }} />
-          {/* SVG music note decorations */}
-          <svg className="note-float absolute top-28 left-[12%] opacity-40" width="32" height="40" viewBox="0 0 32 40" fill="none">
-            <rect x="20" y="0" width="10" height="2" rx="1" fill="#a855f7"/>
-            <rect x="28" y="0" width="2" height="20" rx="1" fill="#a855f7"/>
-            <ellipse cx="14" cy="22" rx="8" ry="6" fill="#a855f7" transform="rotate(-15 14 22)"/>
-          </svg>
-          <svg className="note-float absolute top-16 right-[14%] opacity-35" width="28" height="36" viewBox="0 0 32 40" fill="none" style={{ animationDelay: '.7s' }}>
-            <rect x="16" y="0" width="8" height="2" rx="1" fill="#ec4899"/>
-            <rect x="22" y="0" width="2" height="16" rx="1" fill="#ec4899"/>
-            <rect x="24" y="0" width="6" height="2" rx="1" fill="#ec4899"/>
-            <rect x="28" y="0" width="2" height="16" rx="1" fill="#ec4899"/>
-            <ellipse cx="12" cy="18" rx="7" ry="5" fill="#ec4899" transform="rotate(-15 12 18)"/>
-            <ellipse cx="24" cy="18" rx="7" ry="5" fill="#ec4899" transform="rotate(-15 24 18)"/>
-          </svg>
-          <svg className="note-float absolute top-52 right-[10%] opacity-30" width="24" height="32" viewBox="0 0 32 40" fill="none" style={{ animationDelay: '1.4s' }}>
-            <rect x="20" y="0" width="10" height="2" rx="1" fill="#60a5fa"/>
-            <rect x="28" y="0" width="2" height="18" rx="1" fill="#60a5fa"/>
-            <ellipse cx="14" cy="20" rx="8" ry="6" fill="#60a5fa" transform="rotate(-15 14 20)"/>
-          </svg>
-          {/* SVG star decorations */}
-          <svg className="note-float absolute bottom-1/3 left-[8%] opacity-30" width="22" height="22" viewBox="0 0 24 24" style={{ animationDelay: '2s' }}>
-            <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="#f472b6"/>
-          </svg>
-          <svg className="note-float absolute top-40 left-[6%] opacity-25" width="18" height="18" viewBox="0 0 24 24" style={{ animationDelay: '2.5s' }}>
-            <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="#fbbf24"/>
-          </svg>
-        </div>
-        <div className="relative" style={{ zIndex: 1 }}>
-          {/* Hero */}
-          <section className="px-4 pt-10 pb-8 text-center">
-            <div className="max-w-2xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 font-bold text-sm"
-                style={{ background: 'white', border: '3px solid #f472b6', boxShadow: '0 4px 16px rgba(244,114,182,0.3)', color: '#be185d' }}>
-                <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: '#22c55e', animation: 'pulseDot 1.5s ease-in-out infinite' }} />
-                Nhạc tiếng Anh siêu vui
-              </div>
-
-              {/* SVG Microphone illustration - centered */}
-              <div className="flex justify-center mb-4 mascot-bounce">
-                <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                  <circle cx="40" cy="40" r="38" fill="#fce7f3" stroke="#f472b6" strokeWidth="2"/>
-                  {/* mic body */}
-                  <rect x="30" y="15" width="20" height="30" rx="10" fill="#ec4899"/>
-                  <rect x="34" y="19" width="12" height="10" rx="4" fill="#fda4af" opacity="0.6"/>
-                  {/* mic stand */}
-                  <path d="M20 44 Q20 58 40 58 Q60 58 60 44" stroke="#a855f7" strokeWidth="3" fill="none" strokeLinecap="round"/>
-                  <rect x="38" y="57" width="4" height="10" rx="2" fill="#a855f7"/>
-                  <rect x="30" y="65" width="20" height="3" rx="1.5" fill="#a855f7"/>
-                  {/* sound waves */}
-                  <path d="M14 35 Q10 40 14 45" stroke="#f472b6" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.6"/>
-                  <path d="M9 30 Q3 40 9 50" stroke="#f472b6" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.4"/>
-                  <path d="M66 35 Q70 40 66 45" stroke="#f472b6" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.6"/>
-                  <path d="M71 30 Q77 40 71 50" stroke="#f472b6" strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.4"/>
-                </svg>
-              </div>
-
-              <h1 className="text-4xl sm:text-5xl font-black leading-tight mb-3"
-                style={{ background: 'linear-gradient(135deg, #f97316, #ec4899, #a855f7, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', letterSpacing: '-0.02em' }}>
-                Hát &amp; Học Cùng Nhau! 🎶
-              </h1>
-              <p className="text-base font-bold mb-5" style={{ color: '#0369a1' }}>Hát theo giai điệu vui nhộn, học tiếng Anh tự nhiên! 🌈</p>
-
-              <div className="relative max-w-sm mx-auto">
-                <svg className="absolute left-4 top-1/2 -translate-y-1/2" width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <circle cx="11" cy="11" r="7" stroke="#a855f7" strokeWidth="2.5"/>
-                  <path d="M16.5 16.5 L21 21" stroke="#a855f7" strokeWidth="2.5" strokeLinecap="round"/>
-                </svg>
-                <input type="text" placeholder="Tìm bài hát yêu thích..." value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-5 py-3.5 rounded-2xl font-bold text-gray-700 placeholder-gray-400 focus:outline-none"
-                  style={{ background: 'white', border: '3px solid #d8b4fe', boxShadow: '0 4px 16px rgba(216,180,254,0.3)' }} />
+      <main className="music-page min-h-screen pb-20 pt-2" style={{ background: 'linear-gradient(160deg, #fce7f3 0%, #f3e8ff 45%, #dbeafe 100%)' }}>
+        
+        {/* ── Header Banner ── */}
+        <section className="relative overflow-hidden mb-6">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-pink-400 via-purple-500 to-indigo-500 p-5 shadow-lg">
+              {/* Decorative elements */}
+              <div className="absolute top-2 right-4 text-5xl opacity-30 animate-pulse">🎵</div>
+              <div className="absolute bottom-2 left-3 text-4xl opacity-25">🎶</div>
+              <div className="absolute top-4 left-1/4 text-3xl opacity-20">🎸</div>
+              <div className="absolute bottom-3 right-1/4 text-2xl opacity-20">🎹</div>
+              
+              <div className="relative z-10 max-w-2xl">
+                {/* Title */}
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 drop-shadow-lg">
+                  🎵 Hát & Học Cùng Nhau!
+                </h1>
+                
+                {/* Search bar */}
+                <div className="relative max-w-xs">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="7" stroke="white" strokeWidth="2.5"/>
+                    <path d="M16.5 16.5 L21 21" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                  </svg>
+                  <input 
+                    type="text" 
+                    placeholder="Tìm bài hát..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl font-semibold text-sm text-gray-700 placeholder-gray-500 focus:outline-none"
+                  />
+                </div>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
+        <div className="max-w-7xl mx-auto px-4">
           {/* Topic Pills */}
           {topics.length > 0 && (
-            <section className="px-4 pb-5">
-              <div className="max-w-5xl mx-auto flex flex-wrap gap-2 justify-center">
+            <section className="pb-3">
+              <div className="max-w-7xl mx-auto flex flex-wrap gap-2 justify-center">
                 {[{ id: null, label: `🎵 Tất cả (${videos.length})` }, ...topics.map(t => ({ id: t, label: t }))].map((item) => (
                   <button key={String(item.id)} onClick={() => setSelectedTopic(item.id)}
-                    className="px-5 py-2.5 rounded-2xl font-black text-sm transition-transform hover:scale-105"
+                    className="px-4 py-1.5 rounded-xl font-bold text-xs transition-transform hover:scale-105"
                     style={selectedTopic === item.id ? {
                       background: 'linear-gradient(135deg, #a855f7, #ec4899)', color: 'white',
-                      boxShadow: '0 4px 14px rgba(168,85,247,0.4)', border: '2.5px solid transparent',
                     } : {
-                      background: 'white', color: '#7c3aed', border: '2.5px solid #d8b4fe',
+                      background: 'white', color: '#7c3aed', border: '2px solid #d8b4fe',
                     }}>
                     {item.label}
                   </button>
@@ -151,20 +111,10 @@ export default function MusicPage() {
           )}
 
           {/* Grid */}
-          <section className="px-4 pb-12">
-            <div className="max-w-5xl mx-auto">
+          <section className="pb-6">
+            <div className="max-w-7xl mx-auto">
               {loading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {[...Array(8)].map((_, i) => (
-                    <div key={i} className="rounded-3xl overflow-hidden" style={{ background: 'white', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-                      <div className="aspect-video animate-pulse" style={{ background: 'linear-gradient(135deg, #f3e8ff, #fce7f3)' }} />
-                      <div className="p-3 space-y-2">
-                        <div className="h-4 rounded-full animate-pulse" style={{ background: '#f3e8ff', width: '75%' }} />
-                        <div className="h-3 rounded-full animate-pulse" style={{ background: '#f3e8ff', width: '50%' }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <LoadingSpinner message="Đang tải bài hát..." />
               ) : filteredVideos.length > 0 ? (
                 <>
                   <p className="text-sm font-black mb-4 text-center" style={{ color: '#7c3aed' }}>🎼 {filteredVideos.length} bài hát đang chờ bạn!</p>
@@ -193,7 +143,7 @@ export default function MusicPage() {
           </section>
 
           {/* Footer Banner */}
-          <section className="max-w-5xl mx-auto px-4 mb-4">
+          <section className="max-w-7xl mx-auto px-4 mb-4">
             <div className="rounded-3xl p-6 text-center"
               style={{ background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #f97316 100%)', boxShadow: '0 8px 32px rgba(168,85,247,0.4)' }}>
               <p className="text-2xl font-black text-white mb-1">🎵 Hát mỗi ngày, giỏi tiếng Anh ngay!</p>

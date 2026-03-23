@@ -7,6 +7,7 @@ import { getAllStories, getAllTopics, searchStories } from '@/data/stories';
 import { Story } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import Header from '@/components/layout/Header';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 type SortOption = 'recommended' | 'new' | 'shortest';
 
@@ -65,11 +66,9 @@ export default function StoriesPage() {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin text-3xl mb-2">🦄</div>
-          <p className="text-gray-500 text-sm">Đang tải...</p>
-        </div>
+      <div className="min-h-screen">
+        <Header />
+        <LoadingSpinner size="lg" message="Đang tải truyện..." />
       </div>
     );
   }
@@ -78,25 +77,45 @@ export default function StoriesPage() {
     <div className="min-h-screen">
       <Header />
 
-      <main className="max-w-6xl mx-auto px-3 py-4">
-        <h1 className="text-xl font-bold text-gray-800 mb-3">🦄 Thư viện truyện</h1>
-
-        {/* Search & Filters - Compact */}
-        <div className="bg-white rounded-xl p-3 shadow-sm mb-4">
-          {/* Search */}
-          <div className="relative mb-2">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">�</span>
-            <input
-              type="text"
-              placeholder="Tìm truyện..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 focus:border-blue-400 focus:outline-none text-sm"
-            />
+      <main className="min-h-screen pb-20 pt-2" style={{ background: 'linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 45%, #f3e8ff 100%)' }}>
+        
+        {/* ── Header Banner ── */}
+        <section className="relative overflow-hidden mb-6">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-violet-400 via-purple-500 to-indigo-500 p-5 shadow-lg">
+              {/* Decorative elements */}
+              <div className="absolute top-2 right-4 text-5xl opacity-30 animate-pulse">🦄</div>
+              <div className="absolute bottom-2 left-3 text-4xl opacity-25">📚</div>
+              <div className="absolute top-4 left-1/4 text-3xl opacity-20">✨</div>
+              <div className="absolute bottom-3 right-1/4 text-2xl opacity-20">🌈</div>
+              
+              <div className="relative z-10 max-w-2xl">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 drop-shadow-lg">
+                  📚 Truyện Tranh
+                </h1>
+                
+                {/* Search bar */}
+                <div className="relative max-w-xs">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="7" stroke="white" strokeWidth="2.5"/>
+                    <path d="M16.5 16.5 L21 21" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                  </svg>
+                  <input 
+                    type="text" 
+                    placeholder="Tìm truyện..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl font-semibold text-sm text-gray-700 placeholder-gray-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
+        </section>
 
-          {/* Filters - Inline */}
-          <div className="flex flex-wrap gap-2">
+        {/* Filters */}
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-wrap gap-2 mb-4">
             <select
               value={selectedLevel}
               onChange={(e) => setSelectedLevel(e.target.value)}
@@ -132,28 +151,32 @@ export default function StoriesPage() {
         </div>
 
         {/* Results count */}
-        <p className="text-gray-500 text-xs mb-3">
-          Tìm thấy <span className="font-bold text-gray-700">{filteredStories.length}</span> truyện
-        </p>
+        <div className="max-w-7xl mx-auto px-4">
+          <p className="text-gray-500 text-xs mb-3">
+            Tìm thấy <span className="font-bold text-gray-700">{filteredStories.length}</span> truyện
+          </p>
+        </div>
 
         {/* Stories Grid - Compact */}
-        {filteredStories.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {filteredStories.map((story: Story) => (
-              <StoryCard 
-                key={story.id} 
-                story={story}
-                progress={storiesProgress[story.id]}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="text-4xl mb-2">📭</div>
-            <h3 className="text-base font-bold text-gray-700 mb-1">Chưa có truyện nào</h3>
-            <p className="text-gray-500 text-sm mb-3">Hãy quay lại sau để xem truyện mới nhé!</p>
-          </div>
-        )}
+        <div className="max-w-7xl mx-auto px-4">
+          {filteredStories.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {filteredStories.map((story: Story) => (
+                <StoryCard 
+                  key={story.id} 
+                  story={story}
+                  progress={storiesProgress[story.id]}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="text-4xl mb-2">📭</div>
+              <h3 className="text-base font-bold text-gray-700 mb-1">Chưa có truyện nào</h3>
+              <p className="text-gray-500 text-sm mb-3">Hãy quay lại sau để xem truyện mới nhé!</p>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

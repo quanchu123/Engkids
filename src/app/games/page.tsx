@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 
@@ -91,6 +92,12 @@ const EXPLORE = [
 ];
 
 export default function GamesPage() {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredGames = GAMES.filter(g => 
+    g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    g.desc.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   return (
     <>
       <style>{`
@@ -173,84 +180,56 @@ export default function GamesPage() {
       `}</style>
 
       <Header />
-      <main className="games-page min-h-screen pb-20" style={{
+      <main className="games-page min-h-screen pb-20 pt-2" style={{
         background: 'linear-gradient(160deg, #e0f2fe 0%, #f3e8ff 45%, #fef9c3 100%)',
       }}>
 
-        {/* ── Decorative Background Elements ── */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
-          {/* SVG cloud shapes */}
-          <svg className="cloud-shape absolute top-16 left-8 opacity-20" width="80" height="48" viewBox="0 0 80 48" fill="none">
-            <ellipse cx="40" cy="34" rx="36" ry="14" fill="#93c5fd"/>
-            <ellipse cx="24" cy="28" rx="16" ry="14" fill="#bfdbfe"/>
-            <ellipse cx="52" cy="26" rx="18" ry="16" fill="#bfdbfe"/>
-            <ellipse cx="38" cy="22" rx="14" ry="14" fill="#dbeafe"/>
-          </svg>
-          <svg className="cloud-shape absolute top-36 right-12 opacity-15" style={{ animationDelay: '2s'}} width="64" height="38" viewBox="0 0 64 38" fill="none">
-            <ellipse cx="32" cy="28" rx="28" ry="10" fill="#c4b5fd"/>
-            <ellipse cx="20" cy="22" rx="12" ry="11" fill="#ddd6fe"/>
-            <ellipse cx="42" cy="20" rx="14" ry="13" fill="#ddd6fe"/>
-          </svg>
-          {/* SVG star shapes */}
-          <svg className="float-star absolute top-32 left-1/4" width="28" height="28" viewBox="0 0 28 28">
-            <polygon points="14,2 17.5,10 26,10.5 20,16.5 22,25 14,20.5 6,25 8,16.5 2,10.5 10.5,10" fill="#fbbf24" stroke="#f59e0b" strokeWidth="1"/>
-          </svg>
-          <svg className="float-star absolute top-20 right-1/3" width="22" height="22" viewBox="0 0 24 24" style={{ animationDelay: '0.5s'}}>
-            <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="#a78bfa" stroke="#7c3aed" strokeWidth="1"/>
-          </svg>
-          <svg className="float-star absolute top-60 right-1/4" width="18" height="18" viewBox="0 0 24 24" style={{ animationDelay: '1s'}}>
-            <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="#f472b6" stroke="#ec4899" strokeWidth="1"/>
-          </svg>
-          <svg className="float-star absolute top-1/3 left-8" width="20" height="20" viewBox="0 0 24 24" style={{ animationDelay: '1.5s'}}>
-            <circle cx="12" cy="12" r="5" fill="#4ade80"/>
-            <polygon points="12,1 13.8,8 21,8 15.5,12.5 17.6,19.5 12,15.5 6.4,19.5 8.5,12.5 3,8 10.2,8" fill="#34d399" opacity="0.7"/>
-          </svg>
-          <svg className="float-star absolute bottom-2/3 right-8" width="24" height="24" viewBox="0 0 24 24" style={{ animationDelay: '2s'}}>
-            <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="#60a5fa" stroke="#3b82f6" strokeWidth="0.5"/>
-          </svg>
-          {/* Rainbow arc */}
-          <div className="absolute top-0 left-0 w-full h-3" style={{
-            background: 'linear-gradient(90deg, #f97316, #fbbf24, #4ade80, #60a5fa, #a78bfa, #f472b6)',
-          }} />
-        </div>
-
-        <div className="relative" style={{ zIndex: 1 }}>
-          {/* ── Hero Section ── */}
-          <section className="relative px-4 pt-6 pb-4 text-center overflow-hidden">
-            <div className="max-w-2xl mx-auto">
-              {/* Hero image + Title centered */}
-              <div className="flex items-center justify-center gap-3 mb-3">
-                {/* Rocket SVG illustration */}
-                <div className="mascot-bounce">
-                  <svg width="60" height="60" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="45" cy="45" r="42" fill="#f3e8ff" stroke="#c084fc" strokeWidth="2"/>
-                    <ellipse cx="45" cy="30" rx="14" ry="20" fill="#7c3aed"/>
-                    <ellipse cx="45" cy="30" rx="8" ry="12" fill="#ddd6fe"/>
-                    <polygon points="31,44 38,58 31,58" fill="#ec4899"/>
-                    <polygon points="59,44 52,58 59,58" fill="#ec4899"/>
-                    <ellipse cx="45" cy="55" rx="10" ry="12" fill="#a855f7"/>
-                    <ellipse cx="45" cy="56" rx="5" ry="6" fill="#f472b6"/>
-                    <circle cx="45" cy="29" r="5" fill="#60a5fa" opacity="0.9"/>
-                    <ellipse cx="37" cy="68" rx="5" ry="10" fill="#fbbf24" opacity="0.8"/>
-                    <ellipse cx="45" cy="70" rx="5" ry="12" fill="#f97316" opacity="0.9"/>
-                    <ellipse cx="53" cy="68" rx="5" ry="10" fill="#fbbf24" opacity="0.8"/>
-                  </svg>
-                </div>
-                <h1 className="rainbow-title text-3xl sm:text-4xl font-black leading-none" style={{ letterSpacing: '-0.02em' }}>
-                  Phòng Game Engkids!
+        {/* ── Header Banner ── */}
+        <section className="relative overflow-hidden mb-6">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-500 p-5 shadow-lg">
+              {/* Decorative elements */}
+              <div className="absolute top-2 right-4 text-5xl opacity-30 animate-pulse">🎮</div>
+              <div className="absolute bottom-2 left-3 text-4xl opacity-25">⭐</div>
+              <div className="absolute top-4 left-1/4 text-3xl opacity-20">🎯</div>
+              <div className="absolute bottom-3 right-1/4 text-2xl opacity-20">🏆</div>
+              
+              <div className="relative z-10 max-w-2xl">
+                {/* Title */}
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-3 drop-shadow-lg">
+                  🎮 Phòng Game Engkids!
                 </h1>
+                
+                {/* Search bar */}
+                <div className="relative max-w-xs">
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <circle cx="11" cy="11" r="7" stroke="white" strokeWidth="2.5"/>
+                    <path d="M16.5 16.5 L21 21" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                  </svg>
+                  <input 
+                    type="text" 
+                    placeholder="Tìm game..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl font-semibold text-sm text-gray-700 placeholder-gray-500 focus:outline-none"
+                  />
+                </div>
               </div>
-
-              <p className="text-base font-semibold" style={{ color: '#0369a1' }}>
-                Chọn game yêu thích và bắt đầu học tiếng Anh thôi! 🎮
-              </p>
             </div>
-          </section>
+          </div>
+        </section>
 
+        <div className="max-w-7xl mx-auto px-4">
           {/* ── Game Cards Grid ── */}
-          <section className="max-w-5xl mx-auto px-4">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-              {GAMES.map((g) => (
+          <section className="max-w-7xl mx-auto">
+            {filteredGames.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-5xl mb-3">🔍</div>
+                <p className="text-gray-600 font-semibold">Không tìm thấy game nào!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                {filteredGames.map((g) => (
                 <Link key={g.id} href={g.href} className="game-card block rounded-3xl overflow-hidden"
                   style={{
                     background: 'white',
@@ -312,6 +291,7 @@ export default function GamesPage() {
                 </Link>
               ))}
             </div>
+            )}
           </section>
 
           {/* ── Explore More ── */}

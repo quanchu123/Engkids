@@ -8,13 +8,26 @@ import { getAllStories } from '@/data/stories';
 import { Story, Video } from '@/types';
 import Header from '@/components/layout/Header';
 
+// Games data
+const GAMES = [
+  { id: 'rpg-world', title: 'RPG World', icon: '🗺️', color: 'from-emerald-400 to-teal-500', href: '/games/rpg-world' },
+  { id: 'word-burst', title: 'Word Burst', icon: '💥', color: 'from-violet-500 to-purple-500', href: '/games/word-burst' },
+  { id: 'word-puzzle', title: 'Word Puzzle', icon: '🧩', color: 'from-blue-500 to-indigo-500', href: '/games/word-puzzle' },
+  { id: 'memory-match', title: 'Memory Match', icon: '🃏', color: 'from-pink-500 to-rose-500', href: '/games/memory-match' },
+];
+
 // Loading skeleton component
 function LoadingSkeleton() {
   return (
     <div className="min-h-screen animate-pulse bg-gradient-to-b from-amber-50 via-pink-50 to-blue-50">
       <div className="h-16 bg-white/50 mb-4" />
       <div className="max-w-6xl mx-auto px-4">
-        <div className="h-48 bg-white/40 rounded-3xl mb-6" />
+        {/* Logo with bounce */}
+        <div className="flex flex-col items-center justify-center py-12 mb-6">
+          <div className="text-7xl mb-4 animate-bounce">🦄</div>
+          <div className="h-8 w-48 bg-white/40 rounded-full" />
+        </div>
+        
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="h-32 bg-white/40 rounded-2xl" />
@@ -160,7 +173,17 @@ export default function HomePage() {
       <section className="px-4 py-6">
         <div className="max-w-6xl mx-auto">
           <SectionHeader emoji="🎯" title="Bắt đầu học nhé!" />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <FeatureCard 
+              href="/games"
+              emoji="🎮"
+              title="Game"
+              count={6}
+              unit="trò chơi"
+              gradient="from-emerald-400 to-teal-500"
+              shadow="rgba(16,185,129,0.5)"
+              bg="bg-emerald-50"
+            />
             <FeatureCard 
               href="/stories"
               emoji="📖"
@@ -228,6 +251,25 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Games Section */}
+      <section className="px-4 py-6">
+        <div className="max-w-6xl mx-auto">
+          <SectionHeader emoji="🎮" title="Game học tiếng Anh" href="/games" hrefLabel="Xem tất cả" color="text-emerald-700" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {GAMES.map((game) => (
+              <Link key={game.id} href={game.href}>
+                <div className="bg-white rounded-2xl p-4 text-center shadow-md hover:shadow-lg hover:scale-105 transition-all">
+                  <div className={`w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br ${game.color} flex items-center justify-center text-3xl`}>
+                    {game.icon}
+                  </div>
+                  <p className="font-bold text-gray-800 text-sm">{game.title}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Wave divider */}
       {stories.length > 0 && videos.length > 0 && (
