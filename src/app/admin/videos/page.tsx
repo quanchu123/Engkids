@@ -125,7 +125,7 @@ export default function AdminVideosPage() {
             </p>
           </div>
           <Link
-            href="/admin/videos/new"
+            href={`/admin/videos/new?category=${category}`}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-md"
           >
             + Upload New Video
@@ -192,7 +192,7 @@ export default function AdminVideosPage() {
             </h3>
             <p className="text-gray-500 mb-6">Upload your first video to get started</p>
             <Link
-              href="/admin/videos/new"
+              href={`/admin/videos/new?category=${category}`}
               className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
             >
               Upload Video

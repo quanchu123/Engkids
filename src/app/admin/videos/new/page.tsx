@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import VideoUploader from '@/components/video/VideoUploader';
 import SubtitleEditor from '@/components/video/SubtitleEditor';
 
-export default function NewVideoPage() {
+function NewVideoContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Default the uploader's category from the ?category= param so uploading from
+  // the Music tab pre-selects Music.
+  const initialCategory = searchParams.get('category') === 'music' ? 'music' : 'video';
   const [step, setStep] = useState<'upload' | 'subtitles'>('upload');
   const [videoId, setVideoId] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -59,6 +63,7 @@ export default function NewVideoPage() {
         {/* Step Content */}
         {step === 'upload' && (
           <VideoUploader
+            initialCategory={initialCategory}
             onUploadComplete={handleUploadComplete}
             onError={setError}
           />
@@ -82,5 +87,13 @@ export default function NewVideoPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function NewVideoPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewVideoContent />
+    </Suspense>
   );
 }

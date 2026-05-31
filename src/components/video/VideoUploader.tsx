@@ -9,6 +9,7 @@ import { getAnyAccessToken } from '@/lib/admin-auth-client';
 interface VideoUploaderProps {
   onUploadComplete?: (videoId: string) => void;
   onError?: (error: string) => void;
+  initialCategory?: 'video' | 'music';
 }
 
 // Allowed types for self-uploaded videos played as direct MP4.
@@ -16,7 +17,7 @@ const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/ogg'
 const ALLOWED_EXT_LABEL = 'MP4, WebM, MOV, OGG';
 const MAX_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
 
-export default function VideoUploader({ onUploadComplete, onError }: VideoUploaderProps) {
+export default function VideoUploader({ onUploadComplete, onError, initialCategory = 'video' }: VideoUploaderProps) {
   const toast = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -24,7 +25,7 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
   const [description, setDescription] = useState('');
   type LevelValue = (typeof LEVELS)[keyof typeof LEVELS];
   const [level, setLevel] = useState<LevelValue>(LEVELS.BEGINNER);
-  const [category, setCategory] = useState<'video' | 'music'>('video');
+  const [category, setCategory] = useState<'video' | 'music'>(initialCategory);
 
   const [busy, setBusy] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
