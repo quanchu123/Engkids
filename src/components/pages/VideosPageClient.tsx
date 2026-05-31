@@ -54,7 +54,6 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
     [visibleVideos],
   );
 
-  const featuredVideo = videos[0];
   const hasFilters = Boolean(filters.search || filters.level || filters.topic || filters.ageGroup);
 
   return (
@@ -164,18 +163,6 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
             </section>
           ) : (
             <>
-              {featuredVideo && (
-                <section className="soft-feature mb-8 overflow-hidden rounded-[2rem] bg-slate-900 shadow-2xl">
-                  <div className="relative p-8 text-white">
-                    <p className="mb-3 inline-flex rounded-full bg-white/10 px-4 py-1 text-xs font-bold uppercase tracking-[0.2em]">
-                      Featured
-                    </p>
-                    <h2 className="text-3xl font-black">{featuredVideo.title}</h2>
-                    <p className="mt-2 text-white/80">{featuredVideo.titleVi}</p>
-                  </div>
-                </section>
-              )}
-
               {/* Group by feature (chủ đề). Videos without a feature appear under "Tổng Hợp". */}
               {featureGroups.map((group, index) => (
                 <CategorySection
