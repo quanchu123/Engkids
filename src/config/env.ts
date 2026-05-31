@@ -5,14 +5,6 @@
 
 // Server-side only environment variables (NOT exposed to client)
 const serverEnvVars = {
-  // DigitalOcean Spaces (server-side ONLY - never expose secrets to client!)
-  DO_SPACES_REGION: process.env.DO_SPACES_REGION,
-  DO_SPACES_ENDPOINT: process.env.DO_SPACES_ENDPOINT,
-  DO_SPACES_BUCKET: process.env.DO_SPACES_BUCKET,
-  DO_SPACES_CDN_ENDPOINT: process.env.DO_SPACES_CDN_ENDPOINT,
-  DO_SPACES_KEY: process.env.DO_SPACES_KEY,
-  DO_SPACES_SECRET: process.env.DO_SPACES_SECRET,
-
   // JWT Secret for admin authentication
   JWT_SECRET: process.env.JWT_SECRET,
 
@@ -56,38 +48,6 @@ export const config = {
     },
   },
 
-  // DigitalOcean Spaces (video storage + CDN playback)
-  spaces: {
-    region: serverEnvVars.DO_SPACES_REGION || '',
-    endpoint: serverEnvVars.DO_SPACES_ENDPOINT || '',
-    bucket: serverEnvVars.DO_SPACES_BUCKET || '',
-    cdnEndpoint: serverEnvVars.DO_SPACES_CDN_ENDPOINT || '',
-    // Secret credentials are SERVER-SIDE ONLY.
-    get accessKey() {
-      if (!isServer) {
-        console.warn('Spaces access key should only be accessed on server-side');
-        return '';
-      }
-      return serverEnvVars.DO_SPACES_KEY || '';
-    },
-    get secretKey() {
-      if (!isServer) {
-        console.warn('Spaces secret key should only be accessed on server-side');
-        return '';
-      }
-      return serverEnvVars.DO_SPACES_SECRET || '';
-    },
-    get isConfigured() {
-      return isServer && Boolean(
-        serverEnvVars.DO_SPACES_REGION &&
-        serverEnvVars.DO_SPACES_ENDPOINT &&
-        serverEnvVars.DO_SPACES_BUCKET &&
-        serverEnvVars.DO_SPACES_KEY &&
-        serverEnvVars.DO_SPACES_SECRET
-      );
-    },
-  },
-
   // JWT Authentication
   jwt: {
     get secret() {
@@ -120,16 +80,7 @@ export const config = {
   // Validate all required environment variables
   validate(): { valid: boolean; missing: string[] } {
     const requiredClient = ['SUPABASE_URL', 'SUPABASE_ANON_KEY'];
-    const requiredServer = isServer
-      ? [
-          'DO_SPACES_REGION',
-          'DO_SPACES_ENDPOINT',
-          'DO_SPACES_BUCKET',
-          'DO_SPACES_KEY',
-          'DO_SPACES_SECRET',
-          'JWT_SECRET',
-        ]
-      : [];
+    const requiredServer = isServer ? ['JWT_SECRET'] : [];
 
     const missingClient = validateEnvVars(clientEnvVars, requiredClient);
     const missingServer = validateEnvVars(serverEnvVars, requiredServer);
@@ -142,19 +93,6 @@ export const config = {
     };
   },
 } as const;
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-// Build the public CDN URL for a stored Spaces object key.
-export function getSpacesPublicUrl(objectKey: string): string {
-  if (!objectKey) return '';
-  if (/^https?:\/\//i.test(objectKey)) return objectKey;
-  const base = (config.spaces.cdnEndpoint || '').replace(/\/+$/, '');
-  if (!base) return objectKey;
-  return `${base}/${objectKey.replace(/^\/+/, '')}`;
-}
 
 // ============================================
 // TYPE EXPORTS

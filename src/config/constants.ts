@@ -43,7 +43,7 @@ export const ROUTES = {
     STORY: (id: string) => `/api/stories/${id}`,
     VIDEOS: '/api/videos',
     VIDEO: (id: string) => `/api/videos/${id}`,
-    VIDEO_UPLOAD_SIGN: '/api/videos/upload/sign',
+    VIDEO_UPLOAD: '/api/videos/upload',
     VIDEO_STATUS: (id: string) => `/api/videos/${id}/status`,
     VIDEO_SUBTITLES: (id: string) => `/api/videos/${id}/subtitles`,
     VIDEO_QUIZ: (id: string) => `/api/videos/${id}/quiz`,

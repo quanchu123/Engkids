@@ -42,27 +42,6 @@ services:
         scope: BUILD_AND_RUN_TIME
         value: ${APP_URL}
 
-      # ---- DigitalOcean Spaces (video storage + CDN) ----
-      # Region/endpoint/bucket/CDN are not secret; the key/secret ARE.
-      - key: DO_SPACES_REGION
-        scope: RUN_TIME
-        value: ${DO_SPACES_REGION}
-      - key: DO_SPACES_ENDPOINT
-        scope: RUN_TIME
-        value: ${DO_SPACES_ENDPOINT}
-      - key: DO_SPACES_BUCKET
-        scope: RUN_TIME
-        value: ${DO_SPACES_BUCKET}
-      - key: DO_SPACES_CDN_ENDPOINT
-        scope: RUN_TIME
-        value: ${DO_SPACES_CDN_ENDPOINT}
-      - key: DO_SPACES_KEY
-        scope: RUN_TIME
-        type: SECRET
-      - key: DO_SPACES_SECRET
-        scope: RUN_TIME
-        type: SECRET
-
       # ---- Server-side secrets: set type=SECRET in the DO dashboard ----
       - key: SUPABASE_SERVICE_ROLE_KEY
         scope: RUN_TIME

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getVideoById, updateVideo, deleteVideo } from '@/services/video';
-import { deleteVideoObject } from '@/services/spaces';
+import { deleteVideoObject } from '@/services/storage';
 import { checkAdminAuth } from '@/lib/api-auth';
 import { apiCache, CACHE_KEYS } from '@/lib/cache';
 

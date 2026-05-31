@@ -2,8 +2,9 @@
 
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/useToast';
-import { LEVELS, ERRORS } from '@/config/constants';
+import { LEVELS, ERRORS, ROUTES } from '@/config/constants';
 import { videoApi } from '@/services/api';
+import { getAnyAccessToken } from '@/lib/admin-auth-client';
 
 interface VideoUploaderProps {
   onUploadComplete?: (videoId: string) => void;
@@ -65,15 +66,18 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
     }
   };
 
-  // Upload the file straight to DigitalOcean Spaces via a presigned PUT URL,
-  // tracking progress with XMLHttpRequest, then record the metadata.
-  const uploadToSpaces = (uploadUrl: string, contentType: string): Promise<void> => {
+  // Upload the raw file to our server, which streams it to the droplet disk.
+  // Returns the stored object key. Tracks progress via XMLHttpRequest.
+  const uploadFile = (selectedFile: File, accessToken: string): Promise<string> => {
     return new Promise((resolve, reject) => {
+      const ext = (selectedFile.name.split('.').pop() || 'mp4').toLowerCase();
       const xhr = new XMLHttpRequest();
-      xhr.open('PUT', uploadUrl, true);
-      xhr.setRequestHeader('Content-Type', contentType);
-      // Public read so the CDN can serve it.
-      xhr.setRequestHeader('x-amz-acl', 'public-read');
+      xhr.open('POST', `${ROUTES.API.VIDEO_UPLOAD}?ext=${encodeURIComponent(ext)}`, true);
+      xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+      if (accessToken) {
+        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+      }
+      xhr.withCredentials = true;
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -82,11 +86,27 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
         }
       };
       xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) resolve();
-        else reject(new Error(`Upload failed (HTTP ${xhr.status})`));
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (data.objectKey) resolve(data.objectKey);
+            else reject(new Error('Upload succeeded but no object key was returned'));
+          } catch {
+            reject(new Error('Invalid server response'));
+          }
+        } else {
+          let msg = `Upload failed (HTTP ${xhr.status})`;
+          try {
+            const data = JSON.parse(xhr.responseText);
+            if (data.error) msg = data.error;
+          } catch {
+            // keep default message
+          }
+          reject(new Error(msg));
+        }
       };
       xhr.onerror = () => reject(new Error('Network error during upload'));
-      xhr.send(file as File);
+      xhr.send(selectedFile);
     });
   };
 
@@ -101,16 +121,13 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
     setBusy(true);
     setProgressPct(0);
     try {
-      const ext = file.name.split('.').pop() || 'mp4';
+      const accessToken = (await getAnyAccessToken()) || '';
 
-      // 1. Ask our API for a presigned upload URL.
-      const { uploadUrl, objectKey, contentType } = await videoApi.getUploadUrl(ext);
-
-      // 2. Upload directly to Spaces.
-      await uploadToSpaces(uploadUrl, contentType || file.type);
+      // 1. Stream the file to the server (stored on the droplet disk).
+      const objectKey = await uploadFile(file, accessToken);
       setProgressPct(95);
 
-      // 3. Record the video metadata.
+      // 2. Record the video metadata.
       const data = await videoApi.create({
         objectKey,
         title,
@@ -122,7 +139,7 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
       });
       setProgressPct(100);
 
-      toast.success('Video đã tải lên DigitalOcean Spaces và sẵn sàng xem!');
+      toast.success('Video đã tải lên máy chủ và sẵn sàng xem!');
       onUploadComplete?.(data.video.id);
     } catch (error) {
       console.error('Upload error:', error);
@@ -138,7 +155,7 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-2 text-gray-800">Upload New Video</h2>
       <p className="mb-6 text-sm text-gray-500">
-        Video được lưu trên DigitalOcean Spaces và phát trực tiếp qua CDN.
+        Video được lưu trên máy chủ và phát trực tiếp.
       </p>
 
       {/* File Upload Area */}

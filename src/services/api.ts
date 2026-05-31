@@ -221,14 +221,6 @@ interface CreateVideoResponse {
   video: Video;
 }
 
-interface UploadUrlResponse {
-  uploadUrl: string;
-  objectKey: string;
-  contentType: string;
-  maxBytes: number;
-  expiresIn: number;
-}
-
 interface UpdateVideoRequest {
   title?: string;
   titleVi?: string;
@@ -267,14 +259,9 @@ export const videoApi = {
     return api.get(ROUTES.API.VIDEO(id));
   },
 
-  // Create video metadata after a direct browser-to-Spaces upload (requires auth)
+  // Create video metadata after uploading the file to the server (requires auth)
   async create(data: CreateVideoRequest): Promise<CreateVideoResponse> {
     return api.post(ROUTES.API.VIDEOS, data, { auth: true });
-  },
-
-  // Get a presigned URL to upload a video directly to DigitalOcean Spaces.
-  async getUploadUrl(extension: string): Promise<UploadUrlResponse> {
-    return api.post(ROUTES.API.VIDEO_UPLOAD_SIGN, { extension }, { auth: true });
   },
 
   // Update video (requires auth)

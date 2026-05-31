@@ -1,7 +1,7 @@
 // Video Data Service - Supabase metadata + DigitalOcean Spaces files
 import { createClient } from '@supabase/supabase-js';
 import { Video, SubtitleCue, VideoQuizQuestion } from '@/types';
-import { getVideoPublicUrl } from './spaces';
+import { getVideoPublicUrl } from './storage';
 
 // Track if we've already warned about Supabase being unavailable to avoid log spam
 let supabaseUnavailableWarned = false;
@@ -248,14 +248,14 @@ export async function getVideoById(id: string): Promise<Video | null> {
 }
 
 /**
- * Create a video backed by DigitalOcean Spaces (admin only, server-side).
- * The browser uploads the file directly to Spaces via a presigned URL; this
- * records the metadata + object key and marks the video as ready.
+ * Create a video backed by the droplet's local disk (admin only, server-side).
+ * The browser streams the file to /api/videos/upload which returns an object
+ * key; this records the metadata + object key and marks the video as ready.
  */
-export async function createSpacesVideo(data: {
+export async function createVideo(data: {
   title: string;
   titleVi: string;
-  objectKey: string;       // object key inside the Spaces bucket
+  objectKey: string;       // file name stored under public/uploads
   description?: string;
   level?: Video['level'];
   topics?: string[];

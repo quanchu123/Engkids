@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSpacesVideo, getAllVideos, getAllVideosAdmin } from '@/services/video';
+import { createVideo, getAllVideos, getAllVideosAdmin } from '@/services/video';
 import { checkAdminAuth } from '@/lib/api-auth';
 import { apiCache, CACHE_KEYS } from '@/lib/cache';
 import { createVideoSchema } from '@/lib/validations/video';
@@ -66,12 +66,12 @@ export async function POST(request: NextRequest) {
     const objectKey = String(body?.objectKey || '').trim();
     if (!objectKey) {
       return NextResponse.json(
-        { error: 'objectKey is required (upload the file to Spaces first)' },
+        { error: 'objectKey is required (upload the file first)' },
         { status: 400 },
       );
     }
 
-    const video = await createSpacesVideo({
+    const video = await createVideo({
       title: validated.title,
       titleVi: validated.titleVi,
       objectKey,

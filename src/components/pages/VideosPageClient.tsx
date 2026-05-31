@@ -105,8 +105,19 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
 
           {filteredVideos.length === 0 ? (
             <div className="soft-panel rounded-3xl p-10 text-center shadow-lg">
-              <h2 className="text-2xl font-black text-slate-900">Không tìm thấy video</h2>
-              <p className="mt-2 text-slate-600">Thử đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
+              {videos.length === 0 ? (
+                <>
+                  <h2 className="text-2xl font-black text-slate-900">Chưa có video nào</h2>
+                  <p className="mt-2 text-slate-600">
+                    Video sẽ xuất hiện ở đây sau khi được tải lên trong trang quản trị.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-black text-slate-900">Không tìm thấy video</h2>
+                  <p className="mt-2 text-slate-600">Thử đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
+                </>
+              )}
             </div>
           ) : hasFilters ? (
             <section>
