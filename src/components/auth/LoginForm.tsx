@@ -18,16 +18,50 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSignup, setIsSignup] = useState(mode === 'signup');
+  const [info, setInfo] = useState('');
   const router = useRouter();
+
+  // Translate common Supabase auth errors to friendly Vietnamese messages.
+  const translateError = (raw: string): string => {
+    const m = raw.toLowerCase();
+    if (m.includes('email not confirmed') || m.includes('not confirmed')) {
+      return 'Email chưa được xác nhận. Vui lòng kiểm tra hộp thư và bấm link xác nhận trước khi đăng nhập.';
+    }
+    if (m.includes('invalid login credentials') || m.includes('invalid credentials')) {
+      return 'Email hoặc mật khẩu không đúng.';
+    }
+    if (m.includes('user already registered') || m.includes('already registered')) {
+      return 'Email này đã được đăng ký. Hãy đăng nhập.';
+    }
+    if (m.includes('rate limit') || m.includes('too many')) {
+      return 'Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.';
+    }
+    if (m.includes('password') && m.includes('6')) {
+      return 'Mật khẩu phải có ít nhất 6 ký tự.';
+    }
+    return raw;
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
 
     try {
       if (isSignup) {
-        await signUp(email, password, name);
+        const data = await signUp(email, password, name);
+
+        // If email confirmation is required, Supabase returns a user but no
+        // session. Tell the user to confirm before signing in.
+        if (data?.user && !data.session) {
+          setInfo('Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản, sau đó đăng nhập.');
+          setIsSignup(false);
+          setPassword('');
+          return;
+        }
+
+        // Confirmation disabled — a session exists, go straight in.
         router.push(authConfig.redirects.afterSignup);
       } else {
         await signIn(email, password);
@@ -50,7 +84,8 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
 
       onSuccess?.();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+      const raw = err instanceof Error ? err.message : 'Authentication failed';
+      setError(translateError(raw));
     } finally {
       setLoading(false);
     }
@@ -126,6 +161,12 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
             </div>
           )}
 
+          {info && (
+            <div className="bg-green-900/30 border border-green-500 text-green-300 px-4 py-3 rounded-lg text-sm">
+              {info}
+            </div>
+          )}
+
           <button
             type="submit"
             data-testid="login-submit"
@@ -148,6 +189,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
             onClick={() => {
               setIsSignup(!isSignup);
               setError('');
+              setInfo('');
             }}
             data-testid="login-mode-toggle"
             className="text-purple-400 hover:text-purple-300 text-sm transition"
