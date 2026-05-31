@@ -3,30 +3,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { DEFAULT_WORD_BANK, loadWordBank, toChoiceQuestions } from '@/lib/word-bank';
 
-// ─── Vocabulary questions for battle ──────────────────────────────────────
-const VOCAB_QUESTIONS = [
-  { vi: 'Cái cây', en: 'Tree', choices: ['Tree', 'Stone', 'River', 'Cloud'] },
-  { vi: 'Con suối', en: 'Stream', choices: ['Stream', 'Desert', 'Mountain', 'Field'] },
-  { vi: 'Ngọn núi', en: 'Mountain', choices: ['Mountain', 'Bridge', 'Valley', 'Forest'] },
-  { vi: 'Khu rừng', en: 'Forest', choices: ['Forest', 'Ocean', 'Island', 'Cave'] },
-  { vi: 'Ngôi làng', en: 'Village', choices: ['Village', 'Castle', 'Tower', 'Dungeon'] },
-  { vi: 'Con đường', en: 'Path', choices: ['Path', 'River', 'Wall', 'Gate'] },
-  { vi: 'Mặt trăng', en: 'Moon', choices: ['Moon', 'Star', 'Sun', 'Cloud'] },
-  { vi: 'Bầu trời', en: 'Sky', choices: ['Sky', 'Fog', 'Rain', 'Snow'] },
-  { vi: 'Ngọn lửa', en: 'Fire', choices: ['Fire', 'Water', 'Earth', 'Wind'] },
-  { vi: 'Thanh kiếm', en: 'Sword', choices: ['Sword', 'Shield', 'Bow', 'Staff'] },
-  { vi: 'Áo giáp', en: 'Armor', choices: ['Armor', 'Helmet', 'Boots', 'Cloak'] },
-  { vi: 'Kho báu', en: 'Treasure', choices: ['Treasure', 'Chest', 'Box', 'Bag'] },
-  { vi: 'Quái vật', en: 'Monster', choices: ['Monster', 'Hero', 'Wizard', 'Enemy'] },
-  { vi: 'Ma thuật', en: 'Magic', choices: ['Magic', 'Power', 'Force', 'Energy'] },
-  { vi: 'Chìa khóa', en: 'Key', choices: ['Key', 'Door', 'Lock', 'Chain'] },
-  { vi: 'Con rồng', en: 'Dragon', choices: ['Dragon', 'Phoenix', 'Griffin', 'Serpent'] },
-  { vi: 'Ngục tối', en: 'Dungeon', choices: ['Dungeon', 'Castle', 'Tower', 'Ruins'] },
-  { vi: 'Phù thủy', en: 'Wizard', choices: ['Wizard', 'Knight', 'Archer', 'Rogue'] },
-  { vi: 'Thuốc hồi phục', en: 'Potion', choices: ['Potion', 'Spell', 'Scroll', 'Gem'] },
-  { vi: 'Màn đêm', en: 'Night', choices: ['Night', 'Day', 'Dawn', 'Dusk'] },
-];
+// ─── Vocabulary questions for battle (defaults; replaced by shared bank) ────
+let VOCAB_QUESTIONS = toChoiceQuestions(DEFAULT_WORD_BANK);
 
 const NPC_DIALOGUES = [
   { name: 'Elder Oak', msg: 'Welcome, hero!\n"Forest" = Khu rừng\nBeware the monsters ahead!' },
@@ -60,6 +40,15 @@ export default function RpgWorldPage() {
   const battleRef = useRef<BattleState | null>(null);
   const scoreRef = useRef(0);
   const hpRef = useRef(3);
+
+  // Load the shared word bank into the battle question pool.
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (active) VOCAB_QUESTIONS = toChoiceQuestions(bank);
+    });
+    return () => { active = false; };
+  }, []);
   // Direct callback: Phaser registers, React calls when battle ends
   const battleResolveCbRef = useRef<((won: boolean) => void) | null>(null);
 

@@ -2,22 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { DEFAULT_WORD_BANK, loadWordBank, toMemoryPairs } from '@/lib/word-bank';
 
-/* ─── Vocabulary pairs ──────────────────────────────────────────────────── */
-const PAIRS = [
-  { en: 'Sun',     vi: 'Mặt trời', emoji: 'SU' },
-  { en: 'Moon',    vi: 'Mặt trăng', emoji: 'MO' },
-  { en: 'Star',    vi: 'Ngôi sao',  emoji: 'ST' },
-  { en: 'Cloud',   vi: 'Đám mây',   emoji: 'CL' },
-  { en: 'Rain',    vi: 'Mưa',       emoji: 'RA' },
-  { en: 'Fire',    vi: 'Lửa',       emoji: 'FI' },
-  { en: 'Ocean',   vi: 'Đại dương', emoji: 'OC' },
-  { en: 'Tree',    vi: 'Cái cây',   emoji: 'TR' },
-  { en: 'Flower',  vi: 'Bông hoa',  emoji: 'FL' },
-  { en: 'Bird',    vi: 'Con chim',   emoji: 'BI' },
-  { en: 'Fish',    vi: 'Con cá',     emoji: 'FS' },
-  { en: 'Heart',   vi: 'Trái tim',   emoji: 'HT' },
-];
+/* ─── Vocabulary pairs (defaults; replaced by the shared word bank) ──────── */
+const PAIRS = toMemoryPairs(DEFAULT_WORD_BANK);
 
 const GRID_SIZE = 8; // 4x4 grid = 8 pairs (16 cards)
 const GRADIENTS = [
@@ -37,8 +25,8 @@ interface Card {
   matched: boolean;
 }
 
-function buildDeck(): Card[] {
-  const selected = [...PAIRS].sort(() => Math.random() - 0.5).slice(0, GRID_SIZE);
+function buildDeck(pairs: Array<{ en: string; vi: string; emoji: string }> = PAIRS): Card[] {
+  const selected = [...pairs].sort(() => Math.random() - 0.5).slice(0, GRID_SIZE);
   const cards: Card[] = [];
   selected.forEach((pair, idx) => {
     const grad = GRADIENTS[idx % GRADIENTS.length];
@@ -61,6 +49,15 @@ export default function MemoryMatchPage() {
   const lockRef = useRef(false);
   const particleId = useRef(0);
   const startTime = useRef(Date.now());
+
+  // Load the shared word bank and rebuild the deck with it.
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (active) setCards(buildDeck(toMemoryPairs(bank)));
+    });
+    return () => { active = false; };
+  }, []);
 
   const spawnParticles = useCallback((x: number, y: number, color: string) => {
     const id = ++particleId.current;

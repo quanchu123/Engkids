@@ -3,13 +3,15 @@ import { checkAdminAuth } from '@/lib/api-auth';
 import {
   getMultipleChoiceForAdmin,
   getTrueFalseForAdmin,
+  getWordBank,
   saveMultipleChoiceContent,
   saveTrueFalseContent,
+  saveWordBank,
 } from '@/services/game-content';
 
 export const dynamic = 'force-dynamic';
 
-const SUPPORTED = ['multiple-choice', 'true-false'];
+const SUPPORTED = ['multiple-choice', 'true-false', 'word-bank'];
 
 // GET /api/games/[type] - current content (override or built-in defaults)
 export async function GET(
@@ -22,10 +24,10 @@ export async function GET(
   }
 
   try {
-    const data =
-      type === 'multiple-choice'
-        ? await getMultipleChoiceForAdmin()
-        : await getTrueFalseForAdmin();
+    let data;
+    if (type === 'multiple-choice') data = await getMultipleChoiceForAdmin();
+    else if (type === 'true-false') data = await getTrueFalseForAdmin();
+    else data = await getWordBank();
     return NextResponse.json({ data });
   } catch (error) {
     console.error('Get game content error:', error);
@@ -50,10 +52,10 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const data =
-      type === 'multiple-choice'
-        ? await saveMultipleChoiceContent(body?.data)
-        : await saveTrueFalseContent(body?.data);
+    let data;
+    if (type === 'multiple-choice') data = await saveMultipleChoiceContent(body?.data);
+    else if (type === 'true-false') data = await saveTrueFalseContent(body?.data);
+    else data = await saveWordBank(body?.data);
     return NextResponse.json({ data });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to save game content';

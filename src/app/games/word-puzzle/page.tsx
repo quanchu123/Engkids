@@ -2,30 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { DEFAULT_WORD_BANK, loadWordBank, toFiveLetterWords } from '@/lib/word-bank';
 
-/* â”€â”€â”€ Vocabulary: 5-letter English words with Vietnamese hints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-const WORDS = [
-  { en: 'APPLE', vi: 'Quả táo' },
-  { en: 'OCEAN', vi: 'Đại dương' },
-  { en: 'FLAME', vi: 'Ngọn lửa' },
-  { en: 'CLOUD', vi: 'Đám mây' },
-  { en: 'STORM', vi: 'Cơn bão' },
-  { en: 'MAGIC', vi: 'Ma thuật' },
-  { en: 'SWORD', vi: 'Thanh kiếm' },
-  { en: 'FROST', vi: 'Băng giá' },
-  { en: 'EAGLE', vi: 'Đại bàng' },
-  { en: 'STONE', vi: 'Hòn đá' },
-  { en: 'CROWN', vi: 'Vương miện' },
-  { en: 'EARTH', vi: 'Trái đất' },
-  { en: 'DREAM', vi: 'Giấc mơ' },
-  { en: 'PEARL', vi: 'Viên ngọc trai' },
-  { en: 'LIGHT', vi: 'Ánh sáng' },
-  { en: 'MUSIC', vi: 'Âm nhạc' },
-  { en: 'HONEY', vi: 'Mật ong' },
-  { en: 'RIVER', vi: 'Con sông' },
-  { en: 'TOWER', vi: 'Tòa tháp' },
-  { en: 'PLANT', vi: 'Cây cối' },
-];
+/* ─── Vocabulary: 5-letter words (defaults; replaced by the shared bank) ─── */
+const WORDS = toFiveLetterWords(DEFAULT_WORD_BANK);
 
 const MAX_GUESSES = 6;
 const WORD_LENGTH = 5;
@@ -62,12 +42,23 @@ function evaluateGuess(guess: string, answer: string): TileState[] {
 }
 
 export default function WordPuzzlePage() {
-  const [target] = useState(() => WORDS[Math.floor(Math.random() * WORDS.length)]);
+  const [target, setTarget] = useState(() => WORDS[Math.floor(Math.random() * WORDS.length)]);
   const [guesses, setGuesses] = useState<string[]>([]);
   const [current, setCurrent] = useState('');
   const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
   const [shake, setShake] = useState(false);
   const [revealRow, setRevealRow] = useState(-1);
+
+  // Load the shared word bank and pick a fresh 5-letter target.
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (!active) return;
+      const words = toFiveLetterWords(bank);
+      setTarget(words[Math.floor(Math.random() * words.length)]);
+    });
+    return () => { active = false; };
+  }, []);
   const [toast, setToast] = useState('');
 
   const showToast = useCallback((msg: string) => {

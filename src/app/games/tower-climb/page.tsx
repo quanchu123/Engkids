@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { DEFAULT_WORD_BANK, loadWordBank, toWrongQuestions } from '@/lib/word-bank';
 
 /* ═══════ TYPES ═══════ */
 interface Player { x: number; y: number; vx: number; vy: number; facing: 1 | -1; frame: number; squash: number }
@@ -26,39 +27,8 @@ interface GS {
 /* ═══════ CONSTANTS ═══════ */
 const W = 400, H = 700, PH = 14, GR = 0.48, JV = 12.5, SV = 18.5, SPD = 5.2, CW = 22;
 
-/* ═══════ VOCABULARY ═══════ */
-const VOC: WQ[] = [
-  { vi: 'Con mèo', en: 'Cat', wrong: ['Dog', 'Bird', 'Fish'] },
-  { vi: 'Con chó', en: 'Dog', wrong: ['Cat', 'Frog', 'Ant'] },
-  { vi: 'Ngôi nhà', en: 'House', wrong: ['Tree', 'Lake', 'Wall'] },
-  { vi: 'Cái cây', en: 'Tree', wrong: ['Rock', 'Vine', 'Bush'] },
-  { vi: 'Mặt trời', en: 'Sun', wrong: ['Moon', 'Star', 'Cloud'] },
-  { vi: 'Mặt trăng', en: 'Moon', wrong: ['Sun', 'Mars', 'Star'] },
-  { vi: 'Ngôi sao', en: 'Star', wrong: ['Moon', 'Sun', 'Lamp'] },
-  { vi: 'Con cá', en: 'Fish', wrong: ['Bird', 'Cat', 'Crab'] },
-  { vi: 'Bông hoa', en: 'Flower', wrong: ['Leaf', 'Seed', 'Root'] },
-  { vi: 'Trái táo', en: 'Apple', wrong: ['Grape', 'Plum', 'Pear'] },
-  { vi: 'Cuốn sách', en: 'Book', wrong: ['Pen', 'Bag', 'Cup'] },
-  { vi: 'Nước', en: 'Water', wrong: ['Fire', 'Wind', 'Ice'] },
-  { vi: 'Lửa', en: 'Fire', wrong: ['Rain', 'Snow', 'Fog'] },
-  { vi: 'Con chim', en: 'Bird', wrong: ['Fish', 'Ant', 'Bug'] },
-  { vi: 'Cầu vồng', en: 'Rainbow', wrong: ['Cloud', 'Rain', 'Fog'] },
-  { vi: 'Đám mây', en: 'Cloud', wrong: ['Smoke', 'Rain', 'Snow'] },
-  { vi: 'Chiếc xe', en: 'Car', wrong: ['Bus', 'Van', 'Ship'] },
-  { vi: 'Đôi mắt', en: 'Eye', wrong: ['Ear', 'Lip', 'Nose'] },
-  { vi: 'Trái tim', en: 'Heart', wrong: ['Lung', 'Bone', 'Hand'] },
-  { vi: 'Con rồng', en: 'Dragon', wrong: ['Tiger', 'Wolf', 'Bear'] },
-  { vi: 'Lâu đài', en: 'Castle', wrong: ['Tower', 'Fort', 'Gate'] },
-  { vi: 'Viên ngọc', en: 'Gem', wrong: ['Gold', 'Ring', 'Coin'] },
-  { vi: 'Ánh sáng', en: 'Light', wrong: ['Dark', 'Glow', 'Beam'] },
-  { vi: 'Bầu trời', en: 'Sky', wrong: ['Sea', 'Land', 'Cave'] },
-  { vi: 'Con bướm', en: 'Butterfly', wrong: ['Beetle', 'Moth', 'Bee'] },
-  { vi: 'Chiếc lá', en: 'Leaf', wrong: ['Root', 'Twig', 'Bark'] },
-  { vi: 'Dòng sông', en: 'River', wrong: ['Lake', 'Pond', 'Well'] },
-  { vi: 'Quả trứng', en: 'Egg', wrong: ['Nest', 'Wing', 'Beak'] },
-  { vi: 'Ngọn núi', en: 'Mountain', wrong: ['Hill', 'Cliff', 'Dune'] },
-  { vi: 'Con ong', en: 'Bee', wrong: ['Fly', 'Ant', 'Wasp'] },
-];
+/* ═══════ VOCABULARY (defaults; replaced by the shared word bank on mount) ═══════ */
+let VOC: WQ[] = toWrongQuestions(DEFAULT_WORD_BANK);
 
 /* ═══════ HELPERS ═══════ */
 function rrect(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -156,6 +126,15 @@ export default function TowerClimbPage() {
     };
     phRef.current = 'play';
     setPhase('play');
+  }, []);
+
+  /* ══ Load the shared word bank for the climbing word rows ══ */
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (active) VOC = toWrongQuestions(bank);
+    });
+    return () => { active = false; };
   }, []);
 
   /* ══ MAIN EFFECT: canvas loop + input ══ */

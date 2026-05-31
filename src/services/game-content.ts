@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { MCContent, TFContent, MCQuestion, TFQuestion, GameDifficulty } from '@/types/games';
 import { DIFFICULTIES } from '@/types/games';
 import { DEFAULT_MULTIPLE_CHOICE, DEFAULT_TRUE_FALSE } from '@/data/game-defaults';
+import { DEFAULT_WORD_BANK, normalizeWordBank, type WordPair } from '@/lib/word-bank';
 
 function getSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -147,4 +148,19 @@ export async function getMultipleChoiceForAdmin(): Promise<MCContent> {
 
 export async function getTrueFalseForAdmin(): Promise<TFContent> {
   return normalizeTF(await fetchRaw('true-false')) || DEFAULT_TRUE_FALSE;
+}
+
+// ---- Word bank (shared by the 6 vocabulary games) ----
+
+export async function getWordBank(): Promise<WordPair[]> {
+  return normalizeWordBank(await fetchRaw('word-bank')) || DEFAULT_WORD_BANK;
+}
+
+export async function saveWordBank(raw: unknown): Promise<WordPair[]> {
+  const normalized = normalizeWordBank(raw);
+  if (!normalized) {
+    throw new Error('Nội dung không hợp lệ: cần ít nhất 1 từ có cả tiếng Anh và tiếng Việt.');
+  }
+  await upsert('word-bank', normalized);
+  return normalized;
 }

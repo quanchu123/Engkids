@@ -2,20 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from'react';
 import Link from'next/link';
+import { DEFAULT_WORD_BANK, loadWordBank, type WordPair } from '@/lib/word-bank';
 
-// ─── Vocabulary ────────────────────────────────────────────────────────────
-const VOCAB = [
-  { en:'Apple',   vi:'Quả táo'},   { en:'Ocean',   vi:'Đại dương'},
-  { en:'Dragon',  vi:'Con rồng'},   { en:'Forest',  vi:'Khu rừng'},
-  { en:'Castle',  vi:'Lâu đài'},    { en:'Thunder', vi:'Sấm sét'},
-  { en:'Crystal', vi:'Pha lê'},     { en:'River',   vi:'Con sông'},
-  { en:'Eagle',   vi:'Đại bàng'},   { en:'Shadow',  vi:'Bóng tối'},
-  { en:'Flame',   vi:'Ngọn lửa'},   { en:'Frost',   vi:'Băng giá'},
-  { en:'Storm',   vi:'Cơn bão'},    { en:'Sword',   vi:'Thanh kiếm'},
-  { en:'Moon',    vi:'Mặt trăng'},  { en:'Star',    vi:'Ngôi sao'},
-  { en:'King',    vi:'Nhà vua'},    { en:'Magic',   vi:'Ma thuật'},
-  { en:'Island',  vi:'Hòn đảo'},   { en:'Cloud',   vi:'Đám mây'},
-];
+// ─── Vocabulary (defaults; replaced by the shared word bank on mount) ───────
+let VOCAB: WordPair[] = DEFAULT_WORD_BANK;
 
 // Palette of gradient pairs per orb
 const ORB_GRADIENTS = [
@@ -127,6 +117,18 @@ export default function WordBurstPage() {
   // Per-round data — stable as long as round doesn't change
   const [roundData, setRoundData] = useState(() =>pickRound(new Set()));
   const [orbLayout, setOrbLayout] = useState<{ x:number; y:number; size:number; grad:string[]; floatDelay:number }[]>([]);
+
+  // Load the shared word bank, then restart the round with it.
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (!active) return;
+      VOCAB = bank;
+      usedEnRef.current = new Set();
+      setRoundData(pickRound(new Set()));
+    });
+    return () => { active = false; };
+  }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
 

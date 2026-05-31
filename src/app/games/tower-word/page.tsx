@@ -2,20 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { DEFAULT_WORD_BANK, loadWordBank } from '@/lib/word-bank';
 
-/* ─── Vocabulary ────────────────────────────────────────────────────────── */
-const VOCAB = [
-  { en: 'APPLE',   vi: 'Quả táo' },   { en: 'OCEAN',   vi: 'Đại dương' },
-  { en: 'CLOUD',   vi: 'Đám mây' },   { en: 'FLAME',   vi: 'Ngọn lửa' },
-  { en: 'MAGIC',   vi: 'Ma thuật' },   { en: 'SWORD',   vi: 'Thanh kiếm' },
-  { en: 'FROST',   vi: 'Băng giá' },   { en: 'EAGLE',   vi: 'Đại bàng' },
-  { en: 'STONE',   vi: 'Hòn đá' },    { en: 'CROWN',   vi: 'Vương miện' },
-  { en: 'DREAM',   vi: 'Giấc mơ' },   { en: 'LIGHT',   vi: 'Ánh sáng' },
-  { en: 'MUSIC',   vi: 'Âm nhạc' },   { en: 'HONEY',   vi: 'Mật ong' },
-  { en: 'RIVER',   vi: 'Con sông' },   { en: 'TOWER',   vi: 'Tòa tháp' },
-  { en: 'PLANT',   vi: 'Cây cối' },   { en: 'STORM',   vi: 'Cơn bão' },
-  { en: 'PEARL',   vi: 'Ngọc trai' }, { en: 'EARTH',   vi: 'Trái đất' },
-];
+/* ─── Vocabulary (defaults; replaced by the shared word bank on mount) ───── */
+let VOCAB = DEFAULT_WORD_BANK.map((w) => ({ en: w.en.toUpperCase(), vi: w.vi }));
 
 const COLOR_PALETTES = [
   ['#f43f5e', '#e11d48'], ['#f97316', '#ea580c'], ['#eab308', '#ca8a04'],
@@ -80,6 +70,15 @@ export default function TowerWordPage() {
   const [gameState, setGameState] = useState<'waiting' | 'playing' | 'won' | 'lost'>('waiting');
   const [currentWord, setCurrentWord] = useState<typeof VOCAB[0]>(VOCAB[0]);
   const [letterIndex, setLetterIndex] = useState(0);
+
+  // Load the shared word bank (used the next time the player starts a round).
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (active) VOCAB = bank.map((w) => ({ en: w.en.toUpperCase(), vi: w.vi }));
+    });
+    return () => { active = false; };
+  }, []);
 
   const initGame = useCallback(() => {
     const word = VOCAB[Math.floor(Math.random() * VOCAB.length)];

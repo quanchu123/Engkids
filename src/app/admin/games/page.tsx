@@ -4,6 +4,12 @@ import Link from 'next/link';
 
 const EDITABLE_GAMES = [
   {
+    type: 'word-bank',
+    title: 'Kho từ vựng (6 game)',
+    desc: 'Danh sách từ Anh-Việt dùng chung cho: RPG World, Word Burst, Word Puzzle, Memory Match, Tower Word, Tower Climb.',
+    emoji: '📚',
+  },
+  {
     type: 'multiple-choice',
     title: 'Trắc nghiệm (Multiple Choice)',
     desc: 'Câu hỏi nhiều lựa chọn theo 3 cấp độ.',
