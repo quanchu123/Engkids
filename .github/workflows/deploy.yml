@@ -18,8 +18,12 @@ jobs:
           key: ${{ secrets.DROPLET_SSH_KEY }}
           script: |
             cd /root/Engkids
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
+            git clean -fd
+            rm -rf .next
             npm install
             npm run build
-            pm2 restart engkids || pm2 start npm --name engkids -- start
+            pm2 delete engkids || true
+            pm2 start npm --name engkids -- start
             pm2 save
