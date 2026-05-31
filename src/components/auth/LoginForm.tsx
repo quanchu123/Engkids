@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { signIn, signUp, getSupabaseClient } from '@/lib/auth-client';
-import { authConfig } from '@/config/auth';
 import { useRouter } from 'next/navigation';
-import { isAdminEmail } from '@/config/admin';
+import { signIn, signUp, getSupabaseClient } from '@/lib/auth-client';
+import { resolveSupabaseAdminUser } from '@/lib/admin-access';
+import { authConfig } from '@/config/auth';
 
 interface LoginFormProps {
   mode?: 'signin' | 'signup';
@@ -31,40 +31,24 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
         router.push(authConfig.redirects.afterSignup);
       } else {
         await signIn(email, password);
-        
-        // Check if user is admin (by email or role)
+
         const supabase = getSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
         if (user) {
-          // Method 1: Check admin email (uses isAdminEmail which allows all in dev mode)
-          if (user.email && isAdminEmail(user.email)) {
+          const adminUser = await resolveSupabaseAdminUser(supabase, user);
+          if (adminUser) {
             router.push('/admin');
             return;
           }
-          
-          // Method 2: Check profile role (if exists)
-          try {
-            const { data: profile } = await supabase
-              .from('user_profiles')
-              .select('role')
-              .eq('auth_id', user.id)
-              .single() as { data: { role?: string } | null };
-            
-            if (profile?.role === 'admin') {
-              router.push('/admin');
-              return;
-            }
-          } catch (e) {
-            // role column might not exist
-          }
-          
-          // Default: regular user
+
           router.push('/progress');
         }
       }
-      
-      if (onSuccess) onSuccess();
+
+      onSuccess?.();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
@@ -73,7 +57,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-md" data-testid="login-form">
       <div className="bg-gray-800 rounded-2xl p-8 shadow-2xl border border-gray-700">
         <h2 className="text-3xl font-bold text-white mb-2 text-center">
           {isSignup ? 'Create Account' : 'Welcome Back'}
@@ -91,6 +75,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
               <input
                 id="name"
                 type="text"
+                data-testid="signup-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Your name"
@@ -106,6 +91,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
             <input
               id="email"
               type="email"
+              data-testid="login-email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -121,10 +107,11 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
             <input
               id="password"
               type="password"
+              data-testid="login-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="........"
               minLength={6}
               className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
             />
@@ -141,6 +128,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
 
           <button
             type="submit"
+            data-testid="login-submit"
             disabled={loading}
             className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
           >
@@ -161,11 +149,10 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
               setIsSignup(!isSignup);
               setError('');
             }}
+            data-testid="login-mode-toggle"
             className="text-purple-400 hover:text-purple-300 text-sm transition"
           >
-            {isSignup
-              ? 'Already have an account? Sign in'
-              : "Don't have an account? Sign up"}
+            {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
           </button>
         </div>
       </div>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/auth-client';
-import { isAdminEmail } from '@/config/admin';
+import { resolveSupabaseAdminUser } from '@/lib/admin-access';
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -29,28 +29,12 @@ export function AdminGuard({ children }: AdminGuardProps) {
           return;
         }
 
-        // Method 1: Check if email is admin (uses isAdminEmail which allows all in dev mode)
-        if (user.email && isAdminEmail(user.email)) {
+        const adminUser = await resolveSupabaseAdminUser(supabase, user);
+        if (!isMounted) return;
+
+        if (adminUser) {
           setAuthorized(true);
           return;
-        }
-
-        // Method 2: Check profile role (if column exists)
-        try {
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('role')
-            .eq('auth_id', user.id)
-            .single() as { data: { role?: string } | null };
-
-          if (!isMounted) return;
-
-          if (profile?.role === 'admin') {
-            setAuthorized(true);
-            return;
-          }
-        } catch {
-          // role column might not exist, that's ok
         }
 
         if (!isMounted) return;
@@ -71,7 +55,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
-          <div className="text-4xl mb-4 animate-spin">⚙️</div>
+          <div className="mx-auto mb-4 h-10 w-10 rounded-full border-4 border-slate-200 border-t-slate-600 animate-spin" />
           <p className="text-gray-600">Verifying admin access...</p>
         </div>
       </div>

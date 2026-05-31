@@ -11,7 +11,6 @@ interface QueueItem<T> {
 }
 
 class RateLimiter {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- queue stores heterogeneous generic types
   private queue: QueueItem<any>[] = [];
   private processing = false;
   private requestCounts = new Map<string, number[]>();

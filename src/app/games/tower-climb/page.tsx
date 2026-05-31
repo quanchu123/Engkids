@@ -607,19 +607,19 @@ export default function TowerClimbPage() {
         ctx.fillStyle = 'rgba(0,0,0,0.35)';
         rrect(ctx, 10, 10, 100, 30, 8); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'left';
-        ctx.fillText(`⭐ ${g.sc}`, 20, 29);
+        ctx.fillText(`SC ${g.sc}`, 20, 29);
 
         const hm = Math.floor(g.maxH / 10);
         ctx.fillStyle = 'rgba(0,0,0,0.35)';
         rrect(ctx, W - 90, 10, 80, 30, 8); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.textAlign = 'right';
-        ctx.fillText(`📏 ${hm}m`, W - 18, 29);
+        ctx.fillText(`HT ${hm}m`, W - 18, 29);
 
         if (g.combo > 1) {
           ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 15px system-ui'; ctx.textAlign = 'center';
           const pulse = 1 + Math.sin(Date.now() * 0.008) * 0.05;
           ctx.save(); ctx.translate(W / 2, 28); ctx.scale(pulse, pulse);
-          ctx.fillText(`🔥 x${g.combo}`, 0, 0);
+          ctx.fillText(`x${g.combo}`, 0, 0);
           ctx.restore();
         }
 
@@ -630,7 +630,7 @@ export default function TowerClimbPage() {
           ctx.fillStyle = 'rgba(255,255,255,0.12)';
           rrect(ctx, W / 2 - ww / 2 + 3, 50, ww - 6, 10, 5); ctx.fill();
           ctx.fillStyle = '#fff'; ctx.font = 'bold 13px system-ui'; ctx.textAlign = 'center';
-          ctx.fillText(`🔍 "${g.curW.vi}" = ?`, W / 2, 67);
+          ctx.fillText(`"${g.curW.vi}" = ?`, W / 2, 67);
         }
 
         // Touch zone hints
@@ -681,7 +681,7 @@ export default function TowerClimbPage() {
         {phase === 'menu' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 rounded-2xl backdrop-blur-sm">
             <div className="text-center mb-6">
-              <div className="text-6xl mb-3">🧗</div>
+              <div className="text-4xl mb-3 font-black text-violet-300">TC</div>
               <h1 className="text-3xl font-black text-white mb-1"
                 style={{ textShadow: '0 0 20px rgba(168,85,247,0.6), 0 2px 10px rgba(0,0,0,0.5)' }}>
                 TOWER CLIMB
@@ -689,16 +689,16 @@ export default function TowerClimbPage() {
               <p className="text-white/50 text-sm">Leo tháp học từ vựng Anh ngữ!</p>
             </div>
             <div className="bg-white/10 rounded-xl p-4 mb-5 text-white/70 text-xs space-y-1.5 border border-white/10 max-w-[280px]">
-              <p>🎮 <b className="text-white/90">← →</b> hoặc <b className="text-white/90">chạm trái/phải</b> để di chuyển</p>
-              <p>🦘 Nhân vật <b className="text-white/90">tự nhảy</b> khi chạm bệ</p>
-              <p>🔤 Nhảy vào bệ có <b className="text-white/90">từ đúng</b> để ghi điểm!</p>
-              <p>🌟 Bệ vàng = <b className="text-white/90">siêu nhảy!</b></p>
+              <p>Di chuyển: <b className="text-white/90">← →</b> hoặc <b className="text-white/90">chạm trái/phải</b></p>
+              <p>Nhân vật <b className="text-white/90">tự nhảy</b> khi chạm bậc</p>
+              <p>Nhảy vào bậc có <b className="text-white/90">từ đúng</b> để ghi điểm</p>
+              <p>Bậc vàng = <b className="text-white/90">siêu nhảy</b></p>
             </div>
-            {hi > 0 && <p className="text-yellow-400/80 text-xs font-bold mb-3">🏆 Kỷ lục: {hi}</p>}
+            {hi > 0 && <p className="text-yellow-400/80 text-xs font-bold mb-3">Kỷ lục: {hi}</p>}
             <button onClick={startGame}
               className="px-8 py-3 rounded-full font-black text-white text-lg transition-all hover:scale-105 active:scale-95"
               style={{ background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)', boxShadow: '0 4px 20px rgba(168,85,247,0.4)' }}>
-              ▶ BẮT ĐẦU
+              BẮT ĐẦU
             </button>
           </div>
         )}
@@ -706,7 +706,7 @@ export default function TowerClimbPage() {
         {/* GAME OVER */}
         {phase === 'over' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-2xl backdrop-blur-sm">
-            <div className="text-5xl mb-3">💀</div>
+            <div className="text-4xl mb-3 font-black text-red-400">LOSE</div>
             <h2 className="text-3xl font-black text-white mb-1"
               style={{ textShadow: '0 0 20px rgba(239,68,68,0.5)' }}>
               GAME OVER
@@ -716,17 +716,17 @@ export default function TowerClimbPage() {
               <p className="text-white/50 text-xs mb-1">Điểm số</p>
               <p className="text-3xl font-black text-white mb-2">{fScore}</p>
               <p className="text-white/40 text-xs">Độ cao: {gRef.current ? Math.floor(gRef.current.maxH / 10) : 0}m</p>
-              {fScore >= hi && fScore > 0 && <p className="text-yellow-400 text-xs font-bold mt-2">🏆 KỶ LỤC MỚI!</p>}
+              {fScore >= hi && fScore > 0 && <p className="text-yellow-400 text-xs font-bold mt-2">KY LUC MOI!</p>}
             </div>
             <div className="flex gap-3">
               <button onClick={startGame}
                 className="px-6 py-2.5 rounded-full font-bold text-white transition-all hover:scale-105 active:scale-95"
                 style={{ background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)', boxShadow: '0 4px 15px rgba(168,85,247,0.3)' }}>
-                🔄 Chơi lại
+                Chơi lại
               </button>
               <Link href="/games"
                 className="px-6 py-2.5 rounded-full font-bold text-white/70 bg-white/10 border border-white/20 hover:bg-white/15 transition-all">
-                🏠 Hub
+                Hub
               </Link>
             </div>
           </div>

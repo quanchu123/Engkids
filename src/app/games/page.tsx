@@ -9,86 +9,86 @@ const GAMES = [
     id: 'rpg-world',
     title: 'RPG World',
     desc: 'Khám phá thế giới bằng tiếng Anh!',
-    icon: '🗺️',
+    icon: 'RW',
     grad: 'from-emerald-400 via-teal-400 to-cyan-400',
     shadow: 'rgba(16,185,129,0.35)',
     border: '#10b981',
     badge: 'HOT',
     badgeColor: '#f97316',
     href: '/games/rpg-world',
-    stars: '★★★★★',
+    stars: '5/5',
   },
   {
     id: 'word-burst',
     title: 'Word Burst',
     desc: 'Nổ quả cầu năng lượng đúng!',
-    icon: '💥',
+    icon: 'WB',
     grad: 'from-violet-500 via-purple-500 to-fuchsia-500',
     shadow: 'rgba(168,85,247,0.35)',
     border: '#a855f7',
     badge: 'NEW',
     badgeColor: '#06b6d4',
     href: '/games/word-burst',
-    stars: '★★★★☆',
+    stars: '4/5',
   },
   {
     id: 'word-puzzle',
     title: 'Word Puzzle',
     desc: 'Đoán từ qua gợi ý thú vị!',
-    icon: '🧩',
+    icon: 'WP',
     grad: 'from-blue-500 via-indigo-500 to-blue-600',
     shadow: 'rgba(99,102,241,0.35)',
     border: '#6366f1',
     badge: 'NEW',
     badgeColor: '#06b6d4',
     href: '/games/word-puzzle',
-    stars: '★★★★☆',
+    stars: '4/5',
   },
   {
     id: 'memory-match',
     title: 'Memory Match',
     desc: 'Ghép cặp Anh-Việt siêu vui!',
-    icon: '🃏',
+    icon: 'MM',
     grad: 'from-pink-500 via-rose-500 to-pink-600',
     shadow: 'rgba(236,72,153,0.35)',
     border: '#ec4899',
     badge: 'NEW',
     badgeColor: '#06b6d4',
     href: '/games/memory-match',
-    stars: '★★★★☆',
+    stars: '4/5',
   },
   {
     id: 'tower-word',
     title: 'Tower Word',
     desc: 'Xếp tháp khối chữ siêu đỉnh!',
-    icon: '🏗️',
+    icon: 'TW',
     grad: 'from-cyan-400 via-sky-500 to-blue-500',
     shadow: 'rgba(6,182,212,0.35)',
     border: '#06b6d4',
     badge: 'NEW',
     badgeColor: '#06b6d4',
     href: '/games/tower-word',
-    stars: '★★★★☆',
+    stars: '4/5',
   },
   {
     id: 'tower-climb',
     title: 'Tower Climb',
     desc: 'Leo tháp, học từ vựng Anh ngữ!',
-    icon: '🧗',
+    icon: 'TC',
     grad: 'from-orange-400 via-amber-500 to-red-500',
     shadow: 'rgba(249,115,22,0.35)',
     border: '#f97316',
     badge: 'HOT',
     badgeColor: '#f97316',
     href: '/games/tower-climb',
-    stars: '★★★★★',
+    stars: '5/5',
   },
 ];
 
 const EXPLORE = [
-  { href: '/stories', icon: '🦄', label: 'Truyện tranh', sub: 'Học qua truyện', bg: '#f3e8ff', border: '#c084fc' },
-  { href: '/videos', icon: '🎬', label: 'Video học', sub: 'Video sinh động', bg: '#dbeafe', border: '#60a5fa' },
-  { href: '/progress', icon: '⭐', label: 'Thành tích', sub: 'Xem điểm số', bg: '#fef9c3', border: '#facc15' },
+  { href: '/stories', icon: 'ST', label: 'Truyện tranh', sub: 'Học qua truyện', bg: '#f3e8ff', border: '#c084fc' },
+  { href: '/videos', icon: 'VD', label: 'Video học', sub: 'Video sinh động', bg: '#dbeafe', border: '#60a5fa' },
+  { href: '/progress', icon: 'SC', label: 'Thành tích', sub: 'Xem điểm số', bg: '#fef9c3', border: '#facc15' },
 ];
 
 export default function GamesPage() {
@@ -224,68 +224,54 @@ export default function GamesPage() {
           <section className="max-w-7xl mx-auto">
             {filteredGames.length === 0 ? (
               <div className="text-center py-12">
-                <div className="text-5xl mb-3">🔍</div>
                 <p className="text-gray-600 font-semibold">Không tìm thấy game nào!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                 {filteredGames.map((g) => (
-                <Link key={g.id} href={g.href} className="game-card block rounded-3xl overflow-hidden"
+                <Link key={g.id} href={g.href} className="game-card block rounded-2xl overflow-hidden"
                   style={{
                     background: 'white',
-                    boxShadow: `0 8px 32px ${g.shadow}, 0 2px 8px rgba(0,0,0,0.08)`,
-                    border: `3px solid ${g.border}44`,
+                    boxShadow: `0 4px 16px ${g.shadow}, 0 2px 4px rgba(0,0,0,0.06)`,
+                    border: `2px solid ${g.border}44`,
                   }}>
 
                   {/* Icon Zone */}
-                  <div className={`relative flex items-center justify-center h-32 bg-gradient-to-br ${g.grad}`}
-                    style={{ borderRadius: '20px 20px 0 0' }}>
-                    {/* Shine */}
+                  <div className={`relative flex items-center justify-center h-20 bg-gradient-to-br ${g.grad}`}
+                    style={{ borderRadius: '16px 16px 0 0' }}>
                     <div className="absolute inset-0 opacity-30" style={{
                       background: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.7) 0%, transparent 55%)',
-                      borderRadius: '20px 20px 0 0',
+                      borderRadius: '16px 16px 0 0',
                     }} />
-                    {/* SVG star deco */}
-                    <svg className="float-star absolute top-2 right-3" width="20" height="20" viewBox="0 0 24 24">
-                      <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="rgba(255,255,255,0.85)"/>
-                    </svg>
-                    <span className="relative z-10 text-6xl drop-shadow-md" style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))' }}>
+                    <span className="relative z-10 text-3xl drop-shadow-md" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
                       {g.icon}
                     </span>
-                    {/* Badge */}
                     {g.badge && (
-                      <div className={`${g.badge === 'HOT' ? 'badge-hot' : ''} absolute top-2.5 left-3 z-10 text-white text-[11px] font-black px-2.5 py-1 rounded-full`}
-                        style={{ background: g.badgeColor, boxShadow: `0 2px 10px ${g.badgeColor}88` }}>
-                        {g.badge === 'HOT' ? '🔥 HOT' : '✨ NEW'}
+                      <div className="absolute top-1.5 left-2 z-10 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                        style={{ background: g.badgeColor }}>
+                        {g.badge}
                       </div>
                     )}
                   </div>
 
                   {/* Info */}
-                  <div className="p-4 pb-3">
-                    <h3 className="font-black text-base mb-1" style={{ color: '#1e1b4b', letterSpacing: '-0.01em' }}>
+                  <div className="p-2.5 pb-2">
+                    <h3 className="font-black text-xs mb-0.5 truncate" style={{ color: '#1e1b4b' }}>
                       {g.title}
                     </h3>
-                    <p className="text-xs font-semibold mb-3" style={{ color: '#6b7280', lineHeight: '1.4' }}>
+                    <p className="text-[10px] font-semibold line-clamp-1" style={{ color: '#6b7280' }}>
                       {g.desc}
                     </p>
-                    {/* Star rating as colored dots */}
-                    <div className="flex gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="w-3 h-3 rounded-full" style={{ background: i < (g.stars.split('★').length - 1) ? '#fbbf24' : '#e5e7eb' }} />
-                      ))}
-                    </div>
                   </div>
 
                   {/* Play button */}
-                  <div className="px-4 pb-4">
-                    <div className="play-btn w-full text-center text-sm font-black py-2.5 rounded-2xl text-white"
+                  <div className="px-2.5 pb-2.5">
+                    <div className="play-btn w-full text-center text-[10px] font-black py-1.5 rounded-xl text-white"
                       style={{
                         background: `linear-gradient(135deg, ${g.border}, ${g.border}cc)`,
-                        boxShadow: `0 4px 14px ${g.shadow}`,
-                        letterSpacing: '0.01em',
+                        boxShadow: `0 2px 8px ${g.shadow}`,
                       }}>
-                      ▶ CHƠI NGAY!
+                      CHƠI
                     </div>
                   </div>
                 </Link>
@@ -299,7 +285,7 @@ export default function GamesPage() {
             <div className="text-center mb-4">
               <span className="text-sm font-black uppercase tracking-widest px-4 py-1.5 rounded-full"
                 style={{ background: 'white', color: '#7c3aed', border: '2px solid #c084fc' }}>
-                🌈 Khám phá thêm nào!
+                Khám phá thêm nào
               </span>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -329,10 +315,10 @@ export default function GamesPage() {
                 boxShadow: '0 8px 32px rgba(251,191,36,0.4)',
               }}>
               <p className="text-2xl font-black text-white mb-1" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-                🏆 Học giỏi tiếng Anh mỗi ngày!
+                Học giỏi tiếng Anh mỗi ngày
               </p>
               <p className="text-white/90 font-bold text-sm">
-                Chơi game = Học tiếng Anh = Vui mỗi ngày! 🚀✨
+                Chơi game, học tiếng Anh và vui mỗi ngày.
               </p>
             </div>
           </section>

@@ -17,13 +17,16 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Admin credentials are read from environment variables so they are NOT hardcoded.
+// Set these in .env.local (see .env.example). Sensible defaults are provided for
+// local development / testing.
+const adminEmail = process.env.ADMIN_EMAIL || 'admin@comiclingua.com';
+const adminPassword = process.env.ADMIN_PASSWORD || 'nhom4exe201';
+const adminName = process.env.ADMIN_NAME || 'Super Admin';
+
 async function createAdmin() {
   console.log('\n🔐 CREATING ADMIN USER\n');
   console.log('='.repeat(60));
-  
-  const adminEmail = 'admin@comiclingua.com';
-  const adminPassword = 'chinh123';
-  const adminName = 'Super Admin';
 
   try {
     // Step 1: Check if user already exists
@@ -168,13 +171,16 @@ async function createAdmin() {
 
     // Step 6: Verify admin access
     console.log('\n👨‍💼 Step 6: Verifying admin access...');
-    const adminEmails = ['admin@comiclingua.com', 'chinh@example.com'];
+    const adminEmails = (process.env.ADMIN_EMAILS || adminEmail)
+      .split(',')
+      .map((e) => e.trim())
+      .filter(Boolean);
     
     if (adminEmails.includes(adminEmail)) {
       console.log('✅ Email is in ADMIN_EMAILS list → Will redirect to /admin');
     } else {
       console.log('⚠️  Email NOT in ADMIN_EMAILS list → Will redirect to /progress');
-      console.log('   Add your email to src/components/AdminGuard.tsx');
+      console.log('   Add your email to ADMIN_EMAILS in .env.local');
     }
 
     // Final summary
@@ -182,7 +188,7 @@ async function createAdmin() {
     console.log('\n🎉 ADMIN SETUP COMPLETE!\n');
     console.log('📧 Email:    ' + adminEmail);
     console.log('🔑 Password: ' + adminPassword);
-    console.log('\n🚀 Login at: http://localhost:3001/login\n');
+    console.log('\n🚀 Login at: http://localhost:3000/login\n');
     console.log('After login, you will be redirected to: /admin\n');
 
   } catch (error) {

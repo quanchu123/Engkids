@@ -1,36 +1,35 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useState, memo } from 'react';
 import Link from 'next/link';
 import { Video } from '@/types';
 import { ROUTES } from '@/config/constants';
 
-// Topic colors for cute badges
-const TOPIC_COLORS: Record<string, { bg: string; text: string; emoji: string }> = {
-  'Animals': { bg: 'bg-amber-100', text: 'text-amber-700', emoji: '🐾' },
-  'Food': { bg: 'bg-red-100', text: 'text-red-700', emoji: '🍕' },
-  'Nature': { bg: 'bg-green-100', text: 'text-green-700', emoji: '🌿' },
-  'Family': { bg: 'bg-pink-100', text: 'text-pink-700', emoji: '👨‍👩‍👧' },
-  'School': { bg: 'bg-blue-100', text: 'text-blue-700', emoji: '📚' },
-  'Adventure': { bg: 'bg-purple-100', text: 'text-purple-700', emoji: '🚀' },
-  'Friendship': { bg: 'bg-rose-100', text: 'text-rose-700', emoji: '💕' },
-  'Science': { bg: 'bg-cyan-100', text: 'text-cyan-700', emoji: '🔬' },
-  'Daily Life': { bg: 'bg-orange-100', text: 'text-orange-700', emoji: '☀️' },
-  'History': { bg: 'bg-yellow-100', text: 'text-yellow-700', emoji: '🏛️' },
+const TOPIC_COLORS: Record<string, { bg: string; text: string }> = {
+  Animals: { bg: 'bg-amber-100', text: 'text-amber-700' },
+  Food: { bg: 'bg-red-100', text: 'text-red-700' },
+  Nature: { bg: 'bg-green-100', text: 'text-green-700' },
+  Family: { bg: 'bg-pink-100', text: 'text-pink-700' },
+  School: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  Adventure: { bg: 'bg-purple-100', text: 'text-purple-700' },
+  Friendship: { bg: 'bg-rose-100', text: 'text-rose-700' },
+  Science: { bg: 'bg-cyan-100', text: 'text-cyan-700' },
+  'Daily Life': { bg: 'bg-orange-100', text: 'text-orange-700' },
+  History: { bg: 'bg-yellow-100', text: 'text-yellow-700' },
 };
 
-// Level config with emojis
 const LEVEL_CONFIG = {
-  'Beginner': { emoji: '🌱', bg: 'bg-green-400', label: 'Mới bắt đầu' },
-  'Elementary': { emoji: '🌿', bg: 'bg-blue-400', label: 'Cơ bản' },
-  'Intermediate': { emoji: '🌳', bg: 'bg-purple-400', label: 'Trung cấp' },
+  Beginner: { bg: 'bg-green-400', label: 'Mới bắt đầu' },
+  Elementary: { bg: 'bg-blue-400', label: 'Cơ bản' },
+  Intermediate: { bg: 'bg-purple-400', label: 'Trung cấp' },
 };
 
-// Age group config
-const AGE_CONFIG: Record<string, { emoji: string; label: string }> = {
-  '3-5': { emoji: '👶', label: '3-5 tuổi' },
-  '6-8': { emoji: '🧒', label: '6-8 tuổi' },
-  '9-12': { emoji: '👦', label: '9-12 tuổi' },
+const AGE_CONFIG: Record<string, { label: string }> = {
+  '3-5': { label: '3-5 tuổi' },
+  '6-8': { label: '6-8 tuổi' },
+  '9-12': { label: '9-12 tuổi' },
 };
 
 interface VideoCardProps {
@@ -38,7 +37,7 @@ interface VideoCardProps {
   size?: 'small' | 'medium' | 'large';
   showTopics?: boolean;
   showAge?: boolean;
-  progress?: number; // 0-100 for watched progress
+  progress?: number;
 }
 
 export default memo(function VideoCard({
@@ -51,10 +50,9 @@ export default memo(function VideoCard({
   const [isHovered, setIsHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const levelConfig = LEVEL_CONFIG[video.level] || LEVEL_CONFIG['Beginner'];
+  const levelConfig = LEVEL_CONFIG[video.level] || LEVEL_CONFIG.Beginner;
   const ageConfig = video.ageGroup ? AGE_CONFIG[video.ageGroup] : null;
 
-  // Size variants
   const sizeClasses = {
     small: 'w-40',
     medium: 'w-56',
@@ -67,10 +65,9 @@ export default memo(function VideoCard({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Default thumbnail with gradient
   const defaultThumbnail = (
-    <div className="absolute inset-0 bg-gradient-to-br from-kid-pink via-kid-purple to-kid-blue flex items-center justify-center">
-      <span className="text-6xl animate-bounce-slow">🎬</span>
+    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-kid-pink via-kid-purple to-kid-blue">
+      <span className="text-lg font-black tracking-[0.3em] text-white/90">VIDEO</span>
     </div>
   );
 
@@ -81,22 +78,20 @@ export default memo(function VideoCard({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Thumbnail Container */}
         <div
           className={`
-            relative aspect-video rounded-2xl overflow-hidden
-            shadow-kid transition-all duration-300
-            ${isHovered ? 'shadow-kid-hover scale-105 -translate-y-1' : ''}
+            playful-card toy-panel relative aspect-video overflow-hidden rounded-2xl
+            transition-all duration-300
+            ${isHovered ? 'scale-105 -translate-y-1' : ''}
             ring-4 ring-transparent
             ${isHovered ? 'ring-kid-yellow' : ''}
           `}
         >
-          {/* Thumbnail Image - Using img tag to avoid Next.js proxy 403 errors with Bunny CDN */}
           {video.thumbnailUrl && !imageError ? (
             <img
               src={video.thumbnailUrl}
               alt={video.title}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover"
               onError={() => setImageError(true)}
               loading="lazy"
             />
@@ -104,10 +99,8 @@ export default memo(function VideoCard({
             defaultThumbnail
           )}
 
-          {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-          {/* Play Button on Hover */}
           <div
             className={`
               absolute inset-0 flex items-center justify-center
@@ -115,75 +108,56 @@ export default memo(function VideoCard({
               ${isHovered ? 'opacity-100' : 'opacity-0'}
             `}
           >
-            <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg transform transition-transform group-hover:scale-110">
-              <span className="text-2xl ml-1">▶️</span>
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform group-hover:scale-110">
+              <span className="text-sm font-black uppercase">Play</span>
             </div>
           </div>
 
-          {/* Duration Badge */}
-          <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/70 rounded-lg text-white text-xs font-medium">
+          <div className="absolute bottom-2 right-2 rounded-lg bg-black/70 px-2 py-0.5 text-xs font-medium text-white">
             {formatDuration(video.duration)}
           </div>
 
-          {/* Level Badge */}
-          <div className={`absolute top-2 left-2 px-2 py-1 ${levelConfig.bg} rounded-full text-white text-xs font-bold flex items-center gap-1 shadow-md`}>
-            <span>{levelConfig.emoji}</span>
+          <div className={`absolute left-2 top-2 rounded-full px-2 py-1 text-xs font-bold text-white shadow-md ${levelConfig.bg}`}>
             <span className="hidden sm:inline">{levelConfig.label}</span>
           </div>
 
-          {/* Age Badge */}
           {showAge && ageConfig && (
-            <div className="absolute top-2 right-2 px-2 py-1 bg-white/90 rounded-full text-xs font-bold flex items-center gap-1 shadow-md">
-              <span>{ageConfig.emoji}</span>
-              <span className="hidden sm:inline text-gray-700">{ageConfig.label}</span>
+            <div className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-xs font-bold text-gray-700 shadow-md">
+              <span className="hidden sm:inline">{ageConfig.label}</span>
             </div>
           )}
 
-          {/* Progress Bar */}
           {progress !== undefined && progress > 0 && (
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
-              <div
-                className="h-full bg-gradient-to-r from-kid-green to-kid-yellow transition-all"
-                style={{ width: `${progress}%` }}
-              />
+              <div className="h-full bg-gradient-to-r from-kid-green to-kid-yellow transition-all" style={{ width: `${progress}%` }} />
             </div>
           )}
 
-          {/* NEW Badge for recent videos */}
           {isNewVideo(video.createdAt) && (
-            <div className="absolute -top-1 -right-1 px-2 py-0.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full text-white text-xs font-bold shadow-lg animate-pulse">
-              NEW ✨
+            <div className="absolute -right-1 -top-1 rounded-full bg-gradient-to-r from-red-500 to-pink-500 px-2 py-0.5 text-xs font-bold text-white shadow-lg animate-pulse">
+              NEW
             </div>
           )}
         </div>
 
-        {/* Video Info */}
         <div className="mt-3 px-1">
-          {/* Title */}
-          <h3 className="font-bold text-gray-800 line-clamp-2 group-hover:text-kid-purple transition-colors">
+          <h3 className="line-clamp-2 font-bold text-gray-800 transition-colors group-hover:text-kid-purple">
             {video.title}
           </h3>
-          <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">
-            {video.titleVi}
-          </p>
+          <p className="mt-0.5 line-clamp-1 text-sm text-gray-500">{video.titleVi}</p>
 
-          {/* Topic Tags */}
           {showTopics && video.topics && video.topics.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
+            <div className="mt-2 flex flex-wrap gap-1">
               {video.topics.slice(0, 2).map((topic) => {
-                const topicConfig = TOPIC_COLORS[topic] || { bg: 'bg-gray-100', text: 'text-gray-600', emoji: '📌' };
+                const topicConfig = TOPIC_COLORS[topic] || { bg: 'bg-gray-100', text: 'text-gray-600' };
                 return (
-                  <span
-                    key={topic}
-                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${topicConfig.bg} ${topicConfig.text} flex items-center gap-1`}
-                  >
-                    <span>{topicConfig.emoji}</span>
+                  <span key={topic} className={`kid-chip px-2 py-0.5 text-xs font-medium ${topicConfig.bg} ${topicConfig.text}`}>
                     {topic}
                   </span>
                 );
               })}
               {video.topics.length > 2 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                <span className="kid-chip bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
                   +{video.topics.length - 2}
                 </span>
               )}
@@ -195,7 +169,6 @@ export default memo(function VideoCard({
   );
 });
 
-// Helper function to check if video is new (within 7 days)
 function isNewVideo(createdAt: string): boolean {
   const created = new Date(createdAt);
   const now = new Date();

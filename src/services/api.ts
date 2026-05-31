@@ -3,10 +3,8 @@
 // No hardcoded URLs or auth tokens
 // ============================================
 
-import { config } from '@/config/env';
 import { ROUTES, ERRORS, TIMING } from '@/config/constants';
-import { getAccessToken } from '@/lib/admin-auth-client';
-import { supabase } from '@/services/supabase';
+import { getAnyAccessToken } from '@/lib/admin-auth-client';
 
 // ============================================
 // TYPES
@@ -18,9 +16,14 @@ export interface ApiResponse<T> {
   status: number;
 }
 
+export type ApiResult<T> =
+  | { ok: true; data: T; status: number }
+  | { ok: false; error: ApiError; status: number };
+
 export interface ApiRequestOptions extends RequestInit {
   timeout?: number;
   auth?: boolean;
+  json?: boolean;
 }
 
 // ============================================
@@ -42,35 +45,24 @@ export class ApiError extends Error {
 // BASE REQUEST FUNCTION
 // ============================================
 
-async function request<T>(
+async function requestWithResponse<T>(
   url: string,
   options: ApiRequestOptions = {}
-): Promise<T> {
-  const { timeout = TIMING.API_TIMEOUT, auth = false, headers: customHeaders, ...fetchOptions } = options;
+): Promise<{ data: T; status: number }> {
+  const { timeout = TIMING.API_TIMEOUT, auth = false, json = true, headers: customHeaders, ...fetchOptions } = options;
 
   // Build headers
   const headers: HeadersInit = {
-    'Content-Type': 'application/json',
     ...customHeaders,
   };
 
+  if (json && !(fetchOptions.body instanceof FormData)) {
+    (headers as Record<string, string>)['Content-Type'] = 'application/json';
+  }
+
   // Add auth header if needed
   if (auth) {
-    // Try JWT token first (admin login)
-    let token = getAccessToken();
-    
-    // If no JWT, try Supabase session
-    if (!token && typeof window !== 'undefined') {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          token = session.access_token;
-        }
-      } catch (e) {
-        console.error('Failed to get Supabase session:', e);
-      }
-    }
-    
+    const token = await getAnyAccessToken();
     if (token) {
       (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
     }
@@ -105,7 +97,7 @@ async function request<T>(
       );
     }
 
-    return data as T;
+    return { data: data as T, status: response.status };
   } catch (error) {
     clearTimeout(timeoutId);
 
@@ -121,6 +113,29 @@ async function request<T>(
     }
 
     throw new ApiError('Unknown error occurred', 0);
+  }
+}
+
+async function request<T>(
+  url: string,
+  options: ApiRequestOptions = {}
+): Promise<T> {
+  const response = await requestWithResponse<T>(url, options);
+  return response.data;
+}
+
+async function safeRequest<T>(
+  url: string,
+  options: ApiRequestOptions = {},
+): Promise<ApiResult<T>> {
+  try {
+    const response = await requestWithResponse<T>(url, options);
+    return { ok: true, data: response.data, status: response.status };
+  } catch (error) {
+    const apiError = error instanceof ApiError
+      ? error
+      : new ApiError(error instanceof Error ? error.message : 'Unknown error occurred', 0);
+    return { ok: false, error: apiError, status: apiError.status };
   }
 }
 
@@ -145,11 +160,16 @@ export const api = {
     return request<T>(url, { ...options, method: 'GET' });
   },
 
+  safeGet<T>(url: string, options?: ApiRequestOptions): Promise<ApiResult<T>> {
+    return safeRequest<T>(url, { ...options, method: 'GET' });
+  },
+
   post<T>(url: string, body?: object, options?: ApiRequestOptions): Promise<T> {
+    const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
     return request<T>(url, {
       ...options,
       method: 'POST',
-      body: body ? JSON.stringify(body) : undefined,
+      body: isFormData ? (body as BodyInit) : body ? JSON.stringify(body) : undefined,
     });
   },
 
@@ -172,13 +192,18 @@ export const api = {
   delete<T>(url: string, options?: ApiRequestOptions): Promise<T> {
     return request<T>(url, { ...options, method: 'DELETE' });
   },
+
+  safeRequest<T>(url: string, options?: ApiRequestOptions): Promise<ApiResult<T>> {
+    return safeRequest<T>(url, options);
+  },
 };
 
 // ============================================
 // VIDEO API - Typed methods
 // ============================================
 
-import { Video } from '@/types';
+import { Story, Video } from '@/types';
+import type { VideoQuizQuestion } from '@/types';
 
 interface CreateVideoRequest {
   title: string;
@@ -217,8 +242,8 @@ interface SubtitleItem {
   id: string;
   startTime: number;
   endTime: number;
-  text: string;
-  translation?: string;
+  textEn: string;
+  textVi?: string;
 }
 
 export const videoApi = {
@@ -242,6 +267,32 @@ export const videoApi = {
     return api.post(ROUTES.API.VIDEOS, data, { auth: true });
   },
 
+  // Upload a video file to the local server (offline mode, no Bunny.net).
+  // Uses multipart/form-data; do NOT set json so the browser sets the boundary.
+  async createLocal(formData: FormData): Promise<{ video: Video }> {
+    return api.post(ROUTES.API.VIDEO_LOCAL, formData, {
+      auth: true,
+      json: false,
+    });
+  },
+
+  // Get a signed URL to upload a video directly to Supabase Storage.
+  async getStorageUploadUrl(extension: string): Promise<{ path: string; token: string; bucket: string }> {
+    return api.post(ROUTES.API.VIDEO_STORAGE_SIGN, { extension }, { auth: true });
+  },
+
+  // Finalize a Supabase Storage upload (record metadata after direct upload).
+  async createStorage(data: {
+    storagePath: string;
+    title: string;
+    titleVi: string;
+    description?: string;
+    level?: string;
+    category?: 'video' | 'music';
+  }): Promise<{ video: Video }> {
+    return api.post(ROUTES.API.VIDEO_STORAGE, data, { auth: true });
+  },
+
   // Update video (requires auth)
   async update(id: string, data: UpdateVideoRequest): Promise<{ video: Video }> {
     return api.patch(ROUTES.API.VIDEO(id), data, { auth: true });
@@ -260,6 +311,42 @@ export const videoApi = {
   // Save subtitles (requires auth)
   async saveSubtitles(id: string, subtitles: SubtitleItem[]): Promise<{ success: boolean }> {
     return api.put(ROUTES.API.VIDEO_SUBTITLES(id), { subtitles }, { auth: true });
+  },
+
+  // Get quiz questions
+  async getQuiz(id: string): Promise<{ quiz: VideoQuizQuestion[] }> {
+    return api.get(ROUTES.API.VIDEO_QUIZ(id));
+  },
+
+  // Save quiz questions (requires auth)
+  async saveQuiz(id: string, quiz: VideoQuizQuestion[]): Promise<{ success: boolean; count: number }> {
+    return api.put(ROUTES.API.VIDEO_QUIZ(id), { quiz }, { auth: true });
+  },
+};
+
+interface StoryPayload {
+  story: Story;
+}
+
+export const storyApi = {
+  async list(): Promise<{ stories: Story[] }> {
+    return api.get(ROUTES.API.STORIES);
+  },
+
+  async get(id: string): Promise<{ story: Story | null }> {
+    return api.get(ROUTES.API.STORY(id));
+  },
+
+  async create(story: Story): Promise<{ story: Story }> {
+    return api.post(ROUTES.API.STORIES, { story } satisfies StoryPayload, { auth: true });
+  },
+
+  async update(id: string, story: Story): Promise<{ story: Story }> {
+    return api.put(ROUTES.API.STORY(id), { story } satisfies StoryPayload, { auth: true });
+  },
+
+  async delete(id: string): Promise<{ success: boolean }> {
+    return api.delete(ROUTES.API.STORY(id), { auth: true });
   },
 };
 

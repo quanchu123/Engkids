@@ -73,7 +73,7 @@ export default function MarioWordPage() {
           const cy = this.scale.height / 2;
           const bar = this.add.rectangle(cx - 148, cy, 4, 20, 0xfacc15);
           this.add.rectangle(cx, cy, 304, 24).setStrokeStyle(2, 0xfacc15);
-          this.add.text(cx, cy - 40, '🍄 Loading Mario Word Jump...', {
+          this.add.text(cx, cy - 40, 'Loading Mario Word Jump...', {
             fontFamily: 'Arial', fontSize: '16px', color: '#facc15',
           }).setOrigin(0.5);
           this.load.on('progress', (p: number) => {
@@ -381,10 +381,10 @@ export default function MarioWordPage() {
 
           {/* Score + Hearts */}
           <div className="flex items-center gap-3">
-            <span className="text-yellow-400 font-black text-sm drop-shadow">⭐ {score}</span>
+            <span className="text-yellow-400 font-black text-sm drop-shadow">Score {score}</span>
             <div className="flex gap-0.5">
               {hearts.map((_, i) => (
-                <span key={i} className={`text-base ${i < hp ? 'text-red-500' : 'text-gray-600'}`}>❤️</span>
+                <span key={i} className={`text-base ${i < hp ? 'text-red-500' : 'text-gray-600'}`}>{i < hp ? '❤️' : '🖤'}</span>
               ))}
             </div>
           </div>
@@ -395,7 +395,7 @@ export default function MarioWordPage() {
       {feedback && !gameOver && (
         <div className={`absolute top-14 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-full font-black text-white text-lg pointer-events-none shadow-xl
           ${feedback === 'correct' ? 'bg-green-500' : 'bg-red-500'}`}>
-          {feedback === 'correct' ? '✅ +50 điểm!' : '❌ Sai rồi!'}
+          {feedback === 'correct' ? '+50 điểm!' : 'Sai rồi!'}
         </div>
       )}
 
@@ -421,12 +421,12 @@ export default function MarioWordPage() {
       {/* ── Win Overlay ── */}
       {gameOver === 'win' && (
         <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-5 z-30">
-          <div className="text-7xl animate-bounce">🏆</div>
+          <div className="text-5xl font-black text-yellow-400 animate-bounce">WIN</div>
           <h2 className="text-5xl font-black text-yellow-400 drop-shadow-lg">CHIẾN THẮNG!</h2>
           <p className="text-white text-xl">Điểm: <span className="text-yellow-400 font-black text-2xl">{score}</span></p>
           <button onClick={handleReplay}
             className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-black text-xl px-10 py-4 rounded-full hover:scale-105 transition-transform shadow-xl">
-            🔄 Chơi lại
+            Chơi lại
           </button>
           <Link href="/games" className="text-white/60 hover:text-white text-sm underline mt-1">
             Quay về danh sách game
@@ -437,12 +437,12 @@ export default function MarioWordPage() {
       {/* ── Lose Overlay ── */}
       {gameOver === 'lose' && (
         <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-5 z-30">
-          <div className="text-7xl">💀</div>
+          <div className="text-5xl font-black text-red-400">LOSE</div>
           <h2 className="text-5xl font-black text-red-400 drop-shadow-lg">GAME OVER</h2>
           <p className="text-white text-xl">Điểm: <span className="text-orange-400 font-black text-2xl">{score}</span></p>
           <button onClick={handleReplay}
             className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-xl px-10 py-4 rounded-full hover:scale-105 transition-transform shadow-xl">
-            🔄 Thử lại
+            Thử lại
           </button>
           <Link href="/games" className="text-white/60 hover:text-white text-sm underline mt-1">
             Quay về danh sách game

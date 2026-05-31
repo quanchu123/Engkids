@@ -6,10 +6,9 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 
-// Navigation items
 const NAV_ITEMS = [
   { name: 'Trang chủ', path: '/', icon: '🏠', active: 'bg-sky-100 text-sky-600 shadow-md shadow-sky-200/60', mobileActive: 'bg-gradient-to-r from-sky-400 to-cyan-400 text-white shadow-md' },
-  { name: 'Thư viện', path: '/stories', icon: '🦄', active: 'bg-fuchsia-100 text-fuchsia-600 shadow-md shadow-fuchsia-200/60', mobileActive: 'bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white shadow-md' },
+  { name: 'Truyện tranh', path: '/stories', icon: '🦄', active: 'bg-fuchsia-100 text-fuchsia-600 shadow-md shadow-fuchsia-200/60', mobileActive: 'bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white shadow-md' },
   { name: 'Videos', path: '/videos', icon: '🎬', active: 'bg-orange-100 text-orange-600 shadow-md shadow-orange-200/60', mobileActive: 'bg-gradient-to-r from-orange-400 to-red-400 text-white shadow-md' },
   { name: 'Music', path: '/music', icon: '🎵', active: 'bg-rose-100 text-rose-600 shadow-md shadow-rose-200/60', mobileActive: 'bg-gradient-to-r from-rose-400 to-pink-500 text-white shadow-md' },
   { name: 'Games', path: '/games', icon: '🎮', active: 'bg-green-100 text-green-600 shadow-md shadow-green-200/60', mobileActive: 'bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-md' },
@@ -18,27 +17,24 @@ const NAV_ITEMS = [
 
 function Header() {
   const pathname = usePathname();
-  const totalStars = useAppStore(state => state.progress.totalStars);
+  const totalStars = useAppStore((state) => state.progress.totalStars);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = useCallback((path: string) => {
     if (path === '/') return pathname === '/';
     return pathname === path || pathname.startsWith(path + '/');
   }, [pathname]);
-  const toggleMobileMenu = useCallback(() => setMobileMenuOpen(prev => !prev), []);
+
+  const toggleMobileMenu = useCallback(() => setMobileMenuOpen((prev) => !prev), []);
 
   return (
-    <header className="bg-gradient-to-r from-violet-600 via-pink-500 to-orange-400 shadow-xl sticky top-0 z-50"
+    <header
+      className="sticky top-0 z-50 bg-gradient-to-r from-violet-600 via-pink-500 to-orange-400 shadow-xl"
       style={{ boxShadow: '0 4px 0 rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.1)' }}
     >
-      <div className="max-w-7xl mx-auto px-3 py-2 flex items-center justify-between">
-        {/* Logo */}
-        <Link 
-          href="/" 
-          className="flex items-center gap-2 group"
-          aria-label="Engkids - Trang chủ"
-        >
-          <div className="relative w-10 h-10 sm:w-12 sm:h-12 transition-transform group-hover:scale-110 flex-shrink-0">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2">
+        <Link href="/" className="group flex items-center gap-2" aria-label="Engkids - Trang chủ">
+          <div className="relative h-10 w-10 flex-shrink-0 transition-transform group-hover:scale-110 sm:h-12 sm:w-12">
             <Image
               src="/engkids-logo.png"
               alt="Engkids mascot"
@@ -46,24 +42,23 @@ function Header() {
               className="object-contain drop-shadow-lg"
               sizes="48px"
               priority
-              onError={(e) => {
-                const parent = (e.target as HTMLImageElement).parentElement;
+              onError={(event) => {
+                const parent = (event.target as HTMLImageElement).parentElement;
                 if (parent) {
-                  (e.target as HTMLImageElement).style.display = 'none';
+                  (event.target as HTMLImageElement).style.display = 'none';
                   parent.innerHTML = '<span style="font-size:2.5rem;line-height:1">🐨</span>';
                 }
               }}
             />
           </div>
           <div className="hidden sm:block">
-            <span className="text-xl font-black text-white drop-shadow-lg tracking-wide">Engkids</span>
-            <div className="text-[10px] text-white/80 font-bold -mt-0.5">Học Tiếng Anh Vui! 🌟</div>
+            <span className="text-xl font-black tracking-wide text-white drop-shadow-lg">Engkids</span>
+            <div className="mt-[-2px] text-[10px] font-bold text-white/80">Học Tiếng Anh Vui! 🌟</div>
           </div>
         </Link>
 
-        {/* Mobile menu button */}
         <button
-          className="md:hidden p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+          className="rounded-lg bg-white/20 p-1.5 transition-colors hover:bg-white/30 md:hidden"
           onClick={toggleMobileMenu}
           aria-label={mobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
           aria-expanded={mobileMenuOpen}
@@ -71,16 +66,15 @@ function Header() {
           <span className="text-lg text-white">{mobileMenuOpen ? '✕' : '☰'}</span>
         </button>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1 bg-black/10 backdrop-blur-sm p-1.5 rounded-2xl" role="navigation" aria-label="Menu chính">
+        <nav className="hidden items-center gap-1 rounded-2xl bg-black/10 p-1.5 backdrop-blur-sm md:flex" role="navigation" aria-label="Menu chính">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.path}
               href={item.path}
-              className={`relative px-3 py-1.5 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-1.5 group ${
+              className={`group relative flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold transition-all duration-200 ${
                 isActive(item.path)
                   ? `${item.active} scale-105`
-                  : 'text-white/90 hover:bg-white/25 hover:text-white hover:scale-110'
+                  : 'text-white/90 hover:scale-110 hover:bg-white/25 hover:text-white'
               }`}
               aria-current={isActive(item.path) ? 'page' : undefined}
             >
@@ -90,11 +84,10 @@ function Header() {
           ))}
         </nav>
 
-        {/* Right Actions */}
-        <div className="hidden md:flex items-center gap-2">
+        <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/progress"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white text-purple-600 text-sm font-black hover:shadow-lg hover:scale-105 transition-all"
+            className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-black text-purple-600 transition-all hover:scale-105 hover:shadow-lg"
             aria-label={`Bạn có ${totalStars} sao`}
           >
             <span aria-hidden="true">🌟</span>
@@ -103,7 +96,7 @@ function Header() {
 
           <Link
             href="/admin/login"
-            className="px-4 py-1.5 rounded-full bg-white text-purple-600 text-sm font-bold hover:shadow-lg hover:scale-105 transition-all"
+            className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-purple-600 transition-all hover:scale-105 hover:shadow-lg"
             aria-label="Admin Login"
           >
             Login
@@ -111,10 +104,9 @@ function Header() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <nav 
-          className="md:hidden bg-white/95 backdrop-blur-sm border-t border-white/30 px-4 py-3 space-y-1.5"
+        <nav
+          className="space-y-1.5 border-t border-white/30 bg-white/95 px-4 py-3 backdrop-blur-sm md:hidden"
           role="navigation"
           aria-label="Menu mobile"
         >
@@ -123,10 +115,8 @@ function Header() {
               key={item.path}
               href={item.path}
               onClick={() => setMobileMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold transition-all group ${
-                isActive(item.path)
-                  ? item.mobileActive
-                  : 'text-gray-700 hover:bg-gray-100'
+              className={`group flex items-center gap-3 rounded-xl px-4 py-2.5 font-bold transition-all ${
+                isActive(item.path) ? item.mobileActive : 'text-gray-700 hover:bg-gray-100'
               }`}
               aria-current={isActive(item.path) ? 'page' : undefined}
             >
@@ -134,11 +124,11 @@ function Header() {
               <span>{item.name}</span>
             </Link>
           ))}
-          <div className="pt-2 border-t border-purple-100 flex items-center justify-between">
+          <div className="flex items-center justify-between border-t border-purple-100 pt-2">
             <Link
               href="/progress"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-white text-purple-600 font-black shadow-sm border-2 border-purple-200"
+              className="flex items-center gap-2 rounded-full border-2 border-purple-200 bg-white px-4 py-2 font-black text-purple-600 shadow-sm"
             >
               <span>🌟</span>
               <span>{totalStars} sao</span>
@@ -146,7 +136,7 @@ function Header() {
             <Link
               href="/admin/login"
               onClick={() => setMobileMenuOpen(false)}
-              className="px-4 py-2 rounded-full bg-purple-600 text-white font-bold"
+              className="rounded-full bg-purple-600 px-4 py-2 font-bold text-white"
               aria-label="Admin Login"
             >
               Login

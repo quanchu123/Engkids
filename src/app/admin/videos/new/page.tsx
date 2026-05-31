@@ -32,7 +32,7 @@ export default function NewVideoPage() {
             <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
               step === 'upload' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
             }`}>
-              {step === 'upload' ? '1' : '✓'}
+              {step === 'upload' ? '1' : 'Done'}
             </div>
             <div className="ml-2 mr-8 text-sm font-medium text-gray-700">Upload Video</div>
           </div>

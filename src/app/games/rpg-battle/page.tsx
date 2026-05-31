@@ -59,7 +59,7 @@ const WAVES = [
   { name: 'Mole Lớn',   sprite: 'mole',   anim: 'mole-walk-anim',   maxHp: 60  },
   { name: 'Treant Non', sprite: 'treant', anim: 'treant-walk-anim', maxHp: 70  },
   { name: 'Treant Già', sprite: 'treant', anim: 'treant-walk-anim', maxHp: 80  },
-  { name: '⚡ TRÙM',    sprite: 'treant', anim: 'treant-walk-anim', maxHp: 100 },
+  { name: 'TRUM',    sprite: 'treant', anim: 'treant-walk-anim', maxHp: 100 },
 ];
 
 // ─────────────────────────────────────────────
@@ -90,7 +90,7 @@ export default function RpgBattlePage() {
           this.cameras.main.setBackgroundColor('#0f0c2a');
 
           // Loading UI
-          this.add.text(240, 140, '⚔️ Word Battle RPG', {
+          this.add.text(240, 140, 'Word Battle RPG', {
             fontSize: '18px', color: '#c084fc', fontStyle: 'bold',
             stroke: '#000000', strokeThickness: 3,
           }).setOrigin(0.5);
@@ -194,7 +194,7 @@ export default function RpgBattlePage() {
           self.enemyHpBar = this.add.graphics();
 
           // ── Labels ─────────────────────
-          this.add.text(8, 8, '🧙 Anh Hùng', {
+          this.add.text(8, 8, 'Anh Hung', {
             fontSize: '11px', color: '#a78bfa', fontStyle: 'bold',
           });
           self.heroHpText = this.add.text(8, 35, 'HP: 100/100', {
@@ -353,12 +353,12 @@ export default function RpgBattlePage() {
           const correct = idx === self._curQ.correct;
           if (correct) {
             self.buttons[idx].setFillStyle(0x16a34a);
-            this._flash('✨ Đúng rồi!', '#4ade80');
+            this._flash('Đúng rồi!', '#4ade80');
             this._heroAttacks();
           } else {
             self.buttons[idx].setFillStyle(0xdc2626);
             self.buttons[self._curQ.correct].setFillStyle(0x16a34a);
-            this._flash('❌ Sai rồi!', '#f87171');
+            this._flash('Sai rồi!', '#f87171');
             this._enemyAttacks();
           }
         }
@@ -491,7 +491,7 @@ export default function RpgBattlePage() {
                 if (nextWave >= WAVES.length) {
                   this._gameOver(true);
                 } else {
-                  this._flash(`🔥 Wave ${nextWave + 1}!`, '#fbbf24');
+                  this._flash(`Wave ${nextWave + 1}!`, '#fbbf24');
                   this.time.delayedCall(900, () => {
                     this._loadWave(nextWave);
                     // Restart enemy bob after loading new wave
@@ -522,8 +522,8 @@ export default function RpgBattlePage() {
 
             // Title
             const titleCfg = win
-              ? { text: '🏆 CHIẾN THẮNG!', color: '#fbbf24' }
-              : { text: '💀 THẤT BẠI!',    color: '#f87171' };
+              ? { text: 'CHIẾN THẮNG!', color: '#fbbf24' }
+              : { text: 'THẤT BẠI!',    color: '#f87171' };
 
             this.add.text(W / 2, H / 2 - 55, titleCfg.text, {
               fontSize: '26px', color: titleCfg.color, fontStyle: 'bold',
@@ -539,7 +539,7 @@ export default function RpgBattlePage() {
             }).setOrigin(0.5).setDepth(31);
 
             if (win) {
-              this.add.text(W / 2, H / 2 + 8, `❤️ HP còn lại: ${self.heroHp}/${self.heroMaxHp}`, {
+              this.add.text(W / 2, H / 2 + 8, `HP còn lại: ${self.heroHp}/${self.heroMaxHp}`, {
                 fontSize: '11px', color: '#4ade80',
               }).setOrigin(0.5).setDepth(31);
             }
@@ -548,7 +548,7 @@ export default function RpgBattlePage() {
             const reBtn = this.add.rectangle(W / 2, H / 2 + 40, 180, 36, 0x7c3aed)
               .setInteractive({ useHandCursor: true }).setDepth(31);
 
-            this.add.text(W / 2, H / 2 + 40, '🔄 Chơi Lại', {
+            this.add.text(W / 2, H / 2 + 40, 'Chơi Lại', {
               fontSize: '14px', color: '#ffffff', fontStyle: 'bold',
             }).setOrigin(0.5).setDepth(32);
 
@@ -599,11 +599,11 @@ export default function RpgBattlePage() {
 
         {/* Title */}
         <div className="text-center my-4">
-          <h1 className="text-2xl font-black text-white drop-shadow-lg">⚔️ Word Battle RPG</h1>
+          <h1 className="text-2xl font-black text-white drop-shadow-lg">Word Battle RPG</h1>
           <p className="text-purple-300 text-sm mt-1">Đánh bại quái vật bằng từ vựng tiếng Anh!</p>
         </div>
 
-        <p className="text-purple-500/70 text-xs mb-3">Đúng → tấn công 💥  |  Sai → bị đánh 💢</p>
+        <p className="text-purple-500/70 text-xs mb-3">Dung -&gt; tan cong | Sai -&gt; bi danh</p>
 
         {/* Game canvas container */}
         <div

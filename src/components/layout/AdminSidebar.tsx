@@ -21,17 +21,16 @@ export default function AdminSidebar() {
   };
 
   const menuItems = [
-    { name: 'Dashboard', path: '/admin', icon: '�' },
-    { name: 'Stories', path: '/admin/new', icon: '🐝' },
-    { name: 'Videos', path: '/admin/videos', icon: '🎬' },
-    { name: 'Trang chủ', path: '/', icon: '🏠' },
+    { name: 'Dashboard', path: '/admin' },
+    { name: 'Stories', path: '/admin/new' },
+    { name: 'Videos', path: '/admin/videos' },
+    { name: 'Trang chủ', path: '/' },
   ];
 
   return (
     <aside className="w-56 bg-gradient-to-b from-purple-900 via-purple-800 to-indigo-900 h-screen fixed left-0 top-0 overflow-y-auto text-white flex flex-col shadow-2xl z-50">
       <div className="p-4 border-b border-purple-700/50">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🎨</span>
           <div>
             <h1 className="font-bold text-base">Admin Panel</h1>
             <p className="text-[10px] text-purple-300">Manager</p>
@@ -50,7 +49,6 @@ export default function AdminSidebar() {
                 : 'text-purple-200 hover:bg-purple-700/50 hover:text-white hover:scale-102'
             }`}
           >
-            <span className="text-lg">{item.icon}</span>
             <span>{item.name}</span>
           </Link>
         ))}
@@ -59,7 +57,6 @@ export default function AdminSidebar() {
           onClick={handleLogout}
           className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all text-purple-200 hover:bg-red-900/30 hover:text-red-300 font-medium text-sm mt-4"
         >
-          <span className="text-lg">👋</span>
           <span>Logout</span>
         </button>
       </nav>

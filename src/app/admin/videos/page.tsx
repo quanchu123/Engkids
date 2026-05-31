@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
+
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -59,7 +61,7 @@ export default function AdminVideosPage() {
       const data = await res.json();
       if (data.status) {
         setVideos(prev => prev.map(v => v.id === videoId ? { ...v, status: data.status } : v));
-        if (data.status === 'ready') toast.success('✅ Video is now ready!');
+        if (data.status === 'ready') toast.success('Video is now ready.');
       }
     } catch {
       toast.error('Failed to sync status');
@@ -70,7 +72,7 @@ export default function AdminVideosPage() {
     try {
       await videoApi.update(videoId, { status: 'ready' });
       setVideos(prev => prev.map(v => v.id === videoId ? { ...v, status: 'ready' } : v));
-      toast.success('✅ Marked as ready');
+      toast.success('Marked as ready.');
     } catch {
       toast.error('Failed to update status');
     }
@@ -153,7 +155,6 @@ export default function AdminVideosPage() {
         {/* Empty State */}
         {!loading && videos.length === 0 && (
           <div className="text-center py-16 bg-white rounded-lg shadow-md">
-            <div className="text-6xl mb-4">📹</div>
             <h3 className="text-xl font-semibold text-gray-700 mb-2">No videos yet</h3>
             <p className="text-gray-500 mb-6">Upload your first video to get started</p>
             <Link
@@ -188,13 +189,13 @@ export default function AdminVideosPage() {
                   ) : null}
                   {/* Fallback always visible behind image */}
                   <div className="absolute inset-0 w-full h-full flex items-center justify-center text-white text-6xl -z-10">
-                    📹
+                    VIDEO
                   </div>
                   
                   {/* Status Badge */}
                   <div className="absolute top-3 right-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(video.status)}`}>
-                      {video.status === 'processing' || video.status === 'uploading' ? '⏳ ' : ''}{video.status}
+                      {video.status}
                     </span>
                   </div>
 
@@ -253,14 +254,14 @@ export default function AdminVideosPage() {
                         className="flex-1 px-3 py-1.5 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600 transition-colors font-medium"
                         title="Check Bunny CDN for status update"
                       >
-                        ⚡ Sync Status
+                        Sync Status
                       </button>
                       <button
                         onClick={() => handleForceReady(video.id)}
                         className="flex-1 px-3 py-1.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition-colors font-medium"
                         title="Force mark as ready (use if video is on Bunny but stuck)"
                       >
-                        ✅ Force Ready
+                        Force Ready
                       </button>
                     </div>
                   )}

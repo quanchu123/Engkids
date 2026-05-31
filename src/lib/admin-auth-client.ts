@@ -1,29 +1,55 @@
 /**
  * Admin Authentication Client
- * Client-side auth helpers using JWT tokens
+ * Supports both legacy admin JWT and the current Supabase admin session flow.
  */
 
 'use client';
 
-import { AdminUser } from '@/services/admin-auth';
+import { getSupabaseClient } from '@/lib/auth-client';
+import type { ResolvedAdminUser } from '@/lib/admin-access';
+import type { AdminUser } from '@/services/admin-auth';
 
 const ACCESS_TOKEN_KEY = 'admin_access_token';
 
+type CurrentAdmin = AdminUser | ResolvedAdminUser;
+
 interface LoginResponse {
   success: boolean;
-  admin: AdminUser;
+  admin: CurrentAdmin;
   accessToken: string;
 }
 
-/**
- * Login admin with email/password
- */
+function getStoredAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+async function getSupabaseAccessToken(): Promise<string | null> {
+  try {
+    const supabase = getSupabaseClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token || null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchAdminMe(token?: string): Promise<Response> {
+  const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+  return fetch('/api/admin/me', {
+    headers,
+    credentials: 'include',
+  });
+}
+
 export async function adminLogin(email: string, password: string): Promise<LoginResponse> {
   const response = await fetch('/api/admin/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
-    credentials: 'include', // Important for cookies
+    credentials: 'include',
   });
 
   const data = await response.json();
@@ -32,15 +58,10 @@ export async function adminLogin(email: string, password: string): Promise<Login
     throw new Error(data.error || 'Login failed');
   }
 
-  // Store access token in memory/sessionStorage (NOT localStorage for security)
   sessionStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
-
   return data;
 }
 
-/**
- * Logout admin
- */
 export async function adminLogout(): Promise<void> {
   try {
     await fetch('/api/admin/logout', {
@@ -53,16 +74,13 @@ export async function adminLogout(): Promise<void> {
 }
 
 /**
- * Get current access token
+ * Legacy accessor kept for compatibility with existing imports.
+ * This returns only the stored JWT, not the Supabase session token.
  */
 export function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+  return getStoredAccessToken();
 }
 
-/**
- * Refresh access token using refresh token cookie
- */
 export async function refreshToken(): Promise<string | null> {
   try {
     const response = await fetch('/api/admin/refresh', {
@@ -84,141 +102,100 @@ export async function refreshToken(): Promise<string | null> {
   }
 }
 
-/**
- * Check if admin is authenticated
- */
-export async function isAdminAuthenticated(): Promise<boolean> {
-  // First check if we have an access token
-  let token = getAccessToken();
-  
-  if (!token) {
-    // Try to refresh
-    token = await refreshToken();
+export async function getAnyAccessToken(): Promise<string | null> {
+  const legacyToken = getStoredAccessToken();
+  if (legacyToken) {
+    return legacyToken;
   }
 
-  if (!token) {
-    return false;
+  const supabaseToken = await getSupabaseAccessToken();
+  if (supabaseToken) {
+    return supabaseToken;
   }
 
-  // Verify token is valid by calling /api/admin/me
-  try {
-    const response = await fetch('/api/admin/me', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (response.status === 401) {
-      // Token expired, try refresh
-      token = await refreshToken();
-      if (!token) return false;
-
-      // Retry with new token
-      const retryResponse = await fetch('/api/admin/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      return retryResponse.ok;
-    }
-
-    return response.ok;
-  } catch {
-    return false;
-  }
+  return refreshToken();
 }
 
-/**
- * Get current admin user
- */
-export async function getCurrentAdmin(): Promise<AdminUser | null> {
-  let token = getAccessToken();
+export async function isAdminAuthenticated(): Promise<boolean> {
+  let token = await getAnyAccessToken();
+  let response = await fetchAdminMe(token || undefined);
 
-  if (!token) {
-    token = await refreshToken();
+  if (response.ok) {
+    return true;
   }
 
-  if (!token) return null;
+  if (response.status === 401) {
+    const refreshedToken = await refreshToken();
+    if (!refreshedToken || refreshedToken === token) {
+      return false;
+    }
 
-  try {
-    const response = await fetch('/api/admin/me', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    token = refreshedToken;
+    response = await fetchAdminMe(token);
+    return response.ok;
+  }
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Try refresh
-        token = await refreshToken();
-        if (!token) return null;
+  return false;
+}
 
-        const retryResponse = await fetch('/api/admin/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+export async function getCurrentAdmin(): Promise<CurrentAdmin | null> {
+  let token = await getAnyAccessToken();
+  let response = await fetchAdminMe(token || undefined);
 
-        if (!retryResponse.ok) return null;
-        const data = await retryResponse.json();
-        return data.admin;
-      }
+  if (!response.ok && response.status === 401) {
+    const refreshedToken = await refreshToken();
+    if (!refreshedToken || refreshedToken === token) {
       return null;
     }
 
-    const data = await response.json();
-    return data.admin;
-  } catch {
+    token = refreshedToken;
+    response = await fetchAdminMe(token);
+  }
+
+  if (!response.ok) {
     return null;
   }
+
+  const data = await response.json();
+  return data.admin;
 }
 
-/**
- * Get auth header for API requests
- */
 export function getAuthHeader(): { Authorization: string } | Record<string, never> {
-  const token = getAccessToken();
+  const token = getStoredAccessToken();
   if (!token) return {};
   return { Authorization: `Bearer ${token}` };
 }
 
-/**
- * Make authenticated API request
- */
 export async function authFetch(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<Response> {
-  let token = getAccessToken();
+  let token = await getAnyAccessToken();
 
   if (!token) {
-    token = await refreshToken();
-    if (!token) {
-      throw new Error('Not authenticated');
-    }
+    throw new Error('Not authenticated');
   }
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     ...options,
     headers: {
       ...options.headers,
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
-  // If 401, try refresh and retry once
   if (response.status === 401) {
-    token = await refreshToken();
-    if (!token) {
+    const refreshedToken = await refreshToken();
+    if (!refreshedToken || refreshedToken === token) {
       throw new Error('Session expired');
     }
 
-    return fetch(url, {
+    token = refreshedToken;
+    response = await fetch(url, {
       ...options,
       headers: {
         ...options.headers,
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
     });
   }

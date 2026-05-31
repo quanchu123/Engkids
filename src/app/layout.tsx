@@ -1,13 +1,17 @@
 import type { Metadata, Viewport } from 'next';
 import { Nunito } from 'next/font/google';
 import './globals.css';
+import RouterLoading from '@/components/common/RouterLoading';
+import UserProgressSync from '@/components/common/UserProgressSync';
 
-// Optimize font loading with next/font
-const nunito = Nunito({
+// Self-hosted via next/font (downloaded at build time, no runtime CDN call).
+// Includes the Vietnamese subset so diacritics render identically on every device.
+const appFont = Nunito({
   subsets: ['latin', 'vietnamese'],
-  weight: ['400', '600', '700', '800'],
+  weight: ['400', '600', '700', '800', '900'],
   display: 'swap',
-  variable: '--font-nunito',
+  variable: '--font-app',
+  fallback: ['Trebuchet MS', 'Segoe UI', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
 });
 
 export const viewport: Viewport = {
@@ -18,6 +22,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  ),
   title: {
     default: 'Engkids - Học Tiếng Anh Vui!',
     template: '%s | Engkids',
@@ -49,8 +57,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi" className={nunito.variable}>
-      <body className={`${nunito.className} antialiased`}>
+    <html lang="vi" className={appFont.variable}>
+      <body className="antialiased">
+        <RouterLoading />
+        <UserProgressSync />
         {children}
       </body>
     </html>

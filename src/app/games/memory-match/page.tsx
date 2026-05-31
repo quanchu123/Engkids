@@ -5,18 +5,18 @@ import Link from 'next/link';
 
 /* ─── Vocabulary pairs ──────────────────────────────────────────────────── */
 const PAIRS = [
-  { en: 'Sun',     vi: 'Mặt trời', emoji: '☀️' },
-  { en: 'Moon',    vi: 'Mặt trăng', emoji: '🌙' },
-  { en: 'Star',    vi: 'Ngôi sao',  emoji: '⭐' },
-  { en: 'Cloud',   vi: 'Đám mây',   emoji: '☁️' },
-  { en: 'Rain',    vi: 'Mưa',       emoji: '🌧️' },
-  { en: 'Fire',    vi: 'Lửa',       emoji: '🔥' },
-  { en: 'Ocean',   vi: 'Đại dương', emoji: '🌊' },
-  { en: 'Tree',    vi: 'Cái cây',   emoji: '🌳' },
-  { en: 'Flower',  vi: 'Bông hoa',  emoji: '🌸' },
-  { en: 'Bird',    vi: 'Con chim',   emoji: '🐦' },
-  { en: 'Fish',    vi: 'Con cá',     emoji: '🐟' },
-  { en: 'Heart',   vi: 'Trái tim',   emoji: '❤️' },
+  { en: 'Sun',     vi: 'Mặt trời', emoji: 'SU' },
+  { en: 'Moon',    vi: 'Mặt trăng', emoji: 'MO' },
+  { en: 'Star',    vi: 'Ngôi sao',  emoji: 'ST' },
+  { en: 'Cloud',   vi: 'Đám mây',   emoji: 'CL' },
+  { en: 'Rain',    vi: 'Mưa',       emoji: 'RA' },
+  { en: 'Fire',    vi: 'Lửa',       emoji: 'FI' },
+  { en: 'Ocean',   vi: 'Đại dương', emoji: 'OC' },
+  { en: 'Tree',    vi: 'Cái cây',   emoji: 'TR' },
+  { en: 'Flower',  vi: 'Bông hoa',  emoji: 'FL' },
+  { en: 'Bird',    vi: 'Con chim',   emoji: 'BI' },
+  { en: 'Fish',    vi: 'Con cá',     emoji: 'FS' },
+  { en: 'Heart',   vi: 'Trái tim',   emoji: 'HT' },
 ];
 
 const GRID_SIZE = 8; // 4x4 grid = 8 pairs (16 cards)
@@ -196,7 +196,7 @@ export default function MemoryMatchPage() {
           </h1>
           <div className="flex items-center gap-2 text-sm">
             {combo >= 2 && (
-              <span className="text-amber-400 font-black animate-bounce text-xs">🔥x{combo}</span>
+              <span className="text-amber-400 font-black animate-bounce text-xs">x{combo}</span>
             )}
             <span className="text-white/40 font-bold">{moves} lượt</span>
           </div>
@@ -205,7 +205,7 @@ export default function MemoryMatchPage() {
         {/* ── Score bar ── */}
         <div className="flex items-center justify-center gap-6 py-2 z-10">
           <span className="text-yellow-400 font-black text-sm" style={{ textShadow: '0 0 12px rgba(250,204,21,0.5)' }}>
-            ⭐ {score}
+            Score {score}
           </span>
           <div className="flex gap-0.5">
             {Array(GRID_SIZE).fill(0).map((_, i) => (
@@ -238,7 +238,7 @@ export default function MemoryMatchPage() {
                         border: '2px solid rgba(139,92,246,0.25)',
                         boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 0 20px rgba(139,92,246,0.08)',
                       }}>
-                      <div className="text-3xl opacity-30">❓</div>
+                      <div className="text-3xl opacity-30">?</div>
                       {/* Decorative shine */}
                       <div className="absolute top-3 left-3 w-8 h-8 rounded-full opacity-10"
                         style={{ background: 'radial-gradient(circle, white, transparent)' }} />
@@ -267,7 +267,7 @@ export default function MemoryMatchPage() {
                         {card.type === 'en' ? 'ENG' : 'VIE'}
                       </div>
                       {isMatched && (
-                        <div className="absolute top-2 right-2 text-lg">✅</div>
+                        <div className="absolute top-2 right-2 text-xs font-black">OK</div>
                       )}
                     </div>
                   </div>
@@ -312,7 +312,7 @@ export default function MemoryMatchPage() {
                 <div key={i} className="text-5xl" style={{
                   animation: `star-pop 0.5s ${i * 0.2 + 0.3}s ease-out both`,
                   filter: i < stars ? 'drop-shadow(0 0 12px gold)' : 'grayscale(1) opacity(0.25)',
-                }}>⭐</div>
+                }}>S{i + 1}</div>
               ))}
             </div>
             <h2 className="font-black text-4xl sm:text-5xl" style={{
@@ -326,7 +326,7 @@ export default function MemoryMatchPage() {
             <button onClick={() => window.location.reload()}
               className="px-10 py-4 rounded-full font-black text-lg text-black transition-transform hover:scale-105 active:scale-95"
               style={{ background: 'linear-gradient(135deg, #fde68a, #f59e0b)', boxShadow: '0 0 30px rgba(245,158,11,0.5)' }}>
-              🔄 Chơi lại
+              Chơi lại
             </button>
             <Link href="/games" className="text-white/30 hover:text-white text-sm underline">
               Quay về lobby

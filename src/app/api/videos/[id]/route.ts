@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteBunnyVideo } from '@/services/bunny';
+import { deleteBunnyVideo, getBunnyVideoStatus } from '@/services/bunny';
 import { getVideoById, updateVideo, deleteVideo } from '@/services/video';
 import { checkAdminAuth } from '@/lib/api-auth';
 import { apiCache, CACHE_KEYS } from '@/lib/cache';
@@ -11,10 +11,34 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const video = await getVideoById(id);
+    let video = await getVideoById(id);
     
     if (!video) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
+    }
+
+    // Self-heal stale DB status when a user opens the video directly.
+    if (video.status !== 'ready') {
+      try {
+        const bunnyStatus = await getBunnyVideoStatus(video.bunnyVideoId);
+        if (bunnyStatus.status !== video.status) {
+          const updates: Parameters<typeof updateVideo>[1] = {
+            status: bunnyStatus.status,
+          };
+
+          if (bunnyStatus.status === 'ready') {
+            updates.duration = Math.floor(bunnyStatus.duration || 0);
+            updates.thumbnailUrl = bunnyStatus.thumbnailUrl;
+            updates.hlsUrl = bunnyStatus.hlsUrl;
+            updates.dashUrl = bunnyStatus.dashUrl;
+          }
+
+          await updateVideo(id, updates);
+          video = await getVideoById(id);
+        }
+      } catch (statusError) {
+        console.warn(`Failed to refresh video status for ${id}:`, statusError);
+      }
     }
     
     return NextResponse.json({ video });
@@ -88,12 +112,40 @@ export async function DELETE(
     if (!video) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
-    
-    // Delete from Bunny.net Stream first
-    try {
-      await deleteBunnyVideo(video.bunnyVideoId);
-    } catch (bunnyError) {
-      console.warn('Failed to delete from Bunny.net (may already be deleted):', bunnyError);
+
+    const isLocal = video.sourceType === 'local' || video.bunnyVideoId?.startsWith('local-');
+    const isStorage = video.bunnyVideoId?.startsWith('storage-');
+
+    if (isStorage) {
+      // Remove the object from Supabase Storage (hls_url holds the storage path)
+      const storagePath = video.hlsUrl;
+      if (storagePath && !storagePath.startsWith('http') && !storagePath.startsWith('/')) {
+        try {
+          const { deleteVideoFromStorage } = await import('@/services/storage');
+          await deleteVideoFromStorage(storagePath);
+        } catch (storageError) {
+          console.warn('Failed to delete storage object (may already be gone):', storageError);
+        }
+      }
+    } else if (isLocal) {
+      // Remove the locally-stored file from public/uploads
+      const localPath = video.externalUrl || video.hlsUrl;
+      if (localPath && localPath.startsWith('/uploads/')) {
+        try {
+          const { unlink } = await import('fs/promises');
+          const path = await import('path');
+          await unlink(path.join(process.cwd(), 'public', localPath));
+        } catch (fileError) {
+          console.warn('Failed to delete local video file (may already be gone):', fileError);
+        }
+      }
+    } else {
+      // Delete from Bunny.net Stream first
+      try {
+        await deleteBunnyVideo(video.bunnyVideoId);
+      } catch (bunnyError) {
+        console.warn('Failed to delete from Bunny.net (may already be deleted):', bunnyError);
+      }
     }
     
     // Delete from Supabase

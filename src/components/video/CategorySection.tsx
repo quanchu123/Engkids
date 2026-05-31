@@ -6,7 +6,6 @@ import VideoCard from './VideoCard';
 
 interface CategorySectionProps {
   title: string;
-  emoji: string;
   videos: Video[];
   color?: 'pink' | 'purple' | 'blue' | 'green' | 'orange' | 'yellow';
   showViewAll?: boolean;
@@ -24,7 +23,6 @@ const COLOR_CLASSES = {
 
 export default function CategorySection({
   title,
-  emoji,
   videos,
   color = 'purple',
   showViewAll = true,
@@ -34,7 +32,6 @@ export default function CategorySection({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
-  // Check scroll position
   const checkScroll = () => {
     if (scrollRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
@@ -51,36 +48,28 @@ export default function CategorySection({
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
-      const scrollAmount = direction === 'left' ? -300 : 300;
-      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      scrollRef.current.scrollBy({ left: direction === 'left' ? -300 : 300, behavior: 'smooth' });
     }
   };
 
   if (videos.length === 0) return null;
 
   return (
-    <section className="relative py-6">
-      {/* Section Header */}
-      <div className="flex items-center justify-between mb-4 px-4 md:px-0">
+    <section className="soft-panel relative rounded-[1.75rem] px-3 py-6 md:px-4">
+      <div className="mb-4 flex items-center justify-between px-4 md:px-0">
         <div className="flex items-center gap-3">
-          <span className="text-3xl animate-bounce-slow">{emoji}</span>
-          <h2 className={`text-xl md:text-2xl font-bold bg-gradient-to-r ${COLOR_CLASSES[color]} bg-clip-text text-transparent`}>
+          <h2 className={`bg-gradient-to-r ${COLOR_CLASSES[color]} bg-clip-text text-xl font-bold text-transparent md:text-2xl`}>
             {title}
           </h2>
-          <span className="px-2 py-0.5 bg-gray-100 rounded-full text-sm text-gray-500 font-medium">
+          <span className="kid-chip px-2 py-0.5 text-sm font-medium text-gray-500">
             {videos.length} video
           </span>
         </div>
-        
+
         {showViewAll && onViewAll && (
           <button
             onClick={onViewAll}
-            className={`
-              px-4 py-2 rounded-xl font-semibold text-sm
-              bg-gradient-to-r ${COLOR_CLASSES[color]} text-white
-              hover:shadow-lg hover:scale-105 transition-all duration-200
-              flex items-center gap-2
-            `}
+            className={`flex items-center gap-2 rounded-2xl bg-gradient-to-r ${COLOR_CLASSES[color]} px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg`}
           >
             <span>Xem tất cả</span>
             <span>→</span>
@@ -88,87 +77,45 @@ export default function CategorySection({
         )}
       </div>
 
-      {/* Scrollable Container */}
-      <div className="relative group">
-        {/* Left Arrow */}
+      <div className="group relative">
         {canScrollLeft && (
           <button
             onClick={() => scroll('left')}
-            className="
-              absolute left-0 top-1/2 -translate-y-1/2 z-10
-              w-10 h-10 md:w-12 md:h-12 rounded-full
-              bg-white shadow-lg border-2 border-gray-100
-              flex items-center justify-center
-              opacity-0 group-hover:opacity-100 transition-opacity duration-200
-              hover:scale-110 hover:bg-gray-50
-              -translate-x-1/2
-            "
+            className="absolute left-0 top-1/2 z-10 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white shadow-lg opacity-0 transition-opacity duration-200 hover:scale-110 hover:bg-gray-50 group-hover:opacity-100 md:h-12 md:w-12"
           >
-            <span className="text-xl">◀️</span>
+            <span className="text-sm font-black uppercase">Prev</span>
           </button>
         )}
 
-        {/* Right Arrow */}
         {canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="
-              absolute right-0 top-1/2 -translate-y-1/2 z-10
-              w-10 h-10 md:w-12 md:h-12 rounded-full
-              bg-white shadow-lg border-2 border-gray-100
-              flex items-center justify-center
-              opacity-0 group-hover:opacity-100 transition-opacity duration-200
-              hover:scale-110 hover:bg-gray-50
-              translate-x-1/2
-            "
+            className="absolute right-0 top-1/2 z-10 flex h-11 w-11 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white shadow-lg opacity-0 transition-opacity duration-200 hover:scale-110 hover:bg-gray-50 group-hover:opacity-100 md:h-12 md:w-12"
           >
-            <span className="text-xl">▶️</span>
+            <span className="text-sm font-black uppercase">Next</span>
           </button>
         )}
 
-        {/* Video Cards Scroll Container */}
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="
-            flex gap-4 overflow-x-auto scrollbar-hide
-            px-4 md:px-0 pb-4
-            snap-x snap-mandatory
-            scroll-smooth
-          "
+          className="scrollbar-hide flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 scroll-smooth md:px-0"
           style={{ scrollPaddingLeft: '16px' }}
         >
-          {videos.map((video, index) => (
-            <div
-              key={video.id}
-              className="flex-none snap-start"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <VideoCard
-                video={video}
-                size="medium"
-                showTopics={true}
-                showAge={true}
-              />
+          {videos.map((video) => (
+            <div key={video.id} className="flex-none snap-start">
+              <VideoCard video={video} size="medium" showTopics showAge />
             </div>
           ))}
-          
-          {/* View More Card */}
+
           {showViewAll && videos.length >= 5 && onViewAll && (
             <button
               onClick={onViewAll}
-              className="
-                flex-none snap-start w-56 aspect-video
-                rounded-2xl border-2 border-dashed border-gray-300
-                flex flex-col items-center justify-center gap-2
-                hover:border-kid-purple hover:bg-kid-purple/5
-                transition-all duration-200 group
-              "
+              className="toy-panel group flex-none aspect-video w-56 rounded-2xl border-2 border-dashed border-gray-300 transition-all duration-200 hover:border-kid-purple hover:bg-kid-purple/5"
             >
-              <span className="text-4xl group-hover:scale-110 transition-transform">🎬</span>
-              <span className="font-semibold text-gray-500 group-hover:text-kid-purple">
-                Xem thêm video
-              </span>
+              <div className="flex h-full flex-col items-center justify-center gap-2">
+                <span className="font-semibold text-gray-500 group-hover:text-kid-purple">Xem thêm video</span>
+              </div>
             </button>
           )}
         </div>

@@ -84,12 +84,64 @@ export interface SavedWord {
   exampleSentence?: string;
 }
 
+export type GameType =
+  | 'match'
+  | 'fill_blank'
+  | 'memory_match'
+  | 'word_puzzle'
+  | 'word_burst'
+  | 'rpg_world'
+  | 'candy_crush'
+  | 'space_invaders'
+  | 'word_collector'
+  | 'mario_word'
+  | 'rpg_battle'
+  | 'tank_word'
+  | 'tower_climb'
+  | 'tower_word'
+  | 'multiple_choice'
+  | 'true_false'
+  | 'matching_pairs'
+  | 'sentence_scramble'
+  | 'fill_blanks'
+  | string;
+
 export interface GameScore {
-  gameType: 'match' | 'fill_blank';
+  gameType: GameType;
   storyId: string;
   score: number;
   totalQuestions: number;
   playedAt: string;
+}
+
+export type DailyQuestStepType = 'story' | 'media' | 'game' | 'saveWord';
+
+export interface DailyQuestStep {
+  type: DailyQuestStepType;
+  target: number;
+  completed: number;
+  done: boolean;
+}
+
+export interface DailyQuestState {
+  date: string;
+  steps: Record<DailyQuestStepType, DailyQuestStep>;
+  completed: boolean;
+  completedAt?: string;
+}
+
+export type BadgeId =
+  | 'streak_3'
+  | 'streak_7'
+  | 'story_1'
+  | 'story_5'
+  | 'vocab_10'
+  | 'vocab_50'
+  | 'game_master';
+
+export interface BadgeProgress {
+  id: BadgeId;
+  unlockedAt: string;
 }
 
 export interface UserProgress {
@@ -99,6 +151,35 @@ export interface UserProgress {
   totalStars: number;
   currentStreak: number;
   lastActiveDate: string;
+  dailyQuestState: DailyQuestState;
+  badges: BadgeProgress[];
+}
+
+export interface ProgressSnapshot {
+  progress: UserProgress;
+  settings: UserSettings;
+}
+
+export interface RewardGrant {
+  stars?: number;
+  badges?: BadgeId[];
+}
+
+export interface QuestProgressDelta {
+  step: DailyQuestStepType;
+  amount?: number;
+}
+
+export interface GameScorePayload {
+  gameType: GameType;
+  storyId: string;
+  score: number;
+  totalQuestions: number;
+  playedAt?: string;
+}
+
+export interface GameResult extends GameScorePayload {
+  rewards?: RewardGrant;
 }
 
 // Settings Types
@@ -130,6 +211,17 @@ export interface ClickableWord {
   endTime?: number;
 }
 
+// Multiple-choice quiz question shown beside the video player
+export interface VideoQuizQuestion {
+  id: string;
+  question: string;        // Question text (English)
+  questionVi?: string;     // Vietnamese translation (optional)
+  options: string[];       // Answer choices (2-4)
+  correctIndex: number;    // Index of the correct option
+  explanation?: string;    // Optional feedback shown after answering
+  timeCode?: number;       // Optional: seconds into the video this relates to
+}
+
 export interface SubtitleTrack {
   id: string;
   videoId: string;
@@ -138,15 +230,31 @@ export interface SubtitleTrack {
   updatedAt: string;
 }
 
+export interface ExternalVideoLink {
+  title: string;
+  url: string;
+  site: string;
+  thumbnailUrl?: string;
+}
+
+export type VideoSourceType = 'bunny' | 'youtube' | 'external' | 'local';
+
 export interface Video {
   id: string;
   title: string;
   titleVi: string;
   description?: string;
   thumbnailUrl?: string;
+  bannerUrl?: string;
   
   // Bunny.net Stream ID
   bunnyVideoId: string;
+
+  sourceType?: VideoSourceType;
+  sourceLabel?: string;
+  youtubeVideoId?: string;
+  externalUrl?: string;
+  externalLinks?: ExternalVideoLink[];
   
   // Stream URLs (populated after processing)
   hlsUrl?: string;
@@ -164,6 +272,9 @@ export interface Video {
   
   // Subtitles stored inline (for simplicity)
   subtitles: SubtitleCue[];
+
+  // Multiple-choice questions shown next to the player (kids answer while watching)
+  quiz?: VideoQuizQuestion[];
   
   createdAt: string;
   updatedAt: string;

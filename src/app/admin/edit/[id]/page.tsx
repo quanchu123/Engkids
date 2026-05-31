@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getAllStories, updateStory } from '@/data/stories';
+import { storyApi } from '@/services/api';
 import { useToast } from '@/hooks/useToast';
 import { useStoryForm } from '@/hooks/useStoryForm';
 import StoryForm from '@/components/admin/StoryForm';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface PageProps {
   params: { id: string };
@@ -21,11 +22,9 @@ export default function EditStoryPage({ params }: PageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
-  // Load existing story
   useEffect(() => {
     const loadStory = async () => {
-      const allStories = await getAllStories();
-      const story = allStories.find(s => s.id === id);
+      const { story } = await storyApi.get(id);
       if (!story) {
         setNotFound(true);
         setIsLoaded(true);
@@ -51,7 +50,7 @@ export default function EditStoryPage({ params }: PageProps) {
 
     try {
       const story = form.buildStory(id);
-      await updateStory(id, story);
+      await storyApi.update(id, story);
       toast.success('Cập nhật truyện thành công!');
       router.push('/admin');
     } catch (error) {
@@ -64,8 +63,8 @@ export default function EditStoryPage({ params }: PageProps) {
 
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin text-4xl">⚙️</div>
+      <div className="min-h-screen">
+        <LoadingSpinner message="Đang tải..." />
       </div>
     );
   }
@@ -74,10 +73,9 @@ export default function EditStoryPage({ params }: PageProps) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">🦄</div>
           <h1 className="text-2xl font-bold text-gray-700 mb-4">Không tìm thấy truyện</h1>
           <Link href="/admin" className="text-blue-500 hover:underline">
-            ← Quay lại Admin
+            Quay lại Admin
           </Link>
         </div>
       </div>
@@ -89,19 +87,20 @@ export default function EditStoryPage({ params }: PageProps) {
       <div className="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-200 sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <Link href="/admin" className="text-slate-500 hover:text-slate-700">
-            ← Quay lại
+            Quay lại
           </Link>
           <span className="text-slate-300">|</span>
           <h1 className="text-xl font-bold text-slate-800">
-            🦊 Sửa truyện
+            Sửa truyện
           </h1>
         </div>
         <button
           onClick={handleSave}
+          data-testid="save-story"
           disabled={form.isSaving}
           className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
         >
-          {form.isSaving ? '⏳ Đang lưu...' : '💾 Lưu truyện'}
+          {form.isSaving ? 'Đang lưu...' : 'Lưu truyện'}
         </button>
       </div>
 

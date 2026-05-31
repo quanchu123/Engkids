@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Story, Panel, Token } from '@/types';
@@ -231,7 +231,7 @@ export function useStoryForm(options?: UseStoryFormOptions) {
 
     const storyPanels: Panel[] = validPanels.map((p, index) => ({
       panel_id: index + 1,
-      image: p.image || '🦄',
+      image: p.image || '',
       sentence_en: p.sentence_en,
       sentence_vi: p.sentence_vi,
       tokens: parseTokens(p.sentence_en, validVocab),
@@ -304,6 +304,11 @@ export function useStoryForm(options?: UseStoryFormOptions) {
     setPanels(panelForms.length > 0 ? panelForms : [{ id: generateId(), image: '', sentence_en: '', sentence_vi: '' }]);
 
     const vocabMap = new Map<string, string>();
+    story.vocabulary.forEach((item) => {
+      if (item.word?.trim() && item.vi?.trim()) {
+        vocabMap.set(item.word.trim().toLowerCase(), item.vi.trim());
+      }
+    });
     story.panels.forEach(p => {
       p.tokens.forEach(t => {
         if (t.vi && t.norm) {
@@ -356,3 +361,4 @@ export function useStoryForm(options?: UseStoryFormOptions) {
     generateId,
   };
 }
+

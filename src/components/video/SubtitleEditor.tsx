@@ -88,15 +88,15 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
         id: s.id,
         startTime: s.startTime,
         endTime: s.endTime,
-        text: s.textEn,
-        translation: s.textVi,
+        textEn: s.textEn,
+        textVi: s.textVi,
       })));
 
-      setMessage('✓ Subtitles saved successfully!');
+      setMessage('Subtitles saved successfully!');
       onSave?.(subtitles);
     } catch (error) {
       console.error('Save error:', error);
-      setMessage('✗ Failed to save subtitles');
+      setMessage('Failed to save subtitles');
     } finally {
       setSaving(false);
     }
@@ -139,14 +139,14 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
             onClick={() => fileInputRef.current?.click()}
             className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
           >
-            📁 Import VTT/SRT
+            Import VTT/SRT
           </button>
           <button
             onClick={handleExport}
             disabled={subtitles.length === 0}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-300"
           >
-            💾 Export VTT
+            Export VTT
           </button>
           <button
             onClick={addSubtitle}
@@ -159,7 +159,7 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
             disabled={saving || subtitles.length === 0}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 font-semibold"
           >
-            {saving ? 'Saving...' : '💾 Save All'}
+            {saving ? 'Saving...' : 'Save All'}
           </button>
         </div>
       </div>
@@ -167,7 +167,7 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
       {/* Status Message */}
       {message && (
         <div className={`mb-4 p-3 rounded-md ${
-          message.startsWith('✓') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+          message.includes('successfully') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
         }`}>
           {message}
         </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/services/supabase';
+import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { mapBunnyStatusCode } from '@/lib/video-status';
 
 /**
  * Bunny Stream Webhook Handler
@@ -26,20 +27,16 @@ export const dynamic = 'force-dynamic';
 
 const BUNNY_WEBHOOK_SECRET = process.env.BUNNY_WEBHOOK_SECRET;
 
-// Map Bunny status to our status
-const BUNNY_STATUS_MAP: Record<number, string> = {
-  0: 'queued',
-  1: 'processing',
-  2: 'encoding',
-  3: 'ready',
-  4: 'ready', // Resolution finished = playable
-  5: 'failed',
-  6: 'uploading',
-  7: 'uploaded', // TUS upload finished, waiting for encoding
-  8: 'failed',
-  9: 'ready',
-  10: 'ready',
-};
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Supabase service role credentials not configured');
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey);
+}
 
 /**
  * Verify webhook signature from Bunny.net
@@ -63,14 +60,19 @@ function verifyWebhookSignature(rawBody: string, signatureHeader: string | null)
     .update(rawBody)
     .digest('hex');
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signatureHeader),
-    Buffer.from(expectedSignature)
-  );
+  const providedSignature = Buffer.from(signatureHeader);
+  const expectedSignatureBuffer = Buffer.from(expectedSignature);
+
+  if (providedSignature.length !== expectedSignatureBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(providedSignature, expectedSignatureBuffer);
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getSupabaseAdmin();
     const rawBody = await request.text();
 
     // Verify webhook signature
@@ -81,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = JSON.parse(rawBody);
-    const { VideoLibraryId, VideoGuid, Status } = body;
+    const { VideoGuid, Status } = body;
 
     if (!VideoGuid || Status === undefined) {
       console.error('[BUNNY WEBHOOK] Missing required fields');
@@ -89,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Map status
-    const mappedStatus = BUNNY_STATUS_MAP[Status] || 'processing';
+    const mappedStatus = mapBunnyStatusCode(Status);
 
     // Update video status in Supabase
     const { data, error } = await supabase

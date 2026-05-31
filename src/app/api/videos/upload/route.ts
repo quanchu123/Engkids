@@ -40,39 +40,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'videoId is required' }, { status: 400 });
     }
 
-    // Get the video file from request body - use stream for large files
-
-    // IMPORTANT: Don't buffer entire file - pass stream directly to Bunny
-    // This allows handling files larger than memory limit
     const requestBody = request.body;
 
     if (!requestBody) {
-      return NextResponse.json({ error: 'No video data provided' }, { status: 400 });
-    }
-
-    // Convert ReadableStream to ArrayBuffer for fetch (required by Node fetch)
-    // Note: This buffers in chunks, better than arrayBuffer() for progress
-    const chunks: Uint8Array[] = [];
-    const reader = requestBody.getReader();
-    let receivedBytes = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      receivedBytes += value.length;
-    }
-
-    const body = new Uint8Array(receivedBytes);
-    let offset = 0;
-    for (const chunk of chunks) {
-      body.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    const bodySize = body.byteLength;
-
-    if (bodySize === 0) {
       return NextResponse.json({ error: 'No video data provided' }, { status: 400 });
     }
 
@@ -90,10 +60,12 @@ export async function PUT(request: NextRequest) {
         headers: {
           'AccessKey': BUNNY_API_KEY,
           'Content-Type': 'application/octet-stream',
+          ...(contentLength ? { 'Content-Length': contentLength } : {}),
         },
-        body: body,
+        body: requestBody,
+        duplex: 'half',
         signal: controller.signal,
-      });
+      } as RequestInit & { duplex: 'half' });
 
       clearTimeout(timeoutId);
 
@@ -124,7 +96,7 @@ export async function PUT(request: NextRequest) {
     }
   } catch (error) {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.error(`❌ [UPLOAD API ${elapsed}s] Unhandled error:`, error);
+    console.error(`[UPLOAD API ${elapsed}s] Unhandled error:`, error);
     return NextResponse.json(
       { error: 'Upload failed' },
       { status: 500 }

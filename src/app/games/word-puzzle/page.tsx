@@ -1,30 +1,30 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 
-/* ─── Vocabulary: 5-letter English words with Vietnamese hints ─────────── */
+/* â”€â”€â”€ Vocabulary: 5-letter English words with Vietnamese hints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const WORDS = [
-  { en: 'APPLE', vi: 'Quả táo 🍎' },
-  { en: 'OCEAN', vi: 'Đại dương 🌊' },
-  { en: 'FLAME', vi: 'Ngọn lửa 🔥' },
-  { en: 'CLOUD', vi: 'Đám mây ☁️' },
-  { en: 'STORM', vi: 'Cơn bão ⛈️' },
-  { en: 'MAGIC', vi: 'Ma thuật ✨' },
-  { en: 'SWORD', vi: 'Thanh kiếm ⚔️' },
-  { en: 'FROST', vi: 'Băng giá ❄️' },
-  { en: 'EAGLE', vi: 'Đại bàng 🦅' },
-  { en: 'STONE', vi: 'Hòn đá 🪨' },
-  { en: 'CROWN', vi: 'Vương miện 👑' },
-  { en: 'EARTH', vi: 'Trái đất 🌍' },
-  { en: 'DREAM', vi: 'Giấc mơ 💭' },
+  { en: 'APPLE', vi: 'Quả táo' },
+  { en: 'OCEAN', vi: 'Đại dương' },
+  { en: 'FLAME', vi: 'Ngọn lửa' },
+  { en: 'CLOUD', vi: 'Đám mây' },
+  { en: 'STORM', vi: 'Cơn bão' },
+  { en: 'MAGIC', vi: 'Ma thuật' },
+  { en: 'SWORD', vi: 'Thanh kiếm' },
+  { en: 'FROST', vi: 'Băng giá' },
+  { en: 'EAGLE', vi: 'Đại bàng' },
+  { en: 'STONE', vi: 'Hòn đá' },
+  { en: 'CROWN', vi: 'Vương miện' },
+  { en: 'EARTH', vi: 'Trái đất' },
+  { en: 'DREAM', vi: 'Giấc mơ' },
   { en: 'PEARL', vi: 'Viên ngọc trai' },
-  { en: 'LIGHT', vi: 'Ánh sáng 💡' },
-  { en: 'MUSIC', vi: 'Âm nhạc 🎵' },
-  { en: 'HONEY', vi: 'Mật ong 🍯' },
-  { en: 'RIVER', vi: 'Con sông 🏞️' },
-  { en: 'TOWER', vi: 'Tòa tháp 🗼' },
-  { en: 'PLANT', vi: 'Cây cối 🌱' },
+  { en: 'LIGHT', vi: 'Ánh sáng' },
+  { en: 'MUSIC', vi: 'Âm nhạc' },
+  { en: 'HONEY', vi: 'Mật ong' },
+  { en: 'RIVER', vi: 'Con sông' },
+  { en: 'TOWER', vi: 'Tòa tháp' },
+  { en: 'PLANT', vi: 'Cây cối' },
 ];
 
 const MAX_GUESSES = 6;
@@ -104,7 +104,7 @@ export default function WordPuzzlePage() {
       setRevealRow(-1);
       if (current === target.en) {
         setGameState('won');
-        showToast('🎉 Xuất sắc!');
+        showToast('Xuất sắc!');
       } else if (newGuesses.length >= MAX_GUESSES) {
         setGameState('lost');
         showToast(`Đáp án: ${target.en}`);
@@ -186,7 +186,7 @@ export default function WordPuzzlePage() {
       <div className="fixed inset-0 flex flex-col overflow-hidden"
         style={{ background: 'linear-gradient(170deg, #0a0a0f 0%, #111128 50%, #0a0f1a 100%)' }}>
 
-        {/* ── Toast ── */}
+        {/* â”€â”€ Toast â”€â”€ */}
         {toast && (
           <div className="fixed top-20 left-1/2 z-50 px-6 py-3 rounded-xl font-bold text-white text-sm"
             style={{
@@ -201,11 +201,11 @@ export default function WordPuzzlePage() {
           </div>
         )}
 
-        {/* ── Header ── */}
+        {/* â”€â”€ Header â”€â”€ */}
         <header className="flex items-center justify-between px-4 py-3"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <Link href="/games" className="text-white/40 hover:text-white text-sm font-bold transition-colors">
-            ← Lobby
+            Quay lại
           </Link>
           <h1 className="font-black text-lg tracking-wider"
             style={{
@@ -217,7 +217,7 @@ export default function WordPuzzlePage() {
           <div className="w-14" />
         </header>
 
-        {/* ── Hint ── */}
+        {/* â”€â”€ Hint â”€â”€ */}
         <div className="text-center py-3">
           <span className="text-white/30 text-xs uppercase tracking-widest">Gợi ý</span>
           <div className="text-2xl font-black mt-1"
@@ -230,7 +230,7 @@ export default function WordPuzzlePage() {
           </div>
         </div>
 
-        {/* ── Board ── */}
+        {/* â”€â”€ Board â”€â”€ */}
         <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4">
           {board.map((row, ri) => (
             <div key={ri}
@@ -284,7 +284,7 @@ export default function WordPuzzlePage() {
           ))}
         </div>
 
-        {/* ── Keyboard ── */}
+        {/* â”€â”€ Keyboard â”€â”€ */}
         {gameState === 'playing' && (
           <div className="flex flex-col items-center gap-1.5 px-2 pb-4 pt-2">
             {KEYBOARD_ROWS.map((row, ri) => (
@@ -323,7 +323,7 @@ export default function WordPuzzlePage() {
           </div>
         )}
 
-        {/* ── End screen ── */}
+        {/* â”€â”€ End screen â”€â”€ */}
         {gameState !== 'playing' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-40"
             style={{
@@ -331,7 +331,7 @@ export default function WordPuzzlePage() {
                 ? 'radial-gradient(ellipse at center, rgba(15,50,20,0.97), rgba(0,0,0,0.98))'
                 : 'radial-gradient(ellipse at center, rgba(50,15,15,0.97), rgba(0,0,0,0.98))',
             }}>
-            <div className="text-7xl mb-4">{gameState === 'won' ? '🏆' : '💔'}</div>
+            <div className="text-5xl mb-4 font-black text-yellow-400">{gameState === 'won' ? 'WIN' : 'LOSE'}</div>
             <h2 className="font-black text-4xl sm:text-5xl mb-2" style={{
               background: gameState === 'won'
                 ? 'linear-gradient(135deg, #fde68a, #f59e0b, #fbbf24)'
@@ -357,10 +357,10 @@ export default function WordPuzzlePage() {
                   : 'linear-gradient(135deg, #fca5a5, #f87171)',
                 boxShadow: '0 0 30px rgba(245,158,11,0.4)',
               }}>
-              🔄 Chơi lại
+              Chơi lại
             </button>
             <Link href="/games" className="text-white/30 hover:text-white text-sm underline mt-4">
-              Quay về lobby
+              Quay vá» lobby
             </Link>
           </div>
         )}
@@ -368,3 +368,5 @@ export default function WordPuzzlePage() {
     </>
   );
 }
+
+

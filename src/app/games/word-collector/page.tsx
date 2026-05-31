@@ -1,12 +1,12 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 
-// ─── Adapted from: digitsensitive/phaser3-typescript (coin-runner) ────────────
-// Background + coin sprites from real GitHub repo (768×576 landscape scene)
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Adapted from: digitsensitive/phaser3-typescript (coin-runner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Background + coin sprites from real GitHub repo (768x576 landscape scene)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface Question {
   vi: string;           // Vietnamese shown at top
@@ -15,36 +15,36 @@ interface Question {
 }
 
 const ALL_QUESTIONS: Question[] = [
-  { vi: 'Quả táo',       choices: ['Apple',    'Orange',   'Banana',   'Grape'],     correct: 0 },
-  { vi: 'Mặt trời',      choices: ['Moon',     'Sun',      'Star',     'Cloud'],      correct: 1 },
-  { vi: 'Con mèo',       choices: ['Dog',      'Bird',     'Cat',      'Fish'],       correct: 2 },
-  { vi: 'Quyển sách',    choices: ['Pencil',   'Table',    'Chair',    'Book'],       correct: 3 },
-  { vi: 'Quả cam',       choices: ['Orange',   'Mango',    'Apple',    'Lemon'],      correct: 0 },
-  { vi: 'Chạy',          choices: ['Sleep',    'Run',      'Jump',     'Swim'],       correct: 1 },
-  { vi: 'Trường học',    choices: ['Hospital', 'Hotel',    'School',   'Market'],     correct: 2 },
-  { vi: 'Bạn bè',        choices: ['Enemy',    'Teacher',  'Parent',   'Friend'],     correct: 3 },
-  { vi: 'Màu đỏ',        choices: ['Red',      'Blue',     'Green',    'Yellow'],     correct: 0 },
-  { vi: 'Vui vẻ',        choices: ['Sad',      'Happy',    'Angry',    'Tired'],      correct: 1 },
-  { vi: 'To lớn',        choices: ['Thin',     'Short',    'Big',      'Long'],       correct: 2 },
-  { vi: 'Con chim',      choices: ['Cat',      'Fish',     'Dog',      'Bird'],       correct: 3 },
-  { vi: 'Nước',          choices: ['Water',    'Fire',     'Earth',    'Wind'],       correct: 0 },
-  { vi: 'Bơi lội',       choices: ['Fly',      'Swim',     'Walk',     'Run'],        correct: 1 },
-  { vi: 'Nhỏ bé',        choices: ['Tall',     'Fat',      'Small',    'Dark'],       correct: 2 },
-  { vi: 'Con thỏ',       choices: ['Tiger',    'Bear',     'Elephant', 'Rabbit'],     correct: 3 },
-  { vi: 'Màu xanh lá',   choices: ['Green',    'Purple',   'Brown',    'White'],      correct: 0 },
-  { vi: 'Nhảy',          choices: ['Sit',      'Jump',     'Dance',    'Clap'],       correct: 1 },
-  { vi: 'Lạnh',          choices: ['Warm',     'Hot',      'Cold',     'Wet'],        correct: 2 },
-  { vi: 'Bông hoa',      choices: ['Leaf',     'Root',     'Branch',   'Flower'],     correct: 3 },
-  { vi: 'Ăn',            choices: ['Eat',      'Sleep',    'Drink',    'Read'],       correct: 0 },
-  { vi: 'Màu vàng',      choices: ['Red',      'Yellow',   'Pink',     'Grey'],       correct: 1 },
-  { vi: 'Nóng',          choices: ['Cold',     'Warm',     'Hot',      'Cool'],       correct: 2 },
-  { vi: 'Sữa',           choices: ['Juice',    'Tea',      'Water',    'Milk'],       correct: 3 },
-  { vi: 'Ngôi nhà',      choices: ['House',    'Street',   'Forest',   'River'],      correct: 0 },
-  { vi: 'Bay',           choices: ['Swim',     'Fly',      'Drive',    'Walk'],       correct: 1 },
-  { vi: 'Tốt giỏi',      choices: ['Bad',      'Wrong',    'Good',     'Hard'],       correct: 2 },
-  { vi: 'Con cá',        choices: ['Bird',     'Cat',      'Dog',      'Fish'],       correct: 3 },
-  { vi: 'Đọc',           choices: ['Read',     'Write',    'Listen',   'Speak'],      correct: 0 },
-  { vi: 'Cao',           choices: ['Short',    'Tall',     'Thin',     'Wide'],       correct: 1 },
+  { vi: 'Quả táo', choices: ['Apple', 'Orange', 'Banana', 'Grape'], correct: 0 },
+  { vi: 'Mặt trời', choices: ['Moon', 'Sun', 'Star', 'Cloud'], correct: 1 },
+  { vi: 'Con mèo', choices: ['Dog', 'Bird', 'Cat', 'Fish'], correct: 2 },
+  { vi: 'Quyển sách', choices: ['Pencil', 'Table', 'Chair', 'Book'], correct: 3 },
+  { vi: 'Quả cam', choices: ['Orange', 'Mango', 'Apple', 'Lemon'], correct: 0 },
+  { vi: 'Chạy', choices: ['Sleep', 'Run', 'Jump', 'Swim'], correct: 1 },
+  { vi: 'Trường học', choices: ['Hospital', 'Hotel', 'School', 'Market'], correct: 2 },
+  { vi: 'Bạn bè', choices: ['Enemy', 'Teacher', 'Parent', 'Friend'], correct: 3 },
+  { vi: 'Màu đỏ', choices: ['Red', 'Blue', 'Green', 'Yellow'], correct: 0 },
+  { vi: 'Vui vẻ', choices: ['Sad', 'Happy', 'Angry', 'Tired'], correct: 1 },
+  { vi: 'To lớn', choices: ['Thin', 'Short', 'Big', 'Long'], correct: 2 },
+  { vi: 'Con chim', choices: ['Cat', 'Fish', 'Dog', 'Bird'], correct: 3 },
+  { vi: 'Nước', choices: ['Water', 'Fire', 'Earth', 'Wind'], correct: 0 },
+  { vi: 'Bơi lội', choices: ['Fly', 'Swim', 'Walk', 'Run'], correct: 1 },
+  { vi: 'Nhỏ bé', choices: ['Tall', 'Fat', 'Small', 'Dark'], correct: 2 },
+  { vi: 'Con thỏ', choices: ['Tiger', 'Bear', 'Elephant', 'Rabbit'], correct: 3 },
+  { vi: 'Màu xanh lá', choices: ['Green', 'Purple', 'Brown', 'White'], correct: 0 },
+  { vi: 'Nhảy', choices: ['Sit', 'Jump', 'Dance', 'Clap'], correct: 1 },
+  { vi: 'Lạnh', choices: ['Warm', 'Hot', 'Cold', 'Wet'], correct: 2 },
+  { vi: 'Bông hoa', choices: ['Leaf', 'Root', 'Branch', 'Flower'], correct: 3 },
+  { vi: 'Ăn', choices: ['Eat', 'Sleep', 'Drink', 'Read'], correct: 0 },
+  { vi: 'Màu vàng', choices: ['Red', 'Yellow', 'Pink', 'Grey'], correct: 1 },
+  { vi: 'Nóng', choices: ['Cold', 'Warm', 'Hot', 'Cool'], correct: 2 },
+  { vi: 'Sữa', choices: ['Juice', 'Tea', 'Water', 'Milk'], correct: 3 },
+  { vi: 'Ngôi nhà', choices: ['House', 'Street', 'Forest', 'River'], correct: 0 },
+  { vi: 'Bay', choices: ['Swim', 'Fly', 'Drive', 'Walk'], correct: 1 },
+  { vi: 'Tốt giỏi', choices: ['Bad', 'Wrong', 'Good', 'Hard'], correct: 2 },
+  { vi: 'Con cá', choices: ['Bird', 'Cat', 'Dog', 'Fish'], correct: 3 },
+  { vi: 'Đọc', choices: ['Read', 'Write', 'Listen', 'Speak'], correct: 0 },
+  { vi: 'Cao', choices: ['Short', 'Tall', 'Thin', 'Wide'], correct: 1 },
 ];
 
 export default function WordCollectorPage() {
@@ -62,9 +62,9 @@ export default function WordCollectorPage() {
       const W = 768, H = 480;
       const COIN_COUNT = 4;
 
-      // ══════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       //  PRELOADER
-      // ══════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       class PreloaderScene extends Phaser.Scene {
         constructor() { super({ key: 'Preload' }); }
 
@@ -81,7 +81,7 @@ export default function WordCollectorPage() {
             bar.fillStyle(0xfbbf24);
             bar.fillRoundedRect(W / 2 - 158, H / 2 - 8, 316 * v, 16, 8);
           });
-          this.add.text(W / 2, H / 2 - 35, '🪙 Word Collector', {
+          this.add.text(W / 2, H / 2 - 35, 'Word Collector', {
             fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
           }).setOrigin(0.5);
 
@@ -93,14 +93,14 @@ export default function WordCollectorPage() {
         create() { this.scene.start('Game'); }
       }
 
-      // ══════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       //  GAME SCENE
-      // ══════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       class GameScene extends Phaser.Scene {
         constructor() { super({ key: 'Game' }); }
 
         create() {
-          // ── Init state ────────────────────
+          // â”€â”€ Init state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           const self = this as any;
           self.qs       = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
           self.qi       = 0;
@@ -110,16 +110,16 @@ export default function WordCollectorPage() {
           self.coinObjs = [];
           self.tweens_  = [];
 
-          // ── Background ────────────────────
-          // Using real 768×576 landscape background from digitsensitive/phaser3-typescript
+          // â”€â”€ Background â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // Using real 768x576 landscape background from digitsensitive/phaser3-typescript
           const bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
-          // Crop to fit 768×480 (it's 768×576 so just show top portion)
+          // Crop to fit 768x480 (it's 768x576 so just show top portion)
           bg.setCrop(0, 0, 768, 480);
 
           // Semi-transparent overlay so cards are readable
           this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.22);
 
-          // ── Top question bar ──────────────
+          // â”€â”€ Top question bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           const topBar = this.add.graphics();
           topBar.fillStyle(0x1e1b4b, 0.88);
           topBar.fillRoundedRect(W / 2 - 300, 10, 600, 54, 16);
@@ -129,22 +129,22 @@ export default function WordCollectorPage() {
             stroke: '#000000', strokeThickness: 3,
           }).setOrigin(0.5).setDepth(5);
 
-          // ── Hearts ──────────────────────
+          // â”€â”€ Hearts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           self.heartTexts = [];
           for (let i = 0; i < 3; i++) {
-            const h = this.add.text(680 + i * 26, 14, '❤️', {
+            const h = this.add.text(680 + i * 26, 14, '?', {
               fontSize: '18px',
             }).setDepth(5);
             self.heartTexts.push(h);
           }
 
-          // ── Score text ────────────────────
+          // â”€â”€ Score text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           self.scoreText = this.add.text(12, 14, 'Score: 0', {
             fontSize: '15px', color: '#4ade80', fontStyle: 'bold',
             stroke: '#000000', strokeThickness: 2,
           }).setDepth(5);
 
-          // ── Progress bar ──────────────────
+          // â”€â”€ Progress bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           const totalQ = Math.min(self.qs.length, 20);
           const progBg = this.add.graphics();
           progBg.fillStyle(0x000000, 0.4);
@@ -152,7 +152,7 @@ export default function WordCollectorPage() {
           self.progBar = this.add.graphics();
           self.totalQ  = totalQ;
 
-          // ── Floating coins ────────────────
+          // â”€â”€ Floating coins â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           for (let i = 0; i < COIN_COUNT; i++) {
             // coin image (real 56x56 coin from coin-runner)
             const cx = 150 + (i % 2) * 450;
@@ -191,7 +191,7 @@ export default function WordCollectorPage() {
             self.coinObjs.push({ img: coinImg, txt: wordTxt, zone, baseX: cx, baseY: cy });
           }
 
-          // ── Status popup text ─────────────
+          // â”€â”€ Status popup text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           self.popup = this.add.text(W / 2, H / 2 - 10, '', {
             fontSize: '32px', color: '#ffffff', fontStyle: 'bold',
             stroke: '#000000', strokeThickness: 5,
@@ -200,7 +200,7 @@ export default function WordCollectorPage() {
           this._loadQuestion();
         }
 
-        // ─────────────────────────────────────
+        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _loadQuestion() {
           const self = this as any;
           if (self.qi >= Math.min(self.qs.length, self.totalQ)) {
@@ -212,7 +212,7 @@ export default function WordCollectorPage() {
           self._curQ = q;
 
           // Update question bar
-          self.questionText.setText(`❓ Từ tiếng Anh nào có nghĩa là "${q.vi}"?`);
+          self.questionText.setText(`Từ tiếng Anh nào có nghĩa là "${q.vi}"?`);
 
           // Update progress bar
           const pct = self.qi / self.totalQ;
@@ -235,7 +235,7 @@ export default function WordCollectorPage() {
           self.busy = false;
         }
 
-        // ─────────────────────────────────────
+        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _pick(idx: number) {
           const self = this as any;
           if (self.busy || !self._curQ) return;
@@ -247,7 +247,7 @@ export default function WordCollectorPage() {
           if (correct) {
             // Correct flash + fly to score
             img.setTint(0xffd700);
-            this._popup('✨ Đúng!', '#4ade80');
+            this._popup('Dung!', '#4ade80');
             self.score++;
             self.scoreText.setText(`Score: ${self.score}`);
             this._coinCollect(idx, () => {
@@ -255,14 +255,14 @@ export default function WordCollectorPage() {
               this._loadQuestion();
             });
           } else {
-            // Wrong — flash red, shake
+            // Wrong â€” flash red, shake
             img.setTint(0xff3333);
-            this._popup('❌ Sai!', '#f87171');
+            this._popup('Sai!', '#f87171');
             this.cameras.main.shake(200, 0.007);
 
             self.hp = Math.max(0, self.hp - 1);
             self.heartTexts.forEach((h: any, i: number) => {
-              h.setText(i < self.hp ? '❤️' : '🖤');
+              h.setText(i < self.hp ? '?' : '?');
             });
 
             // Show correct briefly
@@ -301,7 +301,7 @@ export default function WordCollectorPage() {
           this.tweens.add({ targets: p, alpha: 0, delay: 600, duration: 300 });
         }
 
-        // ─────────────────────────────────────
+        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         _endGame(win: boolean) {
           const self = this as any;
           self.busy = true;
@@ -310,19 +310,19 @@ export default function WordCollectorPage() {
             // Overlay
             this.add.rectangle(W / 2, H / 2, W, H, win ? 0x0a1128 : 0x1a0505, 0.86).setDepth(20);
 
-            const title = win ? '🏆 XUẤT SẮC!' : '💀 THUA RỒI!';
+            const title = win ? 'XUẤT SẮC!' : 'THUA RỒI!';
             const color = win ? '#fbbf24' : '#f87171';
             this.add.text(W / 2, H / 2 - 80, title, {
               fontSize: '36px', color, fontStyle: 'bold',
               stroke: '#000000', strokeThickness: 6,
             }).setOrigin(0.5).setDepth(21);
 
-            this.add.text(W / 2, H / 2 - 30, `🪙 Điểm của bạn: ${self.score} / ${self.totalQ}`, {
+            this.add.text(W / 2, H / 2 - 30, `Điểm của bạn: ${self.score} / ${self.totalQ}`, {
               fontSize: '18px', color: '#e2e8f0',
             }).setOrigin(0.5).setDepth(21);
 
             if (!win) {
-              this.add.text(W / 2, H / 2 + 0, 'Cố lên! Luyện từ vựng thêm nhé 💪', {
+              this.add.text(W / 2, H / 2 + 0, 'Cố lên! Luyện từ vựng thêm nhé', {
                 fontSize: '14px', color: '#94a3b8',
               }).setOrigin(0.5).setDepth(21);
             }
@@ -330,7 +330,7 @@ export default function WordCollectorPage() {
             // Replay button
             const btn = this.add.rectangle(W / 2, H / 2 + 55, 200, 44, win ? 0x7c3aed : 0xdc2626)
               .setInteractive({ useHandCursor: true }).setDepth(21);
-            this.add.text(W / 2, H / 2 + 55, '🔄 Chơi Lại', {
+            this.add.text(W / 2, H / 2 + 55, 'Chơi Lại', {
               fontSize: '16px', color: '#fff', fontStyle: 'bold',
             }).setOrigin(0.5).setDepth(22);
             btn.on('pointerover', () => btn.setFillStyle(win ? 0x9333ea : 0xef4444));
@@ -340,9 +340,9 @@ export default function WordCollectorPage() {
         }
       }
 
-      // ══════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       //  LAUNCH
-      // ══════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       game = new Phaser.Game({
         type: Phaser.AUTO,
         backgroundColor: '#3A99D9',
@@ -369,17 +369,15 @@ export default function WordCollectorPage() {
       <Header />
       <main className="min-h-screen bg-[#1a2744] flex flex-col items-center pb-8">
         <div className="w-full max-w-3xl px-4 pt-4">
-          <Link href="/games" className="text-yellow-400 hover:text-yellow-300 font-bold text-sm transition-colors">
-            ← Quay lại
-          </Link>
+          <Link href="/games" className="text-yellow-400 hover:text-yellow-300 font-bold text-sm transition-colors">`r`n            Quay lại`r`n          </Link>
         </div>
 
         <div className="text-center my-4">
-          <h1 className="text-2xl font-black text-white drop-shadow-lg">🪙 Word Collector</h1>
+          <h1 className="text-2xl font-black text-white drop-shadow-lg">Word Collector</h1>
           <p className="text-yellow-300 text-sm mt-1">Chạm vào đồng xu có nghĩa tiếng Anh đúng!</p>
         </div>
 
-        <p className="text-yellow-600/70 text-xs mb-3">Đọc câu hỏi ở trên cùng rồi tap vào từ đúng 🎯</p>
+        <p className="text-yellow-600/70 text-xs mb-3">Đọc câu hỏi ở trên cùng rồi tập vào từ đúng</p>
 
         <div
           ref={containerRef}
@@ -387,10 +385,11 @@ export default function WordCollectorPage() {
           style={{ aspectRatio: '768/480' }}
         />
 
-        <p className="text-yellow-700/40 text-xs mt-4 text-center max-w-sm">
-          Clone từ: digitsensitive/phaser3-typescript (coin-runner) · 768×576 landscape background 🌄
-        </p>
+        <p className="text-yellow-700/40 text-xs mt-4 text-center max-w-sm">Clone từ digitsensitive/phaser3-typescript (coin-runner) với background 768x576 landscape</p>
       </main>
     </>
   );
 }
+
+
+

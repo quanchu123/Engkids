@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import Header from '@/components/layout/Header';
+import { useState, useEffect, useRef } from'react';
+import Link from'next/link';
+import Header from'@/components/layout/Header';
 
 interface Sentence {
   id: number;
@@ -10,7 +10,7 @@ interface Sentence {
   hint: string;
 }
 
-const SENTENCES_BY_DIFFICULTY: Record<string, Sentence[]> = {
+const SENTENCES_BY_DIFFICULTY: Record<string, Sentence[]>= {
   beginner: [
     { id: 1, text: "I love cats", hint: "Tôi yêu mèo" },
     { id: 2, text: "The cat is big", hint: "Con mèo lớn" },
@@ -89,21 +89,21 @@ const SENTENCES_BY_DIFFICULTY: Record<string, Sentence[]> = {
   ],
 };
 
-const DIFFICULTY_LABELS: Record<string, string> = {
-  beginner: 'Dễ',
-  intermediate: 'Trung bình',
-  advanced: 'Khó',
+const DIFFICULTY_LABELS: Record<string, string>= {
+  beginner:'Dễ',
+  intermediate:'Trung bình',
+  advanced:'Khó',
 };
 
 function shuffleWords(text: string): string[] {
-  const words = text.split(' ');
+  const words = text.split('');
   const shuffled = [...words];
-  for (let i = shuffled.length - 1; i > 0; i--) {
+  for (let i = shuffled.length - 1; i >0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   // Ensure not in original order
-  if (shuffled.join(' ') === text && words.length > 1) {
+  if (shuffled.join('') === text && words.length >1) {
     [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]];
   }
   return shuffled;
@@ -118,13 +118,13 @@ export default function SentenceScramblePage() {
   const [score, setScore] = useState(0);
   const [timer, setTimer] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const [feedback, setFeedback] = useState<'correct'|'wrong'| null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
-  const startGame = (level: string) => {
+  const startGame = (level: string) =>{
     const pool = SENTENCES_BY_DIFFICULTY[level] || SENTENCES_BY_DIFFICULTY.beginner;
-    const shuffled = [...pool].sort(() => Math.random() - 0.5).slice(0, 10);
+    const shuffled = [...pool].sort(() =>Math.random() - 0.5).slice(0, 10);
     setQuestions(shuffled);
     setDifficulty(level);
     setCurrentIdx(0);
@@ -138,15 +138,15 @@ export default function SentenceScramblePage() {
     setScrambled(shuffleWords(shuffled[0].text));
   };
 
-  useEffect(() => {
+  useEffect(() =>{
     if (gameStarted && !gameOver) {
-      const interval = setInterval(() => setTimer(t => t + 1), 1000);
-      return () => clearInterval(interval);
+      const interval = setInterval(() =>setTimer(t =>t + 1), 1000);
+      return () =>clearInterval(interval);
     }
   }, [gameStarted, gameOver]);
 
-  useEffect(() => {
-    if (questions.length > 0 && currentIdx < questions.length) {
+  useEffect(() =>{
+    if (questions.length >0 && currentIdx< questions.length) {
       setScrambled(shuffleWords(questions[currentIdx].text));
       setSelected([]);
       setFeedback(null);
@@ -154,7 +154,7 @@ export default function SentenceScramblePage() {
     }
   }, [currentIdx, questions]);
 
-  const handleWordClick = (word: string, fromSelected: boolean, index: number) => {
+  const handleWordClick = (word: string, fromSelected: boolean, index: number) =>{
     if (feedback) return;
     if (fromSelected) {
       // Move word back to scrambled
@@ -171,222 +171,86 @@ export default function SentenceScramblePage() {
     }
   };
 
-  const handleCheck = () => {
+  const handleCheck = () =>{
     if (selected.length === 0) return;
-    const answer = selected.join(' ');
+    const answer = selected.join('');
     const correct = questions[currentIdx].text;
     if (answer === correct) {
       setFeedback('correct');
-      setScore(prev => prev + 10);
+      setScore(prev =>prev + 10);
     } else {
       setFeedback('wrong');
     }
   };
 
-  const handleNext = () => {
-    if (currentIdx < questions.length - 1) {
-      setCurrentIdx(prev => prev + 1);
+  const handleNext = () =>{
+    if (currentIdx< questions.length - 1) {
+      setCurrentIdx(prev =>prev + 1);
     } else {
       setGameOver(true);
     }
   };
 
-  const handleReset = () => {
+  const handleReset = () =>{
     setScrambled(shuffleWords(questions[currentIdx].text));
     setSelected([]);
     setFeedback(null);
   };
 
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+  const formatTime = (s: number) =>`${Math.floor(s / 60)}:${(s % 60).toString().padStart(2,'0')}`;
 
   // Start screen
   if (!gameStarted) {
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-gradient-to-br from-blue-400 via-cyan-300 to-blue-500 flex items-center justify-center p-4">
-          <div className="max-w-lg w-full bg-white/95 rounded-3xl shadow-2xl p-8 text-center border-4 border-cyan-200">
-            <Link href="/games" className="inline-block mb-4 text-blue-600 hover:text-blue-800 font-bold text-sm">
-              ← Quay lại
-            </Link>
-            <div className="text-6xl mb-4">🔄</div>
-            <h1 className="text-3xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-3">
-              Sắp Xếp Câu
-            </h1>
-            <p className="text-gray-600 mb-8">Sắp xếp các từ thành câu tiếng Anh đúng!</p>
-
-            <div className="space-y-3 mb-8">
-              {Object.entries(DIFFICULTY_LABELS).map(([key, label]) => (
-                <button
+    return (<><Header /><div className="min-h-screen bg-gradient-to-br from-blue-400 via-cyan-300 to-blue-500 flex items-center justify-center p-4"><div className="max-w-lg w-full bg-white/95 rounded-3xl shadow-2xl p-8 text-center border-4 border-cyan-200"><Link href="/games" className="inline-block mb-4 text-blue-600 hover:text-blue-800 font-bold text-sm">← Quay lại</Link><div className="text-6xl mb-4"></div><h1 className="text-3xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-3">Sắp Xếp Câu</h1><p className="text-gray-600 mb-8">Sắp xếp các từ thành câu tiếng Anh đúng!</p><div className="space-y-3 mb-8">{Object.entries(DIFFICULTY_LABELS).map(([key, label]) =>(<button
                   key={key}
-                  onClick={() => startGame(key)}
+                  onClick={() =>startGame(key)}
                   className={`w-full px-6 py-4 rounded-2xl font-bold text-lg shadow-lg transition-all hover:scale-105 text-white ${
-                    key === 'beginner' ? 'bg-gradient-to-r from-green-400 to-green-500' :
-                    key === 'intermediate' ? 'bg-gradient-to-r from-yellow-400 to-orange-500' :
-                    'bg-gradient-to-r from-red-400 to-red-500'
-                  }`}
-                >
-                  {key === 'beginner' ? '🌱' : key === 'intermediate' ? '🌿' : '🌳'} {label}
-                  <span className="block text-sm opacity-80 mt-1">
-                    {key === 'beginner' ? 'Câu ngắn 3-4 từ' : key === 'intermediate' ? 'Câu 5-7 từ' : 'Câu dài 6-8 từ'}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </>
-    );
+                    key ==='beginner'?'bg-gradient-to-r from-green-400 to-green-500':
+                    key ==='intermediate'?'bg-gradient-to-r from-yellow-400 to-orange-500':'bg-gradient-to-r from-red-400 to-red-500'}`}
+                >{key ==='beginner'?'': key ==='intermediate'?'':''} {label}<span className="block text-sm opacity-80 mt-1">{key ==='beginner'?'Câu ngắn 3-4 từ': key ==='intermediate'?'Câu 5-7 từ':'Câu dài 6-8 từ'}</span></button>))}</div></div></div></>);
   }
 
   // Finished screen
   if (gameOver) {
     const percentage = Math.round((score / (questions.length * 10)) * 100);
-    return (
-      <>
-        <Header />
-        <div className="min-h-screen bg-gradient-to-br from-blue-400 via-cyan-300 to-blue-500 flex items-center justify-center p-4">
-          <div className="max-w-lg w-full bg-white/95 rounded-3xl shadow-2xl p-8 text-center border-4 border-cyan-200">
-            <div className="text-6xl mb-4">{percentage >= 80 ? '🏆' : percentage >= 50 ? '⭐' : '💪'}</div>
-            <h1 className="text-3xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-4">
-              {percentage >= 80 ? 'Xuất sắc!' : percentage >= 50 ? 'Tốt lắm!' : 'Cố gắng thêm!'}
-            </h1>
-            <div className="bg-blue-50 rounded-2xl p-6 mb-6 space-y-2">
-              <p className="text-2xl font-bold text-blue-600">🏆 {score}/{questions.length * 10} điểm</p>
-              <p className="text-lg text-cyan-600">⏱️ {formatTime(timer)}</p>
-              <p className="text-lg text-green-600">✅ {score / 10}/{questions.length} câu đúng</p>
-            </div>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <button onClick={() => startGame(difficulty)} className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-full font-bold shadow-lg hover:scale-105 transition-transform">
-                Chơi lại 🔄
-              </button>
-              <Link href="/games" className="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-full font-bold shadow-lg hover:scale-105 transition-transform">
-                Trò chơi khác 🎮
-              </Link>
-            </div>
-          </div>
-        </div>
-      </>
-    );
+    return (<><Header /><div className="min-h-screen bg-gradient-to-br from-blue-400 via-cyan-300 to-blue-500 flex items-center justify-center p-4"><div className="max-w-lg w-full bg-white/95 rounded-3xl shadow-2xl p-8 text-center border-4 border-cyan-200"><div className="text-6xl mb-4">{percentage >= 80 ?'': percentage >= 50 ?'':''}</div><h1 className="text-3xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-4">{percentage >= 80 ?'Xuất sắc!': percentage >= 50 ?'Tốt lắm!':'Cố gắng thêm!'}</h1><div className="bg-blue-50 rounded-2xl p-6 mb-6 space-y-2"><p className="text-2xl font-bold text-blue-600">{score}/{questions.length * 10} điểm</p><p className="text-lg text-cyan-600">{formatTime(timer)}</p><p className="text-lg text-green-600">{score / 10}/{questions.length} câu đúng</p></div><div className="flex flex-wrap gap-3 justify-center"><button onClick={() =>startGame(difficulty)} className="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-full font-bold shadow-lg hover:scale-105 transition-transform">Chơi lại</button><Link href="/games" className="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-full font-bold shadow-lg hover:scale-105 transition-transform">Trò chơi khác</Link></div></div></div></>);
   }
 
   const currentQ = questions[currentIdx];
 
-  return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gradient-to-br from-blue-400 via-cyan-300 to-blue-500 p-4">
-        <div className="max-w-2xl mx-auto">
-          {/* Game header */}
-          <div className="bg-gradient-to-r from-blue-500 to-cyan-600 rounded-2xl shadow-xl p-5 mb-5 text-white">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-lg font-bold">Câu {currentIdx + 1}/{questions.length}</span>
-              <span className="text-cyan-100">⏱️ {formatTime(timer)}</span>
-              <span className="font-bold text-yellow-200">🏆 {score}</span>
-            </div>
-            <div className="w-full bg-white/30 rounded-full h-3">
-              <div
+  return (<><Header /><div className="min-h-screen bg-gradient-to-br from-blue-400 via-cyan-300 to-blue-500 p-4"><div className="max-w-2xl mx-auto">{/* Game header */}<div className="bg-gradient-to-r from-blue-500 to-cyan-600 rounded-2xl shadow-xl p-5 mb-5 text-white"><div className="flex justify-between items-center mb-3"><span className="text-lg font-bold">Câu {currentIdx + 1}/{questions.length}</span><span className="text-cyan-100">{formatTime(timer)}</span><span className="font-bold text-yellow-200">{score}</span></div><div className="w-full bg-white/30 rounded-full h-3"><div
                 className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${((currentIdx + 1) / questions.length) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Game area */}
-          <div className="bg-white/95 rounded-2xl shadow-xl p-7 border-2 border-cyan-200">
-            {/* Hint */}
-            <div className="text-center mb-4">
-              <button
-                onClick={() => setShowHint(!showHint)}
+                style={{ width:`${((currentIdx + 1) / questions.length) * 100}%`}}
+              /></div></div>{/* Game area */}<div className="bg-white/95 rounded-2xl shadow-xl p-7 border-2 border-cyan-200">{/* Hint */}<div className="text-center mb-4"><button
+                onClick={() =>setShowHint(!showHint)}
                 className="text-sm text-blue-500 hover:text-blue-700 font-semibold"
-              >
-                {showHint ? '🙈 Ẩn gợi ý' : '💡 Xem gợi ý'}
-              </button>
-              {showHint && (
-                <p className="text-gray-500 mt-2 italic text-lg">&ldquo;{currentQ.hint}&rdquo;</p>
-              )}
-            </div>
-
-            {/* Selected words (answer area) */}
-            <div className="min-h-[60px] bg-blue-50 rounded-xl p-4 mb-5 border-2 border-dashed border-blue-300 flex flex-wrap gap-2 items-center">
-              {selected.length === 0 && (
-                <span className="text-blue-300 italic text-sm">Chạm vào các từ bên dưới để sắp xếp câu...</span>
-              )}
-              {selected.map((word, i) => (
-                <button
+              >{showHint ?'Ẩn gợi ý':'Xem gợi ý'}</button>{showHint && (<p className="text-gray-500 mt-2 italic text-lg">&ldquo;{currentQ.hint}&rdquo;</p>)}</div>{/* Selected words (answer area) */}<div className="min-h-[60px] bg-blue-50 rounded-xl p-4 mb-5 border-2 border-dashed border-blue-300 flex flex-wrap gap-2 items-center">{selected.length === 0 && (<span className="text-blue-300 italic text-sm">Chạm vào các từ bên dưới để sắp xếp câu...</span>)}
+              {selected.map((word, i) =>(<button
                   key={`sel-${i}`}
-                  onClick={() => handleWordClick(word, true, i)}
+                  onClick={() =>handleWordClick(word, true, i)}
                   disabled={!!feedback}
                   className={`px-4 py-2 rounded-lg font-bold text-white shadow transition-all ${
-                    feedback === 'correct' ? 'bg-green-500' :
-                    feedback === 'wrong' ? 'bg-red-400' :
-                    'bg-blue-500 hover:bg-blue-600 hover:scale-105 cursor-pointer'
-                  }`}
-                >
-                  {word}
-                </button>
-              ))}
-            </div>
-
-            {/* Scrambled words */}
-            <div className="flex flex-wrap gap-2 justify-center mb-6">
-              {scrambled.map((word, i) => (
-                <button
+                    feedback ==='correct'?'bg-green-500':
+                    feedback ==='wrong'?'bg-red-400':'bg-blue-500 hover:bg-blue-600 hover:scale-105 cursor-pointer'}`}
+                >{word}</button>))}</div>{/* Scrambled words */}<div className="flex flex-wrap gap-2 justify-center mb-6">{scrambled.map((word, i) =>(<button
                   key={`scr-${i}`}
-                  onClick={() => handleWordClick(word, false, i)}
+                  onClick={() =>handleWordClick(word, false, i)}
                   disabled={!!feedback}
                   className="px-4 py-2 rounded-lg font-bold bg-gradient-to-r from-indigo-400 to-purple-500 text-white shadow-md hover:scale-110 hover:shadow-lg transition-all cursor-pointer"
-                >
-                  {word}
-                </button>
-              ))}
-            </div>
+                >{word}</button>))}</div>{/* Feedback */}
+            {feedback && (<div className={`text-center mb-5 p-4 rounded-2xl shadow-lg ${
+                feedback ==='correct'?'bg-gradient-to-r from-green-400 to-green-500':'bg-gradient-to-r from-red-400 to-red-500'} text-white`}><p className="text-xl font-bold mb-1">{feedback ==='correct'?'Chính xác!':'Sai rồi!'}</p>{feedback ==='wrong'&& (<p className="text-sm opacity-90">Đáp án:<span className="font-bold">{currentQ.text}</span></p>)}</div>)}
 
-            {/* Feedback */}
-            {feedback && (
-              <div className={`text-center mb-5 p-4 rounded-2xl shadow-lg ${
-                feedback === 'correct' ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-red-400 to-red-500'
-              } text-white`}>
-                <p className="text-xl font-bold mb-1">
-                  {feedback === 'correct' ? 'Chính xác! 🎉' : 'Sai rồi! ❌'}
-                </p>
-                {feedback === 'wrong' && (
-                  <p className="text-sm opacity-90">Đáp án: <span className="font-bold">{currentQ.text}</span></p>
-                )}
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex justify-center gap-3">
-              {!feedback && (
-                <>
-                  <button
+            {/* Action buttons */}<div className="flex justify-center gap-3">{!feedback && (<><button
                     onClick={handleReset}
                     className="px-5 py-2 bg-gray-200 text-gray-700 rounded-full font-bold hover:bg-gray-300 transition-colors"
-                  >
-                    Xóa ↩️
-                  </button>
-                  <button
+                  >Xóa</button><button
                     onClick={handleCheck}
-                    disabled={selected.length === 0 || scrambled.length > 0}
+                    disabled={selected.length === 0 || scrambled.length >0}
                     className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-lg font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Kiểm tra ✓
-                  </button>
-                </>
-              )}
-              {feedback && (
-                <button
+                  >Kiểm tra ✓</button></>)}
+              {feedback && (<button
                   onClick={handleNext}
                   className="px-8 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-full text-lg font-bold shadow-lg hover:scale-105 transition-transform"
-                >
-                  {currentIdx < questions.length - 1 ? 'Câu tiếp ➡️' : 'Xem kết quả 🏁'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
+                >{currentIdx< questions.length - 1 ?'Câu tiếp':'Xem kết quả'}</button>)}</div></div></div></div></>);
 }

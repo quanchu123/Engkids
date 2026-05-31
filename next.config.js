@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Standalone output: produces a minimal self-contained server bundle.
+  // Ideal for Docker / DigitalOcean (App Platform or Droplet) deployments.
+  output: 'standalone',
+
   // Image optimization
   images: {
     formats: ['image/avif', 'image/webp'],

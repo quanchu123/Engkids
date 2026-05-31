@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // ─── Vocabulary questions for battle ──────────────────────────────────────
 const VOCAB_QUESTIONS = [
@@ -111,7 +112,7 @@ export default function RpgWorldPage() {
           const cy = this.scale.height / 2;
           const pbar = this.add.rectangle(cx - 148, cy, 4, 20, 0x7c3aed);
           this.add.rectangle(cx, cy, 304, 24).setStrokeStyle(2, 0x7c3aed);
-          this.add.text(cx, cy - 40, '⚔️ Loading RPG World...', {
+          this.add.text(cx, cy - 40, 'Loading RPG World...', {
             fontFamily: 'Arial', fontSize: '18px', color: '#a78bfa',
           }).setOrigin(0.5);
           this.load.on('progress', (p: number) => {
@@ -458,14 +459,16 @@ export default function RpgWorldPage() {
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-yellow-400 font-black text-lg drop-shadow">⭐ {score}</span>
+            <span className="text-yellow-400 font-black text-lg drop-shadow">Score {score}</span>
             <div className="flex gap-1">
               {hearts.map((_, i) => (
-                <img
+                <Image
                   key={i}
                   src={i < hp ? `${BASE}/heart.png` : `${BASE}/heart-empty.png`}
                   alt=""
-                  className={`w-6 h-6 object-contain transition-all duration-300 ${i < hp ? '' : 'opacity-25 grayscale'}`}
+                  width={24}
+                  height={24}
+                  className={`w-6 h-6 object-contain transition-all duration-300 ${i < hp ? "" : "opacity-25 grayscale"}`}
                 />
               ))}
             </div>
@@ -491,7 +494,7 @@ export default function RpgWorldPage() {
             <div className="flex items-center gap-3 px-5 pt-5 pb-3 border-b border-white/10">
               <div className="w-14 h-14 rounded-xl flex items-center justify-center text-4xl"
                 style={{ background: battle.monsterType === 'treant' ? '#14532d44' : '#3b0764aa' }}>
-                {battle.monsterType === 'treant' ? '🌳' : '🐾'}
+                {battle.monsterType === 'treant' ? 'TR' : 'MO'}
               </div>
               <div className="flex-1">
                 <div className="text-white font-black text-base">
@@ -511,7 +514,7 @@ export default function RpgWorldPage() {
               <div className="rounded-xl p-3 mb-4 text-center"
                 style={{ background: 'rgba(250,204,21,0.12)', border: '1px solid rgba(250,204,21,0.35)' }}>
                 <div className="text-yellow-400/70 text-[11px] font-bold uppercase tracking-wider mb-1">Dịch sang tiếng Anh</div>
-                <div className="text-yellow-200 font-black text-2xl">"{battle.question.vi}"</div>
+                <div className="text-yellow-200 font-black text-2xl">&quot;{battle.question.vi}&quot;</div>
               </div>
 
               {/* Result */}
@@ -521,7 +524,7 @@ export default function RpgWorldPage() {
                     ? 'bg-green-500/20 text-green-400'
                     : 'bg-red-500/20 text-red-400'
                 }`}>
-                  {battle.result === 'correct' ? '✅ Chính xác! +50 điểm' : '❌ Sai rồi! -1 ❤️'}
+                  {battle.result === 'correct' ? 'Chính xác! +50 điểm' : 'Sai rồi! -1 HP'}
                 </div>
               )}
 
@@ -547,7 +550,7 @@ export default function RpgWorldPage() {
       {/* ── NPC Dialogue ── */}
       {npcMsg && !battle && !gameOver && (
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-gray-900/95 border-2 border-blue-400 rounded-xl px-5 py-3 max-w-xs text-center z-10 shadow-xl pointer-events-none">
-          <div className="text-blue-300 text-xs font-bold mb-1">💬 NPC</div>
+          <div className="text-blue-300 text-xs font-bold mb-1">NPC</div>
           <div className="text-white text-sm font-semibold whitespace-pre-line">{npcMsg}</div>
         </div>
       )}
@@ -556,13 +559,13 @@ export default function RpgWorldPage() {
       {gameOver === 'win' && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-5"
           style={{ background: 'radial-gradient(ellipse at center, #052e16 0%, #000000 100%)' }}>
-          <div className="text-7xl animate-bounce">🏆</div>
+          <div className="text-4xl font-black text-yellow-400 animate-bounce">WIN</div>
           <h2 className="text-5xl font-black text-yellow-400" style={{ textShadow: '0 0 30px rgba(250,204,21,0.7)' }}>CHIẾN THẮNG!</h2>
           <p className="text-white/70 text-lg">Điểm: <span className="text-yellow-400 font-black text-2xl">{score}</span></p>
           <button onClick={handleReplay}
             className="px-10 py-4 rounded-full font-black text-xl text-black hover:scale-105 active:scale-95 transition-transform"
             style={{ background: 'linear-gradient(135deg, #fbbf24, #f97316)', boxShadow: '0 0 30px rgba(251,191,36,0.5)' }}>
-            🔄 Chơi lại
+            Chơi lại
           </button>
           <Link href="/games" className="text-white/40 hover:text-white text-sm underline">
             Quay về danh sách game
@@ -574,13 +577,13 @@ export default function RpgWorldPage() {
       {gameOver === 'lose' && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-5"
           style={{ background: 'radial-gradient(ellipse at center, #1c0505 0%, #000000 100%)' }}>
-          <div className="text-7xl">💀</div>
+          <div className="text-4xl font-black text-red-400">LOSE</div>
           <h2 className="text-5xl font-black text-red-400" style={{ textShadow: '0 0 30px rgba(239,68,68,0.7)' }}>GAME OVER</h2>
           <p className="text-white/70 text-lg">Điểm: <span className="text-orange-400 font-black text-2xl">{score}</span></p>
           <button onClick={handleReplay}
             className="px-10 py-4 rounded-full font-black text-xl text-white hover:scale-105 active:scale-95 transition-transform"
             style={{ background: 'linear-gradient(135deg, #7c3aed, #db2777)', boxShadow: '0 0 30px rgba(124,58,237,0.5)' }}>
-            🔄 Thử lại
+            Thử lại
           </button>
           <Link href="/games" className="text-white/40 hover:text-white text-sm underline">
             Quay về danh sách game

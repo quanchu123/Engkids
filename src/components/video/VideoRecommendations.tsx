@@ -15,82 +15,54 @@ export default function VideoRecommendations({
   allVideos,
   maxVideos = 6,
 }: VideoRecommendationsProps) {
-  // Calculate recommendations based on matching criteria
   const recommendations = useMemo(() => {
     const scored = allVideos
-      .filter(v => v.id !== currentVideo.id && v.status === 'ready')
-      .map(video => {
+      .filter((video) => video.id !== currentVideo.id && video.status === 'ready')
+      .map((video) => {
         let score = 0;
 
-        // Same level = +3 points
-        if (video.level === currentVideo.level) {
-          score += 3;
-        }
+        if (video.level === currentVideo.level) score += 3;
+        if (currentVideo.ageGroup && video.ageGroup === currentVideo.ageGroup) score += 2;
 
-        // Same age group = +2 points
-        if (currentVideo.ageGroup && video.ageGroup === currentVideo.ageGroup) {
-          score += 2;
-        }
-
-        // Matching topics = +1 point each
         if (currentVideo.topics && video.topics) {
-          const matchingTopics = video.topics.filter(t => 
-            currentVideo.topics.includes(t)
-          );
-          score += matchingTopics.length;
+          score += video.topics.filter((topic) => currentVideo.topics.includes(topic)).length;
         }
 
-        // Newer videos get slight bonus
-        const daysDiff = Math.floor(
-          (new Date().getTime() - new Date(video.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-        );
+        const daysDiff = Math.floor((Date.now() - new Date(video.createdAt).getTime()) / (1000 * 60 * 60 * 24));
         if (daysDiff <= 7) score += 1;
 
         return { video, score };
       })
-      .filter(item => item.score > 0)
+      .filter((item) => item.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, maxVideos)
-      .map(item => item.video);
+      .map((item) => item.video);
 
-    // If not enough recommendations, add random videos
     if (scored.length < maxVideos) {
       const remaining = allVideos
-        .filter(v => 
-          v.id !== currentVideo.id && 
-          v.status === 'ready' &&
-          !scored.find(s => s.id === v.id)
-        )
+        .filter((video) => video.id !== currentVideo.id && video.status === 'ready' && !scored.find((item) => item.id === video.id))
         .slice(0, maxVideos - scored.length);
       return [...scored, ...remaining];
     }
 
     return scored;
-  }, [currentVideo, allVideos, maxVideos]);
+  }, [allVideos, currentVideo, maxVideos]);
 
   if (recommendations.length === 0) return null;
 
   return (
-    <section className="mt-8">
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-2xl">✨</span>
-        <h3 className="text-xl font-bold text-gray-800">Video liên quan</h3>
+    <section className="soft-panel rounded-[2rem] p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-xl font-black text-slate-900">Video liên quan</h3>
+          <p className="text-sm text-slate-500">Chọn thêm video cùng level hoặc chủ đề để luyện tiếp.</p>
+        </div>
+        <span className="kid-chip px-3 py-1 text-xs font-black text-violet-700">{recommendations.length} video</span>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-        {recommendations.map((video, index) => (
-          <div
-            key={video.id}
-            className="animate-fade-in"
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <VideoCard
-              video={video}
-              size="small"
-              showTopics={false}
-              showAge={false}
-            />
-          </div>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        {recommendations.map((video) => (
+          <VideoCard key={video.id} video={video} size="small" showTopics={false} showAge={false} />
         ))}
       </div>
     </section>

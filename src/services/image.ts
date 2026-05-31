@@ -126,8 +126,8 @@ export function getBase64SizeKB(base64: string): number {
 /**
  * Placeholder ảnh mặc định
  */
-export const DEFAULT_COVER_EMOJI = '📖';
-export const DEFAULT_PANEL_EMOJI = '🖼️';
+export const DEFAULT_COVER_EMOJI = 'STORY';
+export const DEFAULT_PANEL_EMOJI = 'PANEL';
 
 /**
  * Render helper - trả về props cho img hoặc emoji span

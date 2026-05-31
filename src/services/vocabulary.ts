@@ -450,10 +450,10 @@ function mapDbToVocab(row: VocabularyRow): VocabularyItem {
 
 // Mastery level labels
 export const MASTERY_LABELS = {
-  0: { label: 'Mới', color: 'gray', emoji: '🆕' },
-  1: { label: 'Đang học', color: 'red', emoji: '📖' },
-  2: { label: 'Ôn tập', color: 'orange', emoji: '🔄' },
-  3: { label: 'Quen thuộc', color: 'yellow', emoji: '💡' },
-  4: { label: 'Nhớ rõ', color: 'blue', emoji: '✨' },
-  5: { label: 'Thành thạo', color: 'green', emoji: '🏆' },
+  0: { label: 'Mới', color: 'gray', emoji: '' },
+  1: { label: 'Đang học', color: 'red', emoji: '' },
+  2: { label: 'Ôn tập', color: 'orange', emoji: '' },
+  3: { label: 'Quen thuộc', color: 'yellow', emoji: '' },
+  4: { label: 'Nhớ rõ', color: 'blue', emoji: '' },
+  5: { label: 'Thành thạo', color: 'green', emoji: '' },
 };

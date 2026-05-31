@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
+import Image from 'next/image';
 
 // ─── Vocabulary mapping: candy type → { en, vi } ───────────────────────────
 const CANDY_VOCAB: Record<string, { en: string; vi: string }> = {
@@ -105,7 +106,7 @@ export default function CandyCrushPage() {
           header.fillRect(0, 0, GAME_W, OFFSET_Y);
 
           // Score UI
-          this.add.text(12, 8, '⭐ ĐIỂM', {
+          this.add.text(12, 8, 'ĐIỂM', {
             fontFamily: 'Arial Black', fontSize: '11px', color: '#fbbf24',
           });
           this.scoreText = this.add.text(12, 26, '0', {
@@ -113,14 +114,14 @@ export default function CandyCrushPage() {
           });
 
           // Moves UI
-          this.add.text(GAME_W / 2 - 30, 8, '🎯 MỤC TIÊU', {
+          this.add.text(GAME_W / 2 - 30, 8, 'MUC TIEU', {
             fontFamily: 'Arial Black', fontSize: '11px', color: '#fbbf24',
           });
           this.add.text(GAME_W / 2 - 30, 26, `${TARGET_SCORE}pt`, {
             fontFamily: 'Arial Black', fontSize: '18px', color: '#ffffff',
           });
 
-          this.add.text(GAME_W - 90, 8, '👣 BƯỚC', {
+          this.add.text(GAME_W - 90, 8, 'BUOC', {
             fontFamily: 'Arial Black', fontSize: '11px', color: '#fbbf24',
           });
           this.movesText = this.add.text(GAME_W - 90, 26, `${MOVES_MAX}`, {
@@ -164,7 +165,7 @@ export default function CandyCrushPage() {
           targetRef.current = key;
           const vocab = CANDY_VOCAB[key];
           setTargetRef.current({ key, en: vocab.en, vi: vocab.vi });
-          this.targetText.setText(`🍬 Match: "${vocab.en}" = ${vocab.vi}`);
+          this.targetText.setText(`Match: "${vocab.en}" = ${vocab.vi}`);
         }
 
         private _addTile(col: number, row: number) {
@@ -281,7 +282,7 @@ export default function CandyCrushPage() {
           this.scoreText.setText(`${newScore}`);
 
           if (targetMatched) {
-            toastRef.current(`🎉 +${pts} điểm! "${CANDY_VOCAB[this.currentTarget].en}" đúng rồi!`);
+            toastRef.current(`+${pts} điểm! "${CANDY_VOCAB[this.currentTarget].en}" đúng rồi!`);
             this._pickTarget();
           }
 
@@ -456,7 +457,7 @@ export default function CandyCrushPage() {
 
         {/* Title */}
         <div className="text-center mb-4">
-          <h1 className="text-3xl font-black text-white drop-shadow-lg">🍬 Candy Word Crush</h1>
+          <h1 className="text-3xl font-black text-white drop-shadow-lg">Candy Word Crush</h1>
           <p className="text-purple-300 text-sm mt-1">Match 3 bánh giống nhau để học từ vựng!</p>
         </div>
 
@@ -464,8 +465,8 @@ export default function CandyCrushPage() {
         {targetWord && status === 'playing' && (
           <div className="w-full max-w-2xl mb-3">
             <div className="bg-yellow-500/20 border-2 border-yellow-400 rounded-2xl px-4 py-2 text-center">
-              <span className="text-yellow-300 font-bold text-sm">🎯 Nhiệm vụ: Match </span>
-              <span className="text-white font-black text-lg">"{targetWord.en}"</span>
+              <span className="text-yellow-300 font-bold text-sm">Nhiệm vụ: Match </span>
+              <span className="text-white font-black text-lg">&quot;{targetWord.en}&quot;</span>
               <span className="text-yellow-300 font-bold text-sm"> = {targetWord.vi} → +30 điểm!</span>
             </div>
           </div>
@@ -482,14 +483,14 @@ export default function CandyCrushPage() {
           {/* Win overlay */}
           {status === 'win' && (
             <div className="absolute inset-0 bg-black/70 rounded-2xl flex flex-col items-center justify-center gap-4 z-10">
-              <div className="text-6xl animate-bounce">🏆</div>
+              <div className="text-4xl font-black text-yellow-400 animate-bounce">WIN</div>
               <h2 className="text-4xl font-black text-yellow-400 drop-shadow-lg">THẮNG RỒI!</h2>
               <p className="text-white text-lg">Điểm của bạn: <span className="text-yellow-400 font-black">{score}</span></p>
               <button
                 onClick={handleReplay}
                 className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-black text-lg px-8 py-3 rounded-full hover:scale-105 transition-transform shadow-lg"
               >
-                🔄 Chơi lại
+                Chơi lại
               </button>
             </div>
           )}
@@ -497,14 +498,14 @@ export default function CandyCrushPage() {
           {/* Lose overlay */}
           {status === 'lose' && (
             <div className="absolute inset-0 bg-black/70 rounded-2xl flex flex-col items-center justify-center gap-4 z-10">
-              <div className="text-6xl">😢</div>
+              <div className="text-4xl font-black text-red-400">LOSE</div>
               <h2 className="text-4xl font-black text-red-400 drop-shadow-lg">THUA RỒI!</h2>
               <p className="text-white text-lg">Điểm của bạn: <span className="text-orange-400 font-black">{score}</span> / {TARGET_SCORE}</p>
               <button
                 onClick={handleReplay}
                 className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black text-lg px-8 py-3 rounded-full hover:scale-105 transition-transform shadow-lg"
               >
-                🔄 Thử lại
+                Thử lại
               </button>
             </div>
           )}
@@ -519,14 +520,14 @@ export default function CandyCrushPage() {
 
         {/* Vocabulary legend */}
         <div className="w-full max-w-2xl mt-5">
-          <p className="text-purple-400 text-xs font-bold mb-2 text-center">📚 Bảng từ vựng bánh ngọt:</p>
+          <p className="text-purple-400 text-xs font-bold mb-2 text-center">Bảng từ vựng bánh ngọt:</p>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5">
             {CANDY_TYPES.map(key => (
               <div
                 key={key}
                 className={`flex items-center gap-1.5 bg-white/5 rounded-lg px-2 py-1 border ${targetWord?.key === key ? 'border-yellow-400 bg-yellow-400/10' : 'border-white/10'}`}
               >
-                <img src={`/games/candy-crush/${key}.png`} alt={key} className="w-7 h-7 object-contain" />
+                <Image src={`/games/candy-crush/${key}.png`} alt={key} width={28} height={28} className="w-7 h-7 object-contain" />
                 <div>
                   <div className="text-white text-[10px] font-bold leading-tight">{CANDY_VOCAB[key].en}</div>
                   <div className="text-purple-400 text-[9px] leading-tight">{CANDY_VOCAB[key].vi}</div>
@@ -537,7 +538,7 @@ export default function CandyCrushPage() {
         </div>
 
         <p className="text-purple-700/50 text-xs mt-4 text-center">
-          Clone từ: digitsensitive/phaser3-typescript (candy-crush) 🍭 Đã sửa cho Engkids
+          Clone tu: digitsensitive/phaser3-typescript (candy-crush) - Da sua cho Engkids
         </p>
       </main>
     </>

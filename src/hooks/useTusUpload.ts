@@ -2,8 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import * as tus from 'tus-js-client';
-import { getAccessToken } from '@/lib/admin-auth-client';
-import { supabase } from '@/services/supabase';
+import { getAnyAccessToken } from '@/lib/admin-auth-client';
 
 export interface UseTusUploadOptions {
   onComplete?: (dbVideoId: string) => void;
@@ -26,17 +25,10 @@ export function useTusUpload({ onComplete, onError }: UseTusUploadOptions = {}) 
   const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cancelledRef = useRef(false);
+  const completionNotifiedRef = useRef(false);
 
   const getAuthToken = useCallback(async (): Promise<string> => {
-    let accessToken = getAccessToken();
-    if (!accessToken) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) accessToken = session.access_token;
-      } catch (e) {
-        console.error('Failed to get session:', e);
-      }
-    }
+    const accessToken = await getAnyAccessToken();
     if (!accessToken) throw new Error('Not authenticated');
     return accessToken;
   }, []);
@@ -159,11 +151,11 @@ export function useTusUpload({ onComplete, onError }: UseTusUploadOptions = {}) 
       let lastBunnyStatus = -1;
 
       const statusMessages: Record<number, string> = {
-        0: '⏳ Queued - waiting for Bunny to start processing...',
-        1: '⚙️ Processing video...',
-        2: '🎬 Encoding video (this may take a few minutes)...',
-        3: '✅ Finished!',
-        4: '✅ Ready!',
+        0: 'Queued - waiting for Bunny to start processing...',
+        1: 'Processing video...',
+        2: 'Encoding video (this may take a few minutes)...',
+        3: 'Finished!',
+        4: 'Ready!',
       };
 
       const schedulePoll = (fn: () => void, delay: number) => {
@@ -210,13 +202,16 @@ export function useTusUpload({ onComplete, onError }: UseTusUploadOptions = {}) 
             setProgress(100);
             schedulePoll(() => {
               setUploading(false);
-              onComplete?.(dbVideoId);
+              if (!completionNotifiedRef.current) {
+                completionNotifiedRef.current = true;
+                onComplete?.(dbVideoId);
+              }
             }, 1500);
             resolve();
             return;
           }
 
-          if (data.status === 'failed' || data.bunnyStatus === 5) {
+          if (data.status === 'error' || data.bunnyStatus === 5) {
             reject(new Error('Video processing failed'));
             return;
           }
@@ -225,7 +220,7 @@ export function useTusUpload({ onComplete, onError }: UseTusUploadOptions = {}) 
             const pctComplete = data.bunnyDetails?.pctComplete || 0;
             let statusMsg = statusMessages[data.bunnyStatus] || `Processing... (status: ${data.bunnyStatus})`;
             if (data.bunnyStatus === 2 && pctComplete > 0) {
-              statusMsg = `🎬 Encoding video... ${pctComplete}%`;
+              statusMsg = `Encoding video... ${pctComplete}%`;
             }
             const elapsedMinutes = Math.floor((pollCount * pollInterval) / 60000);
             if (elapsedMinutes >= 1) {
@@ -233,7 +228,7 @@ export function useTusUpload({ onComplete, onError }: UseTusUploadOptions = {}) 
             }
             setStatus(statusMsg);
           } else {
-            setStatus(`📤 Uploading to Bunny.net... (poll ${pollCount})`);
+            setStatus(`Uploading to Bunny.net... (poll ${pollCount})`);
           }
 
           if (pollCount < maxPolls) {
@@ -241,7 +236,10 @@ export function useTusUpload({ onComplete, onError }: UseTusUploadOptions = {}) 
           } else {
             if (uploadComplete) {
               setUploading(false);
-              onComplete?.(dbVideoId);
+              if (!completionNotifiedRef.current) {
+                completionNotifiedRef.current = true;
+                onComplete?.(dbVideoId);
+              }
               resolve();
             } else {
               reject(new Error('Upload timeout'));
@@ -265,6 +263,7 @@ export function useTusUpload({ onComplete, onError }: UseTusUploadOptions = {}) 
     title: string
   ) => {
     cancelledRef.current = false;
+    completionNotifiedRef.current = false;
     setUploading(true);
     setProgress(1);
     setStatus('Uploading to Bunny.net Stream...');
@@ -289,10 +288,13 @@ export function useTusUpload({ onComplete, onError }: UseTusUploadOptions = {}) 
 
       // Upload complete — let user continue immediately (like YouTube)
       // Bunny will encode in the background; webhook/polling will update status
-      setStatus('✅ Upload complete! Video is processing in the background.');
+      setStatus('Upload complete! Video is processing in the background.');
       setProgress(100);
       setUploading(false);
-      onComplete?.(dbVideoId);
+      if (!completionNotifiedRef.current) {
+        completionNotifiedRef.current = true;
+        onComplete?.(dbVideoId);
+      }
 
       // Poll in background (no await) to update DB status when encoding finishes
       pollBunnyStatus(dbVideoId, uploadRef).catch(() => {});
@@ -322,6 +324,7 @@ export function useTusUpload({ onComplete, onError }: UseTusUploadOptions = {}) 
     setUploading(false);
     setProgress(0);
     setStatus('');
+    completionNotifiedRef.current = false;
   }, []);
 
   return {

@@ -1,39 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAccessToken, getAdminById } from '@/services/admin-auth';
+import { getAdminAuthUser } from '@/lib/api-auth';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/admin/me
- * Get current admin user from access token
+ * Get current admin user from either Supabase admin session or legacy admin JWT
  */
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'No access token' },
-        { status: 401 }
-      );
-    }
+    const admin = await getAdminAuthUser(request);
 
-    const token = authHeader.slice(7);
-    const payload = verifyAccessToken(token);
-    
-    const admin = await getAdminById(payload.sub);
-    
     if (!admin) {
-      return NextResponse.json(
-        { error: 'Admin not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Admin access required' }, { status: 401 });
     }
 
     return NextResponse.json({ admin });
   } catch (error) {
     console.error('Get admin error:', error);
-    return NextResponse.json(
-      { error: 'Invalid token' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Failed to resolve admin user' }, { status: 500 });
   }
 }

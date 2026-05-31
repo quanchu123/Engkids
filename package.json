@@ -10,6 +10,7 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "test:features": "node test-features.js",
+    "test:e2e": "npx playwright test",
     "setup:db": "node setup-database.js",
     "verify:bunny": "node check-bunny.js",
     "check:bunny": "node check-bunny.js"
@@ -34,6 +35,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.10.0",

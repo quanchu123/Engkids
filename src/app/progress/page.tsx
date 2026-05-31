@@ -1,22 +1,29 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import Header from '@/components/layout/Header';
 import { useAppStore } from '@/store/useAppStore';
 import { getAllStories } from '@/data/stories';
 import { pronounceWord } from '@/services/dictionary';
-import { Story, StoryProgress } from '@/types';
-import Header from '@/components/layout/Header';
+import { Story } from '@/types';
 
 type TabType = 'overview' | 'vocabulary' | 'stories' | 'achievements';
 
 const MASTERY = [
-  { level: 0, label: 'Mới', emoji: '🐣', bg: '#f3e8ff', color: '#7c3aed' },
-  { level: 1, label: 'Đang học', emoji: '🐥', bg: '#dbeafe', color: '#1d4ed8' },
-  { level: 2, label: 'Quen thuộc', emoji: '🐰', bg: '#d1fae5', color: '#065f46' },
-  { level: 3, label: 'Nhớ tốt', emoji: '🦊', bg: '#ffedd5', color: '#c2410c' },
-  { level: 4, label: 'Rất tốt', emoji: '🦁', bg: '#ede9fe', color: '#5b21b6' },
-  { level: 5, label: 'Thành thạo', emoji: '🦋', bg: '#dcfce7', color: '#166534' },
+  { level: 0, label: 'Moi', badge: 'Start', tint: 'bg-violet-100 text-violet-700' },
+  { level: 1, label: 'Dang hoc', badge: 'Learn', tint: 'bg-sky-100 text-sky-700' },
+  { level: 2, label: 'Quen thuoc', badge: 'Know', tint: 'bg-emerald-100 text-emerald-700' },
+  { level: 3, label: 'Nho tot', badge: 'Star', tint: 'bg-amber-100 text-amber-700' },
+  { level: 4, label: 'Rat tot', badge: 'Shine', tint: 'bg-pink-100 text-pink-700' },
+  { level: 5, label: 'Thanh thao', badge: 'Pro', tint: 'bg-indigo-100 text-indigo-700' },
+];
+
+const TABS: Array<{ id: TabType; label: string; icon: string }> = [
+  { id: 'overview', label: 'Tong quan', icon: 'Home' },
+  { id: 'vocabulary', label: 'Tu vung', icon: 'Words' },
+  { id: 'stories', label: 'Truyen', icon: 'Story' },
+  { id: 'achievements', label: 'Thanh tich', icon: 'Stars' },
 ];
 
 export default function ProgressPage() {
@@ -29,371 +36,312 @@ export default function ProgressPage() {
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  useEffect(() => { getAllStories().then(setStories); }, []);
+  useEffect(() => {
+    getAllStories().then(setStories);
+  }, []);
 
-  const completedStories = Object.values(progress.storiesProgress).filter(p => p.completed);
+  const completedStories = useMemo(
+    () => Object.values(progress.storiesProgress).filter((item) => item.completed),
+    [progress.storiesProgress],
+  );
+
   const totalStories = stories.length || 1;
 
-  const filteredVocab = progress.savedWords.filter(word => {
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      if (!word.word.toLowerCase().includes(q) && !word.vi.toLowerCase().includes(q)) return false;
-    }
-    if (vocabFilter === 'favorites') return word.isFavorite;
-    return true;
-  });
+  const filteredVocab = useMemo(() => {
+    return progress.savedWords.filter((word) => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        if (!word.word.toLowerCase().includes(query) && !word.vi.toLowerCase().includes(query)) {
+          return false;
+        }
+      }
 
-  const vocabStats = {
-    total: progress.savedWords.length,
-    favorites: progress.savedWords.filter(w => w.isFavorite).length,
-    byMastery: progress.savedWords.reduce((acc, w) => {
-      const lvl = w.masteryLevel || 0;
-      acc[lvl] = (acc[lvl] || 0) + 1;
-      return acc;
-    }, {} as Record<number, number>),
-  };
+      if (vocabFilter === 'favorites') {
+        return word.isFavorite;
+      }
 
-  const achievements = [
-    { id: 'first_story', name: 'Khởi đầu', desc: 'Hoàn thành truyện đầu tiên', icon: '🐣', earned: completedStories.length >= 1 },
-    { id: 'five_stories', name: 'Độc giả', desc: 'Hoàn thành 5 truyện', icon: '🐧', earned: completedStories.length >= 5 },
-    { id: 'ten_words', name: 'Thu thập từ', desc: 'Lưu 10 từ vựng', icon: '🐝', earned: vocabStats.total >= 10 },
-    { id: 'fifty_words', name: 'Kho báu từ', desc: 'Lưu 50 từ vựng', icon: '🦋', earned: vocabStats.total >= 50 },
-    { id: 'streak_3', name: 'Kiên trì', desc: 'Streak 3 ngày', icon: '🐢', earned: progress.currentStreak >= 3 },
-    { id: 'streak_7', name: 'Bền bỉ', desc: 'Streak 7 ngày', icon: '🦁', earned: progress.currentStreak >= 7 },
-    { id: 'ten_stars', name: 'Ngôi sao', desc: 'Đạt 10 sao', icon: '🌟', earned: progress.totalStars >= 10 },
-    { id: 'perfect_game', name: 'Hoàn hảo', desc: 'Đạt điểm tuyệt đối', icon: '🦄', earned: progress.gameScores.some(s => s.score === s.totalQuestions) },
-  ];
-  const earnedCount = achievements.filter(a => a.earned).length;
+      return true;
+    });
+  }, [progress.savedWords, searchQuery, vocabFilter]);
 
-  const tabs = [
-    { id: 'overview', label: 'Tổng quan', icon: '🏠' },
-    { id: 'vocabulary', label: 'Từ vựng', icon: '🐝', badge: progress.savedWords.length },
-    { id: 'stories', label: 'Truyện', icon: '🦄' },
-    { id: 'achievements', label: 'Thành tích', icon: '🌈' },
+  const vocabStats = useMemo(() => {
+    return {
+      total: progress.savedWords.length,
+      favorites: progress.savedWords.filter((word) => word.isFavorite).length,
+      byMastery: progress.savedWords.reduce((acc, word) => {
+        const level = word.masteryLevel || 0;
+        acc[level] = (acc[level] || 0) + 1;
+        return acc;
+      }, {} as Record<number, number>),
+    };
+  }, [progress.savedWords]);
+
+  const achievements = useMemo(
+    () => [
+      { id: 'first_story', name: 'Khoi dau', desc: 'Hoan thanh truyen dau tien', icon: 'Start', earned: completedStories.length >= 1 },
+      { id: 'five_stories', name: 'Doc nhieu', desc: 'Hoan thanh 5 truyen', icon: 'Books', earned: completedStories.length >= 5 },
+      { id: 'ten_words', name: 'Thu thap tu', desc: 'Luu 10 tu vung', icon: 'Word', earned: vocabStats.total >= 10 },
+      { id: 'fifty_words', name: 'Kho bau tu', desc: 'Luu 50 tu vung', icon: 'Vault', earned: vocabStats.total >= 50 },
+      { id: 'streak_3', name: 'Kien tri', desc: 'Giu streak 3 ngay', icon: 'Fire', earned: progress.currentStreak >= 3 },
+      { id: 'streak_7', name: 'Ben bi', desc: 'Giu streak 7 ngay', icon: 'Crown', earned: progress.currentStreak >= 7 },
+      { id: 'ten_stars', name: 'Ngoi sao', desc: 'Dat 10 sao', icon: 'Star', earned: progress.totalStars >= 10 },
+      { id: 'perfect_game', name: 'Hoan hao', desc: 'Dat diem tuyet doi trong game', icon: 'Perfect', earned: progress.gameScores.some((item) => item.score === item.totalQuestions) },
+    ],
+    [completedStories.length, progress.currentStreak, progress.gameScores, progress.totalStars, vocabStats.total],
+  );
+
+  const earnedCount = achievements.filter((item) => item.earned).length;
+
+  const storySections = [
+    {
+      title: 'Da hoan thanh',
+      filter: (story: Story) => Boolean(progress.storiesProgress[story.id]?.completed),
+      empty: 'Chua hoan thanh truyen nao',
+    },
+    {
+      title: 'Dang doc',
+      filter: (story: Story) => Boolean(progress.storiesProgress[story.id] && !progress.storiesProgress[story.id].completed),
+      empty: 'Khong co truyen dang doc',
+    },
+    {
+      title: 'Chua doc',
+      filter: (story: Story) => !progress.storiesProgress[story.id],
+      empty: 'Da doc het truyen hien co',
+    },
   ];
 
   return (
     <>
-      <style>{`
-        .prog-tab { transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1); }
-        .prog-tab:hover { transform: scale(1.04); }
-        .stat-card { transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease; }
-        .stat-card:hover { transform: translateY(-6px) scale(1.04); }
-        .float-deco { animation: floatDeco 3.5s ease-in-out infinite; }
-        .float-deco:nth-child(2) { animation-delay: 1s; }
-        .float-deco:nth-child(3) { animation-delay: 2s; }
-        @keyframes floatDeco { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-10px) rotate(8deg)} }
-        .mascot { animation: mascotBob 2.8s ease-in-out infinite; }
-        @keyframes mascotBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        .bar-fill { transition: width 1s cubic-bezier(0.25, 1, 0.5, 1); }
-        .achievement-card { transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1); }
-        .achievement-card:hover { transform: scale(1.03); }
-        .action-btn { transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.15s; }
-        .action-btn:hover { transform: scale(1.05); }
-        .action-btn:active { transform: scale(0.95); }
-      `}</style>
-
       <Header />
-      <main className="min-h-screen pb-24"
-        style={{ background: 'linear-gradient(145deg, #FFFDE7 0%, #F3E5F5 50%, #E3F2FD 100%)' }}>
-
-        {/* ── Rainbow strip + floating decorations ── */}
-        <div className="fixed top-0 left-0 w-full h-[5px] z-40"
-          style={{ background: 'linear-gradient(90deg,#f97316,#fbbf24,#4ade80,#60a5fa,#a78bfa,#f472b6)' }} />
-        <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
-          {/* SVG star decorations */}
-          <svg className="float-deco absolute top-28 left-[8%]" width="30" height="30" viewBox="0 0 24 24">
-            <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="#fbbf24" stroke="#f59e0b" strokeWidth="0.5"/>
-          </svg>
-          <svg className="float-deco absolute top-20 right-[10%]" width="24" height="24" viewBox="0 0 24 24" style={{ animationDelay: '1s' }}>
-            <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="#a78bfa" stroke="#7c3aed" strokeWidth="0.5"/>
-          </svg>
-          <svg className="float-deco absolute top-52 right-[22%]" width="20" height="20" viewBox="0 0 24 24" style={{ animationDelay: '2s' }}>
-            <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="#f472b6" stroke="#ec4899" strokeWidth="0.5"/>
-          </svg>
-          <svg className="float-deco absolute bottom-1/3 left-[15%]" width="18" height="18" viewBox="0 0 24 24" style={{ animationDelay: '1.5s' }}>
-            <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="#4ade80" stroke="#22c55e" strokeWidth="0.5"/>
-          </svg>
-          <svg className="float-deco absolute top-1/3 right-[6%]" width="22" height="22" viewBox="0 0 24 24" style={{ animationDelay: '0.5s' }}>
-            <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="#60a5fa" stroke="#3b82f6" strokeWidth="0.5"/>
-          </svg>
-        </div>
-
-        <div className="relative max-w-5xl mx-auto px-4 pt-8 pb-4" style={{ zIndex: 1 }}>
-
-          {/* ── HERO HEADER ── */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7">
+      <main className="min-h-screen bg-gradient-to-b from-amber-50 via-pink-50 to-sky-50 pb-24">
+        <div className="mx-auto max-w-6xl px-4 py-8">
+          <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-4">
-              {/* SVG Trophy/Progress illustration */}
               <div className="mascot flex-shrink-0">
                 <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-                  <circle cx="32" cy="32" r="30" fill="#FEF3C7" stroke="#FCD34D" strokeWidth="2"/>
-                  {/* trophy cup */}
-                  <rect x="22" y="18" width="20" height="18" rx="4" fill="#F59E0B"/>
-                  <rect x="24" y="20" width="16" height="8" rx="2" fill="#FCD34D"/>
-                  {/* handles */}
-                  <path d="M22 22 Q16 22 16 28 Q16 34 22 34" stroke="#F59E0B" strokeWidth="3" fill="none" strokeLinecap="round"/>
-                  <path d="M42 22 Q48 22 48 28 Q48 34 42 34" stroke="#F59E0B" strokeWidth="3" fill="none" strokeLinecap="round"/>
-                  {/* stem */}
-                  <rect x="29" y="36" width="6" height="8" rx="2" fill="#D97706"/>
-                  <rect x="24" y="43" width="16" height="3" rx="1.5" fill="#D97706"/>
-                  {/* star on cup */}
-                  <polygon points="32,21 33.5,25 37.5,25 34.5,27.5 35.5,31.5 32,29 28.5,31.5 29.5,27.5 26.5,25 30.5,25" fill="white" opacity="0.9"/>
+                  <circle cx="32" cy="32" r="30" fill="#FEF3C7" stroke="#FCD34D" strokeWidth="2" />
+                  <rect x="22" y="18" width="20" height="18" rx="4" fill="#F59E0B" />
+                  <rect x="24" y="20" width="16" height="8" rx="2" fill="#FCD34D" />
+                  <path d="M22 22 Q16 22 16 28 Q16 34 22 34" stroke="#F59E0B" strokeWidth="3" fill="none" strokeLinecap="round" />
+                  <path d="M42 22 Q48 22 48 28 Q48 34 42 34" stroke="#F59E0B" strokeWidth="3" fill="none" strokeLinecap="round" />
+                  <rect x="29" y="36" width="6" height="8" rx="2" fill="#D97706" />
+                  <rect x="24" y="43" width="16" height="3" rx="1.5" fill="#D97706" />
+                  <polygon points="32,21 33.5,25 37.5,25 34.5,27.5 35.5,31.5 32,29 28.5,31.5 29.5,27.5 26.5,25 30.5,25" fill="white" opacity="0.9" />
                 </svg>
               </div>
               <div>
-                <h1 className="font-black leading-tight"
+                <h1
+                  className="font-black leading-tight"
                   style={{
                     fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
                     background: 'linear-gradient(135deg, #f97316 0%, #ec4899 40%, #7c3aed 80%, #2563eb 100%)',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
                     letterSpacing: '-0.025em',
-                  }}>
+                  }}
+                >
                   Tiến Độ Học Tập!
                 </h1>
-                <p className="font-bold text-sm mt-0.5" style={{ color: '#6b5b8f' }}>
+                <p className="mt-0.5 text-sm font-bold" style={{ color: '#6b5b8f' }}>
                   Theo dõi hành trình học tiếng Anh của bạn 🌈
                 </p>
               </div>
             </div>
-            {/* Streak badge */}
-            <div className="action-btn flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-sm"
+            <div
+              className="action-btn flex-shrink-0 rounded-2xl px-5 py-2.5 text-sm font-black text-white"
               style={{
                 background: 'linear-gradient(135deg, #fb923c, #f97316)',
-                color: 'white',
                 boxShadow: '0 6px 20px rgba(249,115,22,0.4)',
-              }}>
+              }}
+            >
               🦊 {progress.currentStreak} ngày liên tiếp!
             </div>
           </div>
 
-          {/* ── TAB BAR ── */}
-          <div className="flex gap-2 flex-wrap mb-7 p-1.5 rounded-3xl"
-            style={{ background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(12px)', boxShadow: '0 4px 24px rgba(124,58,237,0.1)' }}>
-            {tabs.map(tab => {
+          <section className="soft-panel mb-6 flex flex-wrap gap-2 rounded-[1.75rem] p-2">
+            {TABS.map((tab) => {
               const active = activeTab === tab.id;
               return (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id as TabType)}
-                  className="prog-tab flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-black text-sm whitespace-nowrap min-w-[100px]"
-                  style={active ? {
-                    background: 'linear-gradient(135deg, #7c3aed, #ec4899)',
-                    color: 'white',
-                    boxShadow: '0 6px 18px rgba(124,58,237,0.4)',
-                  } : { color: '#7c3aed' }}>
-                  <span className="text-lg">{tab.icon}</span>
-                  <span>{tab.label}</span>
-                  {tab.badge !== undefined && tab.badge > 0 && (
-                    <span className="text-xs font-black px-2 py-0.5 rounded-full"
-                      style={active ? { background: 'rgba(255,255,255,0.25)', color: 'white' } : { background: '#ede9fe', color: '#7c3aed' }}>
-                      {tab.badge}
-                    </span>
-                  )}
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`rounded-2xl px-4 py-3 text-sm font-black transition-all ${
+                    active
+                      ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-lg'
+                      : 'bg-white text-violet-700 shadow'
+                  }`}
+                >
+                  {tab.icon} {tab.label}
                 </button>
               );
             })}
-          </div>
+          </section>
 
-          {/* ══════════ OVERVIEW TAB ══════════ */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              {/* Stats row */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: 'Tổng sao', value: progress.totalStars, gradFrom: '#fbbf24', gradTo: '#f97316', shadow: 'rgba(251,191,36,0.45)', svgPath: <polygon points="12,2 14.9,8.6 22,9.3 17,14.1 18.5,21 12,17.6 5.5,21 7,14.1 2,9.3 9.1,8.6" fill="white"/> },
-                  { label: 'Từ đã học', value: vocabStats.total, gradFrom: '#60a5fa', gradTo: '#7c3aed', shadow: 'rgba(124,58,237,0.35)', svgPath: <><rect x="4" y="3" width="16" height="18" rx="2" stroke="white" strokeWidth="2" fill="none"/><line x1="8" y1="8" x2="16" y2="8" stroke="white" strokeWidth="1.5" strokeLinecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="white" strokeWidth="1.5" strokeLinecap="round"/><line x1="8" y1="16" x2="13" y2="16" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></> },
-                  { label: 'Truyện xong', value: completedStories.length, gradFrom: '#4ade80', gradTo: '#10b981', shadow: 'rgba(16,185,129,0.35)', svgPath: <><path d="M12 2 L15 8 L22 9 L17 14 L18 21 L12 18 L6 21 L7 14 L2 9 L9 8 Z" fill="white" opacity="0.9"/><circle cx="12" cy="12" r="3" fill="rgba(255,255,255,0.4)"/></> },
-                  { label: 'Streak ngày', value: progress.currentStreak, gradFrom: '#fb923c', gradTo: '#ec4899', shadow: 'rgba(249,115,22,0.35)', svgPath: <path d="M12 2 C8 8 6 10 8 14 C10 18 12 18 12 22 C12 18 14 18 16 14 C18 10 16 8 12 2 Z" fill="white" opacity="0.9"/> },
-                ].map(s => (
-                  <div key={s.label} className="stat-card rounded-3xl p-5 text-center"
-                    style={{ background: '#ffffff', boxShadow: `0 8px 32px ${s.shadow}` }}>
-                    {/* Colored icon background */}
-                    <div className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center"
-                      style={{ background: `linear-gradient(135deg, ${s.gradFrom}, ${s.gradTo})`, boxShadow: `0 4px 12px ${s.shadow}` }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">{s.svgPath}</svg>
-                    </div>
-                    <div className="text-4xl font-black mb-1"
-                      style={{ background: `linear-gradient(135deg, ${s.gradFrom}, ${s.gradTo})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                      {s.value}
-                    </div>
-                    <div className="text-xs font-bold uppercase tracking-wide" style={{ color: '#9ca3af' }}>{s.label}</div>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <MetricCard title="Tong sao" value={progress.totalStars} tint="from-amber-400 to-orange-400" />
+                <MetricCard title="Tu da hoc" value={vocabStats.total} tint="from-sky-400 to-indigo-500" />
+                <MetricCard title="Truyen xong" value={completedStories.length} tint="from-emerald-400 to-teal-500" />
+                <MetricCard title="Streak" value={progress.currentStreak} tint="from-pink-400 to-rose-500" />
               </div>
 
-              {/* Two columns */}
-              <div className="grid md:grid-cols-2 gap-5">
-                {/* Progress bars */}
-                <div className="rounded-3xl p-6" style={{ background: 'white', boxShadow: '0 4px 24px rgba(124,58,237,0.08)' }}>
-                  <h3 className="font-black text-lg mb-5 flex items-center gap-2" style={{ color: '#1e1b4b' }}>
-                    📊 Tiến độ học tập
-                  </h3>
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="toy-panel p-6">
+                  <h2 className="mb-5 text-lg font-black text-slate-900">Tien do tong quan</h2>
                   <div className="space-y-5">
-                    {[
-                      { label: 'Truyện', current: completedStories.length, total: totalStories, gradFrom: '#4ade80', gradTo: '#10b981' },
-                      { label: 'Thành tích', current: earnedCount, total: achievements.length, gradFrom: '#fbbf24', gradTo: '#f97316' },
-                      { label: 'Từ yêu thích', current: vocabStats.favorites, total: vocabStats.total || 1, gradFrom: '#f472b6', gradTo: '#ec4899' },
-                    ].map(bar => {
-                      const pct = Math.min(Math.round((bar.current / bar.total) * 100), 100);
-                      return (
-                        <div key={bar.label}>
-                          <div className="flex justify-between text-sm font-bold mb-2">
-                            <span style={{ color: '#374151' }}>{bar.label}</span>
-                            <span style={{ color: '#6b7280' }}>{bar.current}/{bar.total} · {pct}%</span>
-                          </div>
-                          <div className="h-4 rounded-full overflow-hidden" style={{ background: '#f3f4f6' }}>
-                            <div className="bar-fill h-full rounded-full"
-                              style={{ width: `${pct || 2}%`, background: `linear-gradient(90deg, ${bar.gradFrom}, ${bar.gradTo})`, boxShadow: `0 2px 8px ${bar.gradTo}66` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
+                    <ProgressBar label="Truyen" current={completedStories.length} total={totalStories} color="from-emerald-400 to-teal-500" />
+                    <ProgressBar label="Thanh tich" current={earnedCount} total={achievements.length} color="from-amber-400 to-orange-400" />
+                    <ProgressBar label="Tu yeu thich" current={vocabStats.favorites} total={vocabStats.total || 1} color="from-pink-400 to-rose-500" />
                   </div>
                 </div>
 
-                {/* Mastery grid */}
-                <div className="rounded-3xl p-6" style={{ background: 'white', boxShadow: '0 4px 24px rgba(124,58,237,0.08)' }}>
-                  <h3 className="font-black text-lg mb-5 flex items-center gap-2" style={{ color: '#1e1b4b' }}>
-                    🐱 Mức độ nhớ từ
-                  </h3>
-                  <div className="grid grid-cols-3 gap-3">
-                    {MASTERY.map(m => (
-                      <div key={m.level} className="achievement-card rounded-2xl p-3 text-center"
-                        style={{ background: m.bg }}>
-                        <div className="text-2xl mb-1">{m.emoji}</div>
-                        <div className="text-xl font-black" style={{ color: m.color }}>
-                          {vocabStats.byMastery[m.level] || 0}
-                        </div>
-                        <div className="text-[10px] font-bold mt-0.5" style={{ color: m.color + 'cc' }}>{m.label}</div>
+                <div className="toy-panel p-6">
+                  <h2 className="mb-5 text-lg font-black text-slate-900">Muc do nho tu</h2>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {MASTERY.map((item) => (
+                      <div key={item.level} className={`rounded-2xl px-3 py-4 text-center ${item.tint}`}>
+                        <div className="text-lg font-black">{item.badge}</div>
+                        <div className="mt-1 text-2xl font-black">{vocabStats.byMastery[item.level] || 0}</div>
+                        <div className="mt-1 text-xs font-bold">{item.label}</div>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Recent activity */}
-              <div className="rounded-3xl p-6" style={{ background: 'white', boxShadow: '0 4px 24px rgba(124,58,237,0.08)' }}>
-                <h3 className="font-black text-lg mb-5 flex items-center gap-2" style={{ color: '#1e1b4b' }}>
-                  🐰 Hoạt động gần đây
-                </h3>
+              <div className="toy-panel p-6">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <h2 className="text-lg font-black text-slate-900">Hoat dong gan day</h2>
+                  <Link href="/stories" className="kid-chip px-4 py-2 text-sm font-bold text-violet-700">
+                    Xem truyen
+                  </Link>
+                </div>
                 {completedStories.length > 0 ? (
-                  <div className="space-y-2">
-                    {completedStories.slice(0, 5).map(sp => {
-                      const story = stories.find(s => s.id === sp.storyId);
+                  <div className="space-y-3">
+                    {completedStories.slice(0, 5).map((item) => {
+                      const story = stories.find((candidate) => candidate.id === item.storyId);
                       if (!story) return null;
+
                       return (
-                        <Link key={sp.storyId} href={`/stories/${sp.storyId}`}
-                          className="flex items-center gap-4 p-3 rounded-2xl transition-colors hover:bg-purple-50 group">
-                          <div className="text-3xl">{story.cover_image}</div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-black text-sm truncate" style={{ color: '#1e1b4b' }}>{story.title_en}</h4>
-                            <p className="text-xs font-semibold truncate" style={{ color: '#7b5ea7' }}>{story.title_vi}</p>
+                        <Link
+                          key={item.storyId}
+                          href={`/stories/${item.storyId}`}
+                          className="toy-surface flex items-center gap-4 rounded-2xl p-3 transition-transform hover:-translate-y-0.5"
+                        >
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-100 to-pink-100 text-2xl font-black text-violet-500">
+                            {story.cover_image || story.title_en.charAt(0)}
                           </div>
-                          <div className="text-base">{'🌟'.repeat(sp.starsEarned)}</div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="truncate font-black text-slate-900">{story.title_en}</h3>
+                            <p className="truncate text-sm text-slate-500">{story.title_vi}</p>
+                          </div>
+                          <div className="kid-chip px-3 py-1 text-sm font-black text-amber-700">
+                            {item.starsEarned} sao
+                          </div>
                         </Link>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-10">
-                    <div className="mascot inline-block text-7xl mb-4">🦄</div>
-                    <p className="font-black text-base mb-1" style={{ color: '#1e1b4b' }}>Chưa có hoạt động nào</p>
-                    <p className="text-sm font-semibold mb-5" style={{ color: '#7b5ea7' }}>Bắt đầu đọc truyện để ghi lại hành trình học nhé!</p>
-                    <Link href="/stories"
-                      className="action-btn inline-flex items-center gap-2 px-7 py-3 rounded-2xl font-black text-white text-sm"
-                      style={{ background: 'linear-gradient(135deg, #7c3aed, #ec4899)', boxShadow: '0 6px 20px rgba(124,58,237,0.45)' }}>
-                      🚀 Bắt đầu học thôi!
-                    </Link>
-                  </div>
+                  <EmptyPanel
+                    title="Chua co hoat dong nao"
+                    description="Bat dau doc truyen de he thong ghi lai hanh trinh hoc tap."
+                    href="/stories"
+                    action="Doc truyen ngay"
+                  />
                 )}
               </div>
             </div>
           )}
 
-          {/* ══════════ VOCABULARY TAB ══════════ */}
           {activeTab === 'vocabulary' && (
             <div className="space-y-5">
-              {/* Stats banner */}
-              <div className="rounded-3xl p-6 text-white"
-                style={{ background: 'linear-gradient(135deg, #7c3aed, #ec4899)', boxShadow: '0 8px 32px rgba(124,58,237,0.45)' }}>
-                <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-                  <h3 className="text-xl font-black">📚 Kho từ vựng của bạn</h3>
-                  <div className="flex gap-2 flex-wrap">
+              <div className="soft-feature rounded-[2rem] p-6 text-white">
+                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-black">Kho tu vung</h2>
+                    <p className="text-sm text-white/85">On lai cac tu da luu va mo flashcard khi can luyen nhanh.</p>
+                  </div>
+                  <div className="flex gap-2">
                     {filteredVocab.length > 0 && (
                       <>
-                        <Link href="/progress/review"
-                          className="action-btn bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl text-sm font-black transition-colors">
-                          🐱 Ôn tập SM-2
+                        <Link href="/progress/review" className="rounded-2xl bg-white/15 px-4 py-2 text-sm font-black text-white">
+                          On tap
                         </Link>
-                        <button onClick={() => { setShowFlashcard(true); setCurrentFlashcardIndex(0); setIsFlipped(false); }}
-                          className="action-btn bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl text-sm font-black transition-colors">
-                          🐰 Flashcard
+                        <button
+                          onClick={() => {
+                            setShowFlashcard(true);
+                            setCurrentFlashcardIndex(0);
+                            setIsFlipped(false);
+                          }}
+                          className="rounded-2xl bg-white/15 px-4 py-2 text-sm font-black text-white"
+                        >
+                          Flashcard
                         </button>
                       </>
                     )}
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-center">
-                  {[{ v: vocabStats.total, l: 'Tổng từ' }, { v: vocabStats.favorites, l: 'Yêu thích' }, { v: vocabStats.byMastery[5] || 0, l: 'Thành thạo' }].map(s => (
-                    <div key={s.l}>
-                      <div className="text-3xl font-black">{s.v}</div>
-                      <div className="text-white/75 text-xs font-bold uppercase tracking-wide">{s.l}</div>
-                    </div>
-                  ))}
+                  <SummaryStat label="Tong tu" value={vocabStats.total} />
+                  <SummaryStat label="Yeu thich" value={vocabStats.favorites} />
+                  <SummaryStat label="Thanh thao" value={vocabStats.byMastery[5] || 0} />
                 </div>
               </div>
 
-              {/* Search & filter */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
-                  <input type="text" placeholder="Tìm kiếm từ vựng..." value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl font-bold focus:outline-none"
-                    style={{ background: 'white', boxShadow: '0 2px 12px rgba(124,58,237,0.12)', color: '#374151' }} />
-                </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  type="text"
+                  placeholder="Tim kiem tu vung..."
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  className="soft-panel w-full rounded-2xl px-4 py-3 font-semibold text-slate-700 outline-none"
+                />
                 <div className="flex gap-2">
-                  {[{ id: 'all' as const, icon: '📚', label: 'Tất cả' }, { id: 'favorites' as const, icon: '💖', label: 'Yêu thích' }].map(f => (
-                    <button key={f.id} onClick={() => setVocabFilter(f.id)}
-                      className="action-btn px-4 py-2 rounded-2xl text-sm font-black flex items-center gap-1.5"
-                      style={vocabFilter === f.id ? { background: 'linear-gradient(135deg, #7c3aed, #ec4899)', color: 'white', boxShadow: '0 4px 14px rgba(124,58,237,0.4)' } : { background: 'white', color: '#7c3aed', boxShadow: '0 2px 8px rgba(124,58,237,0.1)' }}>
-                      {f.icon} {f.label}
-                    </button>
-                  ))}
+                  <FilterButton active={vocabFilter === 'all'} onClick={() => setVocabFilter('all')}>
+                    Tat ca
+                  </FilterButton>
+                  <FilterButton active={vocabFilter === 'favorites'} onClick={() => setVocabFilter('favorites')}>
+                    Yeu thich
+                  </FilterButton>
                 </div>
               </div>
 
-              {/* Vocab list */}
               {filteredVocab.length > 0 ? (
                 <div className="grid gap-3">
-                  {filteredVocab.map(item => {
-                    const lvl = item.masteryLevel || 0;
-                    const m = MASTERY[lvl];
+                  {filteredVocab.map((item) => {
+                    const mastery = MASTERY[item.masteryLevel || 0];
                     return (
-                      <div key={item.word} className="rounded-3xl p-4"
-                        style={{ background: 'white', boxShadow: '0 2px 16px rgba(124,58,237,0.08)' }}>
+                      <div key={item.word} className="toy-panel p-4">
                         <div className="flex items-center gap-4">
-                          <button onClick={() => pronounceWord(item.word)}
-                            className="action-btn w-12 h-12 rounded-2xl text-white flex items-center justify-center flex-shrink-0"
-                            style={{ background: 'linear-gradient(135deg, #60a5fa, #7c3aed)', boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}>
-                            🎵
+                          <button
+                            onClick={() => pronounceWord(item.word)}
+                            className="h-12 w-12 rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 text-sm font-black text-white shadow-lg"
+                          >
+                            Play
                           </button>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-black text-lg" style={{ color: '#1e1b4b' }}>{item.word}</h4>
-                            <p className="text-sm font-semibold" style={{ color: '#7b5ea7' }}>{item.vi}</p>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-lg font-black text-slate-900">{item.word}</h3>
+                            <p className="text-sm text-slate-500">{item.vi}</p>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="px-2.5 py-1 rounded-xl text-xs font-black"
-                              style={{ background: m.bg, color: m.color }}>
-                              {m.emoji} {m.label}
-                            </div>
-                            <button onClick={() => toggleWordFavorite(item.word)}
-                              className="action-btn p-2 rounded-xl"
-                              style={{ background: item.isFavorite ? '#fce7f3' : '#f9fafb' }}>
-                              {item.isFavorite ? '💖' : '🤍'}
+                          <div className="flex items-center gap-2">
+                            <span className={`rounded-xl px-3 py-1 text-xs font-black ${mastery.tint}`}>
+                              {mastery.badge} {mastery.label}
+                            </span>
+                            <button
+                              onClick={() => toggleWordFavorite(item.word)}
+                              className="kid-chip px-3 py-2 text-xs font-black text-pink-700"
+                            >
+                              {item.isFavorite ? 'Loved' : 'Like'}
                             </button>
-                            <button onClick={() => unsaveWord(item.word)}
-                              className="action-btn p-2 rounded-xl text-gray-400 hover:text-red-500"
-                              style={{ background: '#f9fafb' }}>🗑</button>
+                            <button
+                              onClick={() => unsaveWord(item.word)}
+                              className="kid-chip px-3 py-2 text-xs font-black text-slate-500"
+                            >
+                              Xoa
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -401,55 +349,69 @@ export default function ProgressPage() {
                   })}
                 </div>
               ) : (
-                <div className="text-center py-14 rounded-3xl" style={{ background: 'white' }}>
-                  <div className="mascot inline-block text-6xl mb-4">📚</div>
-                  <p className="font-black text-lg mb-1" style={{ color: '#1e1b4b' }}>{searchQuery ? 'Không tìm thấy từ nào' : 'Chưa có từ vựng nào'}</p>
-                  <p className="text-sm font-semibold mb-5" style={{ color: '#7b5ea7' }}>Lưu từ khi đọc truyện để xây dựng kho từ vựng!</p>
-                  <Link href="/stories" className="action-btn inline-block px-6 py-3 rounded-2xl font-black text-white text-sm"
-                    style={{ background: 'linear-gradient(135deg, #7c3aed, #ec4899)', boxShadow: '0 6px 20px rgba(124,58,237,0.4)' }}>
-                    Đọc truyện ngay! 🦄
-                  </Link>
-                </div>
+                <EmptyPanel
+                  title={searchQuery ? 'Khong tim thay tu phu hop' : 'Chua co tu vung nao'}
+                  description="Luu tu khi doc truyen hoac xem video de xay kho tu vung rieng."
+                  href="/stories"
+                  action="Doc truyen"
+                />
               )}
 
-              {/* Flashcard Modal */}
               {showFlashcard && filteredVocab.length > 0 && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" style={{ backdropFilter: 'blur(4px)' }}>
-                  <div className="rounded-3xl p-7 max-w-md w-full" style={{ background: 'white', boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-black text-lg" style={{ color: '#1e1b4b' }}>🐰 Học Flashcard</h3>
-                      <button onClick={() => setShowFlashcard(false)}
-                        className="action-btn w-9 h-9 rounded-2xl flex items-center justify-center font-black text-lg"
-                        style={{ background: '#f3e8ff', color: '#7c3aed' }}>✕</button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+                  <div className="toy-panel max-w-md w-full p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="text-lg font-black text-slate-900">Flashcard</h3>
+                      <button onClick={() => setShowFlashcard(false)} className="kid-chip px-3 py-2 text-sm font-black text-violet-700">
+                        Dong
+                      </button>
                     </div>
-                    <p className="text-center text-sm font-bold mb-5" style={{ color: '#7b5ea7' }}>
+                    <p className="mb-4 text-center text-sm font-bold text-slate-500">
                       {currentFlashcardIndex + 1} / {filteredVocab.length}
                     </p>
-                    <div onClick={() => setIsFlipped(!isFlipped)} className="rounded-3xl p-8 min-h-[180px] flex items-center justify-center cursor-pointer"
-                      style={{ background: 'linear-gradient(135deg, #f3e8ff, #fce7f3)', boxShadow: '0 6px 20px rgba(124,58,237,0.2)' }}>
-                      <div className="text-center">
-                        {!isFlipped ? (
-                          <>
-                            <p className="text-3xl font-black mb-2" style={{ color: '#1e1b4b' }}>{filteredVocab[currentFlashcardIndex]?.word}</p>
-                            <p className="text-sm font-bold" style={{ color: '#7b5ea7' }}>Nhấp để xem nghĩa 👆</p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-2xl font-black mb-3" style={{ color: '#1e1b4b' }}>{filteredVocab[currentFlashcardIndex]?.vi}</p>
-                            <button onClick={(e) => { e.stopPropagation(); pronounceWord(filteredVocab[currentFlashcardIndex]?.word); }}
-                              className="action-btn text-sm font-black px-4 py-2 rounded-xl text-white"
-                              style={{ background: 'linear-gradient(135deg, #60a5fa, #7c3aed)' }}>🎵 Nghe phát âm</button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex justify-center gap-4 mt-5">
-                      <button onClick={() => { setIsFlipped(false); setCurrentFlashcardIndex(prev => prev > 0 ? prev - 1 : filteredVocab.length - 1); }}
-                        className="action-btn px-6 py-2.5 rounded-2xl font-black text-sm"
-                        style={{ background: '#f3e8ff', color: '#7c3aed' }}>← Trước</button>
-                      <button onClick={() => { setIsFlipped(false); setCurrentFlashcardIndex(prev => prev < filteredVocab.length - 1 ? prev + 1 : 0); }}
-                        className="action-btn px-6 py-2.5 rounded-2xl font-black text-sm text-white"
-                        style={{ background: 'linear-gradient(135deg, #7c3aed, #ec4899)', boxShadow: '0 4px 14px rgba(124,58,237,0.4)' }}>Tiếp →</button>
+                    <button
+                      onClick={() => setIsFlipped((value) => !value)}
+                      className="toy-surface min-h-[200px] w-full rounded-[2rem] p-8 text-center"
+                    >
+                      {!isFlipped ? (
+                        <>
+                          <p className="text-3xl font-black text-slate-900">{filteredVocab[currentFlashcardIndex]?.word}</p>
+                          <p className="mt-3 text-sm font-bold text-slate-500">Bam de xem nghia</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-3xl font-black text-slate-900">{filteredVocab[currentFlashcardIndex]?.vi}</p>
+                          <button
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              pronounceWord(filteredVocab[currentFlashcardIndex]?.word);
+                            }}
+                            className="mt-4 rounded-2xl bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-2 text-sm font-black text-white shadow-lg"
+                          >
+                            Nghe phat am
+                          </button>
+                        </>
+                      )}
+                    </button>
+                    <div className="mt-5 flex justify-center gap-3">
+                      <button
+                        onClick={() => {
+                          setIsFlipped(false);
+                          setCurrentFlashcardIndex((prev) => (prev > 0 ? prev - 1 : filteredVocab.length - 1));
+                        }}
+                        className="kid-chip px-5 py-3 text-sm font-black text-violet-700"
+                      >
+                        Truoc
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsFlipped(false);
+                          setCurrentFlashcardIndex((prev) => (prev < filteredVocab.length - 1 ? prev + 1 : 0));
+                        }}
+                        className="rounded-2xl bg-gradient-to-r from-violet-500 to-pink-500 px-5 py-3 text-sm font-black text-white shadow-lg"
+                      >
+                        Tiep
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -457,36 +419,41 @@ export default function ProgressPage() {
             </div>
           )}
 
-          {/* ══════════ STORIES TAB ══════════ */}
           {activeTab === 'stories' && (
             <div className="space-y-5">
-              {[
-                { title: '🎀 Đã hoàn thành', filter: (s: Story) => !!progress.storiesProgress[s.id]?.completed, empty: 'Chưa hoàn thành truyện nào' },
-                { title: '🦄 Đang đọc', filter: (s: Story) => !!(progress.storiesProgress[s.id] && !progress.storiesProgress[s.id].completed), empty: 'Không có truyện đang đọc' },
-                { title: '🐣 Chưa đọc', filter: (s: Story) => !progress.storiesProgress[s.id], empty: 'Đã đọc hết truyện!' },
-              ].map(section => {
+              {storySections.map((section) => {
                 const filtered = stories.filter(section.filter);
                 return (
-                  <div key={section.title} className="rounded-3xl p-6" style={{ background: 'white', boxShadow: '0 4px 24px rgba(124,58,237,0.08)' }}>
-                    <h3 className="font-black text-base mb-4" style={{ color: '#1e1b4b' }}>
-                      {section.title} {filtered.length > 0 && <span style={{ color: '#9ca3af', fontWeight: 700 }}>({filtered.length})</span>}
-                    </h3>
+                  <div key={section.title} className="toy-panel p-6">
+                    <h2 className="mb-4 text-lg font-black text-slate-900">
+                      {section.title}
+                      {filtered.length > 0 && <span className="ml-2 text-sm font-bold text-slate-400">({filtered.length})</span>}
+                    </h2>
                     {filtered.length === 0 ? (
-                      <p className="text-center py-4 font-bold text-sm" style={{ color: '#7b5ea7' }}>{section.empty}</p>
+                      <p className="py-6 text-center text-sm font-bold text-slate-500">{section.empty}</p>
                     ) : (
-                      <div className="grid md:grid-cols-2 gap-3">
-                        {filtered.map(story => {
-                          const prog = progress.storiesProgress[story.id];
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {filtered.map((story) => {
+                          const item = progress.storiesProgress[story.id];
                           return (
-                            <Link key={story.id} href={`/stories/${story.id}`}
-                              className="flex items-center gap-3 p-3 rounded-2xl transition-colors hover:bg-purple-50">
-                              <div className="text-3xl">{story.cover_image}</div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-black text-sm truncate" style={{ color: '#1e1b4b' }}>{story.title_en}</h4>
-                                <p className="text-xs font-semibold truncate" style={{ color: '#7b5ea7' }}>{story.title_vi}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#ede9fe', color: '#7c3aed' }}>{story.level}</span>
-                                  {prog?.completed && <span className="text-xs">{'🌟'.repeat(prog.starsEarned)}</span>}
+                            <Link
+                              key={story.id}
+                              href={`/stories/${story.id}`}
+                              className="toy-surface flex items-center gap-4 rounded-2xl p-3 transition-transform hover:-translate-y-0.5"
+                            >
+                              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-violet-100 text-xl font-black text-violet-500">
+                                {story.cover_image || story.title_en.charAt(0)}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="truncate font-black text-slate-900">{story.title_en}</h3>
+                                <p className="truncate text-sm text-slate-500">{story.title_vi}</p>
+                                <div className="mt-2 flex items-center gap-2">
+                                  <span className="kid-chip px-3 py-1 text-xs font-black text-violet-700">{story.level}</span>
+                                  {item?.completed && (
+                                    <span className="kid-chip px-3 py-1 text-xs font-black text-amber-700">
+                                      {item.starsEarned} sao
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </Link>
@@ -500,60 +467,60 @@ export default function ProgressPage() {
             </div>
           )}
 
-          {/* ══════════ ACHIEVEMENTS TAB ══════════ */}
           {activeTab === 'achievements' && (
             <div className="space-y-5">
-              {/* Summary */}
-              <div className="rounded-3xl p-7 text-white flex items-center justify-between"
-                style={{ background: 'linear-gradient(135deg, #fbbf24, #f97316)', boxShadow: '0 8px 32px rgba(251,191,36,0.5)' }}>
-                <div>
-                  <h3 className="text-2xl font-black mb-1">🏆 Thành tích</h3>
-                  <p className="font-bold text-white/85">Đã đạt {earnedCount}/{achievements.length} thành tích</p>
-                  <div className="h-3 rounded-full mt-3 overflow-hidden" style={{ background: 'rgba(255,255,255,0.3)', width: '200px' }}>
-                    <div className="h-full rounded-full bg-white bar-fill"
-                      style={{ width: `${Math.round(earnedCount / achievements.length * 100) || 2}%` }} />
-                  </div>
+              <div className="soft-feature rounded-[2rem] p-6 text-white">
+                <h2 className="text-2xl font-black">Thanh tich</h2>
+                <p className="mt-1 text-white/85">Da dat {earnedCount}/{achievements.length} cot moc hoc tap.</p>
+                <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/20">
+                  <div
+                    className="h-full rounded-full bg-white transition-all"
+                    style={{ width: `${Math.max(earnedCount / achievements.length, 0.02) * 100}%` }}
+                  />
                 </div>
-                <div className="text-7xl opacity-50 text-right">🦋</div>
               </div>
 
-              {/* Achievement grid */}
-              <div className="grid md:grid-cols-2 gap-4">
-                {achievements.map(a => (
-                  <div key={a.id} className="achievement-card rounded-3xl p-5"
-                    style={{ background: a.earned ? 'white' : '#f9fafb', boxShadow: a.earned ? '0 6px 24px rgba(124,58,237,0.15)' : '0 2px 8px rgba(0,0,0,0.04)', opacity: a.earned ? 1 : 0.65 }}>
+              <div className="grid gap-4 md:grid-cols-2">
+                {achievements.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`toy-panel p-5 ${item.earned ? '' : 'opacity-70 grayscale-[0.15]'}`}
+                  >
                     <div className="flex items-center gap-4">
-                      <div className="text-4xl" style={{ filter: a.earned ? 'none' : 'grayscale(1)' }}>{a.icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-black text-sm" style={{ color: '#1e1b4b' }}>{a.name}</h4>
-                        <p className="text-xs font-semibold mt-0.5" style={{ color: '#7b5ea7' }}>{a.desc}</p>
+                      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl font-black ${item.earned ? 'bg-gradient-to-br from-amber-300 to-orange-400 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        {item.icon}
                       </div>
-                      {a.earned && (
-                        <div className="w-9 h-9 rounded-2xl flex items-center justify-center font-black text-white flex-shrink-0"
-                          style={{ background: 'linear-gradient(135deg, #4ade80, #22c55e)', boxShadow: '0 3px 10px rgba(34,197,94,0.4)' }}>✓</div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-black text-slate-900">{item.name}</h3>
+                        <p className="text-sm text-slate-500">{item.desc}</p>
+                      </div>
+                      {item.earned && (
+                        <span className="kid-chip px-3 py-1 text-xs font-black text-emerald-700">Done</span>
                       )}
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Game history */}
               {progress.gameScores.length > 0 && (
-                <div className="rounded-3xl p-6" style={{ background: 'white', boxShadow: '0 4px 24px rgba(124,58,237,0.08)' }}>
-                  <h3 className="font-black text-base mb-4" style={{ color: '#1e1b4b' }}>🎮 Lịch sử game</h3>
-                  <div className="space-y-2">
-                    {progress.gameScores.slice(-10).reverse().map((score, i) => {
-                      const story = stories.find(s => s.id === score.storyId);
-                      const perfect = score.score === score.totalQuestions;
+                <div className="toy-panel p-6">
+                  <h2 className="mb-4 text-lg font-black text-slate-900">Lich su game</h2>
+                  <div className="space-y-3">
+                    {progress.gameScores.slice(-10).reverse().map((item, index) => {
+                      const story = stories.find((candidate) => candidate.id === item.storyId);
+                      const perfect = item.score === item.totalQuestions;
+
                       return (
-                        <div key={i} className="flex items-center gap-4 p-3 rounded-2xl" style={{ background: '#faf5ff' }}>
-                          <div className="text-2xl">{score.gameType === 'match' ? '🐙' : '🦊'}</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-black text-sm truncate" style={{ color: '#1e1b4b' }}>{story?.title_en || score.storyId}</p>
-                            <p className="text-xs font-semibold" style={{ color: '#7b5ea7' }}>{score.gameType === 'match' ? 'Matching Game' : 'Fill in Blank'}</p>
+                        <div key={`${item.storyId}-${index}`} className="toy-surface flex items-center gap-4 rounded-2xl p-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-pink-100 font-black text-violet-600">
+                            {item.gameType === 'match' ? 'Match' : 'Blank'}
                           </div>
-                          <div className="font-black text-sm" style={{ color: perfect ? '#22c55e' : '#7b5ea7' }}>
-                            {perfect && '🦋 '}{score.score}/{score.totalQuestions}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-black text-slate-900">{story?.title_en || item.storyId}</p>
+                            <p className="text-sm text-slate-500">{item.gameType === 'match' ? 'Matching Game' : 'Fill in the Blank'}</p>
+                          </div>
+                          <div className={`kid-chip px-3 py-1 text-sm font-black ${perfect ? 'text-emerald-700' : 'text-violet-700'}`}>
+                            {item.score}/{item.totalQuestions}
                           </div>
                         </div>
                       );
@@ -563,17 +530,101 @@ export default function ProgressPage() {
               )}
             </div>
           )}
-
-          {/* ── FOOTER BANNER ── */}
-          <div className="mt-8 rounded-3xl p-7 text-center"
-            style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #f97316 40%, #ec4899 100%)', boxShadow: '0 10px 40px rgba(251,191,36,0.45)' }}>
-            <p className="text-2xl font-black text-white mb-1.5" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
-              🏆 Học giỏi tiếng Anh mỗi ngày!
-            </p>
-            <p className="text-white/90 font-bold">Kiên trì mỗi ngày, giỏi tiếng Anh mỗi ngày! 🚀✨</p>
-          </div>
         </div>
       </main>
     </>
   );
 }
+
+function MetricCard({ title, value, tint }: { title: string; value: number; tint: string }) {
+  return (
+    <div className="toy-panel p-5 text-center">
+      <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tint} font-black text-white shadow-lg`}>
+        {title.slice(0, 1)}
+      </div>
+      <div className={`bg-gradient-to-r ${tint} bg-clip-text text-4xl font-black text-transparent`}>{value}</div>
+      <div className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400">{title}</div>
+    </div>
+  );
+}
+
+function ProgressBar({
+  label,
+  current,
+  total,
+  color,
+}: {
+  label: string;
+  current: number;
+  total: number;
+  color: string;
+}) {
+  const percentage = Math.min(Math.round((current / total) * 100), 100);
+
+  return (
+    <div>
+      <div className="mb-2 flex justify-between text-sm font-bold">
+        <span className="text-slate-700">{label}</span>
+        <span className="text-slate-400">{current}/{total} · {percentage}%</span>
+      </div>
+      <div className="h-4 overflow-hidden rounded-full bg-slate-100">
+        <div className={`h-full rounded-full bg-gradient-to-r ${color}`} style={{ width: `${Math.max(percentage, 2)}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function SummaryStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="text-3xl font-black">{value}</div>
+      <div className="text-xs font-bold uppercase tracking-wide text-white/70">{label}</div>
+    </div>
+  );
+}
+
+function FilterButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-2xl px-4 py-3 text-sm font-black transition-all ${
+        active
+          ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-lg'
+          : 'bg-white text-violet-700 shadow'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EmptyPanel({
+  title,
+  description,
+  href,
+  action,
+}: {
+  title: string;
+  description: string;
+  href: string;
+  action: string;
+}) {
+  return (
+    <div className="toy-panel py-12 text-center">
+      <h3 className="text-xl font-black text-slate-900">{title}</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{description}</p>
+      <Link href={href} className="mt-5 inline-flex rounded-2xl bg-gradient-to-r from-violet-500 to-pink-500 px-5 py-3 text-sm font-black text-white shadow-lg">
+        {action}
+      </Link>
+    </div>
+  );
+}
+

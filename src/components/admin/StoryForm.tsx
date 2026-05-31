@@ -1,5 +1,6 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
 import { useStoryForm } from '@/hooks/useStoryForm';
 
 interface StoryFormProps {
@@ -39,13 +40,12 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      {/* Tabs */}
       <div className="border-b border-slate-200 bg-slate-50/50">
         <div className="flex gap-1 px-4 pt-2">
           {[
-            { key: 'info' as const, label: '📝 Thông tin' },
-            { key: 'panels' as const, label: '🖼️ Panels' },
-            { key: 'vocab' as const, label: '📚 Từ vựng' },
+            { key: 'info' as const, label: 'Thông tin' },
+            { key: 'panels' as const, label: 'Panels' },
+            { key: 'vocab' as const, label: 'Từ vựng' },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -62,9 +62,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
         </div>
       </div>
 
-      {/* Content */}
       <div className="p-6">
-        {/* Tab 1: Basic Info */}
         {activeTab === 'info' && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
@@ -77,6 +75,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                   </label>
                   <input
                     type="text"
+                    data-testid="story-title-en"
                     value={titleEn}
                     onChange={(e) => setTitleEn(e.target.value)}
                     placeholder="The Little Cat"
@@ -89,6 +88,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                   </label>
                   <input
                     type="text"
+                    data-testid="story-title-vi"
                     value={titleVi}
                     onChange={(e) => setTitleVi(e.target.value)}
                     placeholder="Chú Mèo Nhỏ"
@@ -107,9 +107,9 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                     onChange={(e) => setLevel(e.target.value as typeof level)}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Beginner">🟢 Beginner (Mới bắt đầu)</option>
-                    <option value="Elementary">🔵 Elementary (Cơ bản)</option>
-                    <option value="Intermediate">🟣 Intermediate (Trung cấp)</option>
+                    <option value="Beginner">Beginner (Mới bắt đầu)</option>
+                    <option value="Elementary">Elementary (Cơ bản)</option>
+                    <option value="Intermediate">Intermediate (Trung cấp)</option>
                   </select>
                 </div>
                 <div>
@@ -119,7 +119,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                   <div className="space-y-2">
                     {selectedTopics.length > 0 && (
                       <div className="flex flex-wrap gap-2 p-2">
-                        {selectedTopics.map(topic => (
+                        {selectedTopics.map((topic) => (
                           <span
                             key={topic}
                             className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium flex items-center gap-1"
@@ -129,7 +129,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                               onClick={() => toggleTopic(topic)}
                               className="hover:text-blue-900"
                             >
-                              ✕
+                              ×
                             </button>
                           </span>
                         ))}
@@ -146,7 +146,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                         className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">+ Chọn chủ đề có sẵn</option>
-                        {availableTopics.filter(t => !selectedTopics.includes(t)).map(topic => (
+                        {availableTopics.filter((topic) => !selectedTopics.includes(topic)).map((topic) => (
                           <option key={topic} value={topic}>{topic}</option>
                         ))}
                       </select>
@@ -173,7 +173,6 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
               </div>
             </div>
 
-            {/* Cover Image */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
               <h2 className="font-semibold text-slate-800 mb-4">Ảnh bìa *</h2>
 
@@ -186,7 +185,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                       <span className="text-4xl">{coverPreview}</span>
                     )
                   ) : (
-                    <span className="text-4xl">🖼️</span>
+                    <span className="text-sm font-semibold text-slate-400">No image</span>
                   )}
                 </div>
 
@@ -203,7 +202,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                       onClick={() => fileInputRef.current?.click()}
                       className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-medium transition-colors"
                     >
-                      📁 Chọn từ máy
+                      Chọn từ máy
                     </button>
                   </div>
                   <div className="text-sm text-slate-500">hoặc</div>
@@ -220,7 +219,6 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
           </div>
         )}
 
-        {/* Tab 2: Panels */}
         {activeTab === 'panels' && (
           <div className="space-y-4">
             {panels.map((panel, index) => (
@@ -239,7 +237,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                           <span className="text-2xl">{panel.imagePreview}</span>
                         )
                       ) : (
-                        <span className="text-2xl">🖼️</span>
+                        <span className="text-xs font-semibold text-slate-400">No image</span>
                       )}
                     </div>
                     <div className="mt-2 space-y-1">
@@ -254,7 +252,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                         onClick={() => panelFileInputRefs.current[panel.id]?.click()}
                         className="w-full px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-xs font-medium transition-colors"
                       >
-                        📁 Upload
+                        Upload
                       </button>
                       <input
                         type="text"
@@ -268,7 +266,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                   <div className="flex-1 space-y-3">
                     <div>
                       <label className="block text-xs font-medium text-blue-600 mb-1">
-                        🇬🇧 English
+                        English
                       </label>
                       <textarea
                         value={panel.sentence_en}
@@ -280,7 +278,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-amber-600 mb-1">
-                        🇻🇳 Tiếng Việt
+                        Tiếng Việt
                       </label>
                       <textarea
                         value={panel.sentence_vi}
@@ -297,7 +295,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                       onClick={() => removePanel(panel.id)}
                       className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     >
-                      🗑️
+                      Xóa
                     </button>
                   )}
                 </div>
@@ -308,19 +306,18 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
               onClick={addPanel}
               className="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/50 transition-colors font-medium"
             >
-              ➕ Thêm panel mới
+              Thêm panel mới
             </button>
           </div>
         )}
 
-        {/* Tab 3: Vocabulary */}
         {activeTab === 'vocab' && (
           <div className="space-y-4">
             {showAIExtract && (
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-green-800">🤖 AI Tìm từ vựng</h3>
+                    <h3 className="font-medium text-green-800">AI tìm từ vựng</h3>
                     <p className="text-xs text-green-600 mt-1">Tự động phát hiện từ quan trọng từ các panels</p>
                   </div>
                   <button
@@ -328,13 +325,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                     disabled={isExtractingVocab}
                     className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                   >
-                    {isExtractingVocab ? (
-                      <>
-                        <span className="animate-spin">⚡</span> Đang phân tích...
-                      </>
-                    ) : (
-                      <>✨ Trích xuất từ vựng</>
-                    )}
+                    {isExtractingVocab ? 'Đang phân tích...' : 'Trích xuất từ vựng'}
                   </button>
                 </div>
               </div>
@@ -369,7 +360,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                         onClick={() => removeVocabItem(index)}
                         className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                       >
-                        ✕
+                        ×
                       </button>
                     )}
                   </div>
@@ -380,13 +371,13 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                 onClick={addVocabItem}
                 className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-medium transition-colors"
               >
-                ➕ Thêm từ vựng
+                Thêm từ vựng
               </button>
             </div>
 
             <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
               <p className="text-sm text-amber-700">
-                📝 <strong>Tip:</strong> Từ vựng bạn thêm ở đây sẽ được tự động highlight trong câu tiếng Anh,
+                <strong>Tip:</strong> Từ vựng bạn thêm ở đây sẽ được tự động highlight trong câu tiếng Anh,
                 giúp bé có thể click vào để xem nghĩa.
               </p>
             </div>

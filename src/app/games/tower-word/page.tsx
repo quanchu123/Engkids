@@ -486,12 +486,12 @@ export default function TowerWordPage() {
           </Link>
           {gameState === 'playing' && (
             <span className="text-yellow-400 font-black text-lg" style={{ textShadow: '0 0 12px rgba(250,204,21,0.5)' }}>
-              ⭐ {score}
+              Score {score}
             </span>
           )}
           {combo >= 2 && (
             <span className="text-amber-400 font-black text-sm animate-bounce">
-              PERFECT x{combo} 🔥
+              PERFECT x{combo}
             </span>
           )}
         </div>
@@ -535,7 +535,7 @@ export default function TowerWordPage() {
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
               animation: 'glow-text 2s ease-in-out infinite',
             }}>
-              🏗️ TOWER WORD
+              TOWER WORD
             </h1>
             <p className="text-white/40 text-sm mb-8 text-center px-6">
               Chạm/Nhấn Space để thả khối · Xếp chồng để đánh vần từ tiếng Anh!
@@ -545,7 +545,7 @@ export default function TowerWordPage() {
                 background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
                 boxShadow: '0 0 30px rgba(139,92,246,0.5)',
               }}>
-              🎮 Bắt đầu
+              Bắt đầu
             </div>
           </div>
         )}
@@ -567,7 +567,7 @@ export default function TowerWordPage() {
                 <div key={i} className="text-5xl" style={{
                   animation: `star-pop 0.5s ${i * 0.2 + 0.3}s ease-out both`,
                   filter: i < stars ? 'drop-shadow(0 0 12px gold)' : 'grayscale(1) opacity(0.25)',
-                }}>⭐</div>
+                }}>S{i + 1}</div>
               ))}
             </div>
             <h2 className="font-black text-4xl sm:text-5xl" style={{
@@ -581,7 +581,7 @@ export default function TowerWordPage() {
             <button onClick={() => window.location.reload()}
               className="px-10 py-4 rounded-full font-black text-lg text-black transition-transform hover:scale-105 active:scale-95"
               style={{ background: 'linear-gradient(135deg, #fde68a, #f59e0b)', boxShadow: '0 0 30px rgba(245,158,11,0.5)' }}>
-              🔄 Chơi lại
+              Chơi lại
             </button>
             <Link href="/games" className="text-white/30 hover:text-white text-sm underline">
               Quay về lobby
@@ -594,7 +594,7 @@ export default function TowerWordPage() {
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 z-30"
             onClick={e => e.stopPropagation()}
             style={{ background: 'radial-gradient(ellipse at center, rgba(40,10,10,0.97), rgba(0,0,0,0.98))' }}>
-            <div className="text-7xl">💥</div>
+            <div className="text-5xl font-black text-red-400">LOSE</div>
             <h2 className="font-black text-4xl sm:text-5xl" style={{
               background: 'linear-gradient(135deg, #fca5a5, #dc2626)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
@@ -605,7 +605,7 @@ export default function TowerWordPage() {
             <button onClick={() => window.location.reload()}
               className="px-10 py-4 rounded-full font-black text-lg text-white transition-transform hover:scale-105 active:scale-95"
               style={{ background: 'linear-gradient(135deg, #dc2626, #7c3aed)', boxShadow: '0 0 30px rgba(220,38,38,0.4)' }}>
-              🔄 Thử lại
+              Thử lại
             </button>
             <Link href="/games" className="text-white/30 hover:text-white text-sm underline">
               Quay về lobby

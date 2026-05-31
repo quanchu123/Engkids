@@ -4,17 +4,17 @@ import { useState } from 'react';
 import { LEVEL_OPTIONS, TOPICS, AGE_GROUP_OPTIONS } from '@/config/constants';
 
 // Topic colors matching VideoCard
-const TOPIC_STYLES: Record<string, { bg: string; activeBg: string; emoji: string }> = {
-  'Animals': { bg: 'bg-amber-50 hover:bg-amber-100', activeBg: 'bg-amber-200 ring-2 ring-amber-400', emoji: '🐾' },
-  'Food': { bg: 'bg-red-50 hover:bg-red-100', activeBg: 'bg-red-200 ring-2 ring-red-400', emoji: '🍕' },
-  'Nature': { bg: 'bg-green-50 hover:bg-green-100', activeBg: 'bg-green-200 ring-2 ring-green-400', emoji: '🌿' },
-  'Family': { bg: 'bg-pink-50 hover:bg-pink-100', activeBg: 'bg-pink-200 ring-2 ring-pink-400', emoji: '👨‍👩‍👧' },
-  'School': { bg: 'bg-blue-50 hover:bg-blue-100', activeBg: 'bg-blue-200 ring-2 ring-blue-400', emoji: '📚' },
-  'Adventure': { bg: 'bg-purple-50 hover:bg-purple-100', activeBg: 'bg-purple-200 ring-2 ring-purple-400', emoji: '🚀' },
-  'Friendship': { bg: 'bg-rose-50 hover:bg-rose-100', activeBg: 'bg-rose-200 ring-2 ring-rose-400', emoji: '💕' },
-  'Science': { bg: 'bg-cyan-50 hover:bg-cyan-100', activeBg: 'bg-cyan-200 ring-2 ring-cyan-400', emoji: '🔬' },
-  'Daily Life': { bg: 'bg-orange-50 hover:bg-orange-100', activeBg: 'bg-orange-200 ring-2 ring-orange-400', emoji: '☀️' },
-  'History': { bg: 'bg-yellow-50 hover:bg-yellow-100', activeBg: 'bg-yellow-200 ring-2 ring-yellow-400', emoji: '🏛️' },
+const TOPIC_STYLES: Record<string, { bg: string; activeBg: string }> = {
+  'Animals': { bg: 'bg-amber-50 hover:bg-amber-100', activeBg: 'bg-amber-200 ring-2 ring-amber-400' },
+  'Food': { bg: 'bg-red-50 hover:bg-red-100', activeBg: 'bg-red-200 ring-2 ring-red-400' },
+  'Nature': { bg: 'bg-green-50 hover:bg-green-100', activeBg: 'bg-green-200 ring-2 ring-green-400' },
+  'Family': { bg: 'bg-pink-50 hover:bg-pink-100', activeBg: 'bg-pink-200 ring-2 ring-pink-400' },
+  'School': { bg: 'bg-blue-50 hover:bg-blue-100', activeBg: 'bg-blue-200 ring-2 ring-blue-400' },
+  'Adventure': { bg: 'bg-purple-50 hover:bg-purple-100', activeBg: 'bg-purple-200 ring-2 ring-purple-400' },
+  'Friendship': { bg: 'bg-rose-50 hover:bg-rose-100', activeBg: 'bg-rose-200 ring-2 ring-rose-400' },
+  'Science': { bg: 'bg-cyan-50 hover:bg-cyan-100', activeBg: 'bg-cyan-200 ring-2 ring-cyan-400' },
+  'Daily Life': { bg: 'bg-orange-50 hover:bg-orange-100', activeBg: 'bg-orange-200 ring-2 ring-orange-400' },
+  'History': { bg: 'bg-yellow-50 hover:bg-yellow-100', activeBg: 'bg-yellow-200 ring-2 ring-yellow-400' },
 };
 
 export interface VideoFiltersState {
@@ -66,13 +66,12 @@ export default function VideoFilters({
       {/* Search Bar */}
       {showSearch && (
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl">🔍</span>
           <input
             type="text"
             placeholder="Tìm video yêu thích..."
             value={filters.search}
             onChange={(e) => updateFilter('search', e.target.value)}
-            className="w-full pl-12 pr-4 py-3 rounded-2xl border-2 border-kid-purple/20 focus:border-kid-purple focus:ring-4 focus:ring-kid-purple/20 outline-none transition-all text-gray-700 placeholder-gray-400 font-medium"
+            className="w-full px-4 py-3 rounded-2xl border-2 border-kid-purple/20 focus:border-kid-purple focus:ring-4 focus:ring-kid-purple/20 outline-none transition-all text-gray-700 placeholder-gray-400 font-medium"
           />
           {filters.search && (
             <button
@@ -90,7 +89,6 @@ export default function VideoFilters({
         onClick={() => setIsExpanded(!isExpanded)}
         className="md:hidden w-full py-2 px-4 bg-gradient-to-r from-kid-pink to-kid-purple text-white rounded-xl font-bold flex items-center justify-center gap-2"
       >
-        <span>🎯</span>
         <span>Bộ lọc {hasActiveFilters ? `(${[filters.level, filters.topic, filters.ageGroup].filter(Boolean).length})` : ''}</span>
         <span className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
       </button>
@@ -101,7 +99,7 @@ export default function VideoFilters({
         {showLevel && (
           <div>
             <h4 className="text-sm font-bold text-gray-600 mb-2 flex items-center gap-2">
-              <span>📊</span> Cấp độ
+              Cấp độ
             </h4>
             <div className="flex flex-wrap gap-2">
               {LEVEL_OPTIONS.map((level) => (
@@ -117,8 +115,7 @@ export default function VideoFilters({
                     }
                   `}
                 >
-                  <span>{level.emoji}</span>
-                  <span className="hidden sm:inline">{level.label.split(' ')[0]}</span>
+                  <span>{level.label.split(' ')[0]}</span>
                 </button>
               ))}
             </div>
@@ -129,11 +126,11 @@ export default function VideoFilters({
         {showTopics && (
           <div>
             <h4 className="text-sm font-bold text-gray-600 mb-2 flex items-center gap-2">
-              <span>🏷️</span> Chủ đề
+              Chủ đề
             </h4>
             <div className="flex flex-wrap gap-2">
               {TOPICS.map((topic) => {
-                const style = TOPIC_STYLES[topic] || { bg: 'bg-gray-50', activeBg: 'bg-gray-200', emoji: '📌' };
+                const style = TOPIC_STYLES[topic] || { bg: 'bg-gray-50', activeBg: 'bg-gray-200' };
                 const isActive = filters.topic === topic;
                 return (
                   <button
@@ -141,12 +138,11 @@ export default function VideoFilters({
                     onClick={() => updateFilter('topic', isActive ? null : topic)}
                     className={`
                       px-3 py-1.5 rounded-full font-medium transition-all duration-200
-                      flex items-center gap-1.5 text-sm
+                      text-sm
                       ${isActive ? style.activeBg : style.bg}
                       ${isActive ? 'scale-105 shadow-md' : 'hover:scale-102'}
                     `}
                   >
-                    <span>{style.emoji}</span>
                     <span>{topic}</span>
                   </button>
                 );
@@ -159,7 +155,7 @@ export default function VideoFilters({
         {showAge && (
           <div>
             <h4 className="text-sm font-bold text-gray-600 mb-2 flex items-center gap-2">
-              <span>👶</span> Độ tuổi
+              Độ tuổi
             </h4>
             <div className="flex flex-wrap gap-2">
               {AGE_GROUP_OPTIONS.map((age) => (
@@ -175,7 +171,6 @@ export default function VideoFilters({
                     }
                   `}
                 >
-                  <span>{age.emoji}</span>
                   <span>{age.label}</span>
                 </button>
               ))}
@@ -189,7 +184,6 @@ export default function VideoFilters({
             onClick={clearFilters}
             className="w-full py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
           >
-            <span>🗑️</span>
             <span>Xóa bộ lọc</span>
           </button>
         )}

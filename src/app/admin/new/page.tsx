@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { addStory } from '@/data/stories';
+import { storyApi } from '@/services/api';
 import { useToast } from '@/hooks/useToast';
 import { useStoryForm } from '@/hooks/useStoryForm';
 import StoryForm from '@/components/admin/StoryForm';
@@ -30,7 +30,7 @@ export default function NewStoryPage() {
         .replace(/^-|-$/g, '') + '-' + form.generateId();
 
       const story = form.buildStory(storyId);
-      await addStory(story);
+      await storyApi.create(story);
       toast.success('Tạo truyện thành công!');
       router.push('/admin');
     } catch (error) {
@@ -46,19 +46,20 @@ export default function NewStoryPage() {
       <div className="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-200 sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <Link href="/admin" className="text-slate-500 hover:text-slate-700">
-            ← Quay lại
+            Quay lại
           </Link>
           <span className="text-slate-300">|</span>
           <h1 className="text-xl font-bold text-slate-800">
-            ➕ Tạo truyện mới
+            Tạo truyện mới
           </h1>
         </div>
         <button
           onClick={handleSave}
+          data-testid="save-story"
           disabled={form.isSaving}
           className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
         >
-          {form.isSaving ? '⏳ Đang lưu...' : '💾 Lưu truyện'}
+          {form.isSaving ? 'Đang lưu...' : 'Lưu truyện'}
         </button>
       </div>
 

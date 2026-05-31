@@ -37,10 +37,18 @@ export const ROUTES = {
   
   // API routes
   API: {
+    HEALTH: '/api/health',
+    READY: '/api/ready',
+    STORIES: '/api/stories',
+    STORY: (id: string) => `/api/stories/${id}`,
     VIDEOS: '/api/videos',
     VIDEO: (id: string) => `/api/videos/${id}`,
+    VIDEO_LOCAL: '/api/videos/local',
+    VIDEO_STORAGE: '/api/videos/storage',
+    VIDEO_STORAGE_SIGN: '/api/videos/storage/sign',
     VIDEO_STATUS: (id: string) => `/api/videos/${id}/status`,
     VIDEO_SUBTITLES: (id: string) => `/api/videos/${id}/subtitles`,
+    VIDEO_QUIZ: (id: string) => `/api/videos/${id}/quiz`,
   },
 } as const;
 
@@ -88,9 +96,9 @@ export const LEVELS = {
 } as const;
 
 export const LEVEL_OPTIONS = [
-  { value: 'Beginner', label: 'Beginner (A1-A2)', emoji: '🌱' },
-  { value: 'Elementary', label: 'Elementary (B1)', emoji: '🌿' },
-  { value: 'Intermediate', label: 'Intermediate (B2)', emoji: '🌳' },
+  { value: 'Beginner', label: 'Beginner (A1-A2)', emoji: '' },
+  { value: 'Elementary', label: 'Elementary (B1)', emoji: '' },
+  { value: 'Intermediate', label: 'Intermediate (B2)', emoji: '' },
 ] as const;
 
 // ============================================
@@ -104,10 +112,10 @@ export const AGE_GROUPS = {
 } as const;
 
 export const AGE_GROUP_OPTIONS = [
-  { value: '3-5', label: '3-5 years (Toddler)', emoji: '👶' },
-  { value: '6-8', label: '6-8 years (Early Elementary)', emoji: '🧒' },
-  { value: '9-11', label: '9-11 years (Middle Elementary)', emoji: '👦' },
-  { value: '12-15', label: '12-15 years (Teen)', emoji: '🧑' },
+  { value: '3-5', label: '3-5 years (Toddler)', emoji: '' },
+  { value: '6-8', label: '6-8 years (Early Elementary)', emoji: '' },
+  { value: '9-11', label: '9-11 years (Middle Elementary)', emoji: '' },
+  { value: '12-15', label: '12-15 years (Teen)', emoji: '' },
 ] as const;
 
 // ============================================

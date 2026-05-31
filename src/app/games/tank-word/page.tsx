@@ -84,7 +84,7 @@ export default function TankWordPage() {
           const cx = this.scale.width / 2, cy = this.scale.height / 2;
           const track = this.add.rectangle(cx, cy, 320, 22).setStrokeStyle(2, 0x22d3ee);
           const bar   = this.add.rectangle(cx - 158, cy, 2, 16, 0x22d3ee);
-          this.add.text(cx, cy - 36, '🎯  Word Tank Battle', {
+          this.add.text(cx, cy - 36, 'Word Tank Battle', {
             fontFamily: 'Arial Black, Arial', fontSize: '20px', color: '#22d3ee',
           }).setOrigin(0.5);
           this.add.text(cx, cy + 34, 'Loading...', {
@@ -206,7 +206,7 @@ export default function TankWordPage() {
             if (b.active) b.destroy();
           });
 
-          // ── Player ↔ tilemap / obstacles ──
+          // Player vs tilemap / obstacles
           this.physics.add.collider(this.playerBody, this.layer);
           this.physics.add.collider(this.playerBody, this.obstacles);
 
@@ -310,11 +310,11 @@ export default function TankWordPage() {
             });
           });
 
-          // Enemy bullets ↔ tilemap / obstacles
+          // Enemy bullets vs tilemap / obstacles
           this.physics.add.collider(bullets, this.layer, (b: any) => { if (b.active) b.destroy(); });
           this.physics.add.collider(bullets, this.obstacles, (b: any) => { if (b.active) b.destroy(); });
 
-          // Enemy ↔ tilemap / obstacles
+          // Enemy vs tilemap / obstacles
           this.physics.add.collider(body, this.layer);
           this.physics.add.collider(body, this.obstacles);
         }
@@ -341,7 +341,7 @@ export default function TankWordPage() {
             onUpdate: () => { ring.setRadius((ring as any).radius || 10); },
             onComplete: () => ring.destroy(),
           });
-          const explosion = this.add.text(slot.body.x, slot.body.y, '💥', { fontSize: '36px' }).setOrigin(0.5).setDepth(26);
+          const explosion = this.add.text(slot.body.x, slot.body.y, 'X', { fontSize: '36px' }).setOrigin(0.5).setDepth(26);
           this.tweens.add({ targets: explosion, y: explosion.y - 30, alpha: 0, duration: 600, onComplete: () => explosion.destroy() });
 
           // Hide enemy
@@ -521,13 +521,13 @@ export default function TankWordPage() {
             {/* Score + HP */}
             <div className="flex items-center gap-3 shrink-0">
               <div className="text-center">
-                <div className="text-yellow-400 font-black text-base">⭐ {score}</div>
+                <div className="text-yellow-400 font-black text-base">Score {score}</div>
                 <div className="text-white/40 text-[10px]">{kills}/{KILLS_TO_WIN} kill</div>
               </div>
               <div className="flex gap-0.5">
                 {hearts.map((_, i) => (
                   <span key={i} className={`text-sm transition-all duration-300 ${i < hp ? 'opacity-100' : 'opacity-20'}`}>
-                    {i < hp ? '❤️' : '🖤'}
+                    {i < hp ? '?' : '?'}
                   </span>
                 ))}
               </div>
@@ -552,14 +552,14 @@ export default function TankWordPage() {
       {feedback && !gameOver && (
         <div className={`absolute top-20 left-1/2 -translate-x-1/2 z-20 px-5 py-2 rounded-full font-black text-white text-lg pointer-events-none
           shadow-2xl animate-bounce ${feedback === 'correct' ? 'bg-green-500 shadow-green-500/50' : 'bg-red-600 shadow-red-600/50'}`}>
-          {feedback === 'correct' ? '✅ Chính xác! +100' : '❌ Sai xe! -1 ❤️'}
+          {feedback === 'correct' ? 'Chính xác! +100' : 'Sai rồi! -1 HP'}
         </div>
       )}
 
       {/* ── Controls hint ── */}
       {!gameOver && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 text-white/25 text-[10px] pointer-events-none">
-          ↑↓ tiến / lùi &nbsp;·&nbsp; ←→ quay thân &nbsp;·&nbsp; 🖱️ ngắm &nbsp;·&nbsp; Space / Click bắn
+          ↑↓ tiến / lùi &nbsp;•&nbsp; ←→ quay thân &nbsp;•&nbsp; chuột ngắm &nbsp;•&nbsp; Space / Click bắn
         </div>
       )}
 
@@ -567,14 +567,14 @@ export default function TankWordPage() {
       {gameOver === 'win' && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-5"
           style={{ background: 'radial-gradient(ellipse at center, #0f2027 0%, #000000 100%)' }}>
-          <div className="text-8xl animate-bounce drop-shadow-[0_0_30px_gold]">🏆</div>
+          <div className="text-5xl font-black text-yellow-400 animate-bounce drop-shadow-[0_0_30px_gold]">WIN</div>
           <h2 className="text-5xl font-black text-yellow-400" style={{ textShadow: '0 0 20px rgba(250,204,21,0.7)' }}>CHIẾN THẮNG!</h2>
           <p className="text-white/80 text-lg">Tiêu diệt <span className="text-green-400 font-black">{kills}</span> xe tăng đúng!</p>
-          <div className="text-3xl font-black text-yellow-300">⭐ {score} điểm</div>
+          <div className="text-3xl font-black text-yellow-300">Score {score} điểm</div>
           <button onClick={handleReplay}
             className="mt-2 px-10 py-4 rounded-full font-black text-xl text-black transition-transform hover:scale-105 active:scale-95"
             style={{ background: 'linear-gradient(135deg, #fbbf24, #f97316)', boxShadow: '0 0 30px rgba(251,191,36,0.5)' }}>
-            🔄 Chơi lại
+            Chơi lại
           </button>
           <Link href="/games" className="text-white/40 hover:text-white text-sm underline">Quay về danh sách</Link>
         </div>
@@ -584,13 +584,13 @@ export default function TankWordPage() {
       {gameOver === 'lose' && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-5"
           style={{ background: 'radial-gradient(ellipse at center, #1a0000 0%, #000000 100%)' }}>
-          <div className="text-8xl">💥</div>
-          <h2 className="text-5xl font-black text-red-400" style={{ textShadow: '0 0 20px rgba(239,68,68,0.7)' }}>XE TĂNG HỎY!</h2>
-          <div className="text-3xl font-black text-orange-300">⭐ {score} điểm</div>
+          <div className="text-5xl font-black text-red-400">LOSE</div>
+          <h2 className="text-5xl font-black text-red-400" style={{ textShadow: '0 0 20px rgba(239,68,68,0.7)' }}>XE TĂNG HỎNG!</h2>
+          <div className="text-3xl font-black text-orange-300">Score {score} điểm</div>
           <button onClick={handleReplay}
             className="mt-2 px-10 py-4 rounded-full font-black text-xl text-white transition-transform hover:scale-105 active:scale-95"
             style={{ background: 'linear-gradient(135deg, #dc2626, #ea580c)', boxShadow: '0 0 30px rgba(220,38,38,0.5)' }}>
-            🔄 Thử lại
+            Thử lại
           </button>
           <Link href="/games" className="text-white/40 hover:text-white text-sm underline">Quay về danh sách</Link>
         </div>

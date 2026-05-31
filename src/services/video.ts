@@ -1,7 +1,9 @@
 // Video Data Service - Supabase based
 import { createClient } from '@supabase/supabase-js';
-import { Video, SubtitleCue } from '@/types';
+import { Video, SubtitleCue, VideoQuizQuestion } from '@/types';
 import { getSignedThumbnailUrl } from './bunny';
+import { getVideoPublicUrl } from './storage';
+import { normalizeStoredVideoStatus } from '@/lib/video-status';
 
 // Track if we've already warned about Supabase being unavailable to avoid log spam
 let supabaseUnavailableWarned = false;
@@ -56,7 +58,8 @@ interface VideoRow {
   topics: string[];
   age_group: '3-5' | '6-8' | '9-12' | null;
   category: 'video' | 'music';
-  status: 'uploading' | 'processing' | 'ready' | 'error';
+  status: string;
+  quiz: VideoQuizQuestion[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -72,12 +75,73 @@ interface SubtitleRow {
 }
 
 /**
+ * Sanitize quiz questions loaded from the DB into a safe, well-formed array.
+ */
+function normalizeQuiz(raw: unknown): VideoQuizQuestion[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((item, index): VideoQuizQuestion | null => {
+      if (!item || typeof item !== 'object') return null;
+      const q = item as Record<string, unknown>;
+
+      const options = Array.isArray(q.options)
+        ? q.options.filter((o): o is string => typeof o === 'string')
+        : [];
+      const question = typeof q.question === 'string' ? q.question : '';
+
+      if (!question || options.length < 2) return null;
+
+      const correctIndexRaw = typeof q.correctIndex === 'number' ? q.correctIndex : 0;
+      const correctIndex = Math.min(Math.max(0, correctIndexRaw), options.length - 1);
+
+      return {
+        id: typeof q.id === 'string' ? q.id : `quiz-${index}`,
+        question,
+        questionVi: typeof q.questionVi === 'string' ? q.questionVi : undefined,
+        options,
+        correctIndex,
+        explanation: typeof q.explanation === 'string' ? q.explanation : undefined,
+        timeCode: typeof q.timeCode === 'number' ? q.timeCode : undefined,
+      };
+    })
+    .filter((q): q is VideoQuizQuestion => q !== null);
+}
+
+/**
  * Convert DB row to Video type
  */
 function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
-  // Generate signed thumbnail URL if video is ready
+  const normalizedStatus = normalizeStoredVideoStatus({
+    status: row.status,
+    hlsUrl: row.hls_url,
+    dashUrl: row.dash_url,
+  });
+
+  // Self-hosted videos (no Bunny):
+  //  - "local-" : file under /uploads on the server's disk (offline/DigitalOcean)
+  //  - "storage-": file in Supabase Storage (works on Vercel too)
+  // In both cases hls_url holds the reference (local path or storage path).
+  const isStorage = row.bunny_video_id?.startsWith('storage-');
+  const isLocalDisk = row.bunny_video_id?.startsWith('local-') || row.hls_url?.startsWith('/uploads/');
+  const isSelfHosted = isStorage || isLocalDisk;
+
+  // Resolve the playable URL for self-hosted videos.
+  let selfHostedUrl: string | undefined;
+  if (isStorage && row.hls_url) {
+    try {
+      // hls_url stores the storage object path; convert to a public URL.
+      selfHostedUrl = row.hls_url.startsWith('http') ? row.hls_url : getVideoPublicUrl(row.hls_url);
+    } catch {
+      selfHostedUrl = row.hls_url || undefined;
+    }
+  } else if (isLocalDisk) {
+    selfHostedUrl = row.hls_url || undefined;
+  }
+
+  // Generate signed thumbnail URL if video is ready (Bunny only)
   let thumbnailUrl = row.thumbnail_url || undefined;
-  if (row.status === 'ready' && row.bunny_video_id) {
+  if (!isSelfHosted && normalizedStatus === 'ready' && row.bunny_video_id) {
     try {
       thumbnailUrl = getSignedThumbnailUrl(row.bunny_video_id);
     } catch (error) {
@@ -93,6 +157,8 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
     description: row.description || undefined,
     thumbnailUrl,
     bunnyVideoId: row.bunny_video_id,
+    sourceType: isSelfHosted ? 'local' : undefined,
+    externalUrl: isSelfHosted ? selfHostedUrl : undefined,
     hlsUrl: row.hls_url || undefined,
     dashUrl: row.dash_url || undefined,
     duration: row.duration,
@@ -100,7 +166,7 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
     topics: row.topics,
     ageGroup: row.age_group || undefined,
     category: row.category,
-    status: row.status,
+    status: normalizedStatus,
     subtitles: subtitles
       .sort((a, b) => a.cue_index - b.cue_index)
       .map(s => ({
@@ -110,6 +176,7 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
         textEn: s.text_en,
         textVi: s.text_vi,
       })),
+    quiz: normalizeQuiz(row.quiz),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -123,11 +190,9 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
 export async function getAllVideos(category?: 'video' | 'music'): Promise<Video[]> {
   const supabase = getSupabaseClient();
 
-  // Only get videos that are ready to watch
   let query = supabase
     .from('videos')
     .select('*')
-    .eq('status', 'ready')
     .is('deleted_at', null);
 
   if (category) {
@@ -149,7 +214,9 @@ export async function getAllVideos(category?: 'video' | 'music'): Promise<Video[
   }
 
   supabaseUnavailableWarned = false; // reset on success
-  return videos.map(v => rowToVideo(v, []));
+  return videos
+    .map(v => rowToVideo(v, []))
+    .filter(v => v.status === 'ready');
 }
 
 /**
@@ -244,6 +311,89 @@ export async function createVideo(data: {
 }
 
 /**
+ * Create a new locally-hosted video (admin only, server-side).
+ * Used when there is no Bunny.net (offline / testing). The uploaded file path
+ * (under /uploads) is stored in hls_url and the video is immediately "ready".
+ */
+export async function createLocalVideo(data: {
+  title: string;
+  titleVi: string;
+  filePath: string;        // public path, e.g. /uploads/abc.mp4
+  description?: string;
+  level?: Video['level'];
+  topics?: string[];
+  ageGroup?: Video['ageGroup'];
+  category?: 'video' | 'music';
+}): Promise<Video> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: video, error } = await supabase
+    .from('videos')
+    .insert({
+      title: data.title,
+      title_vi: data.titleVi,
+      // Unique placeholder id so the NOT NULL/UNIQUE bunny_video_id constraint holds.
+      bunny_video_id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      description: data.description || null,
+      level: data.level || 'Beginner',
+      topics: data.topics || [],
+      age_group: data.ageGroup || null,
+      category: data.category || 'video',
+      status: 'ready',
+      hls_url: data.filePath,
+    })
+    .select()
+    .single();
+
+  if (error || !video) {
+    throw new Error(`Failed to create local video: ${error?.message}`);
+  }
+
+  return rowToVideo(video);
+}
+
+/**
+ * Create a video backed by Supabase Storage (admin only, server-side).
+ * The browser uploads the file directly to Storage; this just records the
+ * metadata + storage path. Works on Vercel (no server filesystem needed).
+ */
+export async function createStorageVideo(data: {
+  title: string;
+  titleVi: string;
+  storagePath: string;     // object path inside the videos bucket
+  description?: string;
+  level?: Video['level'];
+  topics?: string[];
+  ageGroup?: Video['ageGroup'];
+  category?: 'video' | 'music';
+}): Promise<Video> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: video, error } = await supabase
+    .from('videos')
+    .insert({
+      title: data.title,
+      title_vi: data.titleVi,
+      bunny_video_id: `storage-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      description: data.description || null,
+      level: data.level || 'Beginner',
+      topics: data.topics || [],
+      age_group: data.ageGroup || null,
+      category: data.category || 'video',
+      status: 'ready',
+      hls_url: data.storagePath,
+    })
+    .select()
+    .single();
+
+  if (error || !video) {
+    throw new Error(`Failed to create storage video: ${error?.message}`);
+  }
+
+  return rowToVideo(video);
+}
+
+/**
  * Update video (admin only, server-side)
  */
 export async function updateVideo(
@@ -260,6 +410,7 @@ export async function updateVideo(
     topics: string[];
     ageGroup: Video['ageGroup'];
     status: Video['status'];
+    quiz: VideoQuizQuestion[];
   }>
 ): Promise<void> {
   const supabase = getSupabaseAdmin();
@@ -276,6 +427,7 @@ export async function updateVideo(
   if (updates.topics) dbUpdates.topics = updates.topics;
   if (updates.ageGroup !== undefined) dbUpdates.age_group = updates.ageGroup;
   if (updates.status) dbUpdates.status = updates.status;
+  if (updates.quiz !== undefined) dbUpdates.quiz = updates.quiz;
   
   const { error } = await supabase
     .from('videos')

@@ -18,12 +18,11 @@ interface DraggablePopupProps {
   initialPosition: { x: number; y: number };
   onClose: () => void;
   title: string;
-  titleEmoji: string;
   headerGradient: string;
 }
 
 // Draggable Popup Wrapper
-function DraggablePopup({ children, initialPosition, onClose, title, titleEmoji, headerGradient }: DraggablePopupProps) {
+function DraggablePopup({ children, initialPosition, onClose, title, headerGradient }: DraggablePopupProps) {
   const popupRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState(initialPosition);
   const [isDragging, setIsDragging] = useState(false);
@@ -103,7 +102,6 @@ function DraggablePopup({ children, initialPosition, onClose, title, titleEmoji,
         >
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <span className="text-xl">{titleEmoji}</span>
               <span className="text-white font-bold">{title}</span>
             </div>
             <button
@@ -201,12 +199,11 @@ function WordPopupContent({ word, onSaveWord, onClose }: WordPopupContentProps) 
     <div className="p-4 max-h-[350px] overflow-y-auto">
       {loading ? (
         <div className="flex flex-col items-center justify-center py-8">
-          <div className="w-10 h-10 border-4 border-purple-200 border-t-purple-500 rounded-full animate-spin mb-3"></div>
+          <div className="w-8 h-8 border-4 border-purple-300 border-t-transparent rounded-full animate-spin mb-3" />
           <span className="text-slate-500 text-sm">Đang tra từ...</span>
         </div>
       ) : error ? (
         <div className="text-center py-6">
-          <div className="text-4xl mb-2">😕</div>
           <div className="text-red-500">{error}</div>
         </div>
       ) : data ? (
@@ -246,9 +243,9 @@ function WordPopupContent({ word, onSaveWord, onClose }: WordPopupContentProps) 
           {data.example && (
             <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
               <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold mb-2">
-                <span>💡</span> VÍ DỤ
+              VÍ DỤ
               </div>
-              <div className="text-slate-700 italic">"{data.example}"</div>
+              <div className="text-slate-700 italic">&quot;{data.example}&quot;</div>
               {data.example_vi && (
                 <div className="text-slate-500 text-sm mt-1">{data.example_vi}</div>
               )}
@@ -266,9 +263,9 @@ function WordPopupContent({ word, onSaveWord, onClose }: WordPopupContentProps) 
             }`}
           >
             {saved ? (
-              <>✅ Đã lưu!</>
+              <>Đã lưu!</>
             ) : (
-              <>⭐ Lưu vào sổ từ vựng</>
+              <>Lưu vào sổ từ vựng</>
             )}
           </button>
         </div>
@@ -352,7 +349,7 @@ function TranslationPopupContent({ text }: TranslationPopupContentProps) {
       {/* Selected text preview */}
       <div className="px-4 py-2 bg-slate-50 border-b">
         <div className="text-xs text-slate-500 mb-1">Đoạn văn đã chọn:</div>
-        <div className="text-sm text-slate-800 font-medium line-clamp-2">"{text}"</div>
+        <div className="text-sm text-slate-800 font-medium line-clamp-2">&quot;{text}&quot;</div>
       </div>
 
       {/* Tabs */}
@@ -365,7 +362,7 @@ function TranslationPopupContent({ text }: TranslationPopupContentProps) {
               : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
           }`}
         >
-          🌐 Dịch nghĩa
+          Dịch nghĩa
         </button>
         <button
           onClick={() => handleTabChange('grammar')}
@@ -375,7 +372,7 @@ function TranslationPopupContent({ text }: TranslationPopupContentProps) {
               : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
           }`}
         >
-          📖 Ngữ pháp
+          Ngữ pháp
         </button>
       </div>
 
@@ -383,20 +380,19 @@ function TranslationPopupContent({ text }: TranslationPopupContentProps) {
       <div className="p-4 max-h-[300px] overflow-y-auto">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mb-3"></div>
+            <div className="w-8 h-8 border-4 border-blue-300 border-t-transparent rounded-full animate-spin mb-3" />
             <span className="text-slate-500 text-sm">
               {activeTab === 'translate' ? 'Đang dịch...' : 'Đang phân tích ngữ pháp...'}
             </span>
           </div>
         ) : error ? (
           <div className="text-center py-6">
-            <div className="text-4xl mb-2">😕</div>
             <div className="text-red-500 mb-3">{error}</div>
             <button
               onClick={() => fetchData(activeTab)}
               className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600"
             >
-              🔄 Thử lại
+              Thử lại
             </button>
           </div>
         ) : activeTab === 'translate' && translation ? (
@@ -410,7 +406,7 @@ function TranslationPopupContent({ text }: TranslationPopupContentProps) {
             {translation.notes && (
               <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-3 border border-amber-200">
                 <div className="flex items-center gap-2 text-amber-600 text-xs font-semibold mb-1">
-                  <span>💡</span> GHI CHÚ
+                  GHI CHÚ
                 </div>
                 <div className="text-slate-600 text-sm">{translation.notes}</div>
               </div>
@@ -422,12 +418,12 @@ function TranslationPopupContent({ text }: TranslationPopupContentProps) {
             <div className="flex flex-wrap gap-2">
               {grammar.structure && (
                 <span className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                  📐 {grammar.structure}
+                  {grammar.structure}
                 </span>
               )}
               {grammar.tense && (
                 <span className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                  ⏰ {grammar.tense}
+                  {grammar.tense}
                 </span>
               )}
             </div>
@@ -436,7 +432,7 @@ function TranslationPopupContent({ text }: TranslationPopupContentProps) {
             {grammar.explanation && (
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
                 <div className="flex items-center gap-2 text-purple-600 text-xs font-semibold mb-2">
-                  <span>📖</span> GIẢI THÍCH
+                  GIẢI THÍCH
                 </div>
                 <div className="text-slate-700 leading-relaxed">{grammar.explanation}</div>
               </div>
@@ -446,7 +442,7 @@ function TranslationPopupContent({ text }: TranslationPopupContentProps) {
             {grammar.breakdown && grammar.breakdown.length > 0 && (
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                 <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold mb-3">
-                  <span>🔍</span> PHÂN TÍCH CHI TIẾT
+                  PHÂN TÍCH CHI TIẾT
                 </div>
                 <div className="space-y-2">
                   {grammar.breakdown.map((item, i) => (
@@ -465,7 +461,7 @@ function TranslationPopupContent({ text }: TranslationPopupContentProps) {
             {grammar.tips && (
               <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-3 border border-amber-200">
                 <div className="flex items-center gap-2 text-amber-600 text-xs font-semibold mb-1">
-                  <span>💡</span> MẸO GHI NHỚ
+                  MẸO GHI NHỚ
                 </div>
                 <div className="text-slate-600 text-sm">{grammar.tips}</div>
               </div>
@@ -535,7 +531,6 @@ export function useSmartPopup(onSaveWord?: (word: WordData) => void) {
           initialPosition={wordPopup.position}
           onClose={() => setWordPopup(null)}
           title={wordPopup.word}
-          titleEmoji="📖"
           headerGradient="bg-gradient-to-r from-purple-500 to-pink-500"
         >
           <WordPopupContent
@@ -550,7 +545,6 @@ export function useSmartPopup(onSaveWord?: (word: WordData) => void) {
           initialPosition={textPopup.position}
           onClose={() => setTextPopup(null)}
           title="AI Trợ giúp"
-          titleEmoji="🌟"
           headerGradient="bg-gradient-to-r from-blue-500 to-cyan-500"
         >
           <TranslationPopupContent text={textPopup.text} />

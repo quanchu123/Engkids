@@ -1,10 +1,29 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { UserProgress, UserSettings, SavedWord, GameScore, StoryProgress } from '@/types';
+import {
+  BadgeId,
+  GameResult,
+  GameScore,
+  ProgressSnapshot,
+  SavedWord,
+  StoryProgress,
+  UserProgress,
+  UserSettings,
+} from '@/types';
+import {
+  applyBadgeUnlocks,
+  createDefaultProgress,
+  createGameScore,
+  DEFAULT_SETTINGS,
+  getTodayDate,
+  incrementQuestStep,
+  normalizeProgress,
+  normalizeProgressSnapshot,
+} from '@/lib/progress';
+import { trackEvent } from '@/lib/analytics';
 
 const MAX_WORD_INTERACTIONS = 2000;
 
-// Enhanced word interaction tracking
 export interface WordInteraction {
   word: string;
   clickCount: number;
@@ -16,16 +35,10 @@ export interface WordInteraction {
 }
 
 interface AppState {
-  // Progress
   progress: UserProgress;
-  
-  // Word interactions
+  hydrated: boolean;
   wordInteractions: Map<string, WordInteraction>;
-  
-  // Settings
   settings: UserSettings;
-  
-  // Actions - Progress
   markPanelViewed: (storyId: string, panelId: number) => void;
   completeStory: (storyId: string, stars: number) => void;
   saveWord: (word: string, vi: string, isFavorite?: boolean, ipa?: string, storyId?: string, exampleSentence?: string) => void;
@@ -33,151 +46,152 @@ interface AppState {
   toggleWordFavorite: (wordText: string) => void;
   updateWordMastery: (wordText: string, masteryLevel: 0 | 1 | 2 | 3 | 4 | 5) => void;
   addGameScore: (score: GameScore) => void;
+  applyGameResult: (result: GameResult) => void;
+  completeQuestStep: (step: 'story' | 'media' | 'game' | 'saveWord', amount?: number) => void;
+  grantBadgeIfEligible: (badgeId: BadgeId) => void;
+  recordMediaActivity: () => void;
   updateStreak: () => void;
-  
-  // Actions - Word tracking
   trackWordClick: (word: string, storyId: string) => void;
   getWordState: (word: string) => 'new' | 'viewed' | 'saved' | 'mastered';
-  
-  // Actions - Settings
   toggleVietnamese: () => void;
   setFontSize: (size: 'small' | 'medium' | 'large') => void;
   setReadingSpeed: (speed: 'slow' | 'normal' | 'fast') => void;
   toggleAutoPlayAudio: () => void;
-  
-  // Getters
+  replaceProgress: (progress: UserProgress) => void;
+  replaceSettings: (settings: UserSettings) => void;
+  setHydrated: (hydrated: boolean) => void;
   isWordSaved: (word: string) => boolean;
   getStoryProgress: (storyId: string) => StoryProgress | null;
 }
 
-const defaultProgress: UserProgress = {
-  storiesProgress: {},
-  savedWords: [],
-  gameScores: [],
-  totalStars: 0,
-  currentStreak: 0,
-  lastActiveDate: new Date().toISOString().split('T')[0],
-};
+function updateWordInteractionMap(
+  map: Map<string, WordInteraction>,
+  word: string,
+  updater: (current: WordInteraction | undefined) => WordInteraction,
+) {
+  const normalized = word.toLowerCase().trim();
+  const next = new Map(map);
+  next.set(normalized, updater(map.get(normalized)));
 
-const defaultSettings: UserSettings = {
-  showVietnamese: true,
-  fontSize: 'medium',
-  readingSpeed: 'normal',
-  autoPlayAudio: false,
-};
+  if (next.size > MAX_WORD_INTERACTIONS) {
+    const entries = Array.from(next.entries()).sort((a, b) => a[1].lastSeen.localeCompare(b[1].lastSeen));
+    entries.slice(0, next.size - MAX_WORD_INTERACTIONS).forEach(([key]) => next.delete(key));
+  }
+
+  return next;
+}
+
+function refreshQuestIfNeeded(progress: UserProgress): UserProgress {
+  const today = getTodayDate();
+  if (progress.dailyQuestState.date === today) {
+    return progress;
+  }
+  return normalizeProgress({
+    ...progress,
+    lastActiveDate: progress.lastActiveDate || today,
+    dailyQuestState: undefined,
+  });
+}
+
+function withNormalizedProgress(progress: UserProgress, updater: (progress: UserProgress) => UserProgress): UserProgress {
+  const normalized = refreshQuestIfNeeded(normalizeProgress(progress));
+  return applyBadgeUnlocks(updater(normalized));
+}
 
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      progress: defaultProgress,
-      settings: defaultSettings,
+      progress: createDefaultProgress(),
+      hydrated: false,
+      settings: DEFAULT_SETTINGS,
       wordInteractions: new Map(),
 
-      // Track word click
       trackWordClick: (word, storyId) => {
         set((state) => {
           const normalized = word.toLowerCase().trim();
           if (!normalized) return state;
-          const existing = state.wordInteractions.get(normalized);
           const now = new Date().toISOString();
-
-          const updated = existing
-            ? {
-                ...existing,
-                clickCount: existing.clickCount + 1,
-                lastSeen: now,
-                storyIds: existing.storyIds.includes(storyId)
-                  ? existing.storyIds
-                  : [...existing.storyIds, storyId],
-              }
-            : {
-                word: normalized,
-                clickCount: 1,
-                saveCount: 0,
-                firstSeen: now,
-                lastSeen: now,
-                storyIds: [storyId],
-                masteryLevel: 0 as const,
-              };
-
-          const newMap = new Map(state.wordInteractions);
-          newMap.set(normalized, updated);
-
-          // LRU eviction: remove oldest entries when exceeding limit
-          if (newMap.size > MAX_WORD_INTERACTIONS) {
-            const entries = Array.from(newMap.entries());
-            entries.sort((a, b) => a[1].lastSeen.localeCompare(b[1].lastSeen));
-            const toRemove = entries.slice(0, newMap.size - MAX_WORD_INTERACTIONS);
-            toRemove.forEach(([key]) => newMap.delete(key));
-          }
-
-          return { wordInteractions: newMap };
+          return {
+            wordInteractions: updateWordInteractionMap(state.wordInteractions, normalized, (existing) => ({
+              word: normalized,
+              clickCount: (existing?.clickCount || 0) + 1,
+              saveCount: existing?.saveCount || 0,
+              firstSeen: existing?.firstSeen || now,
+              lastSeen: now,
+              storyIds: existing?.storyIds?.includes(storyId)
+                ? existing.storyIds
+                : [...(existing?.storyIds || []), storyId],
+              masteryLevel: existing?.masteryLevel || 0,
+            })),
+          };
         });
       },
 
-      // Get word state
       getWordState: (word) => {
         const state = get();
         const normalized = word.toLowerCase().trim();
         const interaction = state.wordInteractions.get(normalized);
-        const saved = state.progress.savedWords.some(
-          (w) => w.word.toLowerCase() === normalized
-        );
+        const saved = state.progress.savedWords.some((item) => item.word.toLowerCase().trim() === normalized);
 
         if (!interaction) return 'new';
-        if (interaction.masteryLevel >= 3) return 'mastered';
+        if ((interaction.masteryLevel || 0) >= 3) return 'mastered';
         if (saved) return 'saved';
         if (interaction.clickCount > 0) return 'viewed';
         return 'new';
       },
 
-      // Mark panel as viewed
       markPanelViewed: (storyId, panelId) => {
-        set((state) => {
-          const currentProgress = state.progress.storiesProgress[storyId] || {
-            storyId,
-            completed: false,
-            panelsViewed: [],
-            starsEarned: 0,
-          };
+        set((state) => ({
+          progress: withNormalizedProgress(state.progress, (progress) => {
+            const currentProgress = progress.storiesProgress[storyId] || {
+              storyId,
+              completed: false,
+              panelsViewed: [],
+              starsEarned: 0,
+            };
 
-          const panelsViewed = currentProgress.panelsViewed.includes(panelId)
-            ? currentProgress.panelsViewed
-            : [...currentProgress.panelsViewed, panelId];
+            const panelsViewed = currentProgress.panelsViewed.includes(panelId)
+              ? currentProgress.panelsViewed
+              : [...currentProgress.panelsViewed, panelId];
 
-          return {
-            progress: {
-              ...state.progress,
+            return {
+              ...progress,
               storiesProgress: {
-                ...state.progress.storiesProgress,
+                ...progress.storiesProgress,
                 [storyId]: {
                   ...currentProgress,
                   panelsViewed,
                 },
               },
-            },
-          };
-        });
+            };
+          }),
+        }));
       },
 
-      // Complete story
       completeStory: (storyId, stars) => {
-        set((state) => {
-          const currentProgress = state.progress.storiesProgress[storyId] || {
-            storyId,
-            completed: false,
-            panelsViewed: [],
-            starsEarned: 0,
-          };
+        set((state) => ({
+          progress: withNormalizedProgress(state.progress, (progress) => {
+            const currentProgress = progress.storiesProgress[storyId] || {
+              storyId,
+              completed: false,
+              panelsViewed: [],
+              starsEarned: 0,
+            };
 
-          const newStars = Math.max(currentProgress.starsEarned, stars);
-          const starsGained = newStars - currentProgress.starsEarned;
+            const newStars = Math.max(currentProgress.starsEarned, stars);
+            const starsGained = newStars - currentProgress.starsEarned;
+            const nextQuest = incrementQuestStep(progress.dailyQuestState, 'story', currentProgress.completed ? 0 : 1);
+            if (!currentProgress.completed) {
+              trackEvent('story_opened', { storyId });
+            }
+            if (nextQuest.completed && !progress.dailyQuestState.completed) {
+              trackEvent('quest_completed', { date: nextQuest.date });
+            }
 
-          return {
-            progress: {
-              ...state.progress,
+            return {
+              ...progress,
               storiesProgress: {
-                ...state.progress.storiesProgress,
+                ...progress.storiesProgress,
                 [storyId]: {
                   ...currentProgress,
                   completed: true,
@@ -185,25 +199,26 @@ export const useAppStore = create<AppState>()(
                   completedAt: new Date().toISOString(),
                 },
               },
-              totalStars: state.progress.totalStars + starsGained,
-            },
-          };
-        });
+              totalStars: progress.totalStars + starsGained,
+              dailyQuestState: nextQuest,
+            };
+          }),
+        }));
       },
 
-      // Save word
       saveWord: (word, vi, isFavorite = false, ipa = '', storyId = '', exampleSentence = '') => {
         set((state) => {
           const exists = state.progress.savedWords.some(
-            (w) => w.word.toLowerCase().trim() === word.toLowerCase().trim()
+            (item) => item.word.toLowerCase().trim() === word.toLowerCase().trim(),
           );
           if (exists) return state;
 
+          const now = new Date().toISOString();
           const newWord: SavedWord = {
             word,
             vi,
             ipa,
-            savedAt: new Date().toISOString(),
+            savedAt: now,
             storyId,
             isFavorite,
             masteryLevel: 0,
@@ -211,114 +226,181 @@ export const useAppStore = create<AppState>()(
             exampleSentence,
           };
 
-          // Update word interaction
-          const normalized = word.toLowerCase().trim();
-          const interaction = state.wordInteractions.get(normalized);
-          if (interaction) {
-            const newMap = new Map(state.wordInteractions);
-            newMap.set(normalized, {
-              ...interaction,
-              saveCount: interaction.saveCount + 1,
-              masteryLevel: Math.min(5, interaction.masteryLevel + 1) as 0 | 1 | 2 | 3 | 4 | 5,
-            });
-            
+          const nextProgress = withNormalizedProgress(state.progress, (progress) => {
+            const nextQuest = incrementQuestStep(progress.dailyQuestState, 'saveWord', 1);
+            if (nextQuest.completed && !progress.dailyQuestState.completed) {
+              trackEvent('quest_completed', { date: nextQuest.date });
+            }
+            trackEvent('word_saved', { word, sourceId: storyId || undefined });
+
             return {
-              progress: {
-                ...state.progress,
-                savedWords: [...state.progress.savedWords, newWord],
-              },
-              wordInteractions: newMap,
+              ...progress,
+              savedWords: [...progress.savedWords, newWord],
+              dailyQuestState: nextQuest,
             };
-          }
+          });
 
           return {
-            progress: {
-              ...state.progress,
-              savedWords: [...state.progress.savedWords, newWord],
-            },
+            progress: nextProgress,
+            wordInteractions: updateWordInteractionMap(state.wordInteractions, word, (existing) => ({
+              word: word.toLowerCase().trim(),
+              clickCount: existing?.clickCount || 0,
+              saveCount: (existing?.saveCount || 0) + 1,
+              firstSeen: existing?.firstSeen || now,
+              lastSeen: now,
+              storyIds: existing?.storyIds || (storyId ? [storyId] : []),
+              masteryLevel: Math.min(5, (existing?.masteryLevel || 0) + 1) as 0 | 1 | 2 | 3 | 4 | 5,
+            })),
           };
         });
       },
 
-      // Toggle word favorite
       toggleWordFavorite: (wordText) => {
         set((state) => ({
           progress: {
             ...state.progress,
-            savedWords: state.progress.savedWords.map((w) =>
-              w.word.toLowerCase().trim() === wordText.toLowerCase().trim()
-                ? { ...w, isFavorite: !w.isFavorite }
-                : w
+            savedWords: state.progress.savedWords.map((word) =>
+              word.word.toLowerCase().trim() === wordText.toLowerCase().trim()
+                ? { ...word, isFavorite: !word.isFavorite }
+                : word,
             ),
           },
         }));
       },
 
-      // Update word mastery level
       updateWordMastery: (wordText, masteryLevel) => {
         set((state) => ({
           progress: {
             ...state.progress,
-            savedWords: state.progress.savedWords.map((w) =>
-              w.word.toLowerCase().trim() === wordText.toLowerCase().trim()
-                ? { ...w, masteryLevel, reviewCount: (w.reviewCount || 0) + 1, lastReviewedAt: new Date().toISOString() }
-                : w
+            savedWords: state.progress.savedWords.map((word) =>
+              word.word.toLowerCase().trim() === wordText.toLowerCase().trim()
+                ? {
+                    ...word,
+                    masteryLevel,
+                    reviewCount: (word.reviewCount || 0) + 1,
+                    lastReviewedAt: new Date().toISOString(),
+                  }
+                : word,
             ),
           },
         }));
       },
 
-      // Unsave word
       unsaveWord: (wordText) => {
         set((state) => ({
           progress: {
             ...state.progress,
             savedWords: state.progress.savedWords.filter(
-              (w) => w.word.toLowerCase().trim() !== wordText.toLowerCase().trim()
+              (word) => word.word.toLowerCase().trim() !== wordText.toLowerCase().trim(),
             ),
           },
         }));
       },
 
-      // Add game score
       addGameScore: (score) => {
+        get().applyGameResult({
+          ...score,
+          playedAt: score.playedAt,
+        });
+      },
+
+      applyGameResult: (result) => {
         set((state) => ({
-          progress: {
-            ...state.progress,
-            gameScores: [...state.progress.gameScores, score],
-          },
+          progress: withNormalizedProgress(state.progress, (progress) => {
+            const nextQuest = incrementQuestStep(progress.dailyQuestState, 'game', 1);
+            const nextScore = createGameScore(result);
+            const rewardStars = result.rewards?.stars || 0;
+            trackEvent('game_finished', {
+              gameType: result.gameType,
+              storyId: result.storyId,
+              score: result.score,
+              totalQuestions: result.totalQuestions,
+            });
+            if (nextQuest.completed && !progress.dailyQuestState.completed) {
+              trackEvent('quest_completed', { date: nextQuest.date });
+            }
+
+            return {
+              ...progress,
+              gameScores: [...progress.gameScores, nextScore],
+              totalStars: progress.totalStars + rewardStars,
+              dailyQuestState: nextQuest,
+            };
+          }),
         }));
       },
 
-      // Update streak
-      updateStreak: () => {
+      completeQuestStep: (step, amount = 1) => {
         set((state) => {
-          const today = new Date().toISOString().split('T')[0];
-          const lastActive = state.progress.lastActiveDate;
-          
-          if (lastActive === today) {
-            return state;
+          const nextQuest = incrementQuestStep(state.progress.dailyQuestState, step, amount);
+          if (nextQuest.completed && !state.progress.dailyQuestState.completed) {
+            trackEvent('quest_completed', { date: nextQuest.date });
           }
-
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-          const newStreak = lastActive === yesterdayStr
-            ? state.progress.currentStreak + 1
-            : 1;
-
           return {
             progress: {
               ...state.progress,
-              currentStreak: newStreak,
-              lastActiveDate: today,
+              dailyQuestState: nextQuest,
             },
           };
         });
       },
 
-      // Settings actions
+      grantBadgeIfEligible: (badgeId) => {
+        set((state) => {
+          const alreadyUnlocked = state.progress.badges.some((badge) => badge.id === badgeId);
+          const eligibleProgress = applyBadgeUnlocks(state.progress);
+          if (alreadyUnlocked || !eligibleProgress.badges.some((badge) => badge.id === badgeId)) {
+            return state;
+          }
+          return { progress: eligibleProgress };
+        });
+      },
+
+      recordMediaActivity: () => {
+        set((state) => {
+          const nextQuest = incrementQuestStep(state.progress.dailyQuestState, 'media', 1);
+          if (nextQuest.completed && !state.progress.dailyQuestState.completed) {
+            trackEvent('quest_completed', { date: nextQuest.date });
+          }
+          return {
+            progress: {
+              ...state.progress,
+              dailyQuestState: nextQuest,
+            },
+          };
+        });
+      },
+
+      updateStreak: () => {
+        set((state) => {
+          const today = getTodayDate();
+          const lastActive = state.progress.lastActiveDate;
+
+          if (lastActive === today) {
+            return {
+              progress: refreshQuestIfNeeded(state.progress),
+            };
+          }
+
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          const newStreak = lastActive === yesterdayStr ? state.progress.currentStreak + 1 : 1;
+
+          return {
+            progress: withNormalizedProgress(
+              {
+                ...state.progress,
+                currentStreak: newStreak,
+                lastActiveDate: today,
+                dailyQuestState: undefined as never,
+              } as UserProgress,
+              (progress) => progress,
+            ),
+          };
+        });
+      },
+
       toggleVietnamese: () => {
         set((state) => ({
           settings: {
@@ -355,10 +437,21 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      // Getters
+      replaceProgress: (progress) => {
+        set({ progress: normalizeProgress(progress) });
+      },
+
+      replaceSettings: (settings) => {
+        set({ settings: { ...DEFAULT_SETTINGS, ...settings } });
+      },
+
+      setHydrated: (hydrated) => {
+        set({ hydrated });
+      },
+
       isWordSaved: (word) => {
         return get().progress.savedWords.some(
-          (w) => w.word.toLowerCase().trim() === word.toLowerCase().trim()
+          (item) => item.word.toLowerCase().trim() === word.toLowerCase().trim(),
         );
       },
 
@@ -367,7 +460,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'kids.progress.v1',
+      name: 'kids.progress.v2',
       partialize: (state) => ({
         progress: state.progress,
         settings: state.settings,
@@ -375,14 +468,22 @@ export const useAppStore = create<AppState>()(
       }),
       merge: (persistedState: unknown, currentState) => {
         const persisted = persistedState as Partial<AppState & { wordInteractions: [string, WordInteraction][] }>;
-        // Convert wordInteractions array back to Map
-        const wordInteractions = new Map(persisted.wordInteractions || []);
+        const snapshot = normalizeProgressSnapshot({
+          progress: persisted.progress,
+          settings: persisted.settings,
+        } as Partial<ProgressSnapshot>);
+
         return {
           ...currentState,
           ...persisted,
-          wordInteractions,
+          progress: snapshot.progress,
+          settings: snapshot.settings,
+          wordInteractions: new Map(persisted.wordInteractions || []),
         };
       },
-    }
-  )
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated(true);
+      },
+    },
+  ),
 );

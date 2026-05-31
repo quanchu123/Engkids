@@ -2,6 +2,7 @@
 // Documentation: https://docs.bunny.net/docs/stream
 
 import crypto from 'crypto';
+import { mapBunnyStatusCode } from '@/lib/video-status';
 
 /**
  * Validate and get Bunny.net configuration
@@ -172,36 +173,12 @@ export async function getBunnyVideoStatus(videoId: string): Promise<{
   
   // Bunny status codes: 0=Queued, 1=Processing, 2=Encoding, 3=Finished, 4=Resolution Finished, 5=Failed
   // Note: Status 0 (Queued) means upload is complete but encoding hasn't started yet
-  let status: 'uploading' | 'processing' | 'ready' | 'error';
   let pctComplete = 0;
   
   // Check if video has been uploaded (length > 0 means file was uploaded)
   const hasContent = video.length > 0;
-  
-  switch (video.status) {
-    case 0:
-      // Queued - file uploaded, waiting for processing
-      status = hasContent ? 'processing' : 'uploading';
-      pctComplete = hasContent ? 10 : 0;
-      break;
-    case 1:
-    case 2:
-      status = 'processing';
-      pctComplete = 50;
-      break;
-    case 3:
-    case 4:
-      status = 'ready';
-      pctComplete = 100;
-      break;
-    case 5:
-      status = 'error';
-      pctComplete = 0;
-      break;
-    default:
-      status = 'processing';
-      pctComplete = 25;
-  }
+  const status = mapBunnyStatusCode(video.status, hasContent);
+  pctComplete = status === 'ready' ? 100 : status === 'processing' ? 50 : status === 'uploading' ? 10 : 0;
 
   const result: {
     status: 'uploading' | 'processing' | 'ready' | 'error';

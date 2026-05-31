@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+/* eslint-disable @next/next/no-img-element */
+
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Video } from '@/types';
 import { videoApi, ApiError } from '@/services/api';
 import { LEVEL_OPTIONS, ROUTES } from '@/config/constants';
 import SubtitleEditor from '@/components/video/SubtitleEditor';
+import QuizEditor from '@/components/video/QuizEditor';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function EditVideoPage() {
   const params = useParams();
@@ -23,11 +27,7 @@ export default function EditVideoPage() {
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState<Video['level']>('Beginner');
 
-  useEffect(() => {
-    loadVideo();
-  }, [videoId]);
-
-  const loadVideo = async () => {
+  const loadVideo = useCallback(async () => {
     try {
       const data = await videoApi.get(videoId);
       
@@ -44,7 +44,11 @@ export default function EditVideoPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [videoId]);
+
+  useEffect(() => {
+    loadVideo();
+  }, [loadVideo]);
 
   const handleSaveMetadata = async () => {
     setSaving(true);
@@ -58,11 +62,11 @@ export default function EditVideoPage() {
         level,
       });
 
-      setMessage('✓ Metadata saved successfully!');
+      setMessage('Metadata saved successfully.');
       await loadVideo(); // Reload
     } catch (error) {
       console.error('Save error:', error);
-      setMessage(error instanceof ApiError ? `✗ ${error.message}` : '✗ Failed to save metadata');
+      setMessage(error instanceof ApiError ? error.message : 'Failed to save metadata');
     } finally {
       setSaving(false);
     }
@@ -70,11 +74,8 @@ export default function EditVideoPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-600">Loading video...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner message="Đang tải video..." />
       </div>
     );
   }
@@ -83,7 +84,6 @@ export default function EditVideoPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">❌</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Video not found</h2>
           <button
             onClick={() => router.push('/admin/videos')}
@@ -116,7 +116,7 @@ export default function EditVideoPage() {
         {/* Message */}
         {message && (
           <div className={`max-w-2xl mx-auto mb-6 p-4 rounded-lg ${
-            message.startsWith('✓') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+            message.includes('successfully') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
           }`}>
             {message}
           </div>
@@ -139,7 +139,7 @@ export default function EditVideoPage() {
               />
               {/* Fallback */}
               <div className="absolute inset-0 flex items-center justify-center text-white text-6xl">
-                📹
+                VIDEO
               </div>
             </div>
           )}
@@ -218,7 +218,7 @@ export default function EditVideoPage() {
               disabled={saving}
               className="w-full py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-300"
             >
-              {saving ? 'Saving...' : '💾 Save Metadata'}
+              {saving ? 'Saving...' : 'Save Metadata'}
             </button>
           </div>
         </div>
@@ -228,7 +228,17 @@ export default function EditVideoPage() {
           videoId={videoId}
           initialSubtitles={video.subtitles}
           onSave={() => {
-            setMessage('✓ Subtitles saved!');
+            setMessage('Subtitles saved successfully.');
+            loadVideo();
+          }}
+        />
+
+        {/* Quiz Editor */}
+        <QuizEditor
+          videoId={videoId}
+          initialQuiz={video.quiz || []}
+          onSave={() => {
+            setMessage('Quiz saved successfully.');
             loadVideo();
           }}
         />

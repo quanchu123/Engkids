@@ -82,7 +82,7 @@ export async function GET(
         updates.hlsUrl = bunnyStatus.hlsUrl;
         updates.dashUrl = bunnyStatus.dashUrl;
       }
-      await updateVideo(id, updates).catch((e) => console.error(`❌ Failed to update video ${id}:`, e));
+      await updateVideo(id, updates).catch((e) => console.error(`Failed to update video ${id}:`, e));
     }
     
     return NextResponse.json({
