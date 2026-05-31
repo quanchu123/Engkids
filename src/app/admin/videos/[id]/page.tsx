@@ -27,6 +27,7 @@ export default function EditVideoPage() {
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState<Video['level']>('Beginner');
   const [category, setCategory] = useState<'video' | 'music'>('video');
+  const [feature, setFeature] = useState('');
 
   const loadVideo = useCallback(async () => {
     try {
@@ -39,6 +40,7 @@ export default function EditVideoPage() {
         setDescription(data.video.description || '');
         setLevel(data.video.level);
         setCategory(data.video.category || 'video');
+        setFeature(data.video.feature || '');
       }
     } catch (error) {
       console.error('Failed to load video:', error);
@@ -63,6 +65,7 @@ export default function EditVideoPage() {
         description,
         level,
         category,
+        feature,
       });
 
       setMessage('Metadata saved successfully.');
@@ -230,6 +233,22 @@ export default function EditVideoPage() {
               </select>
               <p className="text-xs text-gray-500 mt-1">
                 Chuyển video giữa mục Video học và Video nhạc.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Feature (Chủ đề / Bộ sưu tập)
+              </label>
+              <input
+                type="text"
+                value={feature}
+                onChange={(e) => setFeature(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="VD: Phonics, Bài hát thiếu nhi... (để trống = Tổng Hợp)"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Nhóm video theo chủ đề. Để trống sẽ được xếp vào mục “Tổng Hợp”.
               </p>
             </div>
 

@@ -42,7 +42,7 @@ export async function PATCH(
     const body = await request.json();
 
     // Whitelist allowed fields to prevent mass assignment
-    const allowedFields = ['title', 'titleVi', 'description', 'level', 'topics', 'ageGroup', 'status', 'category'];
+    const allowedFields = ['title', 'titleVi', 'description', 'level', 'topics', 'ageGroup', 'status', 'category', 'feature'];
     const sanitizedBody: Record<string, unknown> = {};
     for (const key of allowedFields) {
       if (key in body) {

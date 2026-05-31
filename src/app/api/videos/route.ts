@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
       topics: validated.topics,
       ageGroup: validated.ageGroup,
       category: validated.category,
+      feature: validated.feature,
       duration: typeof body?.duration === 'number' ? body.duration : 0,
     });
 

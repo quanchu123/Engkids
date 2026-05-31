@@ -26,6 +26,7 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
   type LevelValue = (typeof LEVELS)[keyof typeof LEVELS];
   const [level, setLevel] = useState<LevelValue>(LEVELS.BEGINNER);
   const [category, setCategory] = useState<'video' | 'music'>(initialCategory);
+  const [feature, setFeature] = useState('');
 
   const [busy, setBusy] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
@@ -137,6 +138,7 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
         level,
         topics: [],
         category,
+        feature,
       });
       setProgressPct(100);
 
@@ -273,6 +275,23 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
             {category === 'music'
               ? 'Will appear in Music section - for songs and sing-along videos'
               : 'Will appear in Videos section - for lessons and educational content'}
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Feature (Chủ đề / Bộ sưu tập)
+          </label>
+          <input
+            type="text"
+            value={feature}
+            onChange={(e) => setFeature(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="VD: Phonics, Bài hát thiếu nhi... (để trống = Tổng Hợp)"
+            disabled={busy}
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Nhóm video theo chủ đề. Để trống sẽ được xếp vào mục “Tổng Hợp”.
           </p>
         </div>
       </div>

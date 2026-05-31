@@ -8,6 +8,7 @@ export const createVideoSchema = z.object({
   topics: z.array(z.string().max(50)).max(10).optional().default([]),
   ageGroup: z.enum(['3-5', '6-8', '9-12']).optional(),
   category: z.enum(['video', 'music']).optional().default('video'),
+  feature: z.string().max(60).trim().optional().default(''),
 });
 
 export type CreateVideoInput = z.infer<typeof createVideoSchema>;

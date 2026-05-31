@@ -260,6 +260,9 @@ export default function AdminVideosPage() {
                       {(video.category || 'video') === 'music' ? '🎵 Nhạc' : '🎬 Học'}
                     </span>
                     <span className="px-2 py-1 bg-gray-100 rounded">{video.level}</span>
+                    <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
+                      {video.feature?.trim() || 'Tổng Hợp'}
+                    </span>
                     <span>{formatDate(video.createdAt)}</span>
                     {video.subtitles.length > 0 && (
                       <span>• {video.subtitles.length} subtitles</span>

@@ -244,6 +244,10 @@ export interface Video {
   // Public CDN URL resolved from objectKey, used by the <video> element.
   videoUrl?: string;
 
+  // Optional collection/theme label used to group videos within a section.
+  // Empty/undefined is treated as the "Tổng Hợp" (General) feature.
+  feature?: string;
+
   // Metadata
   duration: number;        // seconds
   level: 'Beginner' | 'Elementary' | 'Intermediate';

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS videos (
   topics TEXT[] DEFAULT '{}',
   age_group TEXT CHECK (age_group IN ('3-5', '6-8', '9-12')),
   category TEXT NOT NULL DEFAULT 'video' CHECK (category IN ('video', 'music')),
+  feature TEXT,
   status TEXT NOT NULL DEFAULT 'ready' CHECK (status IN ('uploading', 'processing', 'ready', 'error')),
   quiz JSONB NOT NULL DEFAULT '[]'::jsonb,
   deleted_at TIMESTAMPTZ,
@@ -47,6 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_videos_status ON videos(status);
 CREATE INDEX IF NOT EXISTS idx_videos_level ON videos(level);
 CREATE INDEX IF NOT EXISTS idx_videos_object_key ON videos(object_key);
 CREATE INDEX IF NOT EXISTS idx_videos_category ON videos(category);
+CREATE INDEX IF NOT EXISTS idx_videos_feature ON videos(feature);
 
 -- Video subtitles table  
 CREATE TABLE IF NOT EXISTS video_subtitles (

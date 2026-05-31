@@ -54,6 +54,7 @@ interface VideoRow {
   topics: string[];
   age_group: '3-5' | '6-8' | '9-12' | null;
   category: 'video' | 'music';
+  feature: string | null;
   status: string;
   quiz: VideoQuizQuestion[] | null;
   created_at: string;
@@ -140,6 +141,7 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
     topics: row.topics,
     ageGroup: row.age_group || undefined,
     category: row.category,
+    feature: row.feature || undefined,
     status,
     subtitles: subtitles
       .sort((a, b) => a.cue_index - b.cue_index)
@@ -260,6 +262,7 @@ export async function createVideo(data: {
   topics?: string[];
   ageGroup?: Video['ageGroup'];
   category?: 'video' | 'music';
+  feature?: string;
   duration?: number;
 }): Promise<Video> {
   const supabase = getSupabaseAdmin();
@@ -279,6 +282,7 @@ export async function createVideo(data: {
       topics: data.topics || [],
       age_group: data.ageGroup || null,
       category: data.category || 'video',
+      feature: data.feature?.trim() || null,
       duration: data.duration || 0,
       status: 'ready',
     })
@@ -309,6 +313,7 @@ export async function updateVideo(
     ageGroup: Video['ageGroup'];
     status: Video['status'];
     category: 'video' | 'music';
+    feature: string;
     quiz: VideoQuizQuestion[];
   }>
 ): Promise<void> {
@@ -326,6 +331,7 @@ export async function updateVideo(
   if (updates.ageGroup !== undefined) dbUpdates.age_group = updates.ageGroup;
   if (updates.status) dbUpdates.status = updates.status;
   if (updates.category) dbUpdates.category = updates.category;
+  if (updates.feature !== undefined) dbUpdates.feature = updates.feature.trim() || null;
   if (updates.quiz !== undefined) dbUpdates.quiz = updates.quiz;
 
   const { error } = await supabase

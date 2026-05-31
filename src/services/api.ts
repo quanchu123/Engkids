@@ -214,6 +214,7 @@ interface CreateVideoRequest {
   topics?: string[];
   ageGroup?: string;
   category?: 'video' | 'music';
+  feature?: string;
   duration?: number;
 }
 
@@ -228,6 +229,7 @@ interface UpdateVideoRequest {
   level?: string;
   status?: string;
   category?: 'video' | 'music';
+  feature?: string;
 }
 
 interface VideoStatusResponse {

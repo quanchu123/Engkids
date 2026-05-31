@@ -74,3 +74,32 @@ export function groupVideosByLevel(videos: Video[]) {
     intermediate: videos.filter((video) => video.level === 'Intermediate'),
   };
 }
+
+// Group videos by their feature label. Videos without a feature fall under the
+// provided default label (e.g. "Tổng Hợp"). Returns an ordered list of groups,
+// with the default group placed last.
+export function groupVideosByFeature(
+  videos: Video[],
+  defaultLabel: string,
+): Array<{ feature: string; videos: Video[] }> {
+  const groups = new Map<string, Video[]>();
+
+  for (const video of videos) {
+    const key = video.feature?.trim() || defaultLabel;
+    const existing = groups.get(key);
+    if (existing) existing.push(video);
+    else groups.set(key, [video]);
+  }
+
+  const entries = Array.from(groups.entries())
+    .map(([feature, items]) => ({ feature, videos: items }));
+
+  // Named features first (alphabetical), default group last.
+  entries.sort((a, b) => {
+    if (a.feature === defaultLabel) return 1;
+    if (b.feature === defaultLabel) return -1;
+    return a.feature.localeCompare(b.feature);
+  });
+
+  return entries;
+}

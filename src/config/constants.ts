@@ -133,6 +133,12 @@ export const TOPICS = [
 ] as const;
 
 // ============================================
+// VIDEO FEATURE (collection/theme grouping)
+// ============================================
+// A video with no feature is grouped under this default label.
+export const DEFAULT_FEATURE = 'Tổng Hợp';
+
+// ============================================
 // STORAGE KEYS (localStorage/sessionStorage)
 // ============================================
 export const STORAGE_KEYS = {
