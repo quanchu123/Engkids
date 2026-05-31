@@ -85,12 +85,17 @@ export function middleware(request: NextRequest) {
         );
       }
     } else {
-      // Production rate limits
-      const isUpload = pathname.includes('/videos') && request.method === 'POST';
-      const limit = isUpload ? 10 : 100;
+      // Production rate limits.
+      // Use SEPARATE counters per category so that normal navigation requests
+      // (page loads, status polls, listing) never eat into the upload budget,
+      // and vice-versa. Previously a single shared per-IP counter meant routine
+      // browsing could trip the strict upload limit before any upload happened.
+      const isFileUpload = pathname.startsWith('/api/videos/upload');
+      const bucket = isFileUpload ? 'upload' : 'api';
+      const limit = isFileUpload ? 60 : 300;
       const windowMs = 15 * 60 * 1000; // 15 minutes
 
-      if (!checkRateLimit(identifier, limit, windowMs)) {
+      if (!checkRateLimit(`${bucket}:${identifier}`, limit, windowMs)) {
         return NextResponse.json(
           { error: 'Too many requests. Please try again later.' },
           {
