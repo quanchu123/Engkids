@@ -1,0 +1,21 @@
+name: Deploy to DigitalOcean
+
+# Tự chạy mỗi khi push lên nhánh master (hoặc bấm chạy tay trong tab Actions)
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH vào server và deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd /root/Engkids
+            bash deploy.sh
