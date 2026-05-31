@@ -209,9 +209,9 @@ export default function WordPuzzlePage() {
         </header>
 
         {/* â”€â”€ Hint â”€â”€ */}
-        <div className="text-center py-3">
+        <div className="text-center py-2">
           <span className="text-white/30 text-xs uppercase tracking-widest">Gợi ý</span>
-          <div className="text-2xl font-black mt-1"
+          <div className="text-2xl font-black mt-0.5"
             style={{
               background: 'linear-gradient(135deg, #fde68a, #f59e0b)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
@@ -222,7 +222,7 @@ export default function WordPuzzlePage() {
         </div>
 
         {/* â”€â”€ Board â”€â”€ */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-1.5 px-4">
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-1.5 px-4 overflow-hidden">
           {board.map((row, ri) => (
             <div key={ri}
               className="flex gap-1.5"
@@ -253,7 +253,7 @@ export default function WordPuzzlePage() {
 
                 return (
                   <div key={ci}
-                    className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-xl font-black text-2xl text-white uppercase select-none"
+                    className="w-11 h-11 sm:w-14 sm:h-14 flex items-center justify-center rounded-xl font-black text-xl sm:text-2xl text-white uppercase select-none shrink-0"
                     style={{
                       background: bg,
                       border,
@@ -277,7 +277,7 @@ export default function WordPuzzlePage() {
 
         {/* â”€â”€ Keyboard â”€â”€ */}
         {gameState === 'playing' && (
-          <div className="flex flex-col items-center gap-1.5 px-2 pb-4 pt-2">
+          <div className="flex flex-col items-center gap-1.5 px-2 pb-3 pt-2 shrink-0">
             {KEYBOARD_ROWS.map((row, ri) => (
               <div key={ri} className="flex gap-1">
                 {row.map(key => {
@@ -299,8 +299,8 @@ export default function WordPuzzlePage() {
                       className="flex items-center justify-center rounded-lg font-bold text-white transition-all duration-150 active:scale-90 select-none"
                       style={{
                         background: bg,
-                        width: isWide ? 65 : 36,
-                        height: 52,
+                        width: isWide ? 58 : 32,
+                        height: 44,
                         fontSize: isWide ? 11 : 15,
                         boxShadow: glow,
                         border: '1px solid rgba(255,255,255,0.06)',
