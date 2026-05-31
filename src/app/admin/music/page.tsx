@@ -16,19 +16,30 @@ interface MusicSetting {
 const ALLOWED = ['audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/mp4', 'audio/aac', 'audio/x-m4a'];
 const MAX_BYTES = 20 * 1024 * 1024;
 
+function publicUrl(objectKey: string | null): string | undefined {
+  if (!objectKey) return undefined;
+  return `/api/videos/file/${encodeURIComponent(objectKey)}`;
+}
+
 export default function AdminMusicPage() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [music, setMusic] = useState<MusicSetting>({ enabled: false, objectKey: null, volume: 0.4 });
+
+  // The last saved setting (server state).
+  const [saved, setSaved] = useState<MusicSetting>({ enabled: false, objectKey: null, volume: 0.4 });
+  // The working draft (what the admin is editing).
+  const [draft, setDraft] = useState<MusicSetting>({ enabled: false, objectKey: null, volume: 0.4 });
   const [file, setFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     try {
       const res = await api.get<{ music: MusicSetting }>('/api/settings/background-music');
-      setMusic(res.music);
+      setSaved(res.music);
+      setDraft(res.music);
     } catch {
       toast.error('Không tải được cài đặt nhạc nền');
     } finally {
@@ -38,6 +49,12 @@ export default function AdminMusicPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // There are unsaved changes if the draft differs from the saved setting.
+  const dirty =
+    draft.enabled !== saved.enabled ||
+    draft.objectKey !== saved.objectKey ||
+    Math.round(draft.volume * 100) !== Math.round(saved.volume * 100);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -82,41 +99,48 @@ export default function AdminMusicPage() {
       xhr.send(selected);
     });
 
+  // Upload only puts the file on disk and stages it in the draft. Nothing is
+  // applied to the site until the admin presses "Lưu thay đổi".
   const handleUpload = async () => {
     if (!file) return;
-    setBusy(true);
+    setUploading(true);
     setProgress(0);
     try {
       const token = (await getAnyAccessToken()) || '';
       const objectKey = await uploadFile(file, token);
-      // Save setting: set the new track and enable it.
-      const res = await api.put<{ music: MusicSetting }>(
-        '/api/settings/background-music',
-        { objectKey, enabled: true },
-        { auth: true },
-      );
-      setMusic(res.music);
+      setDraft((d) => ({ ...d, objectKey, url: publicUrl(objectKey), enabled: true }));
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
-      toast.success('Đã tải lên và đặt làm nhạc nền!');
+      toast.success('Đã tải lên. Bấm "Lưu thay đổi" để áp dụng.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Upload thất bại');
     } finally {
-      setBusy(false);
+      setUploading(false);
     }
   };
 
-  const updateSetting = async (patch: Partial<MusicSetting>) => {
+  const handleSave = async () => {
+    setSaving(true);
     try {
       const res = await api.put<{ music: MusicSetting }>(
         '/api/settings/background-music',
-        patch,
+        { objectKey: draft.objectKey, enabled: draft.enabled, volume: draft.volume },
         { auth: true },
       );
-      setMusic(res.music);
+      setSaved(res.music);
+      setDraft(res.music);
+      toast.success('Đã lưu thay đổi nhạc nền!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lưu thất bại');
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const handleReset = () => {
+    setDraft(saved);
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   if (loading) {
@@ -127,12 +151,15 @@ export default function AdminMusicPage() {
     );
   }
 
+  const previewUrl = draft.url || publicUrl(draft.objectKey);
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 pb-28">
       <div className="max-w-2xl mx-auto px-4">
         <h1 className="text-3xl font-bold text-gray-900">Nhạc nền trang chủ</h1>
         <p className="text-gray-600 mt-1 mb-6">
-          Tải lên một file nhạc để phát nền ở trang chủ. Có thể bật/tắt và chỉnh âm lượng.
+          Tải lên một file nhạc để phát nền ở trang chủ. Mọi thay đổi chỉ áp dụng sau khi bấm
+          <strong> Lưu thay đổi</strong>.
         </p>
 
         {/* Current status */}
@@ -141,41 +168,39 @@ export default function AdminMusicPage() {
             <div>
               <p className="font-semibold text-gray-800">Trạng thái</p>
               <p className="text-sm text-gray-500">
-                {music.objectKey ? (music.enabled ? 'Đang bật' : 'Đã tắt') : 'Chưa có nhạc nền'}
+                {draft.objectKey ? (draft.enabled ? 'Sẽ bật nhạc nền' : 'Sẽ tắt nhạc nền') : 'Chưa có nhạc nền'}
               </p>
             </div>
-            {music.objectKey && (
+            {draft.objectKey && (
               <button
-                onClick={() => updateSetting({ enabled: !music.enabled })}
+                onClick={() => setDraft((d) => ({ ...d, enabled: !d.enabled }))}
                 className={`px-4 py-2 rounded-md font-semibold text-white ${
-                  music.enabled ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-600 hover:bg-green-700'
+                  draft.enabled ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-600 hover:bg-green-700'
                 }`}
               >
-                {music.enabled ? 'Tắt nhạc' : 'Bật nhạc'}
+                {draft.enabled ? 'Tắt nhạc' : 'Bật nhạc'}
               </button>
             )}
           </div>
 
-          {music.url && (
+          {previewUrl && (
             <div className="mt-4">
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-              <audio src={music.url} controls className="w-full" />
+              <audio src={previewUrl} controls className="w-full" />
             </div>
           )}
 
-          {music.objectKey && (
+          {draft.objectKey && (
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Âm lượng: {Math.round(music.volume * 100)}%
+                Âm lượng: {Math.round(draft.volume * 100)}%
               </label>
               <input
                 type="range"
                 min={0}
                 max={100}
-                value={Math.round(music.volume * 100)}
-                onChange={(e) => setMusic((m) => ({ ...m, volume: Number(e.target.value) / 100 }))}
-                onMouseUp={(e) => updateSetting({ volume: Number((e.target as HTMLInputElement).value) / 100 })}
-                onTouchEnd={(e) => updateSetting({ volume: Number((e.target as HTMLInputElement).value) / 100 })}
+                value={Math.round(draft.volume * 100)}
+                onChange={(e) => setDraft((d) => ({ ...d, volume: Number(e.target.value) / 100 }))}
                 className="w-full"
               />
             </div>
@@ -185,7 +210,7 @@ export default function AdminMusicPage() {
         {/* Upload new track */}
         <div className="rounded-lg border border-gray-200 bg-white p-5">
           <p className="font-semibold text-gray-800 mb-3">
-            {music.objectKey ? 'Thay nhạc nền' : 'Tải lên nhạc nền'}
+            {draft.objectKey ? 'Thay nhạc nền' : 'Tải lên nhạc nền'}
           </p>
           <input
             ref={fileInputRef}
@@ -193,11 +218,11 @@ export default function AdminMusicPage() {
             accept="audio/mpeg,audio/ogg,audio/wav,audio/mp4,audio/aac,.mp3,.ogg,.wav,.m4a,.aac"
             onChange={handleFileSelect}
             className="block w-full text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-blue-700 hover:file:bg-blue-100"
-            disabled={busy}
+            disabled={uploading}
           />
           {file && <p className="mt-2 text-sm text-gray-600">{file.name} ({(file.size / (1024 * 1024)).toFixed(1)} MB)</p>}
 
-          {busy && (
+          {uploading && (
             <div className="mt-3">
               <div className="mb-1 text-sm text-gray-600">Đang tải lên... {progress}%</div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
@@ -208,14 +233,41 @@ export default function AdminMusicPage() {
 
           <button
             onClick={handleUpload}
-            disabled={!file || busy}
+            disabled={!file || uploading}
             className={`mt-4 w-full rounded-md py-3 font-semibold transition-colors ${
-              file && !busy ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              file && !uploading ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {busy ? 'Đang tải lên...' : 'Tải lên & đặt làm nhạc nền'}
+            {uploading ? 'Đang tải lên...' : 'Tải lên file (chưa áp dụng)'}
           </button>
           <p className="mt-2 text-xs text-gray-400">MP3, OGG, WAV, M4A, AAC — tối đa 20MB.</p>
+        </div>
+      </div>
+
+      {/* Sticky save bar */}
+      <div className="fixed bottom-0 left-56 right-0 border-t border-gray-200 bg-white/95 px-4 py-4 backdrop-blur">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
+          <span className={`text-sm font-medium ${dirty ? 'text-amber-600' : 'text-gray-400'}`}>
+            {dirty ? '● Có thay đổi chưa lưu' : 'Đã lưu tất cả thay đổi'}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={handleReset}
+              disabled={!dirty || saving}
+              className="px-4 py-2 rounded-md font-semibold text-gray-600 hover:bg-gray-100 disabled:opacity-40"
+            >
+              Hoàn tác
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!dirty || saving}
+              className={`px-6 py-2 rounded-md font-semibold text-white transition-colors ${
+                dirty && !saving ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'
+              }`}
+            >
+              {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
