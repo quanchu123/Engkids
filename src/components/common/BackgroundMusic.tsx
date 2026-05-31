@@ -8,16 +8,24 @@ interface MusicSetting {
   volume: number;
 }
 
+// Events the browser accepts as a "user gesture" to unlock audio.
+const GESTURE_EVENTS = ['pointerdown', 'click', 'touchend', 'keydown'] as const;
+
 /**
- * Home-page background music. Loops a track set by the admin. Because browsers
- * block autoplay with sound until the user interacts with the page, we attempt
- * to autoplay and, if blocked, show a small floating button to start it.
+ * Home-page background music. Loops a track set by the admin.
+ *
+ * Browsers block autoplay WITH SOUND until the user interacts with the page.
+ * Strategy to play as early as possible:
+ *   1. Try to play unmuted (works if the browser already trusts this site).
+ *   2. If blocked, start MUTED (autoplay muted is always allowed) so the track
+ *      is already running, then unmute on the very first user gesture anywhere
+ *      on the page — the user does not need to find the music button.
  */
 export default function BackgroundMusic() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [setting, setSetting] = useState<MusicSetting | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [needsTap, setNeedsTap] = useState(false);
+  const [muted, setMuted] = useState(false);
 
   // Load the current music setting.
   useEffect(() => {
@@ -33,7 +41,6 @@ export default function BackgroundMusic() {
     return () => { active = false; };
   }, []);
 
-  // Try to autoplay once we have a track; fall back to a tap-to-play button.
   useEffect(() => {
     if (!setting?.url) return;
     const audio = audioRef.current;
@@ -42,30 +49,38 @@ export default function BackgroundMusic() {
     audio.volume = setting.volume;
     audio.loop = true;
 
-    const tryPlay = () => {
-      audio
-        .play()
-        .then(() => {
-          setPlaying(true);
-          setNeedsTap(false);
-        })
-        .catch(() => {
-          setNeedsTap(true);
-        });
+    let unlocked = false;
+
+    // Unmute + play at the first real user gesture.
+    const unlock = () => {
+      if (unlocked) return;
+      unlocked = true;
+      audio.muted = false;
+      setMuted(false);
+      audio.play().then(() => setPlaying(true)).catch(() => {});
+      GESTURE_EVENTS.forEach((ev) => window.removeEventListener(ev, unlock));
     };
 
-    tryPlay();
-
-    // If autoplay was blocked, start on the first user interaction.
-    const onInteract = () => {
-      if (audio.paused) tryPlay();
-    };
-    window.addEventListener('pointerdown', onInteract, { once: true });
-    window.addEventListener('keydown', onInteract, { once: true });
+    // 1. Try unmuted autoplay.
+    audio.muted = false;
+    audio
+      .play()
+      .then(() => {
+        setPlaying(true);
+        setMuted(false);
+      })
+      .catch(() => {
+        // 2. Blocked — fall back to muted autoplay, unmute on first gesture.
+        audio.muted = true;
+        setMuted(true);
+        audio.play().then(() => setPlaying(true)).catch(() => {});
+        GESTURE_EVENTS.forEach((ev) =>
+          window.addEventListener(ev, unlock, { once: false, passive: true }),
+        );
+      });
 
     return () => {
-      window.removeEventListener('pointerdown', onInteract);
-      window.removeEventListener('keydown', onInteract);
+      GESTURE_EVENTS.forEach((ev) => window.removeEventListener(ev, unlock));
     };
   }, [setting]);
 
@@ -74,13 +89,17 @@ export default function BackgroundMusic() {
   const toggle = () => {
     const audio = audioRef.current;
     if (!audio) return;
-    if (audio.paused) {
-      audio.play().then(() => { setPlaying(true); setNeedsTap(false); }).catch(() => {});
+    if (audio.paused || audio.muted) {
+      audio.muted = false;
+      setMuted(false);
+      audio.play().then(() => setPlaying(true)).catch(() => {});
     } else {
       audio.pause();
       setPlaying(false);
     }
   };
+
+  const isOn = playing && !muted;
 
   return (
     <>
@@ -88,15 +107,15 @@ export default function BackgroundMusic() {
       <audio ref={audioRef} src={setting.url} preload="auto" />
       <button
         onClick={toggle}
-        aria-label={playing ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
-        title={playing ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
+        aria-label={isOn ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
+        title={isOn ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
         className={`fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full text-xl shadow-lg transition-all hover:scale-110 ${
-          playing
+          isOn
             ? 'bg-gradient-to-br from-violet-500 to-pink-500 text-white'
-            : 'bg-white text-violet-600 ring-2 ring-violet-300'
-        } ${needsTap && !playing ? 'animate-pulse' : ''}`}
+            : 'bg-white text-violet-600 ring-2 ring-violet-300 animate-pulse'
+        }`}
       >
-        {playing ? '🔊' : '🎵'}
+        {isOn ? '🔊' : '🎵'}
       </button>
     </>
   );
