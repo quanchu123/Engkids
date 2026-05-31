@@ -308,6 +308,7 @@ export async function updateVideo(
     topics: string[];
     ageGroup: Video['ageGroup'];
     status: Video['status'];
+    category: 'video' | 'music';
     quiz: VideoQuizQuestion[];
   }>
 ): Promise<void> {
@@ -324,6 +325,7 @@ export async function updateVideo(
   if (updates.topics) dbUpdates.topics = updates.topics;
   if (updates.ageGroup !== undefined) dbUpdates.age_group = updates.ageGroup;
   if (updates.status) dbUpdates.status = updates.status;
+  if (updates.category) dbUpdates.category = updates.category;
   if (updates.quiz !== undefined) dbUpdates.quiz = updates.quiz;
 
   const { error } = await supabase

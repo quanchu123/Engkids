@@ -26,6 +26,7 @@ export default function EditVideoPage() {
   const [titleVi, setTitleVi] = useState('');
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState<Video['level']>('Beginner');
+  const [category, setCategory] = useState<'video' | 'music'>('video');
 
   const loadVideo = useCallback(async () => {
     try {
@@ -37,6 +38,7 @@ export default function EditVideoPage() {
         setTitleVi(data.video.titleVi);
         setDescription(data.video.description || '');
         setLevel(data.video.level);
+        setCategory(data.video.category || 'video');
       }
     } catch (error) {
       console.error('Failed to load video:', error);
@@ -60,6 +62,7 @@ export default function EditVideoPage() {
         titleVi,
         description,
         level,
+        category,
       });
 
       setMessage('Metadata saved successfully.');
@@ -211,6 +214,23 @@ export default function EditVideoPage() {
                 <option value="Elementary">Elementary</option>
                 <option value="Intermediate">Intermediate</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as 'video' | 'music')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="video">🎬 Video học (Educational)</option>
+                <option value="music">🎵 Video nhạc (Music)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Chuyển video giữa mục Video học và Video nhạc.
+              </p>
             </div>
 
             <button

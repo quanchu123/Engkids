@@ -16,6 +16,7 @@ export default function AdminVideosPage() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'ready' | 'processing' | 'error'>('all');
+  const [category, setCategory] = useState<'video' | 'music'>('video');
 
   useEffect(() => {
     loadVideos();
@@ -78,7 +79,11 @@ export default function AdminVideosPage() {
     }
   };
 
-  const filteredVideos = videos.filter(v => {
+  // First narrow by the selected category (Video học vs Video nhạc),
+  // then apply the status filter within that category.
+  const categoryVideos = videos.filter((v) => (v.category || 'video') === category);
+
+  const filteredVideos = categoryVideos.filter(v => {
     if (filter === 'all') return true;
     return v.status === filter;
   });
@@ -114,7 +119,10 @@ export default function AdminVideosPage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Video Library</h1>
-            <p className="text-gray-600 mt-1">{videos.length} total videos</p>
+            <p className="text-gray-600 mt-1">
+              {videos.filter(v => (v.category || 'video') === 'video').length} video học ·{' '}
+              {videos.filter(v => v.category === 'music').length} video nhạc
+            </p>
           </div>
           <Link
             href="/admin/videos/new"
@@ -124,7 +132,31 @@ export default function AdminVideosPage() {
           </Link>
         </div>
 
-        {/* Filters */}
+        {/* Category tabs: split educational videos from music */}
+        <div className="mb-6 flex gap-2 border-b border-gray-200">
+          {([
+            { key: 'video', label: '🎬 Video học' },
+            { key: 'music', label: '🎵 Video nhạc' },
+          ] as const).map((tab) => {
+            const count = videos.filter((v) => (v.category || 'video') === tab.key).length;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setCategory(tab.key)}
+                className={`px-5 py-3 font-semibold transition-colors border-b-2 -mb-px ${
+                  category === tab.key
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab.label}
+                <span className="ml-2 text-sm">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Status filters (within the selected category) */}
         <div className="mb-6 flex gap-2">
           {(['all', 'ready', 'processing', 'error'] as const).map((status) => (
             <button
@@ -138,7 +170,7 @@ export default function AdminVideosPage() {
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
               <span className="ml-2 text-sm">
-                ({status === 'all' ? videos.length : videos.filter(v => v.status === status).length})
+                ({status === 'all' ? categoryVideos.length : categoryVideos.filter(v => v.status === status).length})
               </span>
             </button>
           ))}
@@ -153,9 +185,11 @@ export default function AdminVideosPage() {
         )}
 
         {/* Empty State */}
-        {!loading && videos.length === 0 && (
+        {!loading && categoryVideos.length === 0 && (
           <div className="text-center py-16 bg-white rounded-lg shadow-md">
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">No videos yet</h3>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">
+              {category === 'music' ? 'Chưa có video nhạc nào' : 'Chưa có video học nào'}
+            </h3>
             <p className="text-gray-500 mb-6">Upload your first video to get started</p>
             <Link
               href="/admin/videos/new"
@@ -218,6 +252,13 @@ export default function AdminVideosPage() {
 
                   {/* Metadata */}
                   <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+                    <span className={`px-2 py-1 rounded font-medium ${
+                      (video.category || 'video') === 'music'
+                        ? 'bg-pink-100 text-pink-700'
+                        : 'bg-violet-100 text-violet-700'
+                    }`}>
+                      {(video.category || 'video') === 'music' ? '🎵 Nhạc' : '🎬 Học'}
+                    </span>
                     <span className="px-2 py-1 bg-gray-100 rounded">{video.level}</span>
                     <span>{formatDate(video.createdAt)}</span>
                     {video.subtitles.length > 0 && (

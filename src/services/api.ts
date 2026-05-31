@@ -227,6 +227,7 @@ interface UpdateVideoRequest {
   description?: string;
   level?: string;
   status?: string;
+  category?: 'video' | 'music';
 }
 
 interface VideoStatusResponse {
