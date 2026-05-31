@@ -14,9 +14,12 @@ import { randomUUID } from 'crypto';
 
 // Allowed upload types and their extensions.
 export const ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'ogg'] as const;
+export const ALLOWED_AUDIO_EXTENSIONS = ['mp3', 'ogg', 'wav', 'm4a', 'aac'] as const;
 
 // Maximum upload size: ~2 GB (hard safety cap).
 export const MAX_VIDEO_BYTES = 2 * 1024 * 1024 * 1024;
+// Background music: 20 MB is plenty for a looping track.
+export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
 
 // Public route prefix and on-disk directory.
 const PUBLIC_PREFIX = '/uploads';
@@ -30,6 +33,14 @@ export function normalizeExtension(extension: string): string | null {
   return (ALLOWED_VIDEO_EXTENSIONS as readonly string[]).includes(ext)
     ? ext
     : null;
+}
+
+/** Normalize and validate an audio file extension against the allowed set. */
+export function normalizeAudioExtension(extension: string): string | null {
+  const ext = String(extension || '')
+    .replace(/[^a-z0-9]/gi, '')
+    .toLowerCase();
+  return (ALLOWED_AUDIO_EXTENSIONS as readonly string[]).includes(ext) ? ext : null;
 }
 
 /** Generate a unique object key (file name relative to the uploads dir). */
@@ -92,6 +103,48 @@ export function getVideoPublicUrl(objectKey: string): string {
     .replace(`${PUBLIC_PREFIX}/`, '')
     .replace(/^\/+/, '');
   return `/api/videos/file/${encodeURIComponent(name)}`;
+}
+
+/**
+ * Stream an incoming audio upload to disk (used for background music).
+ * Returns the stored object key.
+ */
+export async function saveAudioStream(
+  body: ReadableStream<Uint8Array>,
+  extension: string,
+): Promise<string> {
+  const ext = normalizeAudioExtension(extension);
+  if (!ext) {
+    throw new Error(
+      `Unsupported audio type. Allowed: ${ALLOWED_AUDIO_EXTENSIONS.join(', ')}`,
+    );
+  }
+
+  await mkdir(UPLOADS_DIR, { recursive: true });
+  const objectKey = `${randomUUID()}.${ext}`;
+  const filePath = path.join(UPLOADS_DIR, objectKey);
+
+  let total = 0;
+  const sizeGuard = new Transform({
+    transform(chunk, _enc, cb) {
+      total += chunk.length;
+      if (total > MAX_AUDIO_BYTES) {
+        cb(new Error('File too large (max 20MB)'));
+        return;
+      }
+      cb(null, chunk);
+    },
+  });
+
+  const nodeStream = Readable.fromWeb(body as Parameters<typeof Readable.fromWeb>[0]);
+  try {
+    await pipeline(nodeStream, sizeGuard, createWriteStream(filePath));
+  } catch (err) {
+    await unlink(filePath).catch(() => {});
+    throw err;
+  }
+
+  return objectKey;
 }
 
 /** Delete a stored video file from disk. */

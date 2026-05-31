@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useAppStore } from '@/store/useAppStore';
 import { Story, Video } from '@/types';
 import Header from '@/components/layout/Header';
+import BackgroundMusic from '@/components/common/BackgroundMusic';
 
 const GAMES = [
   { id: 'rpg-world', title: 'RPG World', icon: '🗺️', color: 'from-emerald-400 to-teal-500', href: '/games/rpg-world' },
@@ -31,6 +32,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
   return (
     <div className="home-shell min-h-screen bg-gradient-to-b from-amber-50 via-pink-50 to-blue-50">
       <Header />
+      <BackgroundMusic />
 
       <section className="relative overflow-hidden px-4 pb-2 pt-8">
         <div className="max-w-6xl mx-auto">

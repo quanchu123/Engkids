@@ -25,6 +25,7 @@ export default function AdminSidebar() {
     { name: 'Stories', path: '/admin/new' },
     { name: 'Videos', path: '/admin/videos' },
     { name: 'Games', path: '/admin/games' },
+    { name: 'Nhạc nền', path: '/admin/music' },
     { name: 'Trang chủ', path: '/' },
   ];
 
