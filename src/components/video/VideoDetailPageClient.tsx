@@ -2,9 +2,7 @@
 
 import Link from 'next/link';
 import { Video } from '@/types';
-import ExternalVideoPlayer from '@/components/video/ExternalVideoPlayer';
 import LocalVideoPlayer from '@/components/video/LocalVideoPlayer';
-import VideoLearningPlayer from '@/components/video/VideoLearningPlayer';
 import VideoRecommendations from '@/components/video/VideoRecommendations';
 
 const TOPIC_COLORS: Record<string, { bg: string; text: string }> = {
@@ -26,9 +24,6 @@ interface VideoDetailPageClientProps {
 }
 
 export default function VideoDetailPageClient({ video, allVideos }: VideoDetailPageClientProps) {
-  const isLocal = video.sourceType === 'local';
-  const usesExternalSource = video.sourceType === 'youtube' || video.sourceType === 'external';
-
   if (video.status !== 'ready') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-amber-50 via-pink-50 to-blue-50 px-4">
@@ -56,9 +51,6 @@ export default function VideoDetailPageClient({ video, allVideos }: VideoDetailP
 
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="kid-chip px-3 py-1 text-sm font-bold text-emerald-700">{video.level}</span>
-            {video.sourceLabel && (
-              <span className="kid-chip px-3 py-1 text-sm font-bold text-fuchsia-700">{video.sourceLabel}</span>
-            )}
             {video.ageGroup && (
               <span className="kid-chip px-3 py-1 text-sm font-bold text-amber-700">{video.ageGroup} tuổi</span>
             )}
@@ -92,19 +84,11 @@ export default function VideoDetailPageClient({ video, allVideos }: VideoDetailP
         <div className="soft-panel mb-8 rounded-[2rem] p-4 text-slate-700">
           <div className="font-black text-violet-700">Mẹo học hay</div>
           <p className="text-sm text-slate-600">
-            {usesExternalSource
-              ? 'Anime được phát trực tiếp từ Ophim69. Chọn tập từ danh sách bên dưới để bắt đầu học.'
-              : 'Bấm vào từ trong phụ đề để xem nghĩa và lưu vào kho từ vựng.'}
+            Bấm vào từ trong phụ đề để xem nghĩa và lưu vào kho từ vựng.
           </p>
         </div>
 
-        {isLocal ? (
-          <LocalVideoPlayer video={video} />
-        ) : usesExternalSource ? (
-          <ExternalVideoPlayer video={video} />
-        ) : (
-          <VideoLearningPlayer video={video} />
-        )}
+        <LocalVideoPlayer video={video} />
 
         {allVideos.length > 1 && (
           <div className="mt-8">

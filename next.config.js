@@ -15,7 +15,7 @@ const nextConfig = {
         hostname: '**',
       },
     ],
-    // Skip optimization - Bunny CDN and Supabase handle their own image optimization
+    // Skip optimization - DigitalOcean Spaces CDN and Supabase handle their own image optimization
     unoptimized: true,
   },
   

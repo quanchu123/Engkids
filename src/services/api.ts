@@ -206,6 +206,7 @@ import { Story, Video } from '@/types';
 import type { VideoQuizQuestion } from '@/types';
 
 interface CreateVideoRequest {
+  objectKey: string;
   title: string;
   titleVi: string;
   description?: string;
@@ -213,15 +214,19 @@ interface CreateVideoRequest {
   topics?: string[];
   ageGroup?: string;
   category?: 'video' | 'music';
+  duration?: number;
 }
 
 interface CreateVideoResponse {
   video: Video;
-  upload: {
-    uploadUrl: string;
-    videoId: string;
-    expiresAt: number;
-  };
+}
+
+interface UploadUrlResponse {
+  uploadUrl: string;
+  objectKey: string;
+  contentType: string;
+  maxBytes: number;
+  expiresIn: number;
 }
 
 interface UpdateVideoRequest {
@@ -262,35 +267,14 @@ export const videoApi = {
     return api.get(ROUTES.API.VIDEO(id));
   },
 
-  // Create video (requires auth)
+  // Create video metadata after a direct browser-to-Spaces upload (requires auth)
   async create(data: CreateVideoRequest): Promise<CreateVideoResponse> {
     return api.post(ROUTES.API.VIDEOS, data, { auth: true });
   },
 
-  // Upload a video file to the local server (offline mode, no Bunny.net).
-  // Uses multipart/form-data; do NOT set json so the browser sets the boundary.
-  async createLocal(formData: FormData): Promise<{ video: Video }> {
-    return api.post(ROUTES.API.VIDEO_LOCAL, formData, {
-      auth: true,
-      json: false,
-    });
-  },
-
-  // Get a signed URL to upload a video directly to Supabase Storage.
-  async getStorageUploadUrl(extension: string): Promise<{ path: string; token: string; bucket: string }> {
-    return api.post(ROUTES.API.VIDEO_STORAGE_SIGN, { extension }, { auth: true });
-  },
-
-  // Finalize a Supabase Storage upload (record metadata after direct upload).
-  async createStorage(data: {
-    storagePath: string;
-    title: string;
-    titleVi: string;
-    description?: string;
-    level?: string;
-    category?: 'video' | 'music';
-  }): Promise<{ video: Video }> {
-    return api.post(ROUTES.API.VIDEO_STORAGE, data, { auth: true });
+  // Get a presigned URL to upload a video directly to DigitalOcean Spaces.
+  async getUploadUrl(extension: string): Promise<UploadUrlResponse> {
+    return api.post(ROUTES.API.VIDEO_UPLOAD_SIGN, { extension }, { auth: true });
   },
 
   // Update video (requires auth)

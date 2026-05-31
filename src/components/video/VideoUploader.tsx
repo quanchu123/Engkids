@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/useToast';
-import { useTusUpload } from '@/hooks/useTusUpload';
-import { VIDEO, LEVELS, ERRORS } from '@/config/constants';
+import { LEVELS, ERRORS } from '@/config/constants';
 import { videoApi } from '@/services/api';
-import VideoUploadProgress from './VideoUploadProgress';
 
 interface VideoUploaderProps {
   onUploadComplete?: (videoId: string) => void;
   onError?: (error: string) => void;
 }
 
-type UploadMode = 'storage' | 'local' | 'bunny';
+// Allowed types for self-uploaded videos played as direct MP4.
+const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/ogg'];
+const ALLOWED_EXT_LABEL = 'MP4, WebM, MOV, OGG';
+const MAX_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
 
 export default function VideoUploader({ onUploadComplete, onError }: VideoUploaderProps) {
   const toast = useToast();
@@ -25,35 +25,21 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
   const [level, setLevel] = useState<LevelValue>(LEVELS.BEGINNER);
   const [category, setCategory] = useState<'video' | 'music'>('video');
 
-  const bunnyConfigured = Boolean(process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID);
-  // Default to Supabase Storage (works on Vercel + DigitalOcean, no Bunny needed).
-  const [mode, setMode] = useState<UploadMode>('storage');
   const [busy, setBusy] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { uploading, progress, status, startUpload, cancelUpload } = useTusUpload({
-    onComplete: (videoId) => {
-      toast.success('Video uploaded and processed!');
-      onUploadComplete?.(videoId);
-    },
-    onError: (error) => {
-      toast.error(error);
-      onError?.(error);
-    },
-  });
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      if (!(VIDEO.ALLOWED_TYPES as readonly string[]).includes(selectedFile.type)) {
-        const error = ERRORS.INVALID_FILE_TYPE(VIDEO.ALLOWED_EXTENSIONS);
+      if (!ALLOWED_TYPES.includes(selectedFile.type)) {
+        const error = ERRORS.INVALID_FILE_TYPE([ALLOWED_EXT_LABEL]);
         toast.error(error);
         onError?.(error);
         return;
       }
-      if (selectedFile.size > VIDEO.MAX_SIZE_BYTES) {
-        const error = ERRORS.FILE_TOO_LARGE(VIDEO.MAX_SIZE_MB);
+      if (selectedFile.size > MAX_BYTES) {
+        const error = ERRORS.FILE_TOO_LARGE(2048);
         toast.error(error);
         onError?.(error);
         return;
@@ -79,34 +65,32 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
     }
   };
 
-  const handleStartUpload = async () => {
-    if (!file || !title || !titleVi) {
-      const error = 'Please fill in all required fields and select a video';
-      toast.error(error);
-      onError?.(error);
-      return;
-    }
+  // Upload the file straight to DigitalOcean Spaces via a presigned PUT URL,
+  // tracking progress with XMLHttpRequest, then record the metadata.
+  const uploadToSpaces = (uploadUrl: string, contentType: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', uploadUrl, true);
+      xhr.setRequestHeader('Content-Type', contentType);
+      // Public read so the CDN can serve it.
+      xhr.setRequestHeader('x-amz-acl', 'public-read');
 
-    try {
-      const data = await videoApi.create({
-        title,
-        titleVi,
-        description,
-        level,
-        topics: [],
-        category,
-      });
-
-      await startUpload(file, data.video.bunnyVideoId, data.video.id, title);
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error(error instanceof Error ? error.message : 'Upload failed');
-      onError?.(error instanceof Error ? error.message : 'Upload failed');
-    }
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          // Reserve the last 10% for recording metadata.
+          setProgressPct(Math.round((event.loaded / event.total) * 90));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error(`Upload failed (HTTP ${xhr.status})`));
+      };
+      xhr.onerror = () => reject(new Error('Network error during upload'));
+      xhr.send(file as File);
+    });
   };
 
-  // Upload directly to Supabase Storage from the browser (bypasses serverless body limit).
-  const handleStorageUpload = async () => {
+  const handleStartUpload = async () => {
     if (!file || !title || !titleVi) {
       const error = 'Please fill in all required fields and select a video';
       toast.error(error);
@@ -119,71 +103,30 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
     try {
       const ext = file.name.split('.').pop() || 'mp4';
 
-      // 1. Ask our API for a signed upload URL
-      const { path, token } = await videoApi.getStorageUploadUrl(ext);
+      // 1. Ask our API for a presigned upload URL.
+      const { uploadUrl, objectKey, contentType } = await videoApi.getUploadUrl(ext);
 
-      // 2. Upload the file straight to Supabase Storage
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      );
-      setProgressPct(40);
-      const { error: uploadError } = await supabase.storage
-        .from('videos')
-        .uploadToSignedUrl(path, token, file, { contentType: file.type });
+      // 2. Upload directly to Spaces.
+      await uploadToSpaces(uploadUrl, contentType || file.type);
+      setProgressPct(95);
 
-      if (uploadError) {
-        throw new Error(uploadError.message);
-      }
-      setProgressPct(85);
-
-      // 3. Record the video metadata
-      const data = await videoApi.createStorage({
-        storagePath: path,
+      // 3. Record the video metadata.
+      const data = await videoApi.create({
+        objectKey,
         title,
         titleVi,
         description,
         level,
+        topics: [],
         category,
       });
       setProgressPct(100);
 
-      toast.success('Video đã tải lên Supabase Storage và sẵn sàng xem!');
+      toast.success('Video đã tải lên DigitalOcean Spaces và sẵn sàng xem!');
       onUploadComplete?.(data.video.id);
     } catch (error) {
-      console.error('Storage upload error:', error);
-      const msg = error instanceof Error ? error.message : 'Storage upload failed';
-      toast.error(msg);
-      onError?.(msg);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleLocalUpload = async () => {
-    if (!file || !title || !titleVi) {
-      const error = 'Please fill in all required fields and select a video';
-      toast.error(error);
-      onError?.(error);
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', title);
-      formData.append('titleVi', titleVi);
-      formData.append('description', description);
-      formData.append('level', level);
-      formData.append('category', category);
-
-      const data = await videoApi.createLocal(formData);
-      toast.success('Video đã lưu trên máy chủ và sẵn sàng xem!');
-      onUploadComplete?.(data.video.id);
-    } catch (error) {
-      console.error('Local upload error:', error);
-      const msg = error instanceof Error ? error.message : 'Local upload failed';
+      console.error('Upload error:', error);
+      const msg = error instanceof Error ? error.message : 'Upload failed';
       toast.error(msg);
       onError?.(msg);
     } finally {
@@ -193,49 +136,10 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Upload New Video</h2>
-
-      {/* Upload mode selector */}
-      <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <p className="mb-2 font-semibold text-gray-800">Nơi lưu video</p>
-        <div className="grid gap-2 sm:grid-cols-3">
-          <button
-            type="button"
-            onClick={() => setMode('storage')}
-            disabled={busy || uploading}
-            className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
-              mode === 'storage' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
-          >
-            <div className="font-bold text-gray-800">☁️ Supabase Storage</div>
-            <div className="text-xs text-gray-500">Khuyên dùng. Chạy được trên Vercel.</div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('local')}
-            disabled={busy || uploading}
-            className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
-              mode === 'local' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
-          >
-            <div className="font-bold text-gray-800">💾 Offline (máy chủ)</div>
-            <div className="text-xs text-gray-500">Lưu trên ổ đĩa server. Không chạy trên Vercel.</div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('bunny')}
-            disabled={busy || uploading || !bunnyConfigured}
-            className={`rounded-lg border-2 p-3 text-left text-sm transition-colors ${
-              mode === 'bunny' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'
-            } ${!bunnyConfigured ? 'cursor-not-allowed opacity-50' : ''}`}
-          >
-            <div className="font-bold text-gray-800">🐰 Bunny.net</div>
-            <div className="text-xs text-gray-500">
-              {bunnyConfigured ? 'Streaming chuyên dụng.' : 'Chưa cấu hình.'}
-            </div>
-          </button>
-        </div>
-      </div>
+      <h2 className="text-2xl font-bold mb-2 text-gray-800">Upload New Video</h2>
+      <p className="mb-6 text-sm text-gray-500">
+        Video được lưu trên DigitalOcean Spaces và phát trực tiếp qua CDN.
+      </p>
 
       {/* File Upload Area */}
       <div
@@ -245,18 +149,18 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
         role="button"
         aria-label="Upload video - drag and drop or click to browse"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !uploading && fileInputRef.current?.click(); } }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !busy && fileInputRef.current?.click(); } }}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        onClick={() => !uploading && fileInputRef.current?.click()}
+        onClick={() => !busy && fileInputRef.current?.click()}
       >
         <input
           ref={fileInputRef}
           type="file"
-          accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
+          accept="video/mp4,video/webm,video/quicktime,video/ogg"
           onChange={handleFileSelect}
           className="hidden"
-          disabled={uploading}
+          disabled={busy}
         />
         {file ? (
           <div>
@@ -269,7 +173,7 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
         ) : (
           <div>
             <p className="text-gray-600 mb-2 font-medium">Drag & drop video here or click to browse</p>
-            <p className="text-gray-400 text-sm">MP4, MOV, AVI, WebM (max 1GB)</p>
+            <p className="text-gray-400 text-sm">{ALLOWED_EXT_LABEL} (max 2GB)</p>
           </div>
         )}
       </div>
@@ -286,7 +190,7 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
             onChange={(e) => setTitle(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="e.g., Peppa Pig - George's Birthday"
-            disabled={uploading}
+            disabled={busy}
             required
           />
         </div>
@@ -301,7 +205,7 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
             onChange={(e) => setTitleVi(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="e.g., Peppa Pig - Sinh nhật của George"
-            disabled={uploading}
+            disabled={busy}
             required
           />
         </div>
@@ -314,7 +218,7 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={3}
             placeholder="Brief description of the video..."
-            disabled={uploading}
+            disabled={busy}
           />
         </div>
 
@@ -326,7 +230,7 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
             value={level}
             onChange={(e) => setLevel(e.target.value as LevelValue)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            disabled={uploading}
+            disabled={busy}
           >
             <option value={LEVELS.BEGINNER}>Beginner</option>
             <option value={LEVELS.ELEMENTARY}>Elementary</option>
@@ -342,7 +246,7 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
             value={category}
             onChange={(e) => setCategory(e.target.value as 'video' | 'music')}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            disabled={uploading}
+            disabled={busy}
           >
             <option value="video">Educational Video (Learning Content)</option>
             <option value="music">Music (Songs for Learning)</option>
@@ -356,62 +260,28 @@ export default function VideoUploader({ onUploadComplete, onError }: VideoUpload
       </div>
 
       {/* Upload Progress */}
-      {uploading && <VideoUploadProgress status={status} progress={progress} />}
-      {busy && mode === 'storage' && (
+      {busy && (
         <div className="mb-4">
-          <div className="mb-1 text-sm text-gray-600">Đang tải lên Supabase Storage... {progressPct}%</div>
+          <div className="mb-1 text-sm text-gray-600">Đang tải lên... {progressPct}%</div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
             <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progressPct}%` }} />
           </div>
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* Action Button */}
       <div className="flex gap-3">
-        {mode === 'storage' ? (
-          <button
-            onClick={handleStorageUpload}
-            disabled={!file || !title || !titleVi || busy}
-            className={`flex-1 py-3 px-4 rounded-md font-semibold transition-colors ${
-              file && title && titleVi && !busy
-                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            {busy ? 'Đang tải lên...' : 'Tải lên Supabase Storage'}
-          </button>
-        ) : mode === 'local' ? (
-          <button
-            onClick={handleLocalUpload}
-            disabled={!file || !title || !titleVi || busy}
-            className={`flex-1 py-3 px-4 rounded-md font-semibold transition-colors ${
-              file && title && titleVi && !busy
-                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            {busy ? 'Đang tải lên máy chủ...' : 'Tải lên (Offline)'}
-          </button>
-        ) : !uploading ? (
-          <button
-            onClick={handleStartUpload}
-            disabled={!file || !title || !titleVi}
-            className={`flex-1 py-3 px-4 rounded-md font-semibold transition-colors ${
-              file && title && titleVi
-                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            Upload to Bunny.net
-          </button>
-        ) : (
-          <button
-            onClick={cancelUpload}
-            className="flex-1 py-3 px-4 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors shadow-md"
-          >
-            Cancel Upload
-          </button>
-        )}
+        <button
+          onClick={handleStartUpload}
+          disabled={!file || !title || !titleVi || busy}
+          className={`flex-1 py-3 px-4 rounded-md font-semibold transition-colors ${
+            file && title && titleVi && !busy
+              ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          {busy ? 'Đang tải lên...' : 'Tải lên video'}
+        </button>
       </div>
     </div>
   );

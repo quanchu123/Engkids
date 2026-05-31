@@ -252,14 +252,14 @@ export default function AdminVideosPage() {
                       <button
                         onClick={() => handleSyncStatus(video.id)}
                         className="flex-1 px-3 py-1.5 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600 transition-colors font-medium"
-                        title="Check Bunny CDN for status update"
+                        title="Refresh the stored video status"
                       >
                         Sync Status
                       </button>
                       <button
                         onClick={() => handleForceReady(video.id)}
                         className="flex-1 px-3 py-1.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition-colors font-medium"
-                        title="Force mark as ready (use if video is on Bunny but stuck)"
+                        title="Force mark as ready"
                       >
                         Force Ready
                       </button>

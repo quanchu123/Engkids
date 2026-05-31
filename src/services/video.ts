@@ -1,9 +1,7 @@
-// Video Data Service - Supabase based
+// Video Data Service - Supabase metadata + DigitalOcean Spaces files
 import { createClient } from '@supabase/supabase-js';
 import { Video, SubtitleCue, VideoQuizQuestion } from '@/types';
-import { getSignedThumbnailUrl } from './bunny';
-import { getVideoPublicUrl } from './storage';
-import { normalizeStoredVideoStatus } from '@/lib/video-status';
+import { getVideoPublicUrl } from './spaces';
 
 // Track if we've already warned about Supabase being unavailable to avoid log spam
 let supabaseUnavailableWarned = false;
@@ -23,11 +21,11 @@ function isNetworkError(error: { code?: string; message?: string }): boolean {
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
+
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Supabase credentials not configured');
   }
-  
+
   return createClient(supabaseUrl, serviceRoleKey);
 }
 
@@ -35,11 +33,11 @@ function getSupabaseAdmin() {
 function getSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
+
   if (!supabaseUrl || !anonKey) {
     throw new Error('Supabase credentials not configured');
   }
-  
+
   return createClient(supabaseUrl, anonKey);
 }
 
@@ -50,9 +48,7 @@ interface VideoRow {
   title_vi: string;
   description: string | null;
   thumbnail_url: string | null;
-  bunny_video_id: string;
-  hls_url: string | null;
-  dash_url: string | null;
+  object_key: string | null;
   duration: number;
   level: 'Beginner' | 'Elementary' | 'Intermediate';
   topics: string[];
@@ -109,44 +105,26 @@ function normalizeQuiz(raw: unknown): VideoQuizQuestion[] {
 }
 
 /**
- * Convert DB row to Video type
+ * Convert DB row to Video type. Resolves the public CDN URL from the object key.
  */
 function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
-  const normalizedStatus = normalizeStoredVideoStatus({
-    status: row.status,
-    hlsUrl: row.hls_url,
-    dashUrl: row.dash_url,
-  });
+  // A video is playable when it has a status of ready and an object key.
+  const status: Video['status'] =
+    row.status === 'ready' ||
+    row.status === 'error' ||
+    row.status === 'uploading' ||
+    row.status === 'processing'
+      ? (row.status as Video['status'])
+      : 'processing';
 
-  // Self-hosted videos (no Bunny):
-  //  - "local-" : file under /uploads on the server's disk (offline/DigitalOcean)
-  //  - "storage-": file in Supabase Storage (works on Vercel too)
-  // In both cases hls_url holds the reference (local path or storage path).
-  const isStorage = row.bunny_video_id?.startsWith('storage-');
-  const isLocalDisk = row.bunny_video_id?.startsWith('local-') || row.hls_url?.startsWith('/uploads/');
-  const isSelfHosted = isStorage || isLocalDisk;
-
-  // Resolve the playable URL for self-hosted videos.
-  let selfHostedUrl: string | undefined;
-  if (isStorage && row.hls_url) {
+  // Resolve the public CDN URL for playback.
+  let videoUrl: string | undefined;
+  if (row.object_key) {
     try {
-      // hls_url stores the storage object path; convert to a public URL.
-      selfHostedUrl = row.hls_url.startsWith('http') ? row.hls_url : getVideoPublicUrl(row.hls_url);
+      videoUrl = getVideoPublicUrl(row.object_key);
     } catch {
-      selfHostedUrl = row.hls_url || undefined;
-    }
-  } else if (isLocalDisk) {
-    selfHostedUrl = row.hls_url || undefined;
-  }
-
-  // Generate signed thumbnail URL if video is ready (Bunny only)
-  let thumbnailUrl = row.thumbnail_url || undefined;
-  if (!isSelfHosted && normalizedStatus === 'ready' && row.bunny_video_id) {
-    try {
-      thumbnailUrl = getSignedThumbnailUrl(row.bunny_video_id);
-    } catch (error) {
-      // Fallback to DB URL if signing fails
-      console.warn('Failed to generate signed thumbnail URL:', error);
+      // Spaces not configured yet — leave undefined; player shows a message.
+      videoUrl = undefined;
     }
   }
 
@@ -155,18 +133,15 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
     title: row.title,
     titleVi: row.title_vi,
     description: row.description || undefined,
-    thumbnailUrl,
-    bunnyVideoId: row.bunny_video_id,
-    sourceType: isSelfHosted ? 'local' : undefined,
-    externalUrl: isSelfHosted ? selfHostedUrl : undefined,
-    hlsUrl: row.hls_url || undefined,
-    dashUrl: row.dash_url || undefined,
+    thumbnailUrl: row.thumbnail_url || undefined,
+    objectKey: row.object_key || undefined,
+    videoUrl,
     duration: row.duration,
     level: row.level,
     topics: row.topics,
     ageGroup: row.age_group || undefined,
     category: row.category,
-    status: normalizedStatus,
+    status,
     subtitles: subtitles
       .sort((a, b) => a.cue_index - b.cue_index)
       .map(s => ({
@@ -221,17 +196,17 @@ export async function getAllVideos(category?: 'video' | 'music'): Promise<Video[
 
 /**
  * Get all videos for admin (includes all statuses)
- * Used in admin panel to monitor upload/processing progress
+ * Used in admin panel to monitor upload progress
  */
 export async function getAllVideosAdmin(): Promise<Video[]> {
   const supabase = getSupabaseAdmin();
-  
+
   const { data: videos, error } = await supabase
     .from('videos')
     .select('*')
     .is('deleted_at', null)
     .order('created_at', { ascending: false });
-  
+
   if (error) {
     if (isNetworkError(error)) {
       if (!supabaseUnavailableWarned) {
@@ -243,7 +218,7 @@ export async function getAllVideosAdmin(): Promise<Video[]> {
     }
     return [];
   }
-  
+
   return videos.map(v => rowToVideo(v, []));
 }
 
@@ -252,142 +227,67 @@ export async function getAllVideosAdmin(): Promise<Video[]> {
  */
 export async function getVideoById(id: string): Promise<Video | null> {
   const supabase = getSupabaseClient();
-  
+
   const { data: video, error } = await supabase
     .from('videos')
     .select('*')
     .eq('id', id)
     .single();
-  
+
   if (error || !video) {
     return null;
   }
-  
+
   const { data: subtitles } = await supabase
     .from('video_subtitles')
     .select('*')
     .eq('video_id', id)
     .order('cue_index', { ascending: true });
-  
+
   return rowToVideo(video, subtitles || []);
 }
 
 /**
- * Create new video (admin only, server-side)
+ * Create a video backed by DigitalOcean Spaces (admin only, server-side).
+ * The browser uploads the file directly to Spaces via a presigned URL; this
+ * records the metadata + object key and marks the video as ready.
  */
-export async function createVideo(data: {
+export async function createSpacesVideo(data: {
   title: string;
   titleVi: string;
-  bunnyVideoId: string;
+  objectKey: string;       // object key inside the Spaces bucket
   description?: string;
   level?: Video['level'];
   topics?: string[];
   ageGroup?: Video['ageGroup'];
   category?: 'video' | 'music';
+  duration?: number;
 }): Promise<Video> {
   const supabase = getSupabaseAdmin();
-  
+
+  if (!data.title?.trim() || !data.titleVi?.trim()) {
+    throw new Error('Title (English) and Title (Vietnamese) are required');
+  }
+
   const { data: video, error } = await supabase
     .from('videos')
     .insert({
       title: data.title,
       title_vi: data.titleVi,
-      bunny_video_id: data.bunnyVideoId,
+      object_key: data.objectKey,
       description: data.description || null,
       level: data.level || 'Beginner',
       topics: data.topics || [],
       age_group: data.ageGroup || null,
       category: data.category || 'video',
-      status: 'uploading',
+      duration: data.duration || 0,
+      status: 'ready',
     })
     .select()
     .single();
-  
+
   if (error || !video) {
     throw new Error(`Failed to create video: ${error?.message}`);
-  }
-  
-  return rowToVideo(video);
-}
-
-/**
- * Create a new locally-hosted video (admin only, server-side).
- * Used when there is no Bunny.net (offline / testing). The uploaded file path
- * (under /uploads) is stored in hls_url and the video is immediately "ready".
- */
-export async function createLocalVideo(data: {
-  title: string;
-  titleVi: string;
-  filePath: string;        // public path, e.g. /uploads/abc.mp4
-  description?: string;
-  level?: Video['level'];
-  topics?: string[];
-  ageGroup?: Video['ageGroup'];
-  category?: 'video' | 'music';
-}): Promise<Video> {
-  const supabase = getSupabaseAdmin();
-
-  const { data: video, error } = await supabase
-    .from('videos')
-    .insert({
-      title: data.title,
-      title_vi: data.titleVi,
-      // Unique placeholder id so the NOT NULL/UNIQUE bunny_video_id constraint holds.
-      bunny_video_id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      description: data.description || null,
-      level: data.level || 'Beginner',
-      topics: data.topics || [],
-      age_group: data.ageGroup || null,
-      category: data.category || 'video',
-      status: 'ready',
-      hls_url: data.filePath,
-    })
-    .select()
-    .single();
-
-  if (error || !video) {
-    throw new Error(`Failed to create local video: ${error?.message}`);
-  }
-
-  return rowToVideo(video);
-}
-
-/**
- * Create a video backed by Supabase Storage (admin only, server-side).
- * The browser uploads the file directly to Storage; this just records the
- * metadata + storage path. Works on Vercel (no server filesystem needed).
- */
-export async function createStorageVideo(data: {
-  title: string;
-  titleVi: string;
-  storagePath: string;     // object path inside the videos bucket
-  description?: string;
-  level?: Video['level'];
-  topics?: string[];
-  ageGroup?: Video['ageGroup'];
-  category?: 'video' | 'music';
-}): Promise<Video> {
-  const supabase = getSupabaseAdmin();
-
-  const { data: video, error } = await supabase
-    .from('videos')
-    .insert({
-      title: data.title,
-      title_vi: data.titleVi,
-      bunny_video_id: `storage-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      description: data.description || null,
-      level: data.level || 'Beginner',
-      topics: data.topics || [],
-      age_group: data.ageGroup || null,
-      category: data.category || 'video',
-      status: 'ready',
-      hls_url: data.storagePath,
-    })
-    .select()
-    .single();
-
-  if (error || !video) {
-    throw new Error(`Failed to create storage video: ${error?.message}`);
   }
 
   return rowToVideo(video);
@@ -403,8 +303,7 @@ export async function updateVideo(
     titleVi: string;
     description: string;
     thumbnailUrl: string;
-    hlsUrl: string;
-    dashUrl: string;
+    objectKey: string;
     duration: number;
     level: Video['level'];
     topics: string[];
@@ -414,26 +313,25 @@ export async function updateVideo(
   }>
 ): Promise<void> {
   const supabase = getSupabaseAdmin();
-  
+
   const dbUpdates: Record<string, unknown> = {};
   if (updates.title) dbUpdates.title = updates.title;
   if (updates.titleVi) dbUpdates.title_vi = updates.titleVi;
   if (updates.description !== undefined) dbUpdates.description = updates.description;
   if (updates.thumbnailUrl !== undefined) dbUpdates.thumbnail_url = updates.thumbnailUrl;
-  if (updates.hlsUrl !== undefined) dbUpdates.hls_url = updates.hlsUrl;
-  if (updates.dashUrl !== undefined) dbUpdates.dash_url = updates.dashUrl;
+  if (updates.objectKey !== undefined) dbUpdates.object_key = updates.objectKey;
   if (updates.duration !== undefined) dbUpdates.duration = updates.duration;
   if (updates.level) dbUpdates.level = updates.level;
   if (updates.topics) dbUpdates.topics = updates.topics;
   if (updates.ageGroup !== undefined) dbUpdates.age_group = updates.ageGroup;
   if (updates.status) dbUpdates.status = updates.status;
   if (updates.quiz !== undefined) dbUpdates.quiz = updates.quiz;
-  
+
   const { error } = await supabase
     .from('videos')
     .update(dbUpdates)
     .eq('id', id);
-  
+
   if (error) {
     throw new Error(`Failed to update video: ${error.message}`);
   }
@@ -444,12 +342,12 @@ export async function updateVideo(
  */
 export async function deleteVideo(id: string): Promise<void> {
   const supabase = getSupabaseAdmin();
-  
+
   const { error } = await supabase
     .from('videos')
     .delete()
     .eq('id', id);
-  
+
   if (error) {
     throw new Error(`Failed to delete video: ${error.message}`);
   }
@@ -463,13 +361,13 @@ export async function saveVideoSubtitles(
   subtitles: SubtitleCue[]
 ): Promise<void> {
   const supabase = getSupabaseAdmin();
-  
+
   // Delete existing subtitles
   await supabase
     .from('video_subtitles')
     .delete()
     .eq('video_id', videoId);
-  
+
   // Insert new subtitles
   if (subtitles.length > 0) {
     const rows = subtitles.map((cue, index) => ({
@@ -480,11 +378,11 @@ export async function saveVideoSubtitles(
       text_en: cue.textEn,
       text_vi: cue.textVi || '',
     }));
-    
+
     const { error } = await supabase
       .from('video_subtitles')
       .insert(rows);
-    
+
     if (error) {
       throw new Error(`Failed to save subtitles: ${error.message}`);
     }
@@ -496,18 +394,18 @@ export async function saveVideoSubtitles(
  */
 export async function getVideosByTopic(topic: string): Promise<Video[]> {
   const supabase = getSupabaseClient();
-  
+
   const { data: videos, error } = await supabase
     .from('videos')
     .select('*')
     .eq('status', 'ready')
     .contains('topics', [topic]);
-  
+
   if (error) {
     if (!isNetworkError(error)) console.error('Error fetching videos by topic:', error);
     return [];
   }
-  
+
   return videos.map(v => rowToVideo(v));
 }
 
@@ -516,17 +414,17 @@ export async function getVideosByTopic(topic: string): Promise<Video[]> {
  */
 export async function getVideosByLevel(level: Video['level']): Promise<Video[]> {
   const supabase = getSupabaseClient();
-  
+
   const { data: videos, error } = await supabase
     .from('videos')
     .select('*')
     .eq('status', 'ready')
     .eq('level', level);
-  
+
   if (error) {
     if (!isNetworkError(error)) console.error('Error fetching videos by level:', error);
     return [];
   }
-  
+
   return videos.map(v => rowToVideo(v));
 }

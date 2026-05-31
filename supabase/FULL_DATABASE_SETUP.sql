@@ -22,21 +22,22 @@ DROP TABLE IF EXISTS stories CASCADE;
 -- ============================================
 
 -- Videos table
+-- Videos are stored in DigitalOcean Spaces and played as direct MP4 via the
+-- Spaces CDN. `object_key` is the path of the file inside the bucket.
 CREATE TABLE IF NOT EXISTS videos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   title_vi TEXT NOT NULL,
   description TEXT,
   thumbnail_url TEXT,
-  bunny_video_id TEXT NOT NULL UNIQUE,
-  hls_url TEXT,
-  dash_url TEXT,
+  object_key TEXT,
   duration INTEGER DEFAULT 0,
   level TEXT NOT NULL DEFAULT 'Beginner' CHECK (level IN ('Beginner', 'Elementary', 'Intermediate')),
   topics TEXT[] DEFAULT '{}',
   age_group TEXT CHECK (age_group IN ('3-5', '6-8', '9-12')),
   category TEXT NOT NULL DEFAULT 'video' CHECK (category IN ('video', 'music')),
-  status TEXT NOT NULL DEFAULT 'uploading' CHECK (status IN ('uploading', 'processing', 'ready', 'error')),
+  status TEXT NOT NULL DEFAULT 'ready' CHECK (status IN ('uploading', 'processing', 'ready', 'error')),
+  quiz JSONB NOT NULL DEFAULT '[]'::jsonb,
   deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -44,7 +45,7 @@ CREATE TABLE IF NOT EXISTS videos (
 
 CREATE INDEX IF NOT EXISTS idx_videos_status ON videos(status);
 CREATE INDEX IF NOT EXISTS idx_videos_level ON videos(level);
-CREATE INDEX IF NOT EXISTS idx_videos_bunny ON videos(bunny_video_id);
+CREATE INDEX IF NOT EXISTS idx_videos_object_key ON videos(object_key);
 CREATE INDEX IF NOT EXISTS idx_videos_category ON videos(category);
 
 -- Video subtitles table  

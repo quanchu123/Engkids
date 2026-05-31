@@ -230,15 +230,6 @@ export interface SubtitleTrack {
   updatedAt: string;
 }
 
-export interface ExternalVideoLink {
-  title: string;
-  url: string;
-  site: string;
-  thumbnailUrl?: string;
-}
-
-export type VideoSourceType = 'bunny' | 'youtube' | 'external' | 'local';
-
 export interface Video {
   id: string;
   title: string;
@@ -246,20 +237,13 @@ export interface Video {
   description?: string;
   thumbnailUrl?: string;
   bannerUrl?: string;
-  
-  // Bunny.net Stream ID
-  bunnyVideoId: string;
 
-  sourceType?: VideoSourceType;
-  sourceLabel?: string;
-  youtubeVideoId?: string;
-  externalUrl?: string;
-  externalLinks?: ExternalVideoLink[];
-  
-  // Stream URLs (populated after processing)
-  hlsUrl?: string;
-  dashUrl?: string;
-  
+  // DigitalOcean Spaces object key (path of the file inside the bucket).
+  objectKey?: string;
+
+  // Public CDN URL resolved from objectKey, used by the <video> element.
+  videoUrl?: string;
+
   // Metadata
   duration: number;        // seconds
   level: 'Beginner' | 'Elementary' | 'Intermediate';

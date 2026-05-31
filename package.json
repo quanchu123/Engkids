@@ -12,10 +12,11 @@
     "test:features": "node test-features.js",
     "test:e2e": "npx playwright test",
     "setup:db": "node setup-database.js",
-    "verify:bunny": "node check-bunny.js",
-    "check:bunny": "node check-bunny.js"
+    "migrate:spaces": "node scripts/migrate-bunny-to-spaces.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1057.0",
+    "@aws-sdk/s3-request-presigner": "^3.1057.0",
     "@emoji-mart/data": "^1.2.1",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.1",

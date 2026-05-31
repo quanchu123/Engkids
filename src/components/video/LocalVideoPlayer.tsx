@@ -29,7 +29,7 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
 
   const { saveWord, isWordSaved, unsaveWord, recordMediaActivity, applyGameResult } = useAppStore();
 
-  const src = video.externalUrl || video.hlsUrl || '';
+  const src = video.videoUrl || '';
 
   const handleQuizComplete = useCallback(
     (correctCount: number, totalCount: number) => {
@@ -148,7 +148,7 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
               />
             ) : (
               <div className="flex aspect-video w-full items-center justify-center text-white/70">
-                Không tìm thấy file video.
+                Không tìm thấy video. (video not found)
               </div>
             )}
           </div>

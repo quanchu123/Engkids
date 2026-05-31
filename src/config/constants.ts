@@ -43,9 +43,7 @@ export const ROUTES = {
     STORY: (id: string) => `/api/stories/${id}`,
     VIDEOS: '/api/videos',
     VIDEO: (id: string) => `/api/videos/${id}`,
-    VIDEO_LOCAL: '/api/videos/local',
-    VIDEO_STORAGE: '/api/videos/storage',
-    VIDEO_STORAGE_SIGN: '/api/videos/storage/sign',
+    VIDEO_UPLOAD_SIGN: '/api/videos/upload/sign',
     VIDEO_STATUS: (id: string) => `/api/videos/${id}/status`,
     VIDEO_SUBTITLES: (id: string) => `/api/videos/${id}/subtitles`,
     VIDEO_QUIZ: (id: string) => `/api/videos/${id}/quiz`,
@@ -56,10 +54,10 @@ export const ROUTES = {
 // VIDEO CONSTRAINTS
 // ============================================
 export const VIDEO = {
-  MAX_SIZE_MB: 1024,
-  MAX_SIZE_BYTES: 1024 * 1024 * 1024, // 1GB
-  ALLOWED_TYPES: ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'] as const,
-  ALLOWED_EXTENSIONS: ['.mp4', '.mov', '.avi', '.webm'] as const,
+  MAX_SIZE_MB: 2048,
+  MAX_SIZE_BYTES: 2 * 1024 * 1024 * 1024, // 2GB
+  ALLOWED_TYPES: ['video/mp4', 'video/webm', 'video/quicktime', 'video/ogg'] as const,
+  ALLOWED_EXTENSIONS: ['.mp4', '.webm', '.mov', '.ogg'] as const,
   
   // Processing status
   STATUS: {

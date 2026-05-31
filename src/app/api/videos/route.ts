@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createBunnyVideo } from '@/services/bunny';
-import { createVideo, getAllVideos, getAllVideosAdmin } from '@/services/video';
+import { createSpacesVideo, getAllVideos, getAllVideosAdmin } from '@/services/video';
 import { checkAdminAuth } from '@/lib/api-auth';
 import { apiCache, CACHE_KEYS } from '@/lib/cache';
 import { createVideoSchema } from '@/lib/validations/video';
@@ -48,7 +47,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/videos - Create new video and get Bunny.net upload URL
+// POST /api/videos - Record a video after a direct browser-to-Spaces upload.
+// The browser first gets a presigned URL from /api/videos/upload/sign, uploads
+// the file to Spaces, then calls this endpoint with the returned object key.
 export async function POST(request: NextRequest) {
   try {
     // Check admin auth using JWT or Supabase session
@@ -59,35 +60,33 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // Validate input with Zod
+    // Validate metadata with Zod.
     const validated = createVideoSchema.parse(body);
 
-    // 1. Create video in Bunny.net Stream
-    const bunnyVideo = await createBunnyVideo(validated.title);
+    const objectKey = String(body?.objectKey || '').trim();
+    if (!objectKey) {
+      return NextResponse.json(
+        { error: 'objectKey is required (upload the file to Spaces first)' },
+        { status: 400 },
+      );
+    }
 
-    // 2. Save video record in database
-    const video = await createVideo({
+    const video = await createSpacesVideo({
       title: validated.title,
       titleVi: validated.titleVi,
-      bunnyVideoId: bunnyVideo.videoId,
+      objectKey,
       description: validated.description,
       level: validated.level,
       topics: validated.topics,
       ageGroup: validated.ageGroup,
       category: validated.category,
+      duration: typeof body?.duration === 'number' ? body.duration : 0,
     });
 
     // Invalidate videos list cache (all and category-specific)
     apiCache.invalidatePattern('videos:list');
 
-    return NextResponse.json({
-      video,
-      upload: {
-        uploadUrl: bunnyVideo.uploadUrl,
-        videoId: bunnyVideo.videoId,
-        expiresAt: Date.now() + 6 * 60 * 60 * 1000,
-      },
-    });
+    return NextResponse.json({ video });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
