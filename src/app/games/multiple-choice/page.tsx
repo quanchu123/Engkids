@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from'react';
+import { useState, useEffect } from'react';
 import Link from'next/link';
 import Header from'@/components/layout/Header';
+import { DEFAULT_MULTIPLE_CHOICE } from '@/data/game-defaults';
+import type { MCContent } from '@/types/games';
 
 interface Question {
   id: number;
@@ -12,98 +14,14 @@ interface Question {
   explanation: string;
 }
 
-const QUESTIONS_BY_DIFFICULTY: Record<string, Question[]>= {
-  beginner: [
-    { id: 1, question: "What color is the sky?", options: ["Blue", "Red", "Green", "Yellow"], answer: "Blue", explanation: "The sky appears blue due to the scattering of sunlight." },
-    { id: 2, question: "Which animal barks?", options: ["Cat", "Dog", "Fish", "Bird"], answer: "Dog", explanation: "Dogs bark. Cats meow." },
-    { id: 3, question: "What do you drink in the morning?", options: ["Tea", "Juice", "Soda", "Wine"], answer: "Tea", explanation: "Tea is a common morning drink." },
-    { id: 4, question: "Which is a fruit?", options: ["Apple", "Car", "Chair", "Book"], answer: "Apple", explanation: "Apple is a fruit." },
-    { id: 5, question: "What do you use to write?", options: ["Pen", "Spoon", "Shoe", "Hat"], answer: "Pen", explanation: "A pen is used for writing." },
-    { id: 6, question: "Which is a day of the week?", options: ["Monday", "January", "Summer", "Dog"], answer: "Monday", explanation: "Monday is a day of the week." },
-    { id: 7, question: "What do you wear on your feet?", options: ["Socks", "Gloves", "Hat", "Shirt"], answer: "Socks", explanation: "Socks are worn on your feet." },
-    { id: 8, question: "Which is a vegetable?", options: ["Carrot", "Apple", "Cake", "Milk"], answer: "Carrot", explanation: "Carrot is a vegetable." },
-    { id: 9, question: "What do you read?", options: ["Book", "Shoe", "Egg", "Tree"], answer: "Book", explanation: "You read a book." },
-    { id: 10, question: "Which is a season?", options: ["Winter", "Monday", "Dog", "Pen"], answer: "Winter", explanation: "Winter is a season." },
-    { id: 11, question: "What do you eat for breakfast?", options: ["Eggs", "Shoes", "Books", "Cars"], answer: "Eggs", explanation: "Eggs are a common breakfast food." },
-    { id: 12, question: "Which animal can fly?", options: ["Bird", "Dog", "Cat", "Fish"], answer: "Bird", explanation: "Birds can fly with their wings." },
-    { id: 13, question: "What do you use to cut paper?", options: ["Scissors", "Pen", "Book", "Spoon"], answer: "Scissors", explanation: "Scissors are used to cut paper." },
-    { id: 14, question: "Which is a drink?", options: ["Juice", "Chair", "Hat", "Shoe"], answer: "Juice", explanation: "Juice is a drink." },
-    { id: 15, question: "What do you wear on your head?", options: ["Hat", "Socks", "Book", "Car"], answer: "Hat", explanation: "A hat is worn on your head." },
-    { id: 16, question: "Which is a pet?", options: ["Cat", "Car", "Book", "Tree"], answer: "Cat", explanation: "A cat is a pet." },
-    { id: 17, question: "What do you use to eat soup?", options: ["Spoon", "Pen", "Shoe", "Hat"], answer: "Spoon", explanation: "A spoon is used to eat soup." },
-    { id: 18, question: "Which is a color?", options: ["Red", "Dog", "Book", "Car"], answer: "Red", explanation: "Red is a color." },
-    { id: 19, question: "What do you use to call someone?", options: ["Phone", "Book", "Shoe", "Pen"], answer: "Phone", explanation: "A phone is used to call someone." },
-    { id: 20, question: "Which is a vehicle?", options: ["Car", "Dog", "Book", "Pen"], answer: "Car", explanation: "A car is a vehicle." },
-    { id: 21, question: "What do you sleep on?", options: ["Bed", "Chair", "Floor", "Wall"], answer: "Bed", explanation: "A bed is used for sleeping." },
-    { id: 22, question: "Which animal says moo?", options: ["Cow", "Dog", "Cat", "Bird"], answer: "Cow", explanation: "Cows say moo." },
-    { id: 23, question: "Which is hot?", options: ["Fire", "Ice", "Snow", "Water"], answer: "Fire", explanation: "Fire is hot." },
-    { id: 24, question: "What do you sit on?", options: ["Chair", "Wall", "Door", "Window"], answer: "Chair", explanation: "A chair is used for sitting." },
-    { id: 25, question: "Which is cold?", options: ["Ice", "Fire", "Sun", "Oven"], answer: "Ice", explanation: "Ice is cold." },
-    { id: 26, question: "Which is round?", options: ["Ball", "Book", "Door", "Wall"], answer: "Ball", explanation: "A ball is round." },
-    { id: 27, question: "What gives light?", options: ["Sun", "Moon", "Star", "Cloud"], answer: "Sun", explanation: "The sun gives light." },
-    { id: 28, question: "Which is sweet?", options: ["Sugar", "Salt", "Pepper", "Vinegar"], answer: "Sugar", explanation: "Sugar is sweet." },
-    { id: 29, question: "Which is big?", options: ["Elephant", "Ant", "Bee", "Fly"], answer: "Elephant", explanation: "An elephant is big." },
-    { id: 30, question: "What is green?", options: ["Grass", "Sky", "Sun", "Moon"], answer: "Grass", explanation: "Grass is green." },
-  ],
-  intermediate: [
-    { id: 31, question: "Which animal can swim?", options: ["Fish", "Cat", "Dog", "Bird"], answer: "Fish", explanation: "Fish swim in water." },
-    { id: 32, question: "What do you use to open a door?", options: ["Key", "Book", "Pen", "Spoon"], answer: "Key", explanation: "A key is used to open a door." },
-    { id: 33, question: "Which is a month?", options: ["January", "Monday", "Summer", "Dog"], answer: "January", explanation: "January is a month." },
-    { id: 34, question: "What do you wear on your hands?", options: ["Gloves", "Socks", "Hat", "Shirt"], answer: "Gloves", explanation: "Gloves are worn on hands." },
-    { id: 35, question: "What do you use to see?", options: ["Eyes", "Ears", "Nose", "Mouth"], answer: "Eyes", explanation: "Eyes are used for seeing." },
-    { id: 36, question: "What do you use to listen to music?", options: ["Ears", "Eyes", "Nose", "Mouth"], answer: "Ears", explanation: "Ears are used for hearing." },
-    { id: 37, question: "What do you use to eat with?", options: ["Fork", "Pen", "Book", "Shoe"], answer: "Fork", explanation: "A fork is used for eating." },
-    { id: 38, question: "What do you use to write on?", options: ["Paper", "Spoon", "Shoe", "Hat"], answer: "Paper", explanation: "Paper is used for writing." },
-    { id: 39, question: "What do you use to cut food?", options: ["Knife", "Pen", "Book", "Spoon"], answer: "Knife", explanation: "A knife is used to cut food." },
-    { id: 40, question: "What do you use to tell time?", options: ["Watch", "Shoe", "Hat", "Glove"], answer: "Watch", explanation: "A watch is used to tell time." },
-    { id: 41, question: "Which is sour?", options: ["Lemon", "Sugar", "Honey", "Candy"], answer: "Lemon", explanation: "Lemons are sour." },
-    { id: 42, question: "What do you use to carry things?", options: ["Bag", "Shoe", "Hat", "Sock"], answer: "Bag", explanation: "A bag is used to carry things." },
-    { id: 43, question: "Which is a tool?", options: ["Hammer", "Apple", "Bread", "Milk"], answer: "Hammer", explanation: "A hammer is a tool." },
-    { id: 44, question: "Which is a body part?", options: ["Hand", "Car", "Tree", "Book"], answer: "Hand", explanation: "A hand is a body part." },
-    { id: 45, question: "What do you use to dry yourself?", options: ["Towel", "Knife", "Fork", "Spoon"], answer: "Towel", explanation: "A towel is used to dry yourself." },
-    { id: 46, question: "What do you use to cook?", options: ["Stove", "Bed", "Chair", "Table"], answer: "Stove", explanation: "A stove is used for cooking." },
-    { id: 47, question: "Which is a shape?", options: ["Circle", "Dog", "Cat", "Tree"], answer: "Circle", explanation: "A circle is a shape." },
-    { id: 48, question: "What do you use to measure?", options: ["Ruler", "Spoon", "Cup", "Plate"], answer: "Ruler", explanation: "A ruler is used for measuring." },
-    { id: 49, question: "Which is a room?", options: ["Kitchen", "Car", "Tree", "Sky"], answer: "Kitchen", explanation: "A kitchen is a room." },
-    { id: 50, question: "Which grows in a garden?", options: ["Flower", "Car", "Phone", "Book"], answer: "Flower", explanation: "Flowers grow in a garden." },
-    { id: 51, question: "Which animal has stripes?", options: ["Zebra", "Dog", "Cat", "Cow"], answer: "Zebra", explanation: "Zebras have black and white stripes." },
-    { id: 52, question: "What do you use to clean the floor?", options: ["Broom", "Knife", "Pen", "Cup"], answer: "Broom", explanation: "A broom is used to clean the floor." },
-    { id: 53, question: "What do you use to wash dishes?", options: ["Soap", "Sugar", "Salt", "Flour"], answer: "Soap", explanation: "Soap is used to wash dishes." },
-    { id: 54, question: "What do you use to protect from rain?", options: ["Umbrella", "Hat", "Shoe", "Glove"], answer: "Umbrella", explanation: "An umbrella protects from rain." },
-    { id: 55, question: "Which is a direction?", options: ["North", "Dog", "Cat", "Tree"], answer: "North", explanation: "North is a direction." },
-  ],
-  advanced: [
-    { id: 56, question: "Which animal has a long neck?", options: ["Giraffe", "Dog", "Cat", "Fish"], answer: "Giraffe", explanation: "A giraffe is known for its very long neck." },
-    { id: 57, question: "What do you use to brush your teeth?", options: ["Toothbrush", "Spoon", "Pen", "Book"], answer: "Toothbrush", explanation: "A toothbrush is used for dental hygiene." },
-    { id: 58, question: "Which is a type of transport?", options: ["Train", "Dog", "Book", "Tree"], answer: "Train", explanation: "A train is a type of transport." },
-    { id: 59, question: "Which is a farm animal?", options: ["Cow", "Dog", "Cat", "Fish"], answer: "Cow", explanation: "A cow is a farm animal." },
-    { id: 60, question: "Which is a wild animal?", options: ["Lion", "Dog", "Cat", "Fish"], answer: "Lion", explanation: "A lion is a wild animal." },
-    { id: 61, question: "Which profession treats patients in hospitals?", options: ["Doctor", "Teacher", "Engineer", "Artist"], answer: "Doctor", explanation: "Doctors treat patients in hospitals." },
-    { id: 62, question: "What device do you use to calculate numbers?", options: ["Calculator", "Hammer", "Scissors", "Spoon"], answer: "Calculator", explanation: "A calculator is used for calculations." },
-    { id: 63, question: "Which instrument measures temperature?", options: ["Thermometer", "Barometer", "Speedometer", "Compass"], answer: "Thermometer", explanation: "A thermometer measures temperature." },
-    { id: 64, question: "What profession designs buildings?", options: ["Architect", "Painter", "Writer", "Singer"], answer: "Architect", explanation: "An architect designs buildings." },
-    { id: 65, question: "What profession creates software programs?", options: ["Programmer", "Mechanic", "Electrician", "Plumber"], answer: "Programmer", explanation: "A programmer creates software programs." },
-    { id: 66, question: "Which is a continent?", options: ["Europe", "Paris", "London", "Tokyo"], answer: "Europe", explanation: "Europe is a continent." },
-    { id: 67, question: "Which is a planet?", options: ["Mars", "Sun", "Moon", "Star"], answer: "Mars", explanation: "Mars is a planet." },
-    { id: 68, question: "Which is an ocean?", options: ["Pacific", "River", "Lake", "Pond"], answer: "Pacific", explanation: "The Pacific is an ocean." },
-    { id: 69, question: "Which is a precious stone?", options: ["Diamond", "Rock", "Sand", "Dirt"], answer: "Diamond", explanation: "A diamond is a precious stone." },
-    { id: 70, question: "Which is a metal?", options: ["Gold", "Wood", "Plastic", "Glass"], answer: "Gold", explanation: "Gold is a metal." },
-    { id: 71, question: "Which is a type of fish?", options: ["Salmon", "Dog", "Cat", "Bird"], answer: "Salmon", explanation: "Salmon is a type of fish." },
-    { id: 72, question: "Which is a type of bird?", options: ["Eagle", "Dog", "Cat", "Fish"], answer: "Eagle", explanation: "An eagle is a type of bird." },
-    { id: 73, question: "What profession defends people in court?", options: ["Lawyer", "Judge", "Police", "Detective"], answer: "Lawyer", explanation: "A lawyer defends people in court." },
-    { id: 74, question: "What profession studies weather patterns?", options: ["Meteorologist", "Biologist", "Chemist", "Physicist"], answer: "Meteorologist", explanation: "A meteorologist studies weather patterns." },
-    { id: 75, question: "What profession studies living organisms?", options: ["Biologist", "Chemist", "Physicist", "Geologist"], answer: "Biologist", explanation: "A biologist studies living organisms." },
-  ],
-};
-
-const DIFFICULTY_LABELS: Record<string, string>= {
-  beginner:'Dễ',
-  intermediate:'Trung bình',
-  advanced:'Khó',
-};
-
 const OPTION_COLORS = ['from-blue-400 to-blue-500','from-purple-400 to-purple-500','from-pink-400 to-pink-500','from-orange-400 to-orange-500',
 ];
+
+const DIFFICULTY_LABELS: Record<string, string> = {
+  beginner: 'Dễ',
+  intermediate: 'Trung bình',
+  advanced: 'Khó',
+};
 
 export default function MultipleChoicePage() {
   const [difficulty, setDifficulty] = useState<string>('beginner');
@@ -115,9 +33,20 @@ export default function MultipleChoicePage() {
   const [finished, setFinished] = useState(false);
   const [time, setTime] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
+  // Editable content: starts from built-in defaults, replaced by admin override.
+  const [content, setContent] = useState<MCContent>(DEFAULT_MULTIPLE_CHOICE);
+
+  useEffect(() => {
+    fetch('/api/games/multiple-choice')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((res) => {
+        if (res?.data) setContent(res.data as MCContent);
+      })
+      .catch(() => {});
+  }, []);
 
   const startGame = (level: string) =>{
-    const pool = QUESTIONS_BY_DIFFICULTY[level] || QUESTIONS_BY_DIFFICULTY.beginner;
+    const pool = content[level as keyof MCContent] || content.beginner;
     const shuffled = [...pool].sort(() =>Math.random() - 0.5).slice(0, 10);
     setQuestions(shuffled);
     setDifficulty(level);
