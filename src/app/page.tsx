@@ -2,6 +2,10 @@ import HomePageClient from '@/components/pages/HomePageClient';
 import { listStories } from '@/services/story';
 import { getAllVideos } from '@/services/video';
 
+// Always render from the live database (no static caching), so newly added or
+// removed videos/stories show up immediately.
+export const dynamic = 'force-dynamic';
+
 export default async function HomePage() {
   const [stories, allVideos] = await Promise.all([
     listStories().catch(() => []),
