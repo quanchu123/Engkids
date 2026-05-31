@@ -26,3 +26,5 @@ pm2 restart "$PM2_NAME" || pm2 start npm --name "$PM2_NAME" -- start
 pm2 save
 
 echo "==> Xong! App đã cập nhật."
+
+# Auto-deploy via GitHub Actions enabled.
