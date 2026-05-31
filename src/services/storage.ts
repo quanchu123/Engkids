@@ -2,8 +2,8 @@
 // LOCAL DISK STORAGE SERVICE (DigitalOcean Droplet)
 // ============================================
 // Videos are stored on the droplet's persistent disk under public/uploads and
-// served as static files at /uploads/<name>. Played as direct MP4 via the
-// native <video> element. No external object store or CDN is used.
+// served through /api/videos/file/<name> with HTTP Range support. Played as
+// direct MP4 via the native <video> element. No external object store or CDN.
 import { mkdir, unlink } from 'fs/promises';
 import { createWriteStream } from 'fs';
 import { Readable } from 'stream';
@@ -85,8 +85,13 @@ export async function saveVideoStream(
 export function getVideoPublicUrl(objectKey: string): string {
   if (!objectKey) return '';
   if (/^https?:\/\//i.test(objectKey)) return objectKey; // legacy full URL
-  if (objectKey.startsWith(PUBLIC_PREFIX)) return objectKey; // already a path
-  return `${PUBLIC_PREFIX}/${objectKey.replace(/^\/+/, '')}`;
+  // Serve through the streaming API route (HTTP Range support) instead of the
+  // static /uploads path, which is unreliable for runtime-added files under
+  // output: 'standalone'.
+  const name = objectKey
+    .replace(`${PUBLIC_PREFIX}/`, '')
+    .replace(/^\/+/, '');
+  return `/api/videos/file/${encodeURIComponent(name)}`;
 }
 
 /** Delete a stored video file from disk. */

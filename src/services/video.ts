@@ -117,13 +117,12 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
       ? (row.status as Video['status'])
       : 'processing';
 
-  // Resolve the public CDN URL for playback.
+  // Resolve the playable URL for the stored object.
   let videoUrl: string | undefined;
   if (row.object_key) {
     try {
       videoUrl = getVideoPublicUrl(row.object_key);
     } catch {
-      // Spaces not configured yet — leave undefined; player shows a message.
       videoUrl = undefined;
     }
   }
