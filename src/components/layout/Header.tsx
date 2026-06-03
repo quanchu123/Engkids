@@ -35,8 +35,7 @@ function Header() {
   }, []);
 
   const handleLogout = async () => {
-    await signOut();
-    router.push('/');
+    await signOut('/');
   };
 
   const isActive = useCallback((path: string) => {

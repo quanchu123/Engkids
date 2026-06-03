@@ -116,11 +116,16 @@ export async function signInWithGoogle() {
 /**
  * Sign out
  */
-export async function signOut() {
+export async function signOut(redirectTo: string = '/') {
   const supabase = getSupabase();
   const { error } = await supabase.auth.signOut();
   
   if (error) throw error;
+  
+  if (typeof window !== 'undefined') {
+    window.localStorage.removeItem('kids.progress.v2');
+    window.location.href = redirectTo;
+  }
 }
 
 /**
