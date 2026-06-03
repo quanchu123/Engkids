@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import { useAppStore } from '@/store/useAppStore';
 import { getAllStories } from '@/data/stories';
@@ -230,8 +231,18 @@ export default function ProgressPage() {
                           href={`/stories/${item.storyId}`}
                           className="toy-surface flex items-center gap-4 rounded-2xl p-3 transition-transform hover:-translate-y-0.5"
                         >
-                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-100 to-pink-100 text-2xl font-black text-violet-500">
-                            {story.cover_image || story.title_en.charAt(0)}
+                          <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-amber-100 to-pink-100 text-2xl font-black text-violet-500">
+                            {story.cover_image?.startsWith('http') || story.cover_image?.startsWith('data:') ? (
+                              <Image
+                                src={story.cover_image}
+                                alt={story.title_en}
+                                fill
+                                className="object-cover"
+                                sizes="56px"
+                              />
+                            ) : (
+                              story.cover_image || story.title_en.charAt(0)
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h3 className="truncate font-black text-slate-900">{story.title_en}</h3>
@@ -441,8 +452,18 @@ export default function ProgressPage() {
                               href={`/stories/${story.id}`}
                               className="toy-surface flex items-center gap-4 rounded-2xl p-3 transition-transform hover:-translate-y-0.5"
                             >
-                              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-violet-100 text-xl font-black text-violet-500">
-                                {story.cover_image || story.title_en.charAt(0)}
+                              <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-pink-100 to-violet-100 text-xl font-black text-violet-500">
+                                {story.cover_image?.startsWith('http') || story.cover_image?.startsWith('data:') ? (
+                                  <Image
+                                    src={story.cover_image}
+                                    alt={story.title_en}
+                                    fill
+                                    className="object-cover"
+                                    sizes="56px"
+                                  />
+                                ) : (
+                                  story.cover_image || story.title_en.charAt(0)
+                                )}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <h3 className="truncate font-black text-slate-900">{story.title_en}</h3>
