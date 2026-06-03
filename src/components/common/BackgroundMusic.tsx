@@ -41,6 +41,8 @@ export default function BackgroundMusic() {
     return () => { active = false; };
   }, []);
 
+  const userToggledRef = useRef(false);
+
   useEffect(() => {
     if (!setting?.url) return;
     const audio = audioRef.current;
@@ -53,11 +55,13 @@ export default function BackgroundMusic() {
 
     // Unmute + play at the first real user gesture.
     const unlock = () => {
-      if (unlocked) return;
+      if (unlocked || userToggledRef.current) return;
       unlocked = true;
       audio.muted = false;
       setMuted(false);
-      audio.play().then(() => setPlaying(true)).catch(() => {});
+      audio.play().then(() => {
+        if (!userToggledRef.current) setPlaying(true);
+      }).catch(() => {});
       GESTURE_EVENTS.forEach((ev) => window.removeEventListener(ev, unlock));
     };
 
@@ -81,14 +85,21 @@ export default function BackgroundMusic() {
 
     return () => {
       GESTURE_EVENTS.forEach((ev) => window.removeEventListener(ev, unlock));
+      audio.pause();
     };
   }, [setting]);
 
   if (!setting?.url) return null;
 
-  const toggle = () => {
+  const toggle = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    userToggledRef.current = true;
     const audio = audioRef.current;
     if (!audio) return;
+    
     if (audio.paused || audio.muted) {
       audio.muted = false;
       setMuted(false);
@@ -106,7 +117,8 @@ export default function BackgroundMusic() {
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio ref={audioRef} src={setting.url} preload="auto" />
       <button
-        onClick={toggle}
+        onClickCapture={toggle}
+        onPointerDownCapture={(e) => e.stopPropagation()}
         aria-label={isOn ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
         title={isOn ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
         className={`fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full text-xl shadow-lg transition-all hover:scale-110 ${

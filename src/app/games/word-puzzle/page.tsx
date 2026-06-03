@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -42,20 +42,30 @@ function evaluateGuess(guess: string, answer: string): TileState[] {
 }
 
 export default function WordPuzzlePage() {
-  const [target, setTarget] = useState(() => WORDS[Math.floor(Math.random() * WORDS.length)]);
+  const TOTAL_QUESTIONS = 6;
+  const [targets, setTargets] = useState(() => {
+    const shuffled = [...WORDS].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, TOTAL_QUESTIONS);
+  });
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [score, setScore] = useState(0);
+
+  const target = targets[questionIndex] || targets[0];
+
   const [guesses, setGuesses] = useState<string[]>([]);
   const [current, setCurrent] = useState('');
-  const [gameState, setGameState] = useState<'playing' | 'won' | 'lost'>('playing');
+  const [gameState, setGameState] = useState<'playing' | 'won' | 'lost' | 'finished'>('playing');
   const [shake, setShake] = useState(false);
   const [revealRow, setRevealRow] = useState(-1);
 
-  // Load the shared word bank and pick a fresh 5-letter target.
+  // Load the shared word bank and pick fresh targets.
   useEffect(() => {
     let active = true;
     loadWordBank().then((bank) => {
       if (!active) return;
       const words = toFiveLetterWords(bank);
-      setTarget(words[Math.floor(Math.random() * words.length)]);
+      const shuffled = [...words].sort(() => 0.5 - Math.random());
+      setTargets(shuffled.slice(0, TOTAL_QUESTIONS));
     });
     return () => { active = false; };
   }, []);
@@ -95,6 +105,7 @@ export default function WordPuzzlePage() {
       setRevealRow(-1);
       if (current === target.en) {
         setGameState('won');
+        setScore(s => s + 1);
         showToast('Xuất sắc!');
       } else if (newGuesses.length >= MAX_GUESSES) {
         setGameState('lost');
@@ -120,6 +131,17 @@ export default function WordPuzzlePage() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [handleKey]);
+
+  const handleNext = () => {
+    if (questionIndex < TOTAL_QUESTIONS - 1) {
+      setQuestionIndex(q => q + 1);
+      setGuesses([]);
+      setCurrent('');
+      setGameState('playing');
+    } else {
+      setGameState('finished');
+    }
+  };
 
   const handleReplay = () => window.location.reload();
 
@@ -192,23 +214,28 @@ export default function WordPuzzlePage() {
           </div>
         )}
 
-        {/* â”€â”€ Header â”€â”€ */}
+        {/* ─── Header ─── */}
         <header className="flex items-center justify-between px-4 py-3"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <Link href="/games" className="text-white/40 hover:text-white text-sm font-bold transition-colors">
             Quay lại
           </Link>
-          <h1 className="font-black text-lg tracking-wider"
-            style={{
-              background: 'linear-gradient(135deg, #93c5fd, #c084fc)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>
-            WORD PUZZLE
-          </h1>
-          <div className="w-14" />
+          <div className="flex flex-col items-center">
+            <h1 className="font-black text-lg tracking-wider"
+              style={{
+                background: 'linear-gradient(135deg, #93c5fd, #c084fc)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              }}>
+              WORD PUZZLE
+            </h1>
+            <span className="text-xs text-white/50 font-bold">Câu {questionIndex + 1}/{TOTAL_QUESTIONS}</span>
+          </div>
+          <div className="w-14 text-right">
+            <span className="text-yellow-400 font-bold text-sm">⭐ {score}</span>
+          </div>
         </header>
 
-        {/* â”€â”€ Hint â”€â”€ */}
+        {/* ─── Hint ─── */}
         <div className="text-center py-2">
           <span className="text-white/30 text-xs uppercase tracking-widest">Gợi ý</span>
           <div className="text-2xl font-black mt-0.5"
@@ -221,7 +248,7 @@ export default function WordPuzzlePage() {
           </div>
         </div>
 
-        {/* â”€â”€ Board â”€â”€ */}
+        {/* ─── Board ─── */}
         <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-1.5 px-4 overflow-hidden">
           {board.map((row, ri) => (
             <div key={ri}
@@ -275,7 +302,7 @@ export default function WordPuzzlePage() {
           ))}
         </div>
 
-        {/* â”€â”€ Keyboard â”€â”€ */}
+        {/* ─── Keyboard ─── */}
         {gameState === 'playing' && (
           <div className="flex flex-col items-center gap-1.5 px-2 pb-3 pt-2 shrink-0">
             {KEYBOARD_ROWS.map((row, ri) => (
@@ -314,45 +341,74 @@ export default function WordPuzzlePage() {
           </div>
         )}
 
-        {/* â”€â”€ End screen â”€â”€ */}
+        {/* ─── End screen ─── */}
         {gameState !== 'playing' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center z-40"
             style={{
               background: gameState === 'won'
                 ? 'radial-gradient(ellipse at center, rgba(15,50,20,0.97), rgba(0,0,0,0.98))'
+                : gameState === 'finished'
+                ? 'radial-gradient(ellipse at center, rgba(20,20,60,0.97), rgba(0,0,0,0.98))'
                 : 'radial-gradient(ellipse at center, rgba(50,15,15,0.97), rgba(0,0,0,0.98))',
             }}>
-            <div className="text-5xl mb-4 font-black text-yellow-400">{gameState === 'won' ? 'WIN' : 'LOSE'}</div>
-            <h2 className="font-black text-4xl sm:text-5xl mb-2" style={{
-              background: gameState === 'won'
-                ? 'linear-gradient(135deg, #fde68a, #f59e0b, #fbbf24)'
-                : 'linear-gradient(135deg, #fca5a5, #dc2626)',
-              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            }}>
-              {gameState === 'won' ? 'TUYỆT VỜI!' : 'HẾT LƯỢT!'}
-            </h2>
-            <p className="text-white/50 text-lg mb-1">
-              Đáp án: <span className="text-white font-black">{target.en}</span>
-            </p>
-            <p className="text-white/30 text-sm mb-6">{target.vi}</p>
-            {gameState === 'won' && (
-              <p className="text-white/40 text-sm mb-4">
-                Hoàn thành trong <span className="text-yellow-400 font-black">{guesses.length}/{MAX_GUESSES}</span> lượt
-              </p>
+            
+            {gameState === 'finished' ? (
+              <>
+                <div className="text-5xl mb-4 font-black text-blue-400">HOÀN THÀNH</div>
+                <h2 className="font-black text-4xl sm:text-5xl mb-2" style={{
+                  background: 'linear-gradient(135deg, #93c5fd, #c084fc)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                }}>
+                  ĐIỂM: {score}/{TOTAL_QUESTIONS}
+                </h2>
+                <p className="text-white/50 text-lg mb-6">Bạn đã chơi qua {TOTAL_QUESTIONS} từ vựng!</p>
+                <button onClick={handleReplay}
+                  className="px-10 py-4 rounded-full font-black text-lg text-black transition-transform hover:scale-105 active:scale-95"
+                  style={{
+                    background: 'linear-gradient(135deg, #93c5fd, #c084fc)',
+                    boxShadow: '0 0 30px rgba(192,132,252,0.4)',
+                  }}>
+                  Chơi lại từ đầu
+                </button>
+                <Link href="/games" className="text-white/30 hover:text-white text-sm underline mt-4">
+                  Quay về lobby
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="text-5xl mb-4 font-black text-yellow-400">{gameState === 'won' ? 'WIN' : 'LOSE'}</div>
+                <h2 className="font-black text-4xl sm:text-5xl mb-2" style={{
+                  background: gameState === 'won'
+                    ? 'linear-gradient(135deg, #fde68a, #f59e0b, #fbbf24)'
+                    : 'linear-gradient(135deg, #fca5a5, #dc2626)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                }}>
+                  {gameState === 'won' ? 'TUYỆT VỜI!' : 'HẾT LƯỢT!'}
+                </h2>
+                <p className="text-white/50 text-lg mb-1">
+                  Đáp án: <span className="text-white font-black">{target.en}</span>
+                </p>
+                <p className="text-white/30 text-sm mb-6">{target.vi}</p>
+                {gameState === 'won' && (
+                  <p className="text-white/40 text-sm mb-4">
+                    Hoàn thành trong <span className="text-yellow-400 font-black">{guesses.length}/{MAX_GUESSES}</span> lượt
+                  </p>
+                )}
+                <button onClick={questionIndex < TOTAL_QUESTIONS - 1 ? handleNext : () => setGameState('finished')}
+                  className="px-10 py-4 rounded-full font-black text-lg text-black transition-transform hover:scale-105 active:scale-95"
+                  style={{
+                    background: gameState === 'won'
+                      ? 'linear-gradient(135deg, #fde68a, #f59e0b)'
+                      : 'linear-gradient(135deg, #fca5a5, #f87171)',
+                    boxShadow: '0 0 30px rgba(245,158,11,0.4)',
+                  }}>
+                  {questionIndex < TOTAL_QUESTIONS - 1 ? 'Tiếp tục' : 'Xem kết quả'}
+                </button>
+                <Link href="/games" className="text-white/30 hover:text-white text-sm underline mt-4">
+                  Quay về lobby
+                </Link>
+              </>
             )}
-            <button onClick={handleReplay}
-              className="px-10 py-4 rounded-full font-black text-lg text-black transition-transform hover:scale-105 active:scale-95"
-              style={{
-                background: gameState === 'won'
-                  ? 'linear-gradient(135deg, #fde68a, #f59e0b)'
-                  : 'linear-gradient(135deg, #fca5a5, #f87171)',
-                boxShadow: '0 0 30px rgba(245,158,11,0.4)',
-              }}>
-              Chơi lại
-            </button>
-            <Link href="/games" className="text-white/30 hover:text-white text-sm underline mt-4">
-              Quay vá» lobby
-            </Link>
           </div>
         )}
       </div>
