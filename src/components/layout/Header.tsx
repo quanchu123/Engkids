@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, memo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
+import { onAuthStateChange, User, signOut } from '@/lib/auth-client';
 
 const NAV_ITEMS = [
   { name: 'Trang chủ', path: '/', icon: '🏠', active: 'bg-sky-100 text-sky-600 shadow-md shadow-sky-200/60', mobileActive: 'bg-gradient-to-r from-sky-400 to-cyan-400 text-white shadow-md' },
@@ -17,8 +18,26 @@ const NAV_ITEMS = [
 
 function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const totalStars = useAppStore((state) => state.progress.totalStars);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const subscription = onAuthStateChange((currentUser) => {
+      if (isMounted) setUser(currentUser);
+    });
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/');
+  };
 
   const isActive = useCallback((path: string) => {
     if (path === '/') return pathname === '/';
@@ -94,13 +113,28 @@ function Header() {
             <span>{totalStars}</span>
           </Link>
 
-          <Link
-            href="/admin/login"
-            className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-purple-600 transition-all hover:scale-105 hover:shadow-lg"
-            aria-label="Admin Login"
-          >
-            Login
-          </Link>
+          {user ? (
+            <div className="flex items-center gap-2 ml-2">
+              <span className="text-sm font-bold text-white hidden lg:block">
+                {user.name || user.email?.split('@')[0]}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="rounded-full bg-white/20 px-4 py-1.5 text-sm font-bold text-white transition-all hover:bg-white/30 hover:scale-105"
+                aria-label="Đăng xuất"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-purple-600 transition-all hover:scale-105 hover:shadow-lg"
+              aria-label="Đăng nhập"
+            >
+              Đăng nhập
+            </Link>
+          )}
         </div>
       </div>
 
@@ -133,14 +167,28 @@ function Header() {
               <span>🌟</span>
               <span>{totalStars} sao</span>
             </Link>
-            <Link
-              href="/admin/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="rounded-full bg-purple-600 px-4 py-2 font-bold text-white"
-              aria-label="Admin Login"
-            >
-              Login
-            </Link>
+            
+            {user ? (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="rounded-full bg-rose-500 px-4 py-2 font-bold text-white"
+                aria-label="Đăng xuất"
+              >
+                Đăng xuất
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="rounded-full bg-purple-600 px-4 py-2 font-bold text-white"
+                aria-label="Đăng nhập"
+              >
+                Đăng nhập
+              </Link>
+            )}
           </div>
         </nav>
       )}

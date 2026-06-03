@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -11,19 +11,19 @@ import { Story } from '@/types';
 type TabType = 'overview' | 'vocabulary' | 'stories' | 'achievements';
 
 const MASTERY = [
-  { level: 0, label: 'Moi', badge: 'Start', tint: 'bg-violet-100 text-violet-700' },
-  { level: 1, label: 'Dang hoc', badge: 'Learn', tint: 'bg-sky-100 text-sky-700' },
-  { level: 2, label: 'Quen thuoc', badge: 'Know', tint: 'bg-emerald-100 text-emerald-700' },
-  { level: 3, label: 'Nho tot', badge: 'Star', tint: 'bg-amber-100 text-amber-700' },
-  { level: 4, label: 'Rat tot', badge: 'Shine', tint: 'bg-pink-100 text-pink-700' },
-  { level: 5, label: 'Thanh thao', badge: 'Pro', tint: 'bg-indigo-100 text-indigo-700' },
+  { level: 0, label: 'Mới', badge: 'Start', tint: 'bg-violet-100 text-violet-700' },
+  { level: 1, label: 'Đang học', badge: 'Learn', tint: 'bg-sky-100 text-sky-700' },
+  { level: 2, label: 'Quen thuộc', badge: 'Know', tint: 'bg-emerald-100 text-emerald-700' },
+  { level: 3, label: 'Nhớ tốt', badge: 'Star', tint: 'bg-amber-100 text-amber-700' },
+  { level: 4, label: 'Rất tốt', badge: 'Shine', tint: 'bg-pink-100 text-pink-700' },
+  { level: 5, label: 'Thành thạo', badge: 'Pro', tint: 'bg-indigo-100 text-indigo-700' },
 ];
 
 const TABS: Array<{ id: TabType; label: string; icon: string }> = [
-  { id: 'overview', label: 'Tong quan', icon: 'Home' },
-  { id: 'vocabulary', label: 'Tu vung', icon: 'Words' },
-  { id: 'stories', label: 'Truyen', icon: 'Story' },
-  { id: 'achievements', label: 'Thanh tich', icon: 'Stars' },
+  { id: 'overview', label: 'Tổng quan', icon: 'Home' },
+  { id: 'vocabulary', label: 'Từ vựng', icon: 'Words' },
+  { id: 'stories', label: 'Truyện', icon: 'Story' },
+  { id: 'achievements', label: 'Thành tích', icon: 'Stars' },
 ];
 
 export default function ProgressPage() {
@@ -78,14 +78,14 @@ export default function ProgressPage() {
 
   const achievements = useMemo(
     () => [
-      { id: 'first_story', name: 'Khoi dau', desc: 'Hoan thanh truyen dau tien', icon: 'Start', earned: completedStories.length >= 1 },
-      { id: 'five_stories', name: 'Doc nhieu', desc: 'Hoan thanh 5 truyen', icon: 'Books', earned: completedStories.length >= 5 },
-      { id: 'ten_words', name: 'Thu thap tu', desc: 'Luu 10 tu vung', icon: 'Word', earned: vocabStats.total >= 10 },
-      { id: 'fifty_words', name: 'Kho bau tu', desc: 'Luu 50 tu vung', icon: 'Vault', earned: vocabStats.total >= 50 },
-      { id: 'streak_3', name: 'Kien tri', desc: 'Giu streak 3 ngay', icon: 'Fire', earned: progress.currentStreak >= 3 },
-      { id: 'streak_7', name: 'Ben bi', desc: 'Giu streak 7 ngay', icon: 'Crown', earned: progress.currentStreak >= 7 },
-      { id: 'ten_stars', name: 'Ngoi sao', desc: 'Dat 10 sao', icon: 'Star', earned: progress.totalStars >= 10 },
-      { id: 'perfect_game', name: 'Hoan hao', desc: 'Dat diem tuyet doi trong game', icon: 'Perfect', earned: progress.gameScores.some((item) => item.score === item.totalQuestions) },
+      { id: 'first_story', name: 'Khởi đầu', desc: 'Hoàn thành truyện đầu tiên', icon: 'Start', earned: completedStories.length >= 1 },
+      { id: 'five_stories', name: 'Đọc nhiều', desc: 'Hoàn thành 5 truyện', icon: 'Books', earned: completedStories.length >= 5 },
+      { id: 'ten_words', name: 'Thu thập từ', desc: 'Lưu 10 từ vựng', icon: 'Word', earned: vocabStats.total >= 10 },
+      { id: 'fifty_words', name: 'Kho báu từ', desc: 'Lưu 50 từ vựng', icon: 'Vault', earned: vocabStats.total >= 50 },
+      { id: 'streak_3', name: 'Kiên trì', desc: 'Giữ streak 3 ngày', icon: 'Fire', earned: progress.currentStreak >= 3 },
+      { id: 'streak_7', name: 'Bền bỉ', desc: 'Giữ streak 7 ngày', icon: 'Crown', earned: progress.currentStreak >= 7 },
+      { id: 'ten_stars', name: 'Ngôi sao', desc: 'Đạt 10 sao', icon: 'Star', earned: progress.totalStars >= 10 },
+      { id: 'perfect_game', name: 'Hoàn hảo', desc: 'Đạt điểm tuyệt đối trong game', icon: 'Perfect', earned: progress.gameScores.some((item) => item.score === item.totalQuestions) },
     ],
     [completedStories.length, progress.currentStreak, progress.gameScores, progress.totalStars, vocabStats.total],
   );
@@ -94,19 +94,19 @@ export default function ProgressPage() {
 
   const storySections = [
     {
-      title: 'Da hoan thanh',
+      title: 'Đã hoàn thành',
       filter: (story: Story) => Boolean(progress.storiesProgress[story.id]?.completed),
-      empty: 'Chua hoan thanh truyen nao',
+      empty: 'Chưa hoàn thành truyện nào',
     },
     {
-      title: 'Dang doc',
+      title: 'Đang đọc',
       filter: (story: Story) => Boolean(progress.storiesProgress[story.id] && !progress.storiesProgress[story.id].completed),
-      empty: 'Khong co truyen dang doc',
+      empty: 'Không có truyện đang đọc',
     },
     {
-      title: 'Chua doc',
+      title: 'Chưa đọc',
       filter: (story: Story) => !progress.storiesProgress[story.id],
-      empty: 'Da doc het truyen hien co',
+      empty: 'Đã đọc hết truyện hiện có',
     },
   ];
 
@@ -181,24 +181,24 @@ export default function ProgressPage() {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                <MetricCard title="Tong sao" value={progress.totalStars} tint="from-amber-400 to-orange-400" />
-                <MetricCard title="Tu da hoc" value={vocabStats.total} tint="from-sky-400 to-indigo-500" />
-                <MetricCard title="Truyen xong" value={completedStories.length} tint="from-emerald-400 to-teal-500" />
+                <MetricCard title="Tổng sao" value={progress.totalStars} tint="from-amber-400 to-orange-400" />
+                <MetricCard title="Từ đã học" value={vocabStats.total} tint="from-sky-400 to-indigo-500" />
+                <MetricCard title="Truyện xong" value={completedStories.length} tint="from-emerald-400 to-teal-500" />
                 <MetricCard title="Streak" value={progress.currentStreak} tint="from-pink-400 to-rose-500" />
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="toy-panel p-6">
-                  <h2 className="mb-5 text-lg font-black text-slate-900">Tien do tong quan</h2>
+                  <h2 className="mb-5 text-lg font-black text-slate-900">Tiến độ tổng quan</h2>
                   <div className="space-y-5">
-                    <ProgressBar label="Truyen" current={completedStories.length} total={totalStories} color="from-emerald-400 to-teal-500" />
-                    <ProgressBar label="Thanh tich" current={earnedCount} total={achievements.length} color="from-amber-400 to-orange-400" />
-                    <ProgressBar label="Tu yeu thich" current={vocabStats.favorites} total={vocabStats.total || 1} color="from-pink-400 to-rose-500" />
+                    <ProgressBar label="Truyện" current={completedStories.length} total={totalStories} color="from-emerald-400 to-teal-500" />
+                    <ProgressBar label="Thành tích" current={earnedCount} total={achievements.length} color="from-amber-400 to-orange-400" />
+                    <ProgressBar label="Từ yêu thích" current={vocabStats.favorites} total={vocabStats.total || 1} color="from-pink-400 to-rose-500" />
                   </div>
                 </div>
 
                 <div className="toy-panel p-6">
-                  <h2 className="mb-5 text-lg font-black text-slate-900">Muc do nho tu</h2>
+                  <h2 className="mb-5 text-lg font-black text-slate-900">Mức độ nhớ từ</h2>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {MASTERY.map((item) => (
                       <div key={item.level} className={`rounded-2xl px-3 py-4 text-center ${item.tint}`}>
@@ -213,9 +213,9 @@ export default function ProgressPage() {
 
               <div className="toy-panel p-6">
                 <div className="mb-5 flex items-center justify-between gap-3">
-                  <h2 className="text-lg font-black text-slate-900">Hoat dong gan day</h2>
+                  <h2 className="text-lg font-black text-slate-900">Hoạt động gần đây</h2>
                   <Link href="/stories" className="kid-chip px-4 py-2 text-sm font-bold text-violet-700">
-                    Xem truyen
+                    Xem truyện
                   </Link>
                 </div>
                 {completedStories.length > 0 ? (
@@ -246,10 +246,10 @@ export default function ProgressPage() {
                   </div>
                 ) : (
                   <EmptyPanel
-                    title="Chua co hoat dong nao"
-                    description="Bat dau doc truyen de he thong ghi lai hanh trinh hoc tap."
+                    title="Chưa có hoạt động nào"
+                    description="Bắt đầu đọc truyện để hệ thống ghi lại hành trình học tập."
                     href="/stories"
-                    action="Doc truyen ngay"
+                    action="Đọc truyện ngay"
                   />
                 )}
               </div>
@@ -261,14 +261,14 @@ export default function ProgressPage() {
               <div className="soft-feature rounded-[2rem] p-6 text-white">
                 <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h2 className="text-2xl font-black">Kho tu vung</h2>
-                    <p className="text-sm text-white/85">On lai cac tu da luu va mo flashcard khi can luyen nhanh.</p>
+                    <h2 className="text-2xl font-black">Kho từ vựng</h2>
+                    <p className="text-sm text-white/85">Ôn lại các từ đã lưu và mở flashcard khi cần luyện nhanh.</p>
                   </div>
                   <div className="flex gap-2">
                     {filteredVocab.length > 0 && (
                       <>
                         <Link href="/progress/review" className="rounded-2xl bg-white/15 px-4 py-2 text-sm font-black text-white">
-                          On tap
+                          Ôn tập
                         </Link>
                         <button
                           onClick={() => {
@@ -285,26 +285,26 @@ export default function ProgressPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-center">
-                  <SummaryStat label="Tong tu" value={vocabStats.total} />
-                  <SummaryStat label="Yeu thich" value={vocabStats.favorites} />
-                  <SummaryStat label="Thanh thao" value={vocabStats.byMastery[5] || 0} />
+                  <SummaryStat label="Tổng từ" value={vocabStats.total} />
+                  <SummaryStat label="Yêu thích" value={vocabStats.favorites} />
+                  <SummaryStat label="Thành thạo" value={vocabStats.byMastery[5] || 0} />
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
                 <input
                   type="text"
-                  placeholder="Tim kiem tu vung..."
+                  placeholder="Tìm kiếm từ vựng..."
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   className="soft-panel w-full rounded-2xl px-4 py-3 font-semibold text-slate-700 outline-none"
                 />
                 <div className="flex gap-2">
                   <FilterButton active={vocabFilter === 'all'} onClick={() => setVocabFilter('all')}>
-                    Tat ca
+                    Tất cả
                   </FilterButton>
                   <FilterButton active={vocabFilter === 'favorites'} onClick={() => setVocabFilter('favorites')}>
-                    Yeu thich
+                    Yêu thích
                   </FilterButton>
                 </div>
               </div>
@@ -340,7 +340,7 @@ export default function ProgressPage() {
                               onClick={() => unsaveWord(item.word)}
                               className="kid-chip px-3 py-2 text-xs font-black text-slate-500"
                             >
-                              Xoa
+                              Xóa
                             </button>
                           </div>
                         </div>
@@ -350,10 +350,10 @@ export default function ProgressPage() {
                 </div>
               ) : (
                 <EmptyPanel
-                  title={searchQuery ? 'Khong tim thay tu phu hop' : 'Chua co tu vung nao'}
-                  description="Luu tu khi doc truyen hoac xem video de xay kho tu vung rieng."
+                  title={searchQuery ? 'Không tìm thấy từ phù hợp' : 'Chưa có từ vựng nào'}
+                  description="Lưu từ khi đọc truyện hoặc xem video để xây kho từ vựng riêng."
                   href="/stories"
-                  action="Doc truyen"
+                  action="Đọc truyện"
                 />
               )}
 
@@ -363,7 +363,7 @@ export default function ProgressPage() {
                     <div className="mb-4 flex items-center justify-between">
                       <h3 className="text-lg font-black text-slate-900">Flashcard</h3>
                       <button onClick={() => setShowFlashcard(false)} className="kid-chip px-3 py-2 text-sm font-black text-violet-700">
-                        Dong
+                        Đóng
                       </button>
                     </div>
                     <p className="mb-4 text-center text-sm font-bold text-slate-500">
@@ -376,7 +376,7 @@ export default function ProgressPage() {
                       {!isFlipped ? (
                         <>
                           <p className="text-3xl font-black text-slate-900">{filteredVocab[currentFlashcardIndex]?.word}</p>
-                          <p className="mt-3 text-sm font-bold text-slate-500">Bam de xem nghia</p>
+                          <p className="mt-3 text-sm font-bold text-slate-500">Bấm để xem nghĩa</p>
                         </>
                       ) : (
                         <>
@@ -388,7 +388,7 @@ export default function ProgressPage() {
                             }}
                             className="mt-4 rounded-2xl bg-gradient-to-r from-sky-400 to-indigo-500 px-4 py-2 text-sm font-black text-white shadow-lg"
                           >
-                            Nghe phat am
+                            Nghe phát âm
                           </button>
                         </>
                       )}
@@ -401,7 +401,7 @@ export default function ProgressPage() {
                         }}
                         className="kid-chip px-5 py-3 text-sm font-black text-violet-700"
                       >
-                        Truoc
+                        Trước
                       </button>
                       <button
                         onClick={() => {
@@ -410,7 +410,7 @@ export default function ProgressPage() {
                         }}
                         className="rounded-2xl bg-gradient-to-r from-violet-500 to-pink-500 px-5 py-3 text-sm font-black text-white shadow-lg"
                       >
-                        Tiep
+                        Tiếp
                       </button>
                     </div>
                   </div>
@@ -470,8 +470,8 @@ export default function ProgressPage() {
           {activeTab === 'achievements' && (
             <div className="space-y-5">
               <div className="soft-feature rounded-[2rem] p-6 text-white">
-                <h2 className="text-2xl font-black">Thanh tich</h2>
-                <p className="mt-1 text-white/85">Da dat {earnedCount}/{achievements.length} cot moc hoc tap.</p>
+                <h2 className="text-2xl font-black">Thành tích</h2>
+                <p className="mt-1 text-white/85">Đã đạt {earnedCount}/{achievements.length} cột mốc học tập.</p>
                 <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/20">
                   <div
                     className="h-full rounded-full bg-white transition-all"
@@ -504,7 +504,7 @@ export default function ProgressPage() {
 
               {progress.gameScores.length > 0 && (
                 <div className="toy-panel p-6">
-                  <h2 className="mb-4 text-lg font-black text-slate-900">Lich su game</h2>
+                  <h2 className="mb-4 text-lg font-black text-slate-900">Lịch sử game</h2>
                   <div className="space-y-3">
                     {progress.gameScores.slice(-10).reverse().map((item, index) => {
                       const story = stories.find((candidate) => candidate.id === item.storyId);

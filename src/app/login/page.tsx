@@ -12,17 +12,17 @@ export default function LoginPage() {
         <div className="w-full max-w-md -mt-20">
           <div className="text-center mb-2">
             <h1 className="text-4xl font-bold text-white mb-3">EngKids</h1>
-            <p className="text-gray-400 text-lg">Learn English through fun videos and stories</p>
+            <p className="text-gray-400 text-lg">Học tiếng Anh qua video và truyện tranh vui nhộn</p>
           </div>
 
           <LoginForm />
 
           <div className="mt-8 text-center space-y-3">
             <Link href="/" className="block text-gray-400 hover:text-white text-sm transition">
-              Back to home
+              Về trang chủ
             </Link>
             <p className="text-xs text-gray-500">
-              By signing in, you agree to our Terms of Service and Privacy Policy
+              Bằng cách đăng nhập, bạn đồng ý với Điều khoản và Thỏa thuận của chúng tôi
             </p>
           </div>
         </div>

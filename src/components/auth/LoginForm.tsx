@@ -95,17 +95,17 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
     <div className="w-full max-w-md" data-testid="login-form">
       <div className="bg-gray-800 rounded-2xl p-8 shadow-2xl border border-gray-700">
         <h2 className="text-3xl font-bold text-white mb-2 text-center">
-          {isSignup ? 'Create Account' : 'Welcome Back'}
+          {isSignup ? 'Tạo tài khoản' : 'Chào mừng trở lại'}
         </h2>
         <p className="text-gray-400 text-center mb-8">
-          {isSignup ? 'Sign up to start learning' : 'Sign in to continue learning'}
+          {isSignup ? 'Đăng ký để bắt đầu học' : 'Đăng nhập để tiếp tục học'}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {isSignup && (
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                Name
+                Tên
               </label>
               <input
                 id="name"
@@ -113,7 +113,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
                 data-testid="signup-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
+                placeholder="Tên của bạn"
                 className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
               />
             </div>
@@ -137,7 +137,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-              Password
+              Mật khẩu
             </label>
             <input
               id="password"
@@ -151,7 +151,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
               className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
             />
             {isSignup && (
-              <p className="text-xs text-gray-500 mt-2">At least 6 characters</p>
+              <p className="text-xs text-gray-500 mt-2">Ít nhất 6 ký tự</p>
             )}
           </div>
 
@@ -176,10 +176,10 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {isSignup ? 'Creating account...' : 'Signing in...'}
+                {isSignup ? 'Đang tạo tài khoản...' : 'Đang đăng nhập...'}
               </span>
             ) : (
-              <span>{isSignup ? 'Sign Up' : 'Sign In'}</span>
+              <span>{isSignup ? 'Đăng ký' : 'Đăng nhập'}</span>
             )}
           </button>
         </form>
@@ -194,7 +194,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
             data-testid="login-mode-toggle"
             className="text-purple-400 hover:text-purple-300 text-sm transition"
           >
-            {isSignup ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            {isSignup ? 'Đã có tài khoản? Đăng nhập' : "Chưa có tài khoản? Đăng ký"}
           </button>
         </div>
       </div>
