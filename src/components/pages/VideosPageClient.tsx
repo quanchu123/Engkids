@@ -8,6 +8,7 @@ import CategorySection from '@/components/video/CategorySection';
 import { DEFAULT_FEATURE } from '@/config/constants';
 import { filterVideos, groupVideosByFeature } from '@/lib/content-selectors';
 import { Video } from '@/types';
+import { onContentChange } from '@/lib/content-sync';
 
 interface VideosPageClientProps {
   videos: Video[];
@@ -44,10 +45,17 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
     loadVideos();
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
+
+    // Refresh when an admin tab broadcasts a content change.
+    const unsubscribe = onContentChange((kind) => {
+      if (kind === 'videos' || kind === 'all') loadVideos();
+    });
+
     return () => {
       cancelled = true;
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
+      unsubscribe();
     };
   }, []);
 

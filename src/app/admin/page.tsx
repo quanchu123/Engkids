@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Story } from '@/types';
 import { storyApi } from '@/services/api';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { broadcastContentChange } from '@/lib/content-sync';
 
 export default function AdminPage() {
+  const router = useRouter();
   const [stories, setStories] = useState<Story[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,6 +32,8 @@ export default function AdminPage() {
       await storyApi.delete(storyId);
       const { stories: updatedStories } = await storyApi.listAll();
       setStories(updatedStories);
+      broadcastContentChange('stories');
+      router.refresh();
     }
   };
 

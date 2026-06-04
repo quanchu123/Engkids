@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { SubtitleCue } from '@/types';
 import { parseVTT, parseSRT, generateVTT } from '@/lib/vtt-parser';
 import { videoApi } from '@/services/api';
+import { broadcastContentChange } from '@/lib/content-sync';
 
 interface SubtitleEditorProps {
   videoId: string;
@@ -12,6 +14,7 @@ interface SubtitleEditorProps {
 }
 
 export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave }: SubtitleEditorProps) {
+  const router = useRouter();
   const [subtitles, setSubtitles] = useState<SubtitleCue[]>(initialSubtitles);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -93,6 +96,8 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
       })));
 
       setMessage('Subtitles saved successfully!');
+      broadcastContentChange('videos');
+      router.refresh();
       onSave?.(subtitles);
     } catch (error) {
       console.error('Save error:', error);

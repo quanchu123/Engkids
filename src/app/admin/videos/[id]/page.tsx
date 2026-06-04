@@ -11,6 +11,7 @@ import SubtitleEditor from '@/components/video/SubtitleEditor';
 import QuizEditor from '@/components/video/QuizEditor';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { resizeImage } from '@/services/image';
+import { broadcastContentChange } from '@/lib/content-sync';
 
 const THUMBNAIL_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp';
 
@@ -76,6 +77,8 @@ export default function EditVideoPage() {
       });
 
       setMessage('Metadata saved successfully.');
+      broadcastContentChange('videos');
+      router.refresh();
       await loadVideo(); // Reload
     } catch (error) {
       console.error('Save error:', error);

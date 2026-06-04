@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { VideoQuizQuestion } from '@/types';
 import { videoApi } from '@/services/api';
+import { broadcastContentChange } from '@/lib/content-sync';
 
 interface QuizEditorProps {
   videoId: string;
@@ -22,6 +24,7 @@ function createEmptyQuestion(): VideoQuizQuestion {
 }
 
 export default function QuizEditor({ videoId, initialQuiz = [], onSave }: QuizEditorProps) {
+  const router = useRouter();
   const [questions, setQuestions] = useState<VideoQuizQuestion[]>(initialQuiz);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -102,6 +105,8 @@ export default function QuizEditor({ videoId, initialQuiz = [], onSave }: QuizEd
         })),
       );
       setMessage('Đã lưu câu hỏi thành công!');
+      broadcastContentChange('videos');
+      router.refresh();
       onSave?.(questions);
     } catch (err) {
       console.error('Save quiz error:', err);

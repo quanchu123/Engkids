@@ -1,35 +1,66 @@
 ﻿'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import { Video } from '@/types';
 import { DEFAULT_FEATURE } from '@/config/constants';
 import { groupVideosByFeature } from '@/lib/content-selectors';
+import { onContentChange } from '@/lib/content-sync';
 
 interface MusicPageClientProps {
   videos: Video[];
 }
 
 export default function MusicPageClient({ videos }: MusicPageClientProps) {
+  const [liveVideos, setLiveVideos] = useState(videos);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadVideos = () => fetch('/api/videos?category=music', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { videos?: Video[] } | null) => {
+        if (!cancelled && Array.isArray(data?.videos)) {
+          setLiveVideos(data.videos);
+        }
+      })
+      .catch(() => {});
+    const handleFocus = () => {
+      loadVideos();
+    };
+    loadVideos();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    const unsubscribe = onContentChange((kind) => {
+      if (kind === 'videos' || kind === 'all') loadVideos();
+    });
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+      unsubscribe();
+    };
+  }, []);
 
   // All feature labels present (default "Tổng Hợp" last).
   const features = useMemo(() => {
     const set = new Set<string>();
-    videos.forEach((v) => set.add(v.feature?.trim() || DEFAULT_FEATURE));
+    liveVideos.forEach((v) => set.add(v.feature?.trim() || DEFAULT_FEATURE));
     return Array.from(set).sort((a, b) => {
       if (a === DEFAULT_FEATURE) return 1;
       if (b === DEFAULT_FEATURE) return -1;
       return a.localeCompare(b);
     });
-  }, [videos]);
+  }, [liveVideos]);
 
   const filteredVideos = useMemo(
     () =>
-      videos.filter((video) => {
+      liveVideos.filter((video) => {
         const matchesSearch =
           !searchQuery ||
           video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -38,7 +69,7 @@ export default function MusicPageClient({ videos }: MusicPageClientProps) {
           !selectedFeature || (video.feature?.trim() || DEFAULT_FEATURE) === selectedFeature;
         return matchesSearch && matchesFeature;
       }),
-    [videos, searchQuery, selectedFeature],
+    [liveVideos, searchQuery, selectedFeature],
   );
 
   const featureGroups = useMemo(

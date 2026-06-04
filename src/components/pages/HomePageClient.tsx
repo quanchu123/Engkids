@@ -58,10 +58,34 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
     loadVideos();
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
+
+    // Polling fallback: refresh every 30s so background tabs pick up admin
+    // changes without needing a focus event.
+    const interval = window.setInterval(() => {
+      loadStories();
+      loadVideos();
+    }, 30_000);
+
+    // Cross-tab sync: when another tab (e.g. admin) dispatches a content
+    // change event, refresh immediately.
+    const channel = typeof BroadcastChannel !== 'undefined'
+      ? new BroadcastChannel('engkids-content')
+      : null;
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'content-changed') {
+        loadStories();
+        loadVideos();
+      }
+    };
+    channel?.addEventListener('message', onMessage);
+
     return () => {
       cancelled = true;
+      window.clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
+      channel?.removeEventListener('message', onMessage);
+      channel?.close();
     };
   }, []);
 

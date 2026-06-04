@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import { Story } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { filterStories, getStoryTopics } from '@/lib/content-selectors';
+import { onContentChange } from '@/lib/content-sync';
 
 type SortOption = 'recommended' | 'new' | 'shortest';
 
@@ -38,10 +39,17 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
     loadStories();
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
+
+    // Refresh when an admin tab broadcasts a content change.
+    const unsubscribe = onContentChange((kind) => {
+      if (kind === 'stories' || kind === 'all') loadStories();
+    });
+
     return () => {
       cancelled = true;
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
+      unsubscribe();
     };
   }, []);
 

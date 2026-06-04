@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/useToast';
 import { LEVELS, ERRORS, ROUTES } from '@/config/constants';
 import { videoApi } from '@/services/api';
 import { getAnyAccessToken } from '@/lib/admin-auth-client';
 import { resizeImage } from '@/services/image';
+import { broadcastContentChange } from '@/lib/content-sync';
 
 interface VideoUploaderProps {
   onUploadComplete?: (videoId: string) => void;
@@ -70,6 +72,7 @@ async function generateVideoThumbnail(videoFile: File): Promise<string> {
 }
 
 export default function VideoUploader({ onUploadComplete, onError, initialCategory = 'video' }: VideoUploaderProps) {
+  const router = useRouter();
   const toast = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -233,6 +236,9 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
       setProgressPct(100);
 
       toast.success('Video đã tải lên máy chủ và sẵn sàng xem!');
+      // Tell other open tabs to refresh their video lists.
+      broadcastContentChange('videos');
+      router.refresh();
       onUploadComplete?.(data.video.id);
     } catch (error) {
       console.error('Upload error:', error);

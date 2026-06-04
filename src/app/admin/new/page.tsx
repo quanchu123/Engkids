@@ -6,6 +6,7 @@ import { storyApi } from '@/services/api';
 import { useToast } from '@/hooks/useToast';
 import { useStoryForm } from '@/hooks/useStoryForm';
 import StoryForm from '@/components/admin/StoryForm';
+import { broadcastContentChange } from '@/lib/content-sync';
 
 export default function NewStoryPage() {
   const router = useRouter();
@@ -32,6 +33,8 @@ export default function NewStoryPage() {
       const story = form.buildStory(storyId);
       await storyApi.create(story);
       toast.success('Tạo truyện thành công!');
+      broadcastContentChange('stories');
+      router.refresh();
       router.push('/admin');
     } catch (error) {
       console.error('Error saving story:', error);

@@ -6,6 +6,7 @@ import { getAllVideos } from '@/services/video';
 // removed videos/stories show up immediately.
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 export default async function HomePage() {
   const [stories, allVideos] = await Promise.all([

@@ -9,6 +9,7 @@ import { Video } from '@/types';
 import { videoApi, ApiError } from '@/services/api';
 import { ROUTES } from '@/config/constants';
 import { useToast } from '@/hooks/useToast';
+import { broadcastContentChange } from '@/lib/content-sync';
 
 export default function AdminVideosPage() {
   const router = useRouter();
@@ -50,6 +51,9 @@ export default function AdminVideosPage() {
     try {
       await videoApi.delete(videoId);
       await loadVideos();
+      // Tell other open tabs (homepage, /videos, /music) to refresh.
+      broadcastContentChange('videos');
+      router.refresh();
       toast.success('Video deleted.');
     } catch (error) {
       console.error('Delete error:', error);
@@ -74,6 +78,8 @@ export default function AdminVideosPage() {
     try {
       await videoApi.update(videoId, { status: 'ready' });
       setVideos(prev => prev.map(v => v.id === videoId ? { ...v, status: 'ready' } : v));
+      broadcastContentChange('videos');
+      router.refresh();
       toast.success('Marked as ready.');
     } catch {
       toast.error('Failed to update status');

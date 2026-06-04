@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/useToast';
 import { useStoryForm } from '@/hooks/useStoryForm';
 import StoryForm from '@/components/admin/StoryForm';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { broadcastContentChange } from '@/lib/content-sync';
 
 interface PageProps {
   params: { id: string };
@@ -52,6 +53,8 @@ export default function EditStoryPage({ params }: PageProps) {
       const story = form.buildStory(id);
       await storyApi.update(id, story);
       toast.success('Cập nhật truyện thành công!');
+      broadcastContentChange('stories');
+      router.refresh();
       router.push('/admin');
     } catch (error) {
       console.error('Error saving story:', error);
