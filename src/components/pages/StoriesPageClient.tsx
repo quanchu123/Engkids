@@ -25,7 +25,7 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
 
   useEffect(() => {
     let cancelled = false;
-    const loadStories = () => fetch('/api/stories', { cache: 'no-store' })
+    const loadStories = () => fetch(`/api/stories?_=${Date.now()}`, { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { stories?: Story[] } | null) => {
         if (!cancelled && Array.isArray(data?.stories)) {

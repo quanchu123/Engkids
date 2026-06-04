@@ -9,6 +9,13 @@ import { revalidatePath } from 'next/cache';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0',
+  Pragma: 'no-cache',
+  Expires: '0',
+  'Surrogate-Control': 'no-store',
+};
+
 // GET /api/videos - List videos
 // Public: only ready videos | Admin with ?all=true: all statuses
 export async function GET(request: NextRequest) {
@@ -31,7 +38,7 @@ export async function GET(request: NextRequest) {
     const videos = await getAllVideos(category || undefined);
     return NextResponse.json(
       { videos },
-      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     console.error('Error fetching videos:', error);
@@ -87,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { video },
-      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     if (error instanceof z.ZodError) {

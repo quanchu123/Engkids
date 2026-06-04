@@ -34,7 +34,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
   useEffect(() => {
     let cancelled = false;
-    const loadStories = () => fetch('/api/stories', { cache: 'no-store' })
+    const loadStories = () => fetch(`/api/stories?_=${Date.now()}`, { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { stories?: Story[] } | null) => {
         if (!cancelled && Array.isArray(data?.stories)) {
@@ -42,7 +42,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         }
       })
       .catch(() => {});
-    const loadVideos = () => fetch('/api/videos', { cache: 'no-store' })
+    const loadVideos = () => fetch(`/api/videos?_=${Date.now()}`, { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { videos?: Video[] } | null) => {
         if (cancelled || !Array.isArray(data?.videos)) return;

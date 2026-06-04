@@ -20,7 +20,7 @@ export default function MusicPageClient({ videos }: MusicPageClientProps) {
 
   useEffect(() => {
     let cancelled = false;
-    const loadVideos = () => fetch('/api/videos?category=music', { cache: 'no-store' })
+    const loadVideos = () => fetch(`/api/videos?category=music&_=${Date.now()}`, { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { videos?: Video[] } | null) => {
         if (!cancelled && Array.isArray(data?.videos)) {

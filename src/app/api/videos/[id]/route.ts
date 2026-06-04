@@ -5,6 +5,13 @@ import { checkAdminAuth } from '@/lib/api-auth';
 import { apiCache, CACHE_KEYS } from '@/lib/cache';
 import { revalidatePath } from 'next/cache';
 
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0',
+  Pragma: 'no-cache',
+  Expires: '0',
+  'Surrogate-Control': 'no-store',
+};
+
 // GET /api/videos/[id] - Get single video
 export async function GET(
   request: NextRequest,
@@ -26,7 +33,7 @@ export async function GET(
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ video });
+    return NextResponse.json({ video }, { headers: NO_STORE_HEADERS });
   } catch (error) {
     console.error('Error fetching video:', error);
     return NextResponse.json(
@@ -76,7 +83,7 @@ export async function PATCH(
 
     return NextResponse.json(
       { video },
-      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     console.error('Error updating video:', error);
@@ -127,7 +134,7 @@ export async function DELETE(
 
     return NextResponse.json(
       { success: true },
-      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+      { headers: NO_STORE_HEADERS },
     );
   } catch (error) {
     console.error('Error deleting video:', error);
