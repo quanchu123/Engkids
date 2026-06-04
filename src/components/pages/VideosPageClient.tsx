@@ -10,17 +10,14 @@ import { filterVideos, groupVideosByFeature } from '@/lib/content-selectors';
 import { Video } from '@/types';
 import { onContentChange } from '@/lib/content-sync';
 
-interface VideosPageClientProps {
-  videos: Video[];
-}
-
 // Rotating palette for feature sections.
 const FEATURE_COLORS: Array<'pink' | 'purple' | 'blue' | 'green' | 'orange' | 'yellow'> = [
   'purple', 'blue', 'green', 'orange', 'pink', 'yellow',
 ];
 
-export default function VideosPageClient({ videos }: VideosPageClientProps) {
-  const [liveVideos, setLiveVideos] = useState(videos);
+export default function VideosPageClient() {
+  const [liveVideos, setLiveVideos] = useState<Video[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<VideoFiltersState>({
     search: '',
@@ -38,7 +35,12 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
           setLiveVideos(data.videos);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setLiveVideos([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
+      });
     const handleFocus = () => {
       loadVideos();
     };
@@ -170,7 +172,12 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
 
           {visibleVideos.length === 0 ? (
             <div className="soft-panel rounded-3xl p-10 text-center shadow-lg">
-              {liveVideos.length === 0 ? (
+              {!loaded ? (
+                <>
+                  <h2 className="text-2xl font-black text-slate-900">Đang tải video...</h2>
+                  <p className="mt-2 text-slate-600">Danh sách đang được lấy trực tiếp từ máy chủ.</p>
+                </>
+              ) : liveVideos.length === 0 ? (
                 <>
                   <h2 className="text-2xl font-black text-slate-900">Chưa có video nào</h2>
                   <p className="mt-2 text-slate-600">
