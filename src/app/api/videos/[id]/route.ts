@@ -3,6 +3,7 @@ import { getVideoById, updateVideo, deleteVideo } from '@/services/video';
 import { deleteVideoObject } from '@/services/storage';
 import { checkAdminAuth } from '@/lib/api-auth';
 import { apiCache, CACHE_KEYS } from '@/lib/cache';
+import { revalidatePath } from 'next/cache';
 
 // GET /api/videos/[id] - Get single video
 export async function GET(
@@ -68,8 +69,15 @@ export async function PATCH(
     // Invalidate caches
     apiCache.invalidatePattern(CACHE_KEYS.VIDEOS_LIST);
     apiCache.invalidate(CACHE_KEYS.VIDEO_BY_ID(id));
+    revalidatePath('/');
+    revalidatePath('/videos');
+    revalidatePath('/music');
+    revalidatePath(`/videos/${id}`);
 
-    return NextResponse.json({ video });
+    return NextResponse.json(
+      { video },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Error updating video:', error);
     return NextResponse.json(
@@ -112,8 +120,15 @@ export async function DELETE(
     // Invalidate caches
     apiCache.invalidatePattern(CACHE_KEYS.VIDEOS_LIST);
     apiCache.invalidate(CACHE_KEYS.VIDEO_BY_ID(id));
+    revalidatePath('/');
+    revalidatePath('/videos');
+    revalidatePath('/music');
+    revalidatePath(`/videos/${id}`);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { success: true },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Error deleting video:', error);
     return NextResponse.json(

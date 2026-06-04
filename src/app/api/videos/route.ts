@@ -4,6 +4,7 @@ import { checkAdminAuth } from '@/lib/api-auth';
 import { apiCache } from '@/lib/cache';
 import { createVideoSchema } from '@/lib/validations/video';
 import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -80,6 +81,9 @@ export async function POST(request: NextRequest) {
 
     // Invalidate videos list cache (all and category-specific)
     apiCache.invalidatePattern('videos:list');
+    revalidatePath('/');
+    revalidatePath('/videos');
+    revalidatePath('/music');
 
     return NextResponse.json(
       { video },

@@ -33,7 +33,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/videos', { cache: 'no-store' })
+    const loadVideos = () => fetch('/api/videos', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { videos?: Video[] } | null) => {
         if (cancelled || !Array.isArray(data?.videos)) return;
@@ -41,8 +41,16 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         setLiveMusicVideos(data.videos.filter((video) => video.category === 'music'));
       })
       .catch(() => {});
+    const handleFocus = () => {
+      loadVideos();
+    };
+    loadVideos();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
   }, []);
 

@@ -372,9 +372,18 @@ export async function updateVideo(
 export async function deleteVideo(id: string): Promise<void> {
   const supabase = getSupabaseAdmin();
 
+  const { error: subtitlesError } = await supabase
+    .from('video_subtitles')
+    .delete()
+    .eq('video_id', id);
+
+  if (subtitlesError) {
+    throw new Error(`Failed to delete video subtitles: ${subtitlesError.message}`);
+  }
+
   const { error } = await supabase
     .from('videos')
-    .update({ deleted_at: new Date().toISOString() })
+    .delete()
     .eq('id', id);
 
   if (error) {

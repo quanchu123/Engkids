@@ -30,7 +30,7 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/videos?category=video', { cache: 'no-store' })
+    const loadVideos = () => fetch('/api/videos?category=video', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { videos?: Video[] } | null) => {
         if (!cancelled && Array.isArray(data?.videos)) {
@@ -38,8 +38,16 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
         }
       })
       .catch(() => {});
+    const handleFocus = () => {
+      loadVideos();
+    };
+    loadVideos();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
     };
   }, []);
 
