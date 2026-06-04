@@ -45,6 +45,14 @@ function getSupabaseClient() {
   });
 }
 
+function getSupabasePublicReader() {
+  try {
+    return getSupabaseAdmin();
+  } catch {
+    return getSupabaseClient();
+  }
+}
+
 // Database row types
 interface VideoRow {
   id: string;
@@ -170,7 +178,7 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
 export async function getAllVideos(category?: 'video' | 'music'): Promise<Video[]> {
   // Server-side public reads use service role and enforce public filters here.
   // This keeps the homepage/catalog stable even if Supabase RLS policies change.
-  const supabase = getSupabaseAdmin();
+  const supabase = getSupabasePublicReader();
 
   let query = supabase
     .from('videos')
@@ -233,7 +241,7 @@ export async function getAllVideosAdmin(): Promise<Video[]> {
  * Get video by ID with subtitles
  */
 export async function getVideoById(id: string, includeUnavailable = false): Promise<Video | null> {
-  const supabase = getSupabaseAdmin();
+  const supabase = includeUnavailable ? getSupabaseAdmin() : getSupabasePublicReader();
 
   let query = supabase
     .from('videos')

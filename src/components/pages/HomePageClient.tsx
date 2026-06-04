@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAppStore } from '@/store/useAppStore';
@@ -22,12 +22,29 @@ interface HomePageClientProps {
 }
 
 export default function HomePageClient({ stories, videos, musicVideos }: HomePageClientProps) {
+  const [liveVideos, setLiveVideos] = useState(videos);
+  const [liveMusicVideos, setLiveMusicVideos] = useState(musicVideos);
   const totalStars = useAppStore(state => state.progress.totalStars);
   const updateStreak = useAppStore(state => state.updateStreak);
 
   useEffect(() => {
     updateStreak();
   }, [updateStreak]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/videos', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { videos?: Video[] } | null) => {
+        if (cancelled || !Array.isArray(data?.videos)) return;
+        setLiveVideos(data.videos.filter((video) => video.category === 'video'));
+        setLiveMusicVideos(data.videos.filter((video) => video.category === 'music'));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="home-shell min-h-screen bg-gradient-to-b from-amber-50 via-pink-50 to-blue-50">
@@ -151,7 +168,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               href="/videos"
               emoji="🎬"
               title="Video học"
-              count={videos.length}
+              count={liveVideos.length}
               unit="video"
               gradient="from-violet-500 to-pink-400"
               shadow="rgba(139,92,246,0.5)"
@@ -161,7 +178,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               href="/music"
               emoji="🎤"
               title="Học nhạc"
-              count={musicVideos.length}
+              count={liveMusicVideos.length}
               unit="bài hát"
               gradient="from-pink-500 to-rose-400"
               shadow="rgba(244,63,94,0.5)"
@@ -221,7 +238,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         </div>
       </section>
 
-      {stories.length > 0 && videos.length > 0 && (
+      {stories.length > 0 && liveVideos.length > 0 && (
         <div aria-hidden className="-mt-2 h-12 overflow-hidden">
           <svg viewBox="0 0 1440 48" preserveAspectRatio="none" className="w-full h-full">
             <path d="M0,0 C360,48 1080,0 1440,32 L1440,48 L0,48 Z" fill="rgb(237,233,254)" />
@@ -229,12 +246,12 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         </div>
       )}
 
-      {videos.length > 0 && (
+      {liveVideos.length > 0 && (
         <section className="bg-violet-50/60 px-4 py-6">
           <div className="section-shell section-shell-violet max-w-6xl mx-auto rounded-[2rem] p-5 md:p-6">
             <SectionHeader emoji="🎬" title="Video mới nhất" href="/videos" hrefLabel="Xem tất cả" color="text-violet-700" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {videos.slice(0, 4).map((video) => (
+              {liveVideos.slice(0, 4).map((video) => (
                 <VideoCard key={video.id} video={video} />
               ))}
             </div>
@@ -242,7 +259,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         </section>
       )}
 
-      {videos.length > 0 && musicVideos.length > 0 && (
+      {liveVideos.length > 0 && liveMusicVideos.length > 0 && (
         <div aria-hidden className="h-12 overflow-hidden">
           <svg viewBox="0 0 1440 48" preserveAspectRatio="none" className="w-full h-full">
             <path d="M0,48 C480,0 960,48 1440,16 L1440,0 L0,0 Z" fill="rgb(237,233,254)" />
@@ -250,12 +267,12 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         </div>
       )}
 
-      {musicVideos.length > 0 && (
+      {liveMusicVideos.length > 0 && (
         <section className="px-4 py-6">
           <div className="section-shell section-shell-pink max-w-6xl mx-auto rounded-[2rem] p-5 md:p-6">
             <SectionHeader emoji="🎵" title="Bài hát vui nhộn" href="/music" hrefLabel="Xem tất cả" color="text-pink-700" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {musicVideos.slice(0, 4).map((video, index) => (
+              {liveMusicVideos.slice(0, 4).map((video, index) => (
                 <MusicCard key={video.id} video={video} colorIndex={index} />
               ))}
             </div>
@@ -263,7 +280,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         </section>
       )}
 
-      {stories.length === 0 && videos.length === 0 && musicVideos.length === 0 && (
+      {stories.length === 0 && liveVideos.length === 0 && liveMusicVideos.length === 0 && (
         <section className="px-4 py-8">
           <div className="max-w-md mx-auto rounded-3xl border-4 border-purple-100 bg-white p-8 text-center shadow-lg">
             <div className="mb-4 text-7xl deco-float">🎒</div>

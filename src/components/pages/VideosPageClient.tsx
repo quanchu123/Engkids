@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Header from '@/components/layout/Header';
 import VideoCard from '@/components/video/VideoCard';
 import VideoFilters, { VideoFiltersState } from '@/components/video/VideoFilters';
@@ -19,6 +19,7 @@ const FEATURE_COLORS: Array<'pink' | 'purple' | 'blue' | 'green' | 'orange' | 'y
 ];
 
 export default function VideosPageClient({ videos }: VideosPageClientProps) {
+  const [liveVideos, setLiveVideos] = useState(videos);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<VideoFiltersState>({
     search: '',
@@ -27,20 +28,35 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
     ageGroup: null,
   });
 
-  const filteredVideos = useMemo(() => filterVideos(videos, filters), [videos, filters]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/videos?category=video', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { videos?: Video[] } | null) => {
+        if (!cancelled && Array.isArray(data?.videos)) {
+          setLiveVideos(data.videos);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filteredVideos = useMemo(() => filterVideos(liveVideos, filters), [liveVideos, filters]);
 
   // Feature ("chủ đề") filter bar: list of all features present in the catalog.
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const featureList = useMemo(() => {
     const set = new Set<string>();
-    videos.forEach((v) => set.add(v.feature?.trim() || DEFAULT_FEATURE));
+    liveVideos.forEach((v) => set.add(v.feature?.trim() || DEFAULT_FEATURE));
     // Default feature last, the rest alphabetical.
     return Array.from(set).sort((a, b) => {
       if (a === DEFAULT_FEATURE) return 1;
       if (b === DEFAULT_FEATURE) return -1;
       return a.localeCompare(b);
     });
-  }, [videos]);
+  }, [liveVideos]);
 
   const visibleVideos = useMemo(() => {
     if (!selectedFeature) return filteredVideos;
@@ -109,7 +125,7 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
           )}
 
           {/* Feature ("chủ đề") tabs */}
-          {videos.length > 0 && featureList.length > 1 && (
+          {liveVideos.length > 0 && featureList.length > 1 && (
             <div className="soft-panel mb-6 flex flex-wrap gap-2 rounded-[1.75rem] p-4">
               <button
                 onClick={() => setSelectedFeature(null)}
@@ -117,10 +133,10 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
                   selectedFeature === null ? 'bg-kid-purple text-white' : 'bg-white text-violet-700 shadow'
                 }`}
               >
-                Tất cả ({videos.length})
+                Tất cả ({liveVideos.length})
               </button>
               {featureList.map((f) => {
-                const count = videos.filter((v) => (v.feature?.trim() || DEFAULT_FEATURE) === f).length;
+                const count = liveVideos.filter((v) => (v.feature?.trim() || DEFAULT_FEATURE) === f).length;
                 return (
                   <button
                     key={f}
@@ -138,7 +154,7 @@ export default function VideosPageClient({ videos }: VideosPageClientProps) {
 
           {visibleVideos.length === 0 ? (
             <div className="soft-panel rounded-3xl p-10 text-center shadow-lg">
-              {videos.length === 0 ? (
+              {liveVideos.length === 0 ? (
                 <>
                   <h2 className="text-2xl font-black text-slate-900">Chưa có video nào</h2>
                   <p className="mt-2 text-slate-600">
