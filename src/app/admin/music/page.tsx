@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/services/api';
 import { useToast } from '@/hooks/useToast';
-import { getAnyAccessToken } from '@/lib/admin-auth-client';
+import { getAnyAccessToken, refreshToken } from '@/lib/admin-auth-client';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { broadcastContentChange } from '@/lib/content-sync';
 
 interface MusicSetting {
   enabled: boolean;
@@ -15,6 +16,13 @@ interface MusicSetting {
 
 const ALLOWED = ['audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/mp4', 'audio/aac', 'audio/x-m4a'];
 const MAX_BYTES = 20 * 1024 * 1024;
+
+class UploadError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+    this.name = 'UploadError';
+  }
+}
 
 function publicUrl(objectKey: string | null): string | undefined {
   if (!objectKey) return undefined;
@@ -92,12 +100,32 @@ export default function AdminMusicPage() {
         } else {
           let msg = `Upload thất bại (HTTP ${xhr.status})`;
           try { const d = JSON.parse(xhr.responseText); if (d.error) msg = d.error; } catch {}
-          reject(new Error(msg));
+          reject(new UploadError(msg, xhr.status));
         }
       };
       xhr.onerror = () => reject(new Error('Lỗi mạng khi tải lên'));
       xhr.send(selected);
     });
+
+  const uploadFileWithFreshAuth = async (selected: File): Promise<string> => {
+    let token = (await getAnyAccessToken()) || '';
+
+    try {
+      return await uploadFile(selected, token);
+    } catch (err) {
+      if (!(err instanceof UploadError) || err.status !== 401) {
+        throw err;
+      }
+
+      const refreshedToken = await refreshToken();
+      if (!refreshedToken || refreshedToken === token) {
+        throw new Error('Phiên admin đã hết hạn. Đăng nhập lại rồi upload tiếp.');
+      }
+
+      token = refreshedToken;
+      return uploadFile(selected, token);
+    }
+  };
 
   // Upload only puts the file on disk and stages it in the draft. Nothing is
   // applied to the site until the admin presses "Lưu thay đổi".
@@ -106,8 +134,7 @@ export default function AdminMusicPage() {
     setUploading(true);
     setProgress(0);
     try {
-      const token = (await getAnyAccessToken()) || '';
-      const objectKey = await uploadFile(file, token);
+      const objectKey = await uploadFileWithFreshAuth(file);
       setDraft((d) => ({ ...d, objectKey, url: publicUrl(objectKey), enabled: true }));
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -129,6 +156,7 @@ export default function AdminMusicPage() {
       );
       setSaved(res.music);
       setDraft(res.music);
+      broadcastContentChange('site-settings');
       toast.success('Đã lưu thay đổi nhạc nền!');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lưu thất bại');

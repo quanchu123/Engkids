@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Story } from '@/types';
-import { storyApi } from '@/services/api';
+import { ApiError, storyApi } from '@/services/api';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { broadcastContentChange } from '@/lib/content-sync';
 
@@ -29,11 +29,19 @@ export default function AdminPage() {
 
   const handleDeleteStory = async (storyId: string) => {
     if (confirm('Bạn có chắc muốn xóa truyện này?')) {
-      await storyApi.delete(storyId);
-      const { stories: updatedStories } = await storyApi.listAll();
-      setStories(updatedStories);
-      broadcastContentChange('stories');
-      router.refresh();
+      const previousStories = stories;
+      setStories(current => current.filter(story => story.id !== storyId));
+
+      try {
+        await storyApi.delete(storyId);
+        broadcastContentChange('stories');
+        router.refresh();
+        const { stories: updatedStories } = await storyApi.listAll();
+        setStories(updatedStories);
+      } catch (error) {
+        setStories(previousStories);
+        alert(error instanceof ApiError ? error.message : 'XÃ³a truyá»‡n tháº¥t báº¡i');
+      }
     }
   };
 

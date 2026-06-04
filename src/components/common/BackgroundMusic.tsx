@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { onContentChange } from '@/lib/content-sync';
 
 interface MusicSetting {
   enabled: boolean;
@@ -52,10 +53,16 @@ export default function BackgroundMusic() {
       loadSetting();
     };
     loadSetting();
+    const unsubscribe = onContentChange((kind) => {
+      if (kind === 'site-settings' || kind === 'all') {
+        loadSetting();
+      }
+    });
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
     return () => {
       active = false;
+      unsubscribe();
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
     };
