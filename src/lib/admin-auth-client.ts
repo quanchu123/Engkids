@@ -24,6 +24,20 @@ function getStoredAccessToken(): string | null {
   return sessionStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
+function isJwtUsable(token: string): boolean {
+  try {
+    const [, payload] = token.split('.');
+    if (!payload) return false;
+    const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = JSON.parse(window.atob(normalizedPayload)) as { exp?: number };
+    if (!decoded.exp) return true;
+    // Refresh one minute early so uploads do not start with a nearly-expired token.
+    return decoded.exp * 1000 > Date.now() + 60_000;
+  } catch {
+    return false;
+  }
+}
+
 async function getSupabaseAccessToken(): Promise<string | null> {
   try {
     const supabase = getSupabaseClient();
@@ -104,8 +118,11 @@ export async function refreshToken(): Promise<string | null> {
 
 export async function getAnyAccessToken(): Promise<string | null> {
   const legacyToken = getStoredAccessToken();
-  if (legacyToken) {
+  if (legacyToken && isJwtUsable(legacyToken)) {
     return legacyToken;
+  }
+  if (legacyToken) {
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
   }
 
   const supabaseToken = await getSupabaseAccessToken();

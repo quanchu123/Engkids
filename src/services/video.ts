@@ -168,7 +168,9 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
  * Optionally filter by category at the database level
  */
 export async function getAllVideos(category?: 'video' | 'music'): Promise<Video[]> {
-  const supabase = getSupabaseClient();
+  // Server-side public reads use service role and enforce public filters here.
+  // This keeps the homepage/catalog stable even if Supabase RLS policies change.
+  const supabase = getSupabaseAdmin();
 
   let query = supabase
     .from('videos')
@@ -231,7 +233,7 @@ export async function getAllVideosAdmin(): Promise<Video[]> {
  * Get video by ID with subtitles
  */
 export async function getVideoById(id: string, includeUnavailable = false): Promise<Video | null> {
-  const supabase = includeUnavailable ? getSupabaseAdmin() : getSupabaseClient();
+  const supabase = getSupabaseAdmin();
 
   let query = supabase
     .from('videos')
