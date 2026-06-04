@@ -4,6 +4,8 @@ import './globals.css';
 import RouterLoading from '@/components/common/RouterLoading';
 import UserProgressSync from '@/components/common/UserProgressSync';
 
+const DEFAULT_PRODUCTION_URL = 'https://engkidstienganhchobe.me';
+
 // Self-hosted via next/font (downloaded at build time, no runtime CDN call).
 // Includes the Vietnamese subset so diacritics render identically on every device.
 const appFont = Nunito({
@@ -24,7 +26,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NODE_ENV === 'production'
+        ? DEFAULT_PRODUCTION_URL
+        : 'http://localhost:3000')
   ),
   title: {
     default: 'Engkids - Học Tiếng Anh Vui!',

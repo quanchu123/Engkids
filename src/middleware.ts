@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Allowed origins for CORS
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000')
+const DEFAULT_ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'https://engkidstienganhchobe.me',
+  'https://www.engkidstienganhchobe.me',
+].join(',');
+
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS)
   .split(',')
   .map(o => o.trim())
   .filter(Boolean);

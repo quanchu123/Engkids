@@ -16,9 +16,8 @@ services:
     dockerfile_path: Dockerfile
     source_dir: /
     github:
-      # Replace with your repository
-      repo: your-org/engkids
-      branch: main
+      repo: quanchu123/Engkids
+      branch: master
       deploy_on_push: true
 
     http_port: 3000
@@ -40,7 +39,7 @@ services:
         value: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       - key: NEXT_PUBLIC_APP_URL
         scope: BUILD_AND_RUN_TIME
-        value: ${APP_URL}
+        value: https://engkidstienganhchobe.me
 
       # ---- Server-side secrets: set type=SECRET in the DO dashboard ----
       - key: SUPABASE_SERVICE_ROLE_KEY
@@ -54,7 +53,7 @@ services:
         type: SECRET
       - key: ALLOWED_ORIGINS
         scope: RUN_TIME
-        value: ${APP_URL}
+        value: https://engkidstienganhchobe.me,https://www.engkidstienganhchobe.me
       - key: UPLOADS_DIR
         scope: RUN_TIME
         value: /app/public/uploads
