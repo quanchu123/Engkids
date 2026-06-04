@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createReadStream, statSync, existsSync } from 'fs';
 import path from 'path';
+import { UPLOADS_DIR } from '@/services/storage';
 
 // Serve uploaded video files from the droplet disk with HTTP Range support.
 // Range support is required for <video> seeking and reliable playback; the
@@ -8,8 +9,6 @@ import path from 'path';
 // (especially under output: 'standalone').
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 const CONTENT_TYPES: Record<string, string> = {
   '.mp4': 'video/mp4',

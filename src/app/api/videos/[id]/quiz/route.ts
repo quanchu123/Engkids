@@ -100,7 +100,7 @@ export async function PUT(
     await updateVideo(id, { quiz: sanitized });
 
     // Invalidate caches so the public player picks up changes
-    apiCache.invalidate(CACHE_KEYS.VIDEOS_LIST);
+    apiCache.invalidatePattern(CACHE_KEYS.VIDEOS_LIST);
     apiCache.invalidate(CACHE_KEYS.VIDEO_BY_ID(id));
 
     return NextResponse.json({ success: true, count: sanitized.length });

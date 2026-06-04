@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getCurrentUser, onAuthStateChange } from '@/lib/auth-client';
-import { mergeProgressSnapshots } from '@/lib/progress';
+import { createDefaultProgress, DEFAULT_SETTINGS } from '@/lib/progress';
 import { useAppStore } from '@/store/useAppStore';
 import { loadRemoteProgressSnapshot, saveRemoteProgressSnapshot } from '@/services/progress-sync';
 
@@ -31,6 +31,10 @@ export default function UserProgressSync() {
     const subscription = onAuthStateChange((user) => {
       if (isMounted) {
         setUserId(user?.id || null);
+        if (!user) {
+          initializedUserIdRef.current = null;
+          readyToSaveRef.current = false;
+        }
       }
     });
 
@@ -48,28 +52,27 @@ export default function UserProgressSync() {
     let cancelled = false;
 
     const initialize = async () => {
+      readyToSaveRef.current = false;
+      applyingRemoteRef.current = true;
+      useAppStore.setState({
+        progress: createDefaultProgress(),
+        settings: DEFAULT_SETTINGS,
+      });
+
       const remoteSnapshot = await loadRemoteProgressSnapshot();
       if (cancelled) return;
 
       if (!remoteSnapshot) {
+        applyingRemoteRef.current = false;
         readyToSaveRef.current = true;
         initializedUserIdRef.current = userId;
         return;
       }
 
-      const localSnapshot = {
-        progress: useAppStore.getState().progress,
-        settings: useAppStore.getState().settings,
-      };
-      const merged = mergeProgressSnapshots(localSnapshot, remoteSnapshot);
-
-      applyingRemoteRef.current = true;
       useAppStore.setState({
-        progress: merged.progress,
-        settings: merged.settings,
+        progress: remoteSnapshot.progress,
+        settings: remoteSnapshot.settings,
       });
-
-      await saveRemoteProgressSnapshot(merged);
 
       applyingRemoteRef.current = false;
       readyToSaveRef.current = true;

@@ -8,9 +8,14 @@ set -e
 
 APP_DIR="/root/Engkids"
 PM2_NAME="engkids"
+UPLOADS_DIR="${UPLOADS_DIR:-$APP_DIR/public/uploads}"
+export UPLOADS_DIR
 
 echo "==> Đi tới thư mục dự án"
 cd "$APP_DIR"
+
+echo "==> Äáº£m báº£o thÆ° má»¥c upload tá»“n táº¡i trÃªn SSD droplet"
+mkdir -p "$UPLOADS_DIR"
 
 echo "==> Kéo code mới nhất từ GitHub"
 git pull origin master
@@ -22,7 +27,7 @@ echo "==> Build production"
 npm run build
 
 echo "==> Khởi động lại app qua PM2"
-pm2 restart "$PM2_NAME" || pm2 start npm --name "$PM2_NAME" -- start
+pm2 restart "$PM2_NAME" --update-env || pm2 start npm --name "$PM2_NAME" -- start
 pm2 save
 
 echo "==> Xong! App đã cập nhật."

@@ -10,6 +10,7 @@ interface MusicSetting {
 
 // Events the browser accepts as a "user gesture" to unlock audio.
 const GESTURE_EVENTS = ['pointerdown', 'click', 'touchend', 'keydown'] as const;
+const MUSIC_DISABLED_KEY = 'engkids.backgroundMusic.disabled';
 
 /**
  * Home-page background music. Loops a track set by the admin.
@@ -26,10 +27,13 @@ export default function BackgroundMusic() {
   const [setting, setSetting] = useState<MusicSetting | null>(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [userDisabled, setUserDisabled] = useState(false);
+  const userToggledRef = useRef(false);
 
   // Load the current music setting.
   useEffect(() => {
     let active = true;
+    setUserDisabled(window.localStorage.getItem(MUSIC_DISABLED_KEY) === 'true');
     fetch('/api/settings/background-music')
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
@@ -41,8 +45,6 @@ export default function BackgroundMusic() {
     return () => { active = false; };
   }, []);
 
-  const userToggledRef = useRef(false);
-
   useEffect(() => {
     if (!setting?.url) return;
     const audio = audioRef.current;
@@ -52,6 +54,9 @@ export default function BackgroundMusic() {
     audio.loop = true;
 
     let unlocked = false;
+    const removeUnlockListeners = () => {
+      GESTURE_EVENTS.forEach((ev) => window.removeEventListener(ev, unlock));
+    };
 
     // Unmute + play at the first real user gesture.
     const unlock = () => {
@@ -62,8 +67,17 @@ export default function BackgroundMusic() {
       audio.play().then(() => {
         if (!userToggledRef.current) setPlaying(true);
       }).catch(() => {});
-      GESTURE_EVENTS.forEach((ev) => window.removeEventListener(ev, unlock));
+      removeUnlockListeners();
     };
+
+    if (userDisabled) {
+      userToggledRef.current = true;
+      audio.pause();
+      audio.muted = false;
+      setMuted(false);
+      setPlaying(false);
+      return removeUnlockListeners;
+    }
 
     // 1. Try unmuted autoplay.
     audio.muted = false;
@@ -84,10 +98,10 @@ export default function BackgroundMusic() {
       });
 
     return () => {
-      GESTURE_EVENTS.forEach((ev) => window.removeEventListener(ev, unlock));
+      removeUnlockListeners();
       audio.pause();
     };
-  }, [setting]);
+  }, [setting, userDisabled]);
 
   if (!setting?.url) return null;
 
@@ -100,13 +114,19 @@ export default function BackgroundMusic() {
     const audio = audioRef.current;
     if (!audio) return;
     
-    if (audio.paused || audio.muted) {
+    if (audio.paused || audio.muted || userDisabled) {
+      window.localStorage.removeItem(MUSIC_DISABLED_KEY);
+      setUserDisabled(false);
       audio.muted = false;
       setMuted(false);
       audio.play().then(() => setPlaying(true)).catch(() => {});
     } else {
+      window.localStorage.setItem(MUSIC_DISABLED_KEY, 'true');
       audio.pause();
+      audio.currentTime = 0;
       setPlaying(false);
+      setMuted(false);
+      setUserDisabled(true);
     }
   };
 

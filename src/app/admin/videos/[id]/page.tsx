@@ -31,7 +31,7 @@ export default function EditVideoPage() {
 
   const loadVideo = useCallback(async () => {
     try {
-      const data = await videoApi.get(videoId);
+      const data = await videoApi.getAdmin(videoId);
       
       if (data.video) {
         setVideo(data.video);

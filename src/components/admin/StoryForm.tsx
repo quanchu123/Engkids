@@ -17,6 +17,7 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
     customTopic, setCustomTopic,
     availableTopics,
     coverImage, coverPreview,
+    published, setPublished,
     panels,
     vocabList,
     activeTab, setActiveTab,
@@ -171,6 +172,21 @@ export default function StoryForm({ form, showAIExtract = false }: StoryFormProp
                   </div>
                 </div>
               </div>
+
+              <label className="mt-4 flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <input
+                  type="checkbox"
+                  checked={published}
+                  onChange={(e) => setPublished(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-slate-800">Hiển thị công khai</span>
+                  <span className="block text-xs text-slate-500">
+                    Tắt mục này thì truyện chỉ nằm trong admin, không hiện ở trang chủ và tab Truyện.
+                  </span>
+                </span>
+              </label>
             </div>
 
             <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">

@@ -9,7 +9,9 @@ function getSupabaseReadClient() {
     throw new Error('Supabase read credentials not configured');
   }
 
-  return createClient(supabaseUrl, anonKey);
+  return createClient(supabaseUrl, anonKey, {
+    global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) },
+  });
 }
 
 function getSupabaseAdmin() {
@@ -20,11 +22,28 @@ function getSupabaseAdmin() {
     throw new Error('Supabase service role credentials not configured');
   }
 
-  return createClient(supabaseUrl, serviceRoleKey);
+  return createClient(supabaseUrl, serviceRoleKey, {
+    global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) },
+  });
 }
 
 export async function listStories(): Promise<Story[]> {
   const supabase = getSupabaseReadClient();
+  const { data, error } = await supabase
+    .from('stories')
+    .select('*')
+    .eq('published', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to list stories: ${error.message}`);
+  }
+
+  return (data || []) as Story[];
+}
+
+export async function listStoriesAdmin(): Promise<Story[]> {
+  const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from('stories')
     .select('*')
@@ -37,13 +56,18 @@ export async function listStories(): Promise<Story[]> {
   return (data || []) as Story[];
 }
 
-export async function getStory(id: string): Promise<Story | null> {
-  const supabase = getSupabaseReadClient();
-  const { data, error } = await supabase
+export async function getStory(id: string, includeDraft = false): Promise<Story | null> {
+  const supabase = includeDraft ? getSupabaseAdmin() : getSupabaseReadClient();
+  let query = supabase
     .from('stories')
     .select('*')
-    .eq('id', id)
-    .maybeSingle();
+    .eq('id', id);
+
+  if (!includeDraft) {
+    query = query.eq('published', true);
+  }
+
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     throw new Error(`Failed to fetch story: ${error.message}`);

@@ -26,7 +26,9 @@ function getSupabaseAdmin() {
     throw new Error('Supabase credentials not configured');
   }
 
-  return createClient(supabaseUrl, serviceRoleKey);
+  return createClient(supabaseUrl, serviceRoleKey, {
+    global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) },
+  });
 }
 
 // Client-side Supabase (read-only with anon key)
@@ -38,7 +40,9 @@ function getSupabaseClient() {
     throw new Error('Supabase credentials not configured');
   }
 
-  return createClient(supabaseUrl, anonKey);
+  return createClient(supabaseUrl, anonKey, {
+    global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) },
+  });
 }
 
 // Database row types
@@ -226,14 +230,20 @@ export async function getAllVideosAdmin(): Promise<Video[]> {
 /**
  * Get video by ID with subtitles
  */
-export async function getVideoById(id: string): Promise<Video | null> {
-  const supabase = getSupabaseClient();
+export async function getVideoById(id: string, includeUnavailable = false): Promise<Video | null> {
+  const supabase = includeUnavailable ? getSupabaseAdmin() : getSupabaseClient();
 
-  const { data: video, error } = await supabase
+  let query = supabase
     .from('videos')
     .select('*')
     .eq('id', id)
-    .single();
+    .is('deleted_at', null);
+
+  if (!includeUnavailable) {
+    query = query.eq('status', 'ready');
+  }
+
+  const { data: video, error } = await query.single();
 
   if (error || !video) {
     return null;
@@ -352,7 +362,7 @@ export async function deleteVideo(id: string): Promise<void> {
 
   const { error } = await supabase
     .from('videos')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) {
@@ -405,6 +415,7 @@ export async function getVideosByTopic(topic: string): Promise<Video[]> {
   const { data: videos, error } = await supabase
     .from('videos')
     .select('*')
+    .is('deleted_at', null)
     .eq('status', 'ready')
     .contains('topics', [topic]);
 
@@ -425,6 +436,7 @@ export async function getVideosByLevel(level: Video['level']): Promise<Video[]> 
   const { data: videos, error } = await supabase
     .from('videos')
     .select('*')
+    .is('deleted_at', null)
     .eq('status', 'ready')
     .eq('level', level);
 

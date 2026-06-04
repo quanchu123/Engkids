@@ -5,6 +5,7 @@ import { getAllVideos } from '@/services/video';
 // Always render from the live database (no static caching), so newly added or
 // removed videos/stories show up immediately.
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function HomePage() {
   const [stories, allVideos] = await Promise.all([

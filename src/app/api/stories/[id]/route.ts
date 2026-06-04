@@ -9,19 +9,31 @@ function isStory(value: unknown): value is Story {
   return typeof story.id === 'string'
     && typeof story.title_en === 'string'
     && typeof story.title_vi === 'string'
+    && typeof story.published === 'boolean'
     && Array.isArray(story.panels)
     && Array.isArray(story.vocabulary)
     && Array.isArray(story.topics);
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const story = await getStory(id);
-    return NextResponse.json({ story: story as Story | null });
+    const includeDraft = request.nextUrl.searchParams.get('admin') === 'true';
+    if (includeDraft) {
+      const isAuthed = await checkAdminAuth(request);
+      if (!isAuthed) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
+    const story = await getStory(id, includeDraft);
+    return NextResponse.json(
+      { story: story as Story | null },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Error fetching story:', error);
     return NextResponse.json(
@@ -48,7 +60,10 @@ export async function PUT(
     }
 
     const story = await updateStoryById(id, body.story);
-    return NextResponse.json({ story });
+    return NextResponse.json(
+      { story },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Error updating story:', error);
     return NextResponse.json(

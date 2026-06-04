@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS stories (
   topics TEXT[] DEFAULT '{}',
   cover_image TEXT,
   estimated_minutes INTEGER DEFAULT 5,
+  published BOOLEAN NOT NULL DEFAULT false,
   panels JSONB NOT NULL DEFAULT '[]',
   vocabulary JSONB NOT NULL DEFAULT '[]',
   games JSONB NOT NULL DEFAULT '{"match": [], "fill_blank": []}',
@@ -85,6 +86,7 @@ CREATE TABLE IF NOT EXISTS stories (
 );
 
 CREATE INDEX IF NOT EXISTS idx_stories_level ON stories(level);
+CREATE INDEX IF NOT EXISTS idx_stories_published_created ON stories(published, created_at DESC);
 
 -- ============================================
 -- 3. ADMIN USERS (for content management)
@@ -267,10 +269,11 @@ DROP POLICY IF EXISTS "Service role manages subtitles" ON video_subtitles;
 CREATE POLICY "Service role manages subtitles" ON video_subtitles
   FOR ALL USING (auth.role() = 'service_role');
 
--- STORIES: Everyone can read
+-- STORIES: Everyone can read published stories
 DROP POLICY IF EXISTS "Stories are viewable by everyone" ON stories;
-CREATE POLICY "Stories are viewable by everyone" ON stories
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Published stories are viewable by everyone" ON stories;
+CREATE POLICY "Published stories are viewable by everyone" ON stories
+  FOR SELECT USING (published = true);
 
 DROP POLICY IF EXISTS "Service role manages stories" ON stories;
 CREATE POLICY "Service role manages stories" ON stories

@@ -23,7 +23,7 @@ export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
 
 // Public route prefix and on-disk directory.
 const PUBLIC_PREFIX = '/uploads';
-const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+export const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), 'public', 'uploads');
 
 /** Normalize and validate a file extension against the allowed set. */
 export function normalizeExtension(extension: string): string | null {

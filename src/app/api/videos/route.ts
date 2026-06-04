@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createVideo, getAllVideos, getAllVideosAdmin } from '@/services/video';
 import { checkAdminAuth } from '@/lib/api-auth';
-import { apiCache, CACHE_KEYS } from '@/lib/cache';
+import { apiCache } from '@/lib/cache';
 import { createVideoSchema } from '@/lib/validations/video';
 import { z } from 'zod';
 
-// Cache TTL: 30 seconds - short enough for updates, long enough for performance
-const VIDEOS_CACHE_TTL = 30 * 1000;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // GET /api/videos - List videos
 // Public: only ready videos | Admin with ?all=true: all statuses
@@ -26,18 +26,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ videos });
     }
 
-    // Public request - only ready videos, use cache
-    const cacheKey = category
-      ? CACHE_KEYS.VIDEOS_BY_CATEGORY(category)
-      : CACHE_KEYS.VIDEOS_LIST;
-    const cached = apiCache.get<unknown[]>(cacheKey);
-    if (cached) {
-      return NextResponse.json({ videos: cached });
-    }
-
+    // Public request - only ready videos. Read live so uploads appear immediately.
     const videos = await getAllVideos(category || undefined);
-    apiCache.set(cacheKey, videos, VIDEOS_CACHE_TTL);
-    return NextResponse.json({ videos });
+    return NextResponse.json(
+      { videos },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Error fetching videos:', error);
     return NextResponse.json(
@@ -47,9 +41,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/videos - Record a video after a direct browser-to-Spaces upload.
-// The browser first gets a presigned URL from /api/videos/upload/sign, uploads
-// the file to Spaces, then calls this endpoint with the returned object key.
+// POST /api/videos - Record metadata after the browser streams the file to
+// /api/videos/upload, where it is saved on the droplet SSD.
 export async function POST(request: NextRequest) {
   try {
     // Check admin auth using JWT or Supabase session
@@ -87,7 +80,10 @@ export async function POST(request: NextRequest) {
     // Invalidate videos list cache (all and category-specific)
     apiCache.invalidatePattern('videos:list');
 
-    return NextResponse.json({ video });
+    return NextResponse.json(
+      { video },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

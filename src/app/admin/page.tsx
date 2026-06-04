@@ -15,7 +15,7 @@ export default function AdminPage() {
   useEffect(() => {
     const loadStories = async () => {
       try {
-        const { stories: loadedStories } = await storyApi.list();
+        const { stories: loadedStories } = await storyApi.listAll();
         setStories(loadedStories);
       } finally {
         setIsLoaded(true);
@@ -27,7 +27,7 @@ export default function AdminPage() {
   const handleDeleteStory = async (storyId: string) => {
     if (confirm('Bạn có chắc muốn xóa truyện này?')) {
       await storyApi.delete(storyId);
-      const { stories: updatedStories } = await storyApi.list();
+      const { stories: updatedStories } = await storyApi.listAll();
       setStories(updatedStories);
     }
   };
@@ -114,7 +114,8 @@ export default function AdminPage() {
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Truyện</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase hidden sm:table-cell">Level</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase hidden md:table-cell">Panels</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase hidden md:table-cell">Trạng thái</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase hidden lg:table-cell">Panels</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">Thao tác</th>
               </tr>
             </thead>
@@ -147,18 +148,27 @@ export default function AdminPage() {
                       {story.level}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-slate-600 hidden md:table-cell">
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      story.published ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {story.published ? 'Published' : 'Draft'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-600 hidden lg:table-cell">
                     {story.panels.length}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <Link
-                        href={`/stories/${story.id}`}
-                        className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"
-                        title="Xem"
-                      >
-                        Xem
-                      </Link>
+                      {story.published && (
+                        <Link
+                          href={`/stories/${story.id}`}
+                          className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"
+                          title="Xem"
+                        >
+                          Xem
+                        </Link>
+                      )}
                       <Link
                         href={`/admin/edit/${story.id}`}
                         className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded"

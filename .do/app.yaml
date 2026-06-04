@@ -55,3 +55,6 @@ services:
       - key: ALLOWED_ORIGINS
         scope: RUN_TIME
         value: ${APP_URL}
+      - key: UPLOADS_DIR
+        scope: RUN_TIME
+        value: /app/public/uploads

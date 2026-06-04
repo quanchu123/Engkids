@@ -56,6 +56,7 @@ export interface Story {
   topics: string[];
   cover_image: string;
   estimated_minutes: number;
+  published: boolean;
   panels: Panel[];
   vocabulary: VocabWord[];
   games: StoryGames;

@@ -92,6 +92,7 @@ export function useStoryForm(options?: UseStoryFormOptions) {
   const [availableTopics, setAvailableTopics] = useState<string[]>([]);
   const [coverImage, setCoverImage] = useState(options?.initialData?.coverImage ?? '');
   const [coverPreview, setCoverPreview] = useState(options?.initialData?.coverPreview ?? '');
+  const [published, setPublished] = useState(false);
 
   // Panels
   const [panels, setPanels] = useState<PanelForm[]>(
@@ -245,6 +246,7 @@ export function useStoryForm(options?: UseStoryFormOptions) {
       topics: selectedTopics,
       cover_image: coverImage,
       estimated_minutes: Math.ceil(validPanels.length * 0.5),
+      published,
       panels: storyPanels,
       vocabulary: validVocab.map(v => ({
         word: v.en,
@@ -268,7 +270,7 @@ export function useStoryForm(options?: UseStoryFormOptions) {
         }),
       },
     };
-  }, [titleEn, titleVi, level, selectedTopics, coverImage, panels, vocabList]);
+  }, [titleEn, titleVi, level, selectedTopics, coverImage, published, panels, vocabList]);
 
   // Validate form
   const validate = useCallback((): { valid: boolean; error?: string; tab?: 'info' | 'panels' | 'vocab' } => {
@@ -293,6 +295,7 @@ export function useStoryForm(options?: UseStoryFormOptions) {
     setSelectedTopics(story.topics);
     setCoverImage(story.cover_image);
     setCoverPreview(story.cover_image);
+    setPublished(Boolean(story.published));
 
     const panelForms: PanelForm[] = story.panels.map(p => ({
       id: generateId(),
@@ -329,6 +332,7 @@ export function useStoryForm(options?: UseStoryFormOptions) {
     customTopic, setCustomTopic,
     availableTopics,
     coverImage, coverPreview,
+    published, setPublished,
     panels,
     vocabList,
     isSaving, setIsSaving,
@@ -361,4 +365,3 @@ export function useStoryForm(options?: UseStoryFormOptions) {
     generateId,
   };
 }
-

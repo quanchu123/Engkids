@@ -3,12 +3,13 @@
 -- Thêm 5 truyện mẫu vào database
 -- ============================================
 
-INSERT INTO stories (id, title_en, title_vi, level, topics, cover_image, estimated_minutes, panels, vocabulary, games) VALUES
+INSERT INTO stories (id, title_en, title_vi, level, topics, cover_image, estimated_minutes, published, panels, vocabulary, games) VALUES
 
 -- Story 1: The Little Red Hen
 ('little-red-hen', 'The Little Red Hen', 'Gà mái đỏ nhỏ', 'Beginner', ARRAY['animals', 'farm', 'work'], 
 'https://picsum.photos/seed/hen/400/300', 
 5,
+true,
 '[
   {"image": "", "text_en": "Once upon a time, there was a Little Red Hen who lived on a farm.", "text_vi": "Ngày xửa ngày xưa, có một chú gà mái đỏ nhỏ sống trong trang trại."},
   {"image": "", "text_en": "One day, she found some wheat seeds. \"Who will help me plant these seeds?\" asked the Little Red Hen.", "text_vi": "Một ngày, cô tìm thấy hạt giống lúa mì. \"Ai sẽ giúp tôi trồng hạt này?\" gà mái hỏi."},
@@ -31,6 +32,7 @@ INSERT INTO stories (id, title_en, title_vi, level, topics, cover_image, estimat
 ('three-little-pigs', 'Three Little Pigs', 'Ba chú heo con', 'Beginner', ARRAY['animals', 'adventure', 'safety'],
 'https://picsum.photos/seed/pigs/400/300',
 6,
+true,
 '[
   {"image": "", "text_en": "Once upon a time, there were three little pigs. They left home to build their own houses.", "text_vi": "Ngày xửa ngày xưa, có ba chú heo con rời nhà đi xây nhà riêng."},
   {"image": "", "text_en": "The first little pig built his house of straw. It was quick and easy.", "text_vi": "Chú heo thứ nhất xây nhà bằng rơm. Nhanh và dễ."},
@@ -51,6 +53,7 @@ INSERT INTO stories (id, title_en, title_vi, level, topics, cover_image, estimat
 ('tortoise-and-hare', 'The Tortoise and the Hare', 'Rùa và Thỏ', 'Elementary', ARRAY['animals', 'lesson', 'perseverance'],
 'https://picsum.photos/seed/tortoise/400/300',
 5,
+true,
 '[
   {"image": "", "text_en": "One day, a hare saw a tortoise walking very slowly down the road.", "text_vi": "Một ngày, con thỏ thấy con rùa đang đi rất chậm trên đường."},
   {"image": "", "text_en": "\"You are so slow!\" laughed the hare. \"I could beat you in a race with my eyes closed!\"", "text_vi": "\"Mày chậm quá!\" thỏ cười. \"Tao có thể đánh bại mày trong cuộc đua mà nhắm mắt!\""},
@@ -71,6 +74,7 @@ INSERT INTO stories (id, title_en, title_vi, level, topics, cover_image, estimat
 ('goldilocks-three-bears', 'Goldilocks and the Three Bears', 'Cô bé tóc vàng và ba con gấu', 'Beginner', ARRAY['adventure', 'family', 'manners'],
 'https://picsum.photos/seed/goldilocks/400/300',
 6,
+true,
 '[
   {"image": "", "text_en": "Once upon a time, there was a little girl called Goldilocks. She had beautiful golden hair.", "text_vi": "Ngày xửa ngày xưa, có một cô bé tên Goldilocks với mái tóc vàng óng."},
   {"image": "", "text_en": "One day, Goldilocks went for a walk in the forest. She found a cottage and went inside.", "text_vi": "Một ngày, Goldilocks đi dạo trong rừng. Cô tìm thấy một ngôi nhà và đi vào."},
@@ -88,6 +92,7 @@ INSERT INTO stories (id, title_en, title_vi, level, topics, cover_image, estimat
 ('lion-and-mouse', 'The Lion and the Mouse', 'Sư tử và Chuột', 'Elementary', ARRAY['animals', 'friendship', 'kindness'],
 'https://picsum.photos/seed/lion/400/300',
 5,
+true,
 '[
   {"image": "", "text_en": "One day, a mighty lion was sleeping in the jungle. A little mouse ran across his nose and woke him up.", "text_vi": "Một ngày, một con sư tử hùng mạnh đang ngủ trong rừng. Một con chuột nhỏ chạy qua mũi nó và đánh thức nó."},
   {"image": "", "text_en": "The lion caught the mouse in his huge paw. \"How dare you wake me up!\" roared the lion. \"I will eat you!\"", "text_vi": "Sư tử bắt chuột trong móng vuốt to lớn. \"Sao dám đánh thức ta!\" sư tử gầm. \"Ta sẽ ăn thịt ngươi!\""},

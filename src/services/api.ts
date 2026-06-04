@@ -262,6 +262,10 @@ export const videoApi = {
     return api.get(ROUTES.API.VIDEO(id));
   },
 
+  async getAdmin(id: string): Promise<{ video: Video }> {
+    return api.get(`${ROUTES.API.VIDEO(id)}?admin=true`, { auth: true });
+  },
+
   // Create video metadata after uploading the file to the server (requires auth)
   async create(data: CreateVideoRequest): Promise<CreateVideoResponse> {
     return api.post(ROUTES.API.VIDEOS, data, { auth: true });
@@ -307,8 +311,16 @@ export const storyApi = {
     return api.get(ROUTES.API.STORIES);
   },
 
+  async listAll(): Promise<{ stories: Story[] }> {
+    return api.get(`${ROUTES.API.STORIES}?all=true`, { auth: true });
+  },
+
   async get(id: string): Promise<{ story: Story | null }> {
     return api.get(ROUTES.API.STORY(id));
+  },
+
+  async getAdmin(id: string): Promise<{ story: Story | null }> {
+    return api.get(`${ROUTES.API.STORY(id)}?admin=true`, { auth: true });
   },
 
   async create(story: Story): Promise<{ story: Story }> {

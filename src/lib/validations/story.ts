@@ -52,6 +52,7 @@ export const storySchema = z.object({
   topics: z.array(z.string().min(1).max(50)).min(1).max(10),
   cover_image: z.string().min(1).max(10000),
   estimated_minutes: z.number().int().positive().max(120),
+  published: z.boolean(),
   panels: z.array(panelSchema).min(1).max(50),
   vocabulary: z.array(vocabWordSchema).min(0).max(100),
   games: storyGamesSchema,

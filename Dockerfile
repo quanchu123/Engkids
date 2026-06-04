@@ -41,7 +41,8 @@ WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    UPLOADS_DIR=/app/public/uploads
 
 # Run as a non-root user for security
 RUN addgroup --system --gid 1001 nodejs \
@@ -51,6 +52,9 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+RUN mkdir -p /app/public/uploads \
+ && chown -R nextjs:nodejs /app/public/uploads
 
 USER nextjs
 

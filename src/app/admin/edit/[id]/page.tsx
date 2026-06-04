@@ -24,7 +24,7 @@ export default function EditStoryPage({ params }: PageProps) {
 
   useEffect(() => {
     const loadStory = async () => {
-      const { story } = await storyApi.get(id);
+      const { story } = await storyApi.getAdmin(id);
       if (!story) {
         setNotFound(true);
         setIsLoaded(true);

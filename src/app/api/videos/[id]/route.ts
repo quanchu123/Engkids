@@ -11,7 +11,15 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const video = await getVideoById(id);
+    const includeUnavailable = request.nextUrl.searchParams.get('admin') === 'true';
+    if (includeUnavailable) {
+      const isAuthed = await checkAdminAuth(request);
+      if (!isAuthed) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
+    const video = await getVideoById(id, includeUnavailable);
 
     if (!video) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
@@ -55,10 +63,10 @@ export async function PATCH(
     }
 
     await updateVideo(id, sanitizedBody);
-    const video = await getVideoById(id);
+    const video = await getVideoById(id, true);
 
     // Invalidate caches
-    apiCache.invalidate(CACHE_KEYS.VIDEOS_LIST);
+    apiCache.invalidatePattern(CACHE_KEYS.VIDEOS_LIST);
     apiCache.invalidate(CACHE_KEYS.VIDEO_BY_ID(id));
 
     return NextResponse.json({ video });
@@ -83,7 +91,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const video = await getVideoById(id);
+    const video = await getVideoById(id, true);
 
     if (!video) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
@@ -102,7 +110,7 @@ export async function DELETE(
     await deleteVideo(id);
 
     // Invalidate caches
-    apiCache.invalidate(CACHE_KEYS.VIDEOS_LIST);
+    apiCache.invalidatePattern(CACHE_KEYS.VIDEOS_LIST);
     apiCache.invalidate(CACHE_KEYS.VIDEO_BY_ID(id));
 
     return NextResponse.json({ success: true });
