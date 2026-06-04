@@ -107,8 +107,26 @@ async function fetchRaw(gameType: string): Promise<unknown | null> {
       .select('data')
       .eq('game_type', gameType)
       .single();
+    if (error?.code === 'PGRST205' || error?.message?.includes('game_content')) {
+      return fetchRawFromSettings(gameType);
+    }
     if (error || !data) return null;
     return data.data;
+  } catch {
+    return fetchRawFromSettings(gameType);
+  }
+}
+
+async function fetchRawFromSettings(gameType: string): Promise<unknown | null> {
+  try {
+    const supabase = getSupabasePublicReader();
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', `game_content:${gameType}`)
+      .single();
+    if (error || !data) return null;
+    return data.value;
   } catch {
     return null;
   }
@@ -149,7 +167,23 @@ async function upsert(gameType: string, data: unknown): Promise<void> {
   const { error } = await supabase
     .from('game_content')
     .upsert({ game_type: gameType, data, updated_at: new Date().toISOString() });
+  if (error?.code === 'PGRST205' || error?.message?.includes('game_content')) {
+    await upsertToSettings(gameType, data);
+    return;
+  }
   if (error) throw new Error(`Failed to save game content: ${error.message}`);
+}
+
+async function upsertToSettings(gameType: string, data: unknown): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from('site_settings')
+    .upsert({
+      key: `game_content:${gameType}`,
+      value: data,
+      updated_at: new Date().toISOString(),
+    });
+  if (error) throw new Error(`Failed to save game content fallback: ${error.message}`);
 }
 
 // ---- Admin read (returns current content = override or defaults) ----
