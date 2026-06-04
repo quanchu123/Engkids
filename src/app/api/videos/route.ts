@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
       const videos = await getAllVideosAdmin();
-      return NextResponse.json({ videos });
+      return NextResponse.json({ videos }, { headers: NO_STORE_HEADERS });
     }
 
     // Public request - only ready videos. Read live so uploads appear immediately.

@@ -77,6 +77,7 @@ async function requestWithResponse<T>(
       ...fetchOptions,
       headers,
       signal: controller.signal,
+      cache: fetchOptions.cache || 'no-store',
       // IMPORTANT: Send cookies for Supabase session auth
       credentials: 'include',
     });

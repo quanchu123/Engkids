@@ -108,12 +108,10 @@ export async function DELETE(
     const { id } = await params;
     const video = await getVideoById(id, true);
 
-    if (!video) {
-      return NextResponse.json({ error: 'Video not found' }, { status: 404 });
-    }
-
-    // Remove the object from DigitalOcean Spaces.
-    if (video.objectKey) {
+    // Remove the object from DigitalOcean Spaces/local storage when the row is
+    // still present. If the row was already deleted, keep DELETE idempotent so
+    // stale admin cards can be cleared by clicking Delete again.
+    if (video?.objectKey) {
       try {
         await deleteVideoObject(video.objectKey);
       } catch (storageError) {
@@ -133,7 +131,7 @@ export async function DELETE(
     revalidatePath(`/videos/${id}`);
 
     return NextResponse.json(
-      { success: true },
+      { success: true, alreadyDeleted: !video },
       { headers: NO_STORE_HEADERS },
     );
   } catch (error) {

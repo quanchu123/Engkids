@@ -48,15 +48,19 @@ export default function AdminVideosPage() {
       return;
     }
 
+    const previousVideos = videos;
+    setVideos(current => current.filter(video => video.id !== videoId));
+
     try {
       await videoApi.delete(videoId);
-      await loadVideos();
       // Tell other open tabs (homepage, /videos, /music) to refresh.
       broadcastContentChange('videos');
       router.refresh();
+      await loadVideos();
       toast.success('Video deleted.');
     } catch (error) {
       console.error('Delete error:', error);
+      setVideos(previousVideos);
       toast.error(error instanceof ApiError ? error.message : 'Failed to delete video');
     }
   };
