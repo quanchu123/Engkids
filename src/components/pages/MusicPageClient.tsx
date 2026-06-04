@@ -117,10 +117,10 @@ export default function MusicPageClient({ videos }: MusicPageClientProps) {
               onClick={() => setSelectedFeature(null)}
               className={`rounded-2xl px-4 py-2 text-sm font-bold ${selectedFeature === null ? 'bg-violet-600 text-white' : 'bg-white text-violet-700 shadow'}`}
             >
-              Tất cả ({videos.length})
+              Tất cả ({liveVideos.length})
             </button>
             {features.map((f) => {
-              const count = videos.filter((v) => (v.feature?.trim() || DEFAULT_FEATURE) === f).length;
+              const count = liveVideos.filter((v) => (v.feature?.trim() || DEFAULT_FEATURE) === f).length;
               return (
                 <button
                   key={f}
@@ -168,7 +168,7 @@ export default function MusicPageClient({ videos }: MusicPageClientProps) {
           </div>
         ) : (
           <div className="soft-panel rounded-3xl p-10 text-center shadow-lg">
-            {videos.length === 0 ? (
+            {liveVideos.length === 0 ? (
               <>
                 <h2 className="text-2xl font-black text-slate-900">Chưa có bài hát nào</h2>
                 <p className="mt-2 text-slate-600">Bài hát sẽ xuất hiện sau khi được tải lên trong trang quản trị.</p>
