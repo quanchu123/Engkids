@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Story } from '@/types';
+import { unstable_noStore as noStore } from 'next/cache';
 
 function getSupabaseReadClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -36,6 +37,7 @@ function getSupabasePublicReader() {
 }
 
 export async function listStories(): Promise<Story[]> {
+  noStore();
   const supabase = getSupabasePublicReader();
   const { data, error } = await supabase
     .from('stories')
@@ -51,6 +53,7 @@ export async function listStories(): Promise<Story[]> {
 }
 
 export async function listStoriesAdmin(): Promise<Story[]> {
+  noStore();
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from('stories')
@@ -65,6 +68,7 @@ export async function listStoriesAdmin(): Promise<Story[]> {
 }
 
 export async function getStory(id: string, includeDraft = false): Promise<Story | null> {
+  noStore();
   const supabase = includeDraft ? getSupabaseAdmin() : getSupabasePublicReader();
   let query = supabase
     .from('stories')

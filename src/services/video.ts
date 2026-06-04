@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Video, SubtitleCue, VideoQuizQuestion } from '@/types';
 import { getVideoPublicUrl } from './storage';
+import { unstable_noStore as noStore } from 'next/cache';
 
 // Track if we've already warned about Supabase being unavailable to avoid log spam
 let supabaseUnavailableWarned = false;
@@ -176,6 +177,7 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
  * Optionally filter by category at the database level
  */
 export async function getAllVideos(category?: 'video' | 'music'): Promise<Video[]> {
+  noStore();
   // Server-side public reads use service role and enforce public filters here.
   // This keeps the homepage/catalog stable even if Supabase RLS policies change.
   const supabase = getSupabasePublicReader();
@@ -214,6 +216,7 @@ export async function getAllVideos(category?: 'video' | 'music'): Promise<Video[
  * Used in admin panel to monitor upload progress
  */
 export async function getAllVideosAdmin(): Promise<Video[]> {
+  noStore();
   const supabase = getSupabaseAdmin();
 
   const { data: videos, error } = await supabase
@@ -241,6 +244,7 @@ export async function getAllVideosAdmin(): Promise<Video[]> {
  * Get video by ID with subtitles
  */
 export async function getVideoById(id: string, includeUnavailable = false): Promise<Video | null> {
+  noStore();
   const supabase = includeUnavailable ? getSupabaseAdmin() : getSupabasePublicReader();
 
   let query = supabase
