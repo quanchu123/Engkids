@@ -8,8 +8,10 @@ import {
   saveTrueFalseContent,
   saveWordBank,
 } from '@/services/game-content';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const SUPPORTED = ['multiple-choice', 'true-false', 'word-bank'];
 
@@ -28,7 +30,10 @@ export async function GET(
     if (type === 'multiple-choice') data = await getMultipleChoiceForAdmin();
     else if (type === 'true-false') data = await getTrueFalseForAdmin();
     else data = await getWordBank();
-    return NextResponse.json({ data });
+    return NextResponse.json(
+      { data },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Get game content error:', error);
     return NextResponse.json({ error: 'Failed to load game content' }, { status: 500 });
@@ -56,7 +61,17 @@ export async function PUT(
     if (type === 'multiple-choice') data = await saveMultipleChoiceContent(body?.data);
     else if (type === 'true-false') data = await saveTrueFalseContent(body?.data);
     else data = await saveWordBank(body?.data);
-    return NextResponse.json({ data });
+    revalidatePath('/games');
+    revalidatePath('/games/multiple-choice');
+    revalidatePath('/games/true-false');
+    revalidatePath('/games/word-burst');
+    revalidatePath('/games/word-puzzle');
+    revalidatePath('/games/memory-match');
+    revalidatePath('/games/rpg-world');
+    return NextResponse.json(
+      { data },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to save game content';
     const isValidation = /không hợp lệ/.test(message);

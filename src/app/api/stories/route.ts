@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Story } from '@/types';
 import { checkAdminAuth } from '@/lib/api-auth';
 import { createStory, listStories, listStoriesAdmin } from '@/services/story';
+import { revalidatePath } from 'next/cache';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function isStory(value: unknown): value is Story {
   if (!value || typeof value !== 'object') return false;
@@ -52,6 +56,8 @@ export async function POST(request: NextRequest) {
     }
 
     const story = await createStory(body.story);
+    revalidatePath('/');
+    revalidatePath('/stories');
     return NextResponse.json(
       { story },
       { headers: { 'Cache-Control': 'no-store, max-age=0' } },

@@ -5,6 +5,7 @@ import { saveAudioStream, normalizeAudioExtension } from '@/services/storage';
 export const runtime = 'nodejs';
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // POST /api/settings/background-music/upload?ext=mp3
 // Streams an audio file to disk and returns its object key (admin only).
@@ -29,7 +30,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const objectKey = await saveAudioStream(request.body, ext);
-    return NextResponse.json({ objectKey });
+    return NextResponse.json(
+      { objectKey },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Upload failed';
     const tooLarge = /too large/i.test(message);

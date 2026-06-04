@@ -27,8 +27,16 @@ function getSupabaseAdmin() {
   });
 }
 
+function getSupabasePublicReader() {
+  try {
+    return getSupabaseAdmin();
+  } catch {
+    return getSupabaseReadClient();
+  }
+}
+
 export async function listStories(): Promise<Story[]> {
-  const supabase = getSupabaseReadClient();
+  const supabase = getSupabasePublicReader();
   const { data, error } = await supabase
     .from('stories')
     .select('*')
@@ -57,7 +65,7 @@ export async function listStoriesAdmin(): Promise<Story[]> {
 }
 
 export async function getStory(id: string, includeDraft = false): Promise<Story | null> {
-  const supabase = includeDraft ? getSupabaseAdmin() : getSupabaseReadClient();
+  const supabase = includeDraft ? getSupabaseAdmin() : getSupabasePublicReader();
   let query = supabase
     .from('stories')
     .select('*')

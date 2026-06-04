@@ -31,7 +31,7 @@ export default function TrueFalsePage() {
   const [content, setContent] = useState<TFContent>(DEFAULT_TRUE_FALSE);
 
   useEffect(() => {
-    fetch('/api/games/true-false')
+    fetch('/api/games/true-false', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
         if (res?.data) setContent(res.data as TFContent);

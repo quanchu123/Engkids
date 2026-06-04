@@ -37,7 +37,7 @@ export default function MultipleChoicePage() {
   const [content, setContent] = useState<MCContent>(DEFAULT_MULTIPLE_CHOICE);
 
   useEffect(() => {
-    fetch('/api/games/multiple-choice')
+    fetch('/api/games/multiple-choice', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
         if (res?.data) setContent(res.data as MCContent);

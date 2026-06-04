@@ -14,14 +14,26 @@ function getSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) throw new Error('Supabase credentials not configured');
-  return createClient(url, anonKey);
+  return createClient(url, anonKey, {
+    global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) },
+  });
 }
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) throw new Error('Supabase credentials not configured');
-  return createClient(url, serviceKey);
+  return createClient(url, serviceKey, {
+    global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) },
+  });
+}
+
+function getSupabasePublicReader() {
+  try {
+    return getSupabaseAdmin();
+  } catch {
+    return getSupabaseClient();
+  }
 }
 
 // ---- Normalizers: coerce raw JSON into safe, well-formed content ----
@@ -89,7 +101,7 @@ function normalizeTF(raw: unknown): TFContent | null {
 
 async function fetchRaw(gameType: string): Promise<unknown | null> {
   try {
-    const supabase = getSupabaseClient();
+    const supabase = getSupabasePublicReader();
     const { data, error } = await supabase
       .from('game_content')
       .select('data')

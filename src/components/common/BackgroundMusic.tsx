@@ -34,15 +34,31 @@ export default function BackgroundMusic() {
   useEffect(() => {
     let active = true;
     setUserDisabled(window.localStorage.getItem(MUSIC_DISABLED_KEY) === 'true');
-    fetch('/api/settings/background-music')
+    const loadSetting = () => fetch('/api/settings/background-music', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
-        if (active && res?.music?.enabled && res.music.url) {
+        if (!active) return;
+        if (res?.music?.enabled && res.music.url) {
           setSetting({ enabled: true, url: res.music.url, volume: res.music.volume ?? 0.4 });
+        } else {
+          setSetting(null);
+          audioRef.current?.pause();
+          setPlaying(false);
+          setMuted(false);
         }
       })
       .catch(() => {});
-    return () => { active = false; };
+    const handleFocus = () => {
+      loadSetting();
+    };
+    loadSetting();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, []);
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
@@ -15,15 +15,39 @@ interface StoriesPageClientProps {
 }
 
 export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
+  const [liveStories, setLiveStories] = useState(stories);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [selectedTopic, setSelectedTopic] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('recommended');
   const storiesProgress = useAppStore((state) => state.progress.storiesProgress);
 
-  const allTopics = useMemo(() => getStoryTopics(stories), [stories]);
+  useEffect(() => {
+    let cancelled = false;
+    const loadStories = () => fetch('/api/stories', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { stories?: Story[] } | null) => {
+        if (!cancelled && Array.isArray(data?.stories)) {
+          setLiveStories(data.stories);
+        }
+      })
+      .catch(() => {});
+    const handleFocus = () => {
+      loadStories();
+    };
+    loadStories();
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, []);
+
+  const allTopics = useMemo(() => getStoryTopics(liveStories), [liveStories]);
   const filteredStories = useMemo(() => {
-    const filtered = filterStories(stories, searchQuery, selectedLevel, selectedTopic);
+    const filtered = filterStories(liveStories, searchQuery, selectedLevel, selectedTopic);
 
     switch (sortBy) {
       case 'shortest':
@@ -33,7 +57,7 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
       default:
         return filtered;
     }
-  }, [stories, searchQuery, selectedLevel, selectedTopic, sortBy]);
+  }, [liveStories, searchQuery, selectedLevel, selectedTopic, sortBy]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-violet-50 to-white">

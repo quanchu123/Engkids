@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminAuth } from '@/lib/api-auth';
 import { getBackgroundMusic, saveBackgroundMusic } from '@/services/site-settings';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // GET /api/settings/background-music - current music setting (public)
 export async function GET() {
   try {
     const music = await getBackgroundMusic();
-    return NextResponse.json({ music });
+    return NextResponse.json(
+      { music },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Get background music error:', error);
     return NextResponse.json({ error: 'Failed to load setting' }, { status: 500 });
@@ -29,7 +34,11 @@ export async function PUT(request: NextRequest) {
       objectKey: body?.objectKey !== undefined ? body.objectKey : undefined,
       volume: typeof body?.volume === 'number' ? body.volume : undefined,
     });
-    return NextResponse.json({ music });
+    revalidatePath('/');
+    return NextResponse.json(
+      { music },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Save background music error:', error);
     return NextResponse.json({ error: 'Failed to save setting' }, { status: 500 });

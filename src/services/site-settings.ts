@@ -4,7 +4,7 @@
 // Reads/writes global site settings (key/value JSON). First use: home-page
 // background music.
 import { createClient } from '@supabase/supabase-js';
-import { getVideoPublicUrl } from '@/services/storage';
+import { deleteVideoObject, getVideoPublicUrl } from '@/services/storage';
 
 const MUSIC_KEY = 'background_music';
 
@@ -35,7 +35,13 @@ function getSupabaseAdmin() {
 
 async function fetchSetting(key: string): Promise<unknown | null> {
   try {
-    const supabase = getSupabaseClient();
+    const supabase = (() => {
+      try {
+        return getSupabaseAdmin();
+      } catch {
+        return getSupabaseClient();
+      }
+    })();
     const { data, error } = await supabase
       .from('site_settings')
       .select('value')
@@ -86,6 +92,14 @@ export async function saveBackgroundMusic(input: {
     updated_at: new Date().toISOString(),
   });
   if (error) throw new Error(`Failed to save background music: ${error.message}`);
+
+  if (
+    current.objectKey &&
+    current.objectKey !== next.objectKey &&
+    !current.objectKey.startsWith('http')
+  ) {
+    await deleteVideoObject(current.objectKey).catch(() => {});
+  }
 
   return next;
 }

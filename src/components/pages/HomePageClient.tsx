@@ -22,6 +22,7 @@ interface HomePageClientProps {
 }
 
 export default function HomePageClient({ stories, videos, musicVideos }: HomePageClientProps) {
+  const [liveStories, setLiveStories] = useState(stories);
   const [liveVideos, setLiveVideos] = useState(videos);
   const [liveMusicVideos, setLiveMusicVideos] = useState(musicVideos);
   const totalStars = useAppStore(state => state.progress.totalStars);
@@ -33,6 +34,14 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
   useEffect(() => {
     let cancelled = false;
+    const loadStories = () => fetch('/api/stories', { cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { stories?: Story[] } | null) => {
+        if (!cancelled && Array.isArray(data?.stories)) {
+          setLiveStories(data.stories);
+        }
+      })
+      .catch(() => {});
     const loadVideos = () => fetch('/api/videos', { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
       .then((data: { videos?: Video[] } | null) => {
@@ -42,8 +51,10 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
       })
       .catch(() => {});
     const handleFocus = () => {
+      loadStories();
       loadVideos();
     };
+    loadStories();
     loadVideos();
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
@@ -166,7 +177,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               href="/stories"
               emoji="📖"
               title="Truyện tranh"
-              count={stories.length}
+              count={liveStories.length}
               unit="truyện"
               gradient="from-blue-500 to-cyan-400"
               shadow="rgba(6,182,212,0.5)"
@@ -215,12 +226,12 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         </div>
       </div>
 
-      {stories.length > 0 && (
+      {liveStories.length > 0 && (
         <section className="px-4 py-6">
           <div className="section-shell section-shell-sky max-w-6xl mx-auto rounded-[2rem] p-5 md:p-6">
             <SectionHeader emoji="📚" title="Truyện nổi bật" href="/stories" hrefLabel="Xem tất cả" color="text-blue-700" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {stories.slice(0, 4).map((story) => (
+              {liveStories.slice(0, 4).map((story) => (
                 <StoryCard key={story.id} story={story} />
               ))}
             </div>
@@ -246,7 +257,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         </div>
       </section>
 
-      {stories.length > 0 && liveVideos.length > 0 && (
+      {liveStories.length > 0 && liveVideos.length > 0 && (
         <div aria-hidden className="-mt-2 h-12 overflow-hidden">
           <svg viewBox="0 0 1440 48" preserveAspectRatio="none" className="w-full h-full">
             <path d="M0,0 C360,48 1080,0 1440,32 L1440,48 L0,48 Z" fill="rgb(237,233,254)" />
@@ -288,7 +299,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         </section>
       )}
 
-      {stories.length === 0 && liveVideos.length === 0 && liveMusicVideos.length === 0 && (
+      {liveStories.length === 0 && liveVideos.length === 0 && liveMusicVideos.length === 0 && (
         <section className="px-4 py-8">
           <div className="max-w-md mx-auto rounded-3xl border-4 border-purple-100 bg-white p-8 text-center shadow-lg">
             <div className="mb-4 text-7xl deco-float">🎒</div>

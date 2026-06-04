@@ -117,7 +117,7 @@ export function toMemoryPairs(bank: WordPair[]): Array<{ en: string; vi: string;
 // Fetch the bank from the API (client-side), falling back to defaults.
 export async function loadWordBank(): Promise<WordPair[]> {
   try {
-    const res = await fetch('/api/games/word-bank');
+    const res = await fetch('/api/games/word-bank', { cache: 'no-store' });
     if (!res.ok) return DEFAULT_WORD_BANK;
     const json = await res.json();
     const normalized = normalizeWordBank(json?.data);

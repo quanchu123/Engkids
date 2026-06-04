@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Story } from '@/types';
 import { checkAdminAuth } from '@/lib/api-auth';
 import { deleteStoryById, getStory, updateStoryById } from '@/services/story';
+import { revalidatePath } from 'next/cache';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 function isStory(value: unknown): value is Story {
   if (!value || typeof value !== 'object') return false;
@@ -60,6 +64,9 @@ export async function PUT(
     }
 
     const story = await updateStoryById(id, body.story);
+    revalidatePath('/');
+    revalidatePath('/stories');
+    revalidatePath(`/stories/${id}`);
     return NextResponse.json(
       { story },
       { headers: { 'Cache-Control': 'no-store, max-age=0' } },
@@ -85,8 +92,14 @@ export async function DELETE(
 
     const { id } = await params;
     await deleteStoryById(id);
+    revalidatePath('/');
+    revalidatePath('/stories');
+    revalidatePath(`/stories/${id}`);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { success: true },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   } catch (error) {
     console.error('Error deleting story:', error);
     return NextResponse.json(
