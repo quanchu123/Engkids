@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
       titleVi: validated.titleVi,
       objectKey,
       description: validated.description,
+      thumbnailUrl: validated.thumbnailUrl,
       level: validated.level,
       topics: validated.topics,
       ageGroup: validated.ageGroup,

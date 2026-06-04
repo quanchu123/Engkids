@@ -268,6 +268,7 @@ export async function createVideo(data: {
   titleVi: string;
   objectKey: string;       // file name stored under public/uploads
   description?: string;
+  thumbnailUrl?: string;
   level?: Video['level'];
   topics?: string[];
   ageGroup?: Video['ageGroup'];
@@ -288,6 +289,7 @@ export async function createVideo(data: {
       title_vi: data.titleVi,
       object_key: data.objectKey,
       description: data.description || null,
+      thumbnail_url: data.thumbnailUrl || null,
       level: data.level || 'Beginner',
       topics: data.topics || [],
       age_group: data.ageGroup || null,

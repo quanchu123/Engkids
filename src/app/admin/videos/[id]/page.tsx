@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Video } from '@/types';
 import { videoApi, ApiError } from '@/services/api';
@@ -10,6 +10,9 @@ import { LEVEL_OPTIONS, ROUTES } from '@/config/constants';
 import SubtitleEditor from '@/components/video/SubtitleEditor';
 import QuizEditor from '@/components/video/QuizEditor';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { resizeImage } from '@/services/image';
+
+const THUMBNAIL_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp';
 
 export default function EditVideoPage() {
   const params = useParams();
@@ -28,6 +31,8 @@ export default function EditVideoPage() {
   const [level, setLevel] = useState<Video['level']>('Beginner');
   const [category, setCategory] = useState<'video' | 'music'>('video');
   const [feature, setFeature] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   const loadVideo = useCallback(async () => {
     try {
@@ -41,6 +46,7 @@ export default function EditVideoPage() {
         setLevel(data.video.level);
         setCategory(data.video.category || 'video');
         setFeature(data.video.feature || '');
+        setThumbnailUrl(data.video.thumbnailUrl || '');
       }
     } catch (error) {
       console.error('Failed to load video:', error);
@@ -63,6 +69,7 @@ export default function EditVideoPage() {
         title,
         titleVi,
         description,
+        thumbnailUrl,
         level,
         category,
         feature,
@@ -75,6 +82,29 @@ export default function EditVideoPage() {
       setMessage(error instanceof ApiError ? error.message : 'Failed to save metadata');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (!THUMBNAIL_ACCEPT.split(',').includes(selectedFile.type)) {
+      setMessage('Thumbnail must be PNG, JPG, or WebP.');
+      return;
+    }
+
+    try {
+      const resized = await resizeImage(selectedFile, 640, 360, 0.82);
+      setThumbnailUrl(resized);
+      setMessage('Thumbnail selected. Click Save Metadata to apply.');
+    } catch (error) {
+      console.error('Thumbnail upload error:', error);
+      setMessage('Could not read thumbnail image.');
+    } finally {
+      if (thumbnailInputRef.current) {
+        thumbnailInputRef.current.value = '';
+      }
     }
   };
 
@@ -132,23 +162,58 @@ export default function EditVideoPage() {
         <div className="max-w-2xl mx-auto mb-8 p-6 bg-white rounded-lg shadow-md">
           <h2 className="text-xl font-bold text-gray-800 mb-4">Video Metadata</h2>
 
-          {/* Video Preview */}
-          {video.thumbnailUrl && (
-            <div className="mb-4 relative bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg h-48">
-              <img
-                src={video.thumbnailUrl}
-                alt={video.title}
-                className="w-full h-48 object-cover rounded-lg relative z-10"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-              {/* Fallback */}
-              <div className="absolute inset-0 flex items-center justify-center text-white text-6xl">
-                VIDEO
+          {/* Thumbnail */}
+          <div className="mb-4">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Thumbnail
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => thumbnailInputRef.current?.click()}
+                  disabled={saving}
+                  className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Upload image
+                </button>
+                {thumbnailUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setThumbnailUrl('')}
+                    disabled={saving}
+                    className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Remove
+                  </button>
+                )}
               </div>
             </div>
-          )}
+            <input
+              ref={thumbnailInputRef}
+              type="file"
+              accept={THUMBNAIL_ACCEPT}
+              onChange={handleThumbnailUpload}
+              className="hidden"
+              disabled={saving}
+            />
+            <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
+              {thumbnailUrl ? (
+                <img
+                  src={thumbnailUrl}
+                  alt={video.title}
+                  className="aspect-video w-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <div className="flex aspect-video items-center justify-center text-sm text-gray-500">
+                  No thumbnail
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Status Badge */}
           <div className="mb-4">

@@ -210,6 +210,7 @@ interface CreateVideoRequest {
   title: string;
   titleVi: string;
   description?: string;
+  thumbnailUrl?: string;
   level?: string;
   topics?: string[];
   ageGroup?: string;
@@ -226,6 +227,7 @@ interface UpdateVideoRequest {
   title?: string;
   titleVi?: string;
   description?: string;
+  thumbnailUrl?: string;
   level?: string;
   status?: string;
   category?: 'video' | 'music';
