@@ -49,7 +49,8 @@ export default function AdminVideosPage() {
 
     try {
       await videoApi.delete(videoId);
-      setVideos(videos.filter(v => v.id !== videoId));
+      await loadVideos();
+      toast.success('Video deleted.');
     } catch (error) {
       console.error('Delete error:', error);
       toast.error(error instanceof ApiError ? error.message : 'Failed to delete video');
