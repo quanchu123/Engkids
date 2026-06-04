@@ -4,7 +4,7 @@ import './globals.css';
 import RouterLoading from '@/components/common/RouterLoading';
 import UserProgressSync from '@/components/common/UserProgressSync';
 
-const DEFAULT_PRODUCTION_URL = 'https://engkidstienganhchobe.me';
+const DEFAULT_PRODUCTION_URL = 'https://engkidstienganhchobe.tech';
 
 // Self-hosted via next/font (downloaded at build time, no runtime CDN call).
 // Includes the Vietnamese subset so diacritics render identically on every device.

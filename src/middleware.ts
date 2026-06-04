@@ -4,6 +4,8 @@ import type { NextRequest } from 'next/server';
 // Allowed origins for CORS
 const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:3000',
+  'https://engkidstienganhchobe.tech',
+  'https://www.engkidstienganhchobe.tech',
   'https://engkidstienganhchobe.me',
   'https://www.engkidstienganhchobe.me',
 ].join(',');

@@ -3,8 +3,8 @@
 Production app domain:
 
 ```txt
-engkidstienganhchobe.me
-www.engkidstienganhchobe.me
+engkidstienganhchobe.tech
+www.engkidstienganhchobe.tech
 ```
 
 This app is a Next.js server app with API routes for admin upload/delete, so it must run on the DigitalOcean droplet or DigitalOcean App Platform. GitHub Pages cannot host the admin upload APIs.
@@ -13,16 +13,16 @@ DNS required at the domain provider:
 
 ```txt
 @      A      <DROPLET_IP>
-www    CNAME  engkidstienganhchobe.me
+www    CNAME  engkidstienganhchobe.tech
 ```
 
-The GitHub Pages repo `quanchu123/quanchu123.github.io` currently contains the `CNAME` file for `engkidstienganhchobe.me`. That only makes `quanchu123.github.io` redirect to the custom domain. The custom domain still needs DNS records pointing to the DigitalOcean server.
+The custom domain needs DNS records pointing to the DigitalOcean server. GitHub Pages cannot run this Next.js server app or its admin upload APIs.
 
 Production env expected on the droplet:
 
 ```txt
-NEXT_PUBLIC_APP_URL=https://engkidstienganhchobe.me
-ALLOWED_ORIGINS=https://engkidstienganhchobe.me,https://www.engkidstienganhchobe.me
+NEXT_PUBLIC_APP_URL=https://engkidstienganhchobe.tech
+ALLOWED_ORIGINS=https://engkidstienganhchobe.tech,https://www.engkidstienganhchobe.tech
 ```
 
 After code deploy, admin content changes happen at runtime:
