@@ -1,0 +1,61 @@
+Original prompt: tiếp tục đi
+
+- Continued cleanup on remaining game pages with emoji-heavy HUD/status text.
+- Kept header and hero sections intact; only removed UI-only emoji from game states, buttons, score labels, and helper text.
+- Preserved gameplay logic; avoided stripping places where emoji was acting as core data until a safe text replacement was available.
+- Playwright/browser verification remains blocked in this environment by `spawn EPERM`, so validation here stays at static checks plus repo smoke tests.
+- Latest verified commands:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run test:features`
+- Additional pass completed on remaining game pages:
+  - cleaned UI-only emoji from `mario-word`, `memory-match`, `rpg-battle`, `tank-word`, `tower-climb`, `tower-word`, `word-collector`, and `word-puzzle`
+  - preserved hero/header areas and avoided touching game-critical visuals blindly
+- Final polish pass fixed mojibake on key user-facing routes:
+  - `src/app/loading.tsx`
+  - `src/app/stories/page.tsx`
+  - `src/app/stories/[id]/page.tsx`
+  - `src/app/stories/[id]/vocab/page.tsx`
+  - `src/app/stories/[id]/games/page.tsx`
+  - `src/app/progress/review/page.tsx`
+- Post-fix validation:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run test:features`
+  - regex scan for mojibake markers in `src/app`, `src/components`, and `progress.md`
+- Auth consolidation step 1 completed:
+  - added shared admin resolver in `src/lib/admin-access.ts`
+  - unified UI admin checks in `AdminGuard` and `LoginForm`
+  - updated `src/lib/api-auth.ts` and `src/app/api/admin/me/route.ts` to resolve admin via either Supabase session/bearer or legacy JWT
+  - centralized token lookup in `src/lib/admin-auth-client.ts`
+  - switched `src/services/api.ts` and `src/hooks/useTusUpload.ts` to use the shared token resolver
+- Auth step validation:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run test:features`
+- Progress sync step completed:
+  - added store hydration flag and remote replace actions in `src/store/useAppStore.ts`
+  - added `src/services/progress-sync.ts` to load/save `user_progress` + `vocabulary_items` for authenticated users
+  - added `src/components/common/UserProgressSync.tsx` to merge local progress with remote once, then sync changes in the background
+  - mounted sync bootstrap in `src/app/layout.tsx`
+- Progress sync validation:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run test:features`
+- Playwright follow-up:
+  - verified Playwright CLI can be invoked in this workspace via `npx.cmd` with local cache override (`.npm-cache`)
+  - browser E2E is still blocked here because `next dev` fails in sandbox with `spawn EPERM`
+  - confirmed blocker by running `npm run dev` directly
+- Additional cleanup after E2E blocker:
+  - fixed remaining mojibake in `src/app/progress/page.tsx`
+  - fixed remaining mojibake in `src/app/layout.tsx`
+  - regex scan for mojibake markers in `src/app` and `src/components` is now clean
+- Latest validation after cleanup:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run test:features`
+
+TODOs / next suggestions:
+- Next high-value step: add real browser E2E for login, stories, videos, and admin CRUD now that auth/progress flow is less fragmented.
+- For deeper confidence, run real browser E2E outside this sandbox, especially on Phaser-based game pages and Bunny/Supabase flows.
+- `next build` worker execution is still blocked in this sandbox by `spawn EPERM`, so final production build verification must happen outside this environment.

@@ -1,0 +1,24 @@
+NEXT_PUBLIC_SUPABASE_URL=https://nmsaxkusgrdjjaztfmie.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_wwN9aDuz6_nMZ6WwZomgTg_WMa2selA
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_6uJVsi7epo8YPngJoHZWPw_xqOlJTDl
+
+# Video storage: videos are stored on the server's local disk (public/uploads).
+# No external storage env vars are required.
+
+# Admin emails (comma-separated)
+ADMIN_EMAILS=admin@comiclingua.com
+NEXT_PUBLIC_ADMIN_EMAILS=admin@comiclingua.com
+
+# Admin account dùng cho create-admin.js (node create-admin.js)
+# Đổi mật khẩu ở đây thay vì sửa code.
+ADMIN_EMAIL=admin@comiclingua.com
+ADMIN_PASSWORD=nhom4exe201
+ADMIN_NAME=Super Admin
+
+# JWT Authentication
+# 🔐 QUAN TRỌNG: Chạy lệnh sau để tạo secret mới:
+# node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+JWT_SECRET=OMP3DuS6z4tReeZx3VaLV1Xv5ltQTNA5ZL/23UUftzw=
+
+# Groq AI (for text translation & grammar analysis)
+GROQ_API_KEY=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
