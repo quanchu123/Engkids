@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/useToast';
 import { LEVELS, ERRORS, ROUTES } from '@/config/constants';
 import { videoApi } from '@/services/api';
-import { getAnyAccessToken } from '@/lib/admin-auth-client';
+import { getAnyAccessToken, refreshToken } from '@/lib/admin-auth-client';
 import { resizeImage } from '@/services/image';
 import { broadcastContentChange } from '@/lib/content-sync';
 
@@ -20,6 +20,13 @@ const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/ogg'
 const ALLOWED_EXT_LABEL = 'MP4, WebM, MOV, OGG';
 const MAX_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
 const THUMBNAIL_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp';
+
+class UploadError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+    this.name = 'UploadError';
+  }
+}
 
 async function generateVideoThumbnail(videoFile: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -196,12 +203,32 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
           } catch {
             // keep default message
           }
-          reject(new Error(msg));
+          reject(new UploadError(msg, xhr.status));
         }
       };
       xhr.onerror = () => reject(new Error('Network error during upload'));
       xhr.send(selectedFile);
     });
+  };
+
+  const uploadFileWithFreshAuth = async (selectedFile: File): Promise<string> => {
+    let accessToken = (await getAnyAccessToken()) || '';
+
+    try {
+      return await uploadFile(selectedFile, accessToken);
+    } catch (error) {
+      if (!(error instanceof UploadError) || error.status !== 401) {
+        throw error;
+      }
+
+      const refreshedToken = await refreshToken();
+      if (!refreshedToken || refreshedToken === accessToken) {
+        throw new Error('Phiên admin đã hết hạn. Đăng nhập lại rồi upload tiếp.');
+      }
+
+      accessToken = refreshedToken;
+      return uploadFile(selectedFile, accessToken);
+    }
   };
 
   const handleStartUpload = async () => {
@@ -215,10 +242,8 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
     setBusy(true);
     setProgressPct(0);
     try {
-      const accessToken = (await getAnyAccessToken()) || '';
-
       // 1. Stream the file to the server (stored on the droplet disk).
-      const objectKey = await uploadFile(file, accessToken);
+      const objectKey = await uploadFileWithFreshAuth(file);
       setProgressPct(95);
 
       // 2. Record the video metadata.

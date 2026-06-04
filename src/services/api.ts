@@ -4,7 +4,7 @@
 // ============================================
 
 import { ROUTES, ERRORS, TIMING } from '@/config/constants';
-import { getAnyAccessToken } from '@/lib/admin-auth-client';
+import { getAnyAccessToken, refreshToken } from '@/lib/admin-auth-client';
 
 // ============================================
 // TYPES
@@ -61,10 +61,11 @@ async function requestWithResponse<T>(
   }
 
   // Add auth header if needed
+  let authToken: string | null = null;
   if (auth) {
-    const token = await getAnyAccessToken();
-    if (token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+    authToken = await getAnyAccessToken();
+    if (authToken) {
+      (headers as Record<string, string>)['Authorization'] = `Bearer ${authToken}`;
     }
   }
 
@@ -73,7 +74,7 @@ async function requestWithResponse<T>(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       ...fetchOptions,
       headers,
       signal: controller.signal,
@@ -81,6 +82,20 @@ async function requestWithResponse<T>(
       // IMPORTANT: Send cookies for Supabase session auth
       credentials: 'include',
     });
+
+    if (auth && response.status === 401) {
+      const refreshedToken = await refreshToken();
+      if (refreshedToken && refreshedToken !== authToken) {
+        (headers as Record<string, string>)['Authorization'] = `Bearer ${refreshedToken}`;
+        response = await fetch(url, {
+          ...fetchOptions,
+          headers,
+          signal: controller.signal,
+          cache: fetchOptions.cache || 'no-store',
+          credentials: 'include',
+        });
+      }
+    }
 
     clearTimeout(timeoutId);
 
