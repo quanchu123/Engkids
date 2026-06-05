@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import VideoUploader from '@/components/video/VideoUploader';
 import SubtitleEditor from '@/components/video/SubtitleEditor';
+import VideoUploader from '@/components/video/VideoUploader';
 
 function NewVideoContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Default the uploader's category from the ?category= param so uploading from
-  // the Music tab pre-selects Music.
   const initialCategory = searchParams.get('category') === 'music' ? 'music' : 'video';
   const [step, setStep] = useState<'upload' | 'subtitles'>('upload');
   const [videoId, setVideoId] = useState<string | null>(null);
@@ -21,71 +19,78 @@ function NewVideoContent() {
   };
 
   const handleSubtitlesSaved = () => {
-    // Redirect to video list after 1 second
-    setTimeout(() => {
-      router.push('/admin/videos');
-    }, 1000);
+    setTimeout(() => router.push('/admin/videos'), 1000);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Progress Steps */}
-        <div className="mb-8 flex items-center justify-center">
-          <div className="flex items-center">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
-              step === 'upload' ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
-            }`}>
-              {step === 'upload' ? '1' : 'Done'}
-            </div>
-            <div className="ml-2 mr-8 text-sm font-medium text-gray-700">Upload Video</div>
-          </div>
+    <div className="space-y-6">
+      <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-500">Upload media</p>
+        <h1 className="mt-1 text-2xl font-black text-slate-950">
+          {initialCategory === 'music' ? 'Thêm video nhạc' : 'Thêm video học'}
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">Chọn file, kiểm tra thumbnail/thời lượng, rồi thêm phụ đề nếu cần.</p>
+      </header>
 
-          <div className={`w-24 h-1 ${step === 'subtitles' ? 'bg-blue-600' : 'bg-gray-300'}`} />
+      <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="grid gap-2 md:grid-cols-2">
+          <StepPill active={step === 'upload'} done={step === 'subtitles'} index="1" label="Upload video" />
+          <StepPill active={step === 'subtitles'} index="2" label="Phụ đề / transcript" />
+        </div>
+      </div>
 
-          <div className="flex items-center ml-8">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
-              step === 'subtitles' ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-500'
-            }`}>
-              2
-            </div>
-            <div className="ml-2 text-sm font-medium text-gray-700">Add Subtitles</div>
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+          {error}
+        </div>
+      )}
+
+      {step === 'upload' && (
+        <VideoUploader
+          initialCategory={initialCategory}
+          onUploadComplete={handleUploadComplete}
+          onError={setError}
+        />
+      )}
+
+      {step === 'subtitles' && videoId && (
+        <div className="space-y-4">
+          <SubtitleEditor videoId={videoId} onSave={handleSubtitlesSaved} />
+          <div className="flex justify-end">
+            <button
+              onClick={() => router.push('/admin/videos')}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-slate-50"
+            >
+              Bỏ qua phụ đề
+            </button>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
 
-        {/* Error Message */}
-        {error && (
-          <div className="max-w-2xl mx-auto mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
-          </div>
-        )}
-
-        {/* Step Content */}
-        {step === 'upload' && (
-          <VideoUploader
-            initialCategory={initialCategory}
-            onUploadComplete={handleUploadComplete}
-            onError={setError}
-          />
-        )}
-
-        {step === 'subtitles' && videoId && (
-          <div>
-            <SubtitleEditor
-              videoId={videoId}
-              onSave={handleSubtitlesSaved}
-            />
-            <div className="max-w-6xl mx-auto mt-4 flex justify-between">
-              <button
-                onClick={() => router.push('/admin/videos')}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                Skip subtitles →
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+function StepPill({
+  active,
+  done = false,
+  index,
+  label,
+}: {
+  active: boolean;
+  done?: boolean;
+  index: string;
+  label: string;
+}) {
+  return (
+    <div className={`flex items-center gap-3 rounded-xl px-4 py-3 ${
+      active || done ? 'bg-violet-50 text-violet-700' : 'bg-slate-50 text-slate-500'
+    }`}>
+      <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-black ${
+        active || done ? 'bg-violet-600 text-white' : 'bg-slate-200 text-slate-500'
+      }`}>
+        {done ? '✓' : index}
+      </span>
+      <span className="text-sm font-black">{label}</span>
     </div>
   );
 }

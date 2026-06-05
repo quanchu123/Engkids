@@ -41,7 +41,7 @@ function shouldBackfill(row, force) {
   if (!row.object_key) return false;
   if (force) return true;
   const current = row.thumbnail_url || '';
-  return !current || current.startsWith('data:image/');
+  return !current || current.startsWith('data:image/') || !Number.isFinite(row.duration) || row.duration <= 0;
 }
 
 async function generateThumbnail(objectKey) {
@@ -108,6 +108,38 @@ async function generateThumbnail(objectKey) {
   }
 }
 
+async function probeDuration(objectKey) {
+  const name = safeObjectName(objectKey);
+  if (!name) return 0;
+
+  const ext = path.extname(name).toLowerCase();
+  if (!VIDEO_EXTENSIONS.has(ext)) return 0;
+
+  const inputPath = path.join(UPLOADS_DIR, name);
+  try {
+    await fs.access(inputPath);
+  } catch {
+    return 0;
+  }
+
+  try {
+    const { stdout } = await execFileAsync('ffprobe', [
+      '-v',
+      'error',
+      '-show_entries',
+      'format=duration',
+      '-of',
+      'default=noprint_wrappers=1:nokey=1',
+      inputPath,
+    ], { timeout: 15_000 });
+    const duration = Number.parseFloat(String(stdout).trim());
+    return Number.isFinite(duration) ? Math.max(0, Math.round(duration)) : 0;
+  } catch (error) {
+    console.warn(`[thumb] ffprobe failed for ${name}: ${error.message}`);
+    return 0;
+  }
+}
+
 async function main() {
   const force = process.argv.includes('--force') || process.env.THUMBNAIL_FORCE === '1';
   const supabase = getSupabaseAdmin();
@@ -126,12 +158,20 @@ async function main() {
 
   let updated = 0;
   for (const row of rows) {
-    const thumbnailUrl = await generateThumbnail(row.object_key);
-    if (!thumbnailUrl) continue;
+    const currentThumbnail = row.thumbnail_url || '';
+    const needsThumbnail = force || !currentThumbnail || currentThumbnail.startsWith('data:image/');
+    const needsDuration = force || !Number.isFinite(row.duration) || row.duration <= 0;
+    const thumbnailUrl = needsThumbnail ? await generateThumbnail(row.object_key) : null;
+    const duration = needsDuration ? await probeDuration(row.object_key) : 0;
+
+    const updates = {};
+    if (thumbnailUrl) updates.thumbnail_url = thumbnailUrl;
+    if (duration > 0) updates.duration = duration;
+    if (Object.keys(updates).length === 0) continue;
 
     const { error: updateError } = await supabase
       .from('videos')
-      .update({ thumbnail_url: thumbnailUrl })
+      .update(updates)
       .eq('id', row.id);
 
     if (updateError) {
@@ -140,7 +180,7 @@ async function main() {
     }
 
     updated += 1;
-    console.log(`[thumb] updated ${row.title || row.id}: ${thumbnailUrl}`);
+    console.log(`[thumb] updated ${row.title || row.id}: ${JSON.stringify(updates)}`);
   }
 
   console.log(`[thumb] done, updated ${updated}/${rows.length}`);

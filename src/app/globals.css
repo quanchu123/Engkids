@@ -902,6 +902,35 @@ a {
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
+.admin-input {
+  min-height: 44px;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(226 232 240);
+  background: white;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgb(15 23 42);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.admin-input::placeholder {
+  color: rgb(148 163 184);
+}
+
+.admin-input:focus {
+  border-color: rgb(196 181 253);
+  box-shadow: 0 0 0 3px rgba(221, 214, 254, 0.65);
+}
+
+.admin-input:disabled {
+  cursor: not-allowed;
+  background: rgb(248 250 252);
+  color: rgb(100 116 139);
+}
+
 
 
 /* ============================================================

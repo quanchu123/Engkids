@@ -1,70 +1,85 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { BookOpen, Clapperboard, ExternalLink, Gamepad2, LogOut, Music2, Plus } from 'lucide-react';
 import { signOut } from '@/lib/auth-client';
+
+const menuItems = [
+  { name: 'Truyện', path: '/admin', icon: BookOpen },
+  { name: 'Video & Nhạc', path: '/admin/videos', icon: Clapperboard },
+  { name: 'Game', path: '/admin/games', icon: Gamepad2 },
+  { name: 'Nhạc nền', path: '/admin/music', icon: Music2 },
+];
 
 export default function AdminSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
 
   const isActive = (path: string) => {
-    if (path === '/admin' && pathname === '/admin') return true;
-    if (path !== '/admin' && pathname.startsWith(path)) return true;
-    return false;
+    if (path === '/admin') return pathname === '/admin' || pathname.startsWith('/admin/edit');
+    return pathname.startsWith(path);
   };
 
   const handleLogout = async () => {
     await signOut('/login');
   };
 
-  const menuItems = [
-    { name: 'Dashboard', path: '/admin' },
-    { name: 'Stories', path: '/admin/new' },
-    { name: 'Videos', path: '/admin/videos' },
-    { name: 'Games', path: '/admin/games' },
-    { name: 'Nhạc nền', path: '/admin/music' },
-    { name: 'Trang chủ', path: '/' },
-  ];
-
   return (
-    <aside className="w-56 bg-gradient-to-b from-purple-900 via-purple-800 to-indigo-900 h-screen fixed left-0 top-0 overflow-y-auto text-white flex flex-col shadow-2xl z-50">
-      <div className="p-4 border-b border-purple-700/50">
-        <div className="flex items-center gap-2">
-          <div>
-            <h1 className="font-bold text-base">Admin Panel</h1>
-            <p className="text-[10px] text-purple-300">Manager</p>
-          </div>
-        </div>
+    <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-slate-200 bg-white text-slate-900 shadow-sm">
+      <div className="border-b border-slate-200 p-5">
+        <Link href="/admin" className="block">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-violet-500">Engkids</p>
+          <h1 className="mt-1 text-xl font-black tracking-tight">Admin</h1>
+        </Link>
       </div>
 
-      <nav className="p-3 space-y-1.5 flex-1">
-        {menuItems.map((item) => (
-          <Link
-            key={item.path}
-            href={item.path}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all font-medium text-sm ${
-              isActive(item.path)
-                ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg scale-105'
-                : 'text-purple-200 hover:bg-purple-700/50 hover:text-white hover:scale-102'
-            }`}
-          >
-            <span>{item.name}</span>
-          </Link>
-        ))}
-        
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all text-purple-200 hover:bg-red-900/30 hover:text-red-300 font-medium text-sm mt-4"
+      <div className="border-b border-slate-200 p-4">
+        <Link
+          href="/admin/new"
+          className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-sm transition-colors hover:bg-violet-700"
         >
-          <span>Logout</span>
-        </button>
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Thêm truyện
+        </Link>
+      </div>
+
+      <nav className="flex-1 space-y-1 p-3">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.path);
+          return (
+            <Link
+              key={item.name}
+              href={item.path}
+              className={`flex min-h-[42px] items-center gap-3 rounded-xl px-3 text-sm font-bold transition-colors ${
+                active
+                  ? 'bg-violet-50 text-violet-700'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
+              }`}
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {item.name}
+            </Link>
+          );
+        })}
+
+        <Link
+          href="/"
+          className="flex min-h-[42px] items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-950"
+        >
+          <ExternalLink className="h-4 w-4" aria-hidden="true" />
+          Xem website
+        </Link>
       </nav>
 
-      <div className="p-3 border-t border-purple-700/50">
-        <div className="bg-purple-800/30 rounded-lg p-2">
-          <p className="text-[10px] text-purple-300 text-center">v1.0 • Engkids</p>
-        </div>
+      <div className="border-t border-slate-200 p-3">
+        <button
+          onClick={handleLogout}
+          className="flex min-h-[42px] w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600"
+        >
+          <LogOut className="h-4 w-4" aria-hidden="true" />
+          Đăng xuất
+        </button>
       </div>
     </aside>
   );

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ERRORS, LEVELS, ROUTES } from '@/config/constants';
 import { useToast } from '@/hooks/useToast';
-import { LEVELS, ERRORS, ROUTES } from '@/config/constants';
-import { videoApi } from '@/services/api';
 import { getAnyAccessToken, refreshToken } from '@/lib/admin-auth-client';
-import { resizeImage } from '@/services/image';
 import { broadcastContentChange } from '@/lib/content-sync';
+import { videoApi } from '@/services/api';
+import { resizeImage } from '@/services/image';
 
 interface VideoUploaderProps {
   onUploadComplete?: (videoId: string) => void;
@@ -15,11 +15,17 @@ interface VideoUploaderProps {
   initialCategory?: 'video' | 'music';
 }
 
-// Allowed types for self-uploaded videos played as direct MP4.
 const ALLOWED_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/ogg'];
 const ALLOWED_EXT_LABEL = 'MP4, WebM, MOV, OGG';
-const MAX_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
+const MAX_BYTES = 2 * 1024 * 1024 * 1024;
 const THUMBNAIL_ACCEPT = 'image/png,image/jpeg,image/jpg,image/webp';
+
+function formatDuration(seconds: number) {
+  const safeSeconds = Math.max(0, Math.round(seconds));
+  const mins = Math.floor(safeSeconds / 60);
+  const secs = safeSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
 
 class UploadError extends Error {
   constructor(message: string, public status: number) {
@@ -28,10 +34,11 @@ class UploadError extends Error {
   }
 }
 
-async function generateVideoThumbnail(videoFile: File): Promise<string> {
+async function inspectVideoFile(videoFile: File): Promise<{ thumbnail: string; duration: number }> {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
     const objectUrl = URL.createObjectURL(videoFile);
+    let duration = 0;
 
     const cleanup = () => {
       video.pause();
@@ -55,7 +62,7 @@ async function generateVideoThumbnail(videoFile: File): Promise<string> {
         ctx.drawImage(video, 0, 0, width, height);
         const thumbnail = canvas.toDataURL('image/jpeg', 0.82);
         cleanup();
-        resolve(thumbnail);
+        resolve({ thumbnail, duration });
       } catch (error) {
         cleanup();
         reject(error);
@@ -67,10 +74,10 @@ async function generateVideoThumbnail(videoFile: File): Promise<string> {
     video.playsInline = true;
     video.onerror = () => {
       cleanup();
-      reject(new Error('Cannot read selected video for thumbnail'));
+      reject(new Error('Không đọc được file video đã chọn.'));
     };
     video.onloadedmetadata = () => {
-      const duration = Number.isFinite(video.duration) ? video.duration : 0;
+      duration = Number.isFinite(video.duration) ? Math.max(0, Math.round(video.duration)) : 0;
       video.currentTime = Math.min(Math.max(duration * 0.1, 0.2), 2);
     };
     video.onseeked = capture;
@@ -90,88 +97,90 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
   const [category, setCategory] = useState<'video' | 'music'>(initialCategory);
   const [feature, setFeature] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [durationSeconds, setDurationSeconds] = useState(0);
   const [customThumbnail, setCustomThumbnail] = useState(false);
   const [thumbnailStatus, setThumbnailStatus] = useState('');
-
   const [busy, setBusy] = useState(false);
   const [progressPct, setProgressPct] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (!ALLOWED_TYPES.includes(selectedFile.type)) {
-        const error = ERRORS.INVALID_FILE_TYPE([ALLOWED_EXT_LABEL]);
-        toast.error(error);
-        onError?.(error);
-        return;
-      }
-      if (selectedFile.size > MAX_BYTES) {
-        const error = ERRORS.FILE_TOO_LARGE(2048);
-        toast.error(error);
-        onError?.(error);
-        return;
-      }
-      setFile(selectedFile);
-      if (!title) {
-        setTitle(selectedFile.name.replace(/\.[^/.]+$/, ''));
-      }
-      setThumbnailStatus('Generating thumbnail...');
-      try {
-        const generatedThumbnail = await generateVideoThumbnail(selectedFile);
-        setThumbnailUrl(generatedThumbnail);
-        setCustomThumbnail(false);
-        setThumbnailStatus('Thumbnail generated from video.');
-      } catch (error) {
-        console.warn('Failed to generate video thumbnail:', error);
-        setThumbnailStatus('Could not auto-generate thumbnail. Upload one manually if needed.');
-      }
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (!ALLOWED_TYPES.includes(selectedFile.type)) {
+      const error = ERRORS.INVALID_FILE_TYPE([ALLOWED_EXT_LABEL]);
+      toast.error(error);
+      onError?.(error);
+      return;
+    }
+
+    if (selectedFile.size > MAX_BYTES) {
+      const error = ERRORS.FILE_TOO_LARGE(2048);
+      toast.error(error);
+      onError?.(error);
+      return;
+    }
+
+    setFile(selectedFile);
+    setDurationSeconds(0);
+    if (!title) setTitle(selectedFile.name.replace(/\.[^/.]+$/, ''));
+
+    setThumbnailStatus('Đang tạo thumbnail từ video...');
+    try {
+      const metadata = await inspectVideoFile(selectedFile);
+      setThumbnailUrl(metadata.thumbnail);
+      setDurationSeconds(metadata.duration);
+      setCustomThumbnail(false);
+      setThumbnailStatus(
+        metadata.duration > 0
+          ? `Đã tạo thumbnail. Thời lượng: ${formatDuration(metadata.duration)}.`
+          : 'Đã tạo thumbnail từ video.',
+      );
+    } catch (error) {
+      console.warn('Failed to inspect selected video:', error);
+      setThumbnailStatus('Không tự tạo được thumbnail. Bạn có thể chọn ảnh thủ công.');
     }
   };
 
-  const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
+  const handleThumbnailUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
     if (!selectedFile) return;
 
     if (!THUMBNAIL_ACCEPT.split(',').includes(selectedFile.type)) {
-      toast.error('Thumbnail must be PNG, JPG, or WebP.');
+      toast.error('Thumbnail phải là PNG, JPG hoặc WebP.');
       return;
     }
 
     try {
-      setThumbnailStatus('Optimizing thumbnail...');
+      setThumbnailStatus('Đang tối ưu thumbnail...');
       const resized = await resizeImage(selectedFile, 640, 360, 0.82);
       setThumbnailUrl(resized);
       setCustomThumbnail(true);
-      setThumbnailStatus('Custom thumbnail selected.');
+      setThumbnailStatus('Đã chọn thumbnail thủ công.');
     } catch (error) {
       console.error('Thumbnail upload error:', error);
-      toast.error('Could not read thumbnail image.');
-      setThumbnailStatus('Could not read thumbnail image.');
+      toast.error('Không đọc được ảnh thumbnail.');
+      setThumbnailStatus('Không đọc được ảnh thumbnail.');
     } finally {
-      if (thumbnailInputRef.current) {
-        thumbnailInputRef.current.value = '';
-      }
+      if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) {
-      handleFileSelect({ target: { files: [droppedFile] } } as unknown as React.ChangeEvent<HTMLInputElement>);
-    }
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const droppedFile = event.dataTransfer.files[0];
+    if (!droppedFile) return;
+    handleFileSelect({ target: { files: [droppedFile] } } as unknown as React.ChangeEvent<HTMLInputElement>);
   };
 
-  // Upload the raw file to our server, which streams it to the droplet disk.
-  // Returns the stored object key. Tracks progress via XMLHttpRequest.
   const uploadFile = (
     selectedFile: File,
     accessToken: string,
@@ -181,16 +190,11 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${ROUTES.API.VIDEO_UPLOAD}?ext=${encodeURIComponent(ext)}`, true);
       xhr.setRequestHeader('Content-Type', 'application/octet-stream');
-      if (accessToken) {
-        xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
-      }
+      if (accessToken) xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
       xhr.withCredentials = true;
 
       xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          // Reserve the last 10% for recording metadata.
-          setProgressPct(Math.round((event.loaded / event.total) * 90));
-        }
+        if (event.lengthComputable) setProgressPct(Math.round((event.loaded / event.total) * 90));
       };
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
@@ -201,36 +205,36 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
                 objectKey: data.objectKey,
                 thumbnailUrl: typeof data.thumbnailUrl === 'string' ? data.thumbnailUrl : undefined,
               });
+              return;
             }
-            else reject(new Error('Upload succeeded but no object key was returned'));
+            reject(new Error('Upload thành công nhưng server không trả object key.'));
           } catch {
-            reject(new Error('Invalid server response'));
+            reject(new Error('Server trả dữ liệu upload không hợp lệ.'));
           }
-        } else {
-          let msg = `Upload failed (HTTP ${xhr.status})`;
-          try {
-            const data = JSON.parse(xhr.responseText);
-            if (data.error) msg = data.error;
-          } catch {
-            // keep default message
-          }
-          reject(new UploadError(msg, xhr.status));
+          return;
         }
+
+        let message = `Upload thất bại (HTTP ${xhr.status})`;
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.error) message = data.error;
+        } catch {
+          // keep default
+        }
+        reject(new UploadError(message, xhr.status));
       };
-      xhr.onerror = () => reject(new Error('Network error during upload'));
+      xhr.onerror = () => reject(new Error('Lỗi mạng khi upload.'));
       xhr.send(selectedFile);
     });
   };
 
-  const uploadFileWithFreshAuth = async (selectedFile: File): Promise<{ objectKey: string; thumbnailUrl?: string }> => {
+  const uploadFileWithFreshAuth = async (selectedFile: File) => {
     let accessToken = (await getAnyAccessToken()) || '';
 
     try {
       return await uploadFile(selectedFile, accessToken);
     } catch (error) {
-      if (!(error instanceof UploadError) || error.status !== 401) {
-        throw error;
-      }
+      if (!(error instanceof UploadError) || error.status !== 401) throw error;
 
       const refreshedToken = await refreshToken();
       if (!refreshedToken || refreshedToken === accessToken) {
@@ -244,7 +248,7 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
 
   const handleStartUpload = async () => {
     if (!file || !title || !titleVi) {
-      const error = 'Please fill in all required fields and select a video';
+      const error = 'Điền đủ tiêu đề và chọn file video trước khi upload.';
       toast.error(error);
       onError?.(error);
       return;
@@ -253,14 +257,10 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
     setBusy(true);
     setProgressPct(0);
     try {
-      // 1. Stream the file to the server (stored on the droplet disk).
       const uploaded = await uploadFileWithFreshAuth(file);
       setProgressPct(95);
-      const finalThumbnailUrl = customThumbnail
-        ? thumbnailUrl
-        : uploaded.thumbnailUrl || thumbnailUrl;
+      const finalThumbnailUrl = customThumbnail ? thumbnailUrl : uploaded.thumbnailUrl || thumbnailUrl;
 
-      // 2. Record the video metadata.
       const data = await videoApi.create({
         objectKey: uploaded.objectKey,
         title,
@@ -271,232 +271,214 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
         topics: [],
         category,
         feature,
+        duration: durationSeconds,
       });
-      setProgressPct(100);
 
+      setProgressPct(100);
       toast.success('Video đã tải lên máy chủ và sẵn sàng xem!');
-      // Tell other open tabs to refresh their video lists.
       broadcastContentChange('videos');
       router.refresh();
       onUploadComplete?.(data.video.id);
     } catch (error) {
       console.error('Upload error:', error);
-      const msg = error instanceof Error ? error.message : 'Upload failed';
-      toast.error(msg);
-      onError?.(msg);
+      const message = error instanceof Error ? error.message : 'Upload thất bại';
+      toast.error(message);
+      onError?.(message);
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-2 text-gray-800">Upload New Video</h2>
-      <p className="mb-6 text-sm text-gray-500">
-        Video được lưu trên máy chủ và phát trực tiếp.
-      </p>
-
-      {/* File Upload Area */}
-      <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center mb-6 transition-colors cursor-pointer ${
-          file ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-blue-400'
-        }`}
-        role="button"
-        aria-label="Upload video - drag and drop or click to browse"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !busy && fileInputRef.current?.click(); } }}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        onClick={() => !busy && fileInputRef.current?.click()}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="video/mp4,video/webm,video/quicktime,video/ogg"
-          onChange={handleFileSelect}
-          className="hidden"
-          disabled={busy}
-        />
-        {file ? (
-          <div>
-            <p className="text-green-600 font-semibold mb-2">✓ File selected</p>
-            <p className="text-gray-700">{file.name}</p>
-            <p className="text-gray-500 text-sm mt-1">
-              {(file.size / (1024 * 1024)).toFixed(2)} MB
-            </p>
-          </div>
-        ) : (
-          <div>
-            <p className="text-gray-600 mb-2 font-medium">Drag & drop video here or click to browse</p>
-            <p className="text-gray-400 text-sm">{ALLOWED_EXT_LABEL} (max 2GB)</p>
-          </div>
-        )}
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="border-b border-slate-200 p-5">
+        <h2 className="text-xl font-black text-slate-950">Thông tin upload</h2>
+        <p className="mt-1 text-sm text-slate-500">File được lưu trên SSD của droplet và phát trực tiếp qua website.</p>
       </div>
 
-      {/* Thumbnail */}
-      <div className="mb-6">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <label className="block text-sm font-medium text-gray-700">
-            Thumbnail
-          </label>
-          <button
-            type="button"
-            onClick={() => !busy && thumbnailInputRef.current?.click()}
-            disabled={busy}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+      <div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div className="space-y-5">
+          <div
+            className={`flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${
+              file ? 'border-emerald-300 bg-emerald-50' : 'border-slate-200 bg-slate-50 hover:border-violet-300 hover:bg-violet-50'
+            }`}
+            role="button"
+            aria-label="Upload video - drag and drop or click to browse"
+            tabIndex={0}
+            onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); !busy && fileInputRef.current?.click(); } }}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onClick={() => !busy && fileInputRef.current?.click()}
           >
-            Upload image
-          </button>
-        </div>
-        <input
-          ref={thumbnailInputRef}
-          type="file"
-          accept={THUMBNAIL_ACCEPT}
-          onChange={handleThumbnailUpload}
-          className="hidden"
-          disabled={busy}
-        />
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
-          {thumbnailUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={thumbnailUrl}
-              alt="Video thumbnail preview"
-              className="aspect-video w-full object-cover"
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime,video/ogg"
+              onChange={handleFileSelect}
+              className="hidden"
+              disabled={busy}
             />
-          ) : (
-            <div className="flex aspect-video items-center justify-center text-sm text-gray-500">
-              Thumbnail will be generated after selecting a video.
+            {file ? (
+              <>
+                <p className="font-black text-emerald-700">Đã chọn file</p>
+                <p className="mt-2 max-w-full truncate text-sm font-bold text-slate-700">{file.name}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {(file.size / (1024 * 1024)).toFixed(2)} MB
+                  {durationSeconds > 0 ? ` · ${formatDuration(durationSeconds)}` : ''}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-black text-slate-700">Kéo thả video hoặc bấm để chọn file</p>
+                <p className="mt-2 text-sm text-slate-400">{ALLOWED_EXT_LABEL} · tối đa 2GB</p>
+              </>
+            )}
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="text-sm font-black text-slate-700">Thumbnail</label>
+              <button
+                type="button"
+                onClick={() => !busy && thumbnailInputRef.current?.click()}
+                disabled={busy}
+                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Chọn ảnh khác
+              </button>
+            </div>
+            <input
+              ref={thumbnailInputRef}
+              type="file"
+              accept={THUMBNAIL_ACCEPT}
+              onChange={handleThumbnailUpload}
+              className="hidden"
+              disabled={busy}
+            />
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+              {thumbnailUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={thumbnailUrl} alt="Video thumbnail preview" className="aspect-video w-full object-cover" />
+              ) : (
+                <div className="flex aspect-video items-center justify-center px-4 text-center text-sm font-bold text-slate-400">
+                  Thumbnail sẽ tự tạo từ một frame trong video sau khi chọn file.
+                </div>
+              )}
+            </div>
+            {thumbnailStatus && <p className="mt-2 text-xs font-semibold text-slate-500">{thumbnailStatus}</p>}
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Tiêu đề tiếng Anh" required>
+              <input
+                type="text"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                className="admin-input"
+                placeholder="Peppa Pig - George's Birthday"
+                disabled={busy}
+                required
+              />
+            </Field>
+            <Field label="Tiêu đề tiếng Việt" required>
+              <input
+                type="text"
+                value={titleVi}
+                onChange={(event) => setTitleVi(event.target.value)}
+                className="admin-input"
+                placeholder="Sinh nhật của George"
+                disabled={busy}
+                required
+              />
+            </Field>
+          </div>
+
+          <Field label="Mô tả">
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              className="admin-input min-h-[96px] resize-y"
+              placeholder="Mô tả ngắn để người học dễ chọn bài."
+              disabled={busy}
+            />
+          </Field>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <Field label="Level" required>
+              <select value={level} onChange={(event) => setLevel(event.target.value as LevelValue)} className="admin-input bg-white" disabled={busy}>
+                <option value={LEVELS.BEGINNER}>Beginner</option>
+                <option value={LEVELS.ELEMENTARY}>Elementary</option>
+                <option value={LEVELS.INTERMEDIATE}>Intermediate</option>
+              </select>
+            </Field>
+            <Field label="Loại" required>
+              <select value={category} onChange={(event) => setCategory(event.target.value as 'video' | 'music')} className="admin-input bg-white" disabled={busy}>
+                <option value="video">Video học</option>
+                <option value="music">Video nhạc</option>
+              </select>
+            </Field>
+            <Field label="Thời lượng">
+              <input className="admin-input bg-slate-50 text-slate-500" value={durationSeconds > 0 ? formatDuration(durationSeconds) : 'Tự đọc từ file'} readOnly />
+            </Field>
+          </div>
+
+          <Field label="Chủ đề / bộ sưu tập">
+            <input
+              type="text"
+              value={feature}
+              onChange={(event) => setFeature(event.target.value)}
+              className="admin-input"
+              placeholder="Phonics, Bài hát thiếu nhi... để trống = Tổng hợp"
+              disabled={busy}
+            />
+          </Field>
+
+          {busy && (
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="mb-2 flex justify-between text-sm font-black text-slate-600">
+                <span>Đang tải lên</span>
+                <span>{progressPct}%</span>
+              </div>
+              <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200">
+                <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${progressPct}%` }} />
+              </div>
             </div>
           )}
-        </div>
-        {thumbnailStatus && (
-          <p className="mt-2 text-xs text-gray-500">{thumbnailStatus}</p>
-        )}
-      </div>
 
-      {/* Form Fields */}
-      <div className="space-y-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Title (English) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., Peppa Pig - George's Birthday"
-            disabled={busy}
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Title (Vietnamese) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={titleVi}
-            onChange={(e) => setTitleVi(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., Peppa Pig - Sinh nhật của George"
-            disabled={busy}
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={3}
-            placeholder="Brief description of the video..."
-            disabled={busy}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Difficulty Level <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={level}
-            onChange={(e) => setLevel(e.target.value as LevelValue)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            disabled={busy}
+          <button
+            onClick={handleStartUpload}
+            disabled={!file || !title || !titleVi || busy}
+            className={`min-h-[48px] w-full rounded-xl px-4 text-sm font-black transition-colors ${
+              file && title && titleVi && !busy
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'cursor-not-allowed bg-slate-200 text-slate-400'
+            }`}
           >
-            <option value={LEVELS.BEGINNER}>Beginner</option>
-            <option value={LEVELS.ELEMENTARY}>Elementary</option>
-            <option value={LEVELS.INTERMEDIATE}>Intermediate</option>
-          </select>
+            {busy ? 'Đang tải lên...' : 'Upload và đăng ngay'}
+          </button>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Category <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as 'video' | 'music')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            disabled={busy}
-          >
-            <option value="video">Educational Video (Learning Content)</option>
-            <option value="music">Music (Songs for Learning)</option>
-          </select>
-          <p className="text-xs text-gray-500 mt-1">
-            {category === 'music'
-              ? 'Will appear in Music section - for songs and sing-along videos'
-              : 'Will appear in Videos section - for lessons and educational content'}
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Feature (Chủ đề / Bộ sưu tập)
-          </label>
-          <input
-            type="text"
-            value={feature}
-            onChange={(e) => setFeature(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="VD: Phonics, Bài hát thiếu nhi... (để trống = Tổng Hợp)"
-            disabled={busy}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Nhóm video theo chủ đề. Để trống sẽ được xếp vào mục “Tổng Hợp”.
-          </p>
-        </div>
-      </div>
-
-      {/* Upload Progress */}
-      {busy && (
-        <div className="mb-4">
-          <div className="mb-1 text-sm text-gray-600">Đang tải lên... {progressPct}%</div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
-            <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progressPct}%` }} />
-          </div>
-        </div>
-      )}
-
-      {/* Action Button */}
-      <div className="flex gap-3">
-        <button
-          onClick={handleStartUpload}
-          disabled={!file || !title || !titleVi || busy}
-          className={`flex-1 py-3 px-4 rounded-md font-semibold transition-colors ${
-            file && title && titleVi && !busy
-              ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          {busy ? 'Đang tải lên...' : 'Tải lên video'}
-        </button>
       </div>
     </div>
+  );
+}
+
+function Field({
+  label,
+  required = false,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-sm font-black text-slate-700">
+        {label} {required && <span className="text-red-500">*</span>}
+      </span>
+      {children}
+    </label>
   );
 }

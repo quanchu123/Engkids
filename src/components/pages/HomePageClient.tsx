@@ -458,8 +458,9 @@ function StoryCard({ story }: { story: Story }) {
 
 function VideoCard({ video }: { video: Video }) {
   const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const safeSeconds = Math.max(0, Math.round(seconds || 0));
+    const mins = Math.floor(safeSeconds / 60);
+    const secs = safeSeconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 

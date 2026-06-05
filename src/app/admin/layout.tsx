@@ -18,10 +18,10 @@ export default function AdminLayout({
 
   return (
     <AdminGuard>
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex">
+      <div className="flex min-h-screen bg-slate-50">
         <AdminSidebar />
-        <main className="flex-1 ml-56 p-6">
-          <div className="max-w-7xl mx-auto">
+        <main className="ml-64 flex-1 p-6">
+          <div className="mx-auto max-w-7xl">
             {children}
           </div>
         </main>

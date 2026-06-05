@@ -149,7 +149,7 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
     thumbnailUrl: row.thumbnail_url || undefined,
     objectKey: row.object_key || undefined,
     videoUrl,
-    duration: row.duration,
+    duration: Number.isFinite(row.duration) ? Math.max(0, Math.round(row.duration)) : 0,
     level: row.level,
     topics: row.topics,
     ageGroup: row.age_group || undefined,

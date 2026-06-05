@@ -5,9 +5,9 @@
 import { memo, useState } from 'react';
 import Link from 'next/link';
 import { Play } from 'lucide-react';
-import { Video } from '@/types';
 import { ROUTES } from '@/config/constants';
 import { VideoFallbackArtwork } from '@/components/common/FallbackArtwork';
+import { Video } from '@/types';
 
 const TOPIC_COLORS: Record<string, { bg: string; text: string }> = {
   Animals: { bg: 'bg-amber-100', text: 'text-amber-700' },
@@ -42,6 +42,20 @@ interface VideoCardProps {
   progress?: number;
 }
 
+function formatDuration(seconds: number) {
+  const safeSeconds = Math.max(0, Math.round(seconds || 0));
+  const mins = Math.floor(safeSeconds / 60);
+  const secs = safeSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function isNewVideo(createdAt: string): boolean {
+  const created = new Date(createdAt);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays <= 7;
+}
+
 export default memo(function VideoCard({
   video,
   size = 'medium',
@@ -61,12 +75,6 @@ export default memo(function VideoCard({
     large: 'w-72',
   };
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
     <Link href={ROUTES.VIDEO_DETAIL(video.id)} aria-label={video.titleVi || video.title}>
       <div
@@ -75,13 +83,9 @@ export default memo(function VideoCard({
         onMouseLeave={() => setIsHovered(false)}
       >
         <div
-          className={`
-            playful-card toy-panel relative aspect-video overflow-hidden rounded-[20px]
-            transition-all duration-300
-            ${isHovered ? 'scale-105 -translate-y-1' : ''}
-            ring-4 ring-transparent
-            ${isHovered ? 'ring-kid-yellow' : ''}
-          `}
+          className={`playful-card toy-panel relative aspect-video overflow-hidden rounded-[20px] ring-4 ring-transparent transition-all duration-300 ${
+            isHovered ? '-translate-y-1 scale-105 ring-kid-yellow' : ''
+          }`}
         >
           {video.thumbnailUrl && !imageError ? (
             <img
@@ -97,21 +101,17 @@ export default memo(function VideoCard({
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-          <div
-            className={`
-              absolute inset-0 flex items-center justify-center
-              transition-all duration-300
-              ${isHovered ? 'opacity-100' : 'opacity-0'}
-            `}
-          >
+          <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-lg transition-transform group-hover:scale-110">
               <Play size={22} fill="currentColor" aria-hidden="true" />
             </div>
           </div>
 
-          <div className="absolute bottom-2 right-2 rounded-lg bg-black/70 px-2 py-0.5 text-xs font-medium text-white">
-            {formatDuration(video.duration)}
-          </div>
+          {video.duration > 0 && (
+            <div className="absolute bottom-2 right-2 rounded-lg bg-black/70 px-2 py-0.5 text-xs font-medium text-white">
+              {formatDuration(video.duration)}
+            </div>
+          )}
 
           <div className={`absolute left-2 top-2 rounded-full px-2 py-1 text-xs font-bold text-white shadow-md ${levelConfig.bg}`}>
             <span className="hidden sm:inline">{levelConfig.label}</span>
@@ -130,7 +130,7 @@ export default memo(function VideoCard({
           )}
 
           {isNewVideo(video.createdAt) && (
-            <div className="absolute -right-1 -top-1 rounded-full bg-gradient-to-r from-red-500 to-pink-500 px-2 py-0.5 text-xs font-bold text-white shadow-lg animate-pulse">
+            <div className="absolute -right-1 -top-1 animate-pulse rounded-full bg-gradient-to-r from-red-500 to-pink-500 px-2 py-0.5 text-xs font-bold text-white shadow-lg">
               NEW
             </div>
           )}
@@ -164,10 +164,3 @@ export default memo(function VideoCard({
     </Link>
   );
 });
-
-function isNewVideo(createdAt: string): boolean {
-  const created = new Date(createdAt);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
-  return diffDays <= 7;
-}
