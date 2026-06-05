@@ -1,0 +1,105 @@
+{
+  "asset": "3d",
+  "format": "png",
+  "generatedAt": "2026-06-05T19:40:56.636Z",
+  "results": [
+    {
+      "name": "carrot",
+      "query": "carrot vegetable 3d icon",
+      "uuid": "32a81d60-39f9-11f0-a8cb-0242ac140003",
+      "file": "/games/english-farm/icons/carrot.png",
+      "source": "thumb"
+    },
+    {
+      "name": "tomato",
+      "query": "tomato vegetable 3d icon",
+      "uuid": "aee73ac0-24a4-11ed-a6d8-0242ac140003",
+      "file": "/games/english-farm/icons/tomato.png",
+      "source": "thumb"
+    },
+    {
+      "name": "corn",
+      "query": "corn maize 3d icon",
+      "uuid": "705179d0-8d4e-11f0-9130-0242ac140003",
+      "file": "/games/english-farm/icons/corn.png",
+      "source": "thumb"
+    },
+    {
+      "name": "pumpkin",
+      "query": "pumpkin 3d icon",
+      "uuid": "32a77e60-39f9-11f0-90a1-0242ac140003",
+      "file": "/games/english-farm/icons/pumpkin.png",
+      "source": "thumb"
+    },
+    {
+      "name": "strawberry",
+      "query": "strawberry fruit 3d icon",
+      "uuid": "4ec5eaa0-3189-11f0-9aec-0242ac140003",
+      "file": "/games/english-farm/icons/strawberry.png",
+      "source": "thumb"
+    },
+    {
+      "name": "potato",
+      "query": "potato vegetable 3d icon",
+      "uuid": "aee617e0-24a4-11ed-8a63-0242ac140003",
+      "file": "/games/english-farm/icons/potato.png",
+      "source": "thumb"
+    },
+    {
+      "name": "seed",
+      "query": "seed bag 3d icon",
+      "uuid": "3ae6f5e0-9d60-11ee-af61-0242ac140003",
+      "file": "/games/english-farm/icons/seed.png",
+      "source": "thumb"
+    },
+    {
+      "name": "sprout",
+      "query": "sprout seedling 3d icon",
+      "uuid": "6861efa0-00d7-11f1-80ca-0242ac140003",
+      "file": "/games/english-farm/icons/sprout.png",
+      "source": "thumb"
+    },
+    {
+      "name": "hoe",
+      "query": "hoe farming tool 3d icon",
+      "uuid": "16186230-2b99-11ee-9aee-0242ac140003",
+      "file": "/games/english-farm/icons/hoe.png",
+      "source": "thumb"
+    },
+    {
+      "name": "watering-can",
+      "query": "watering can 3d icon",
+      "uuid": "0a689420-2f2b-11f0-a984-0242ac140003",
+      "file": "/games/english-farm/icons/watering-can.png",
+      "source": "thumb"
+    },
+    {
+      "name": "coin",
+      "query": "gold coin 3d icon",
+      "uuid": "899cbb10-faec-11ee-8515-0242ac140003",
+      "file": "/games/english-farm/icons/coin.png",
+      "source": "thumb"
+    },
+    {
+      "name": "star",
+      "query": "star 3d icon",
+      "uuid": "78289910-2494-11ef-8a33-0242ac140003",
+      "file": "/games/english-farm/icons/star.png",
+      "source": "thumb"
+    },
+    {
+      "name": "basket",
+      "query": "harvest basket 3d icon",
+      "uuid": "faf98460-2a9c-11ed-a917-0242ac140003",
+      "file": "/games/english-farm/icons/basket.png",
+      "source": "thumb"
+    },
+    {
+      "name": "soil",
+      "query": "soil dirt ground 3d icon",
+      "uuid": "6861f990-00d7-11f1-91b3-0242ac140003",
+      "file": "/games/english-farm/icons/soil.png",
+      "source": "thumb"
+    }
+  ]
+}

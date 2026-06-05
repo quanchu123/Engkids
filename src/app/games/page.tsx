@@ -18,6 +18,16 @@ const GAMES = [
     href: '/games/rpg-world',
   },
   {
+    id: 'english-farm',
+    title: 'English Farm',
+    desc: 'Trồng trọt và học từ vựng.',
+    icon: 'sparkles',
+    grad: 'from-lime-400 via-green-500 to-emerald-500',
+    border: '#22c55e',
+    badge: 'NEW',
+    href: '/games/english-farm',
+  },
+  {
     id: 'word-burst',
     title: 'Word Burst',
     desc: 'Chọn từ đúng thật nhanh.',
