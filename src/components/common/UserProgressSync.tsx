@@ -6,6 +6,8 @@ import { createDefaultProgress, DEFAULT_SETTINGS } from '@/lib/progress';
 import { useAppStore } from '@/store/useAppStore';
 import { loadRemoteProgressSnapshot, saveRemoteProgressSnapshot } from '@/services/progress-sync';
 
+const PROGRESS_OWNER_KEY = 'kids.progress.owner.v1';
+
 export default function UserProgressSync() {
   const progress = useAppStore((state) => state.progress);
   const settings = useAppStore((state) => state.settings);
@@ -30,10 +32,15 @@ export default function UserProgressSync() {
 
     const subscription = onAuthStateChange((user) => {
       if (isMounted) {
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = null;
+        }
         setUserId(user?.id || null);
         if (!user) {
           initializedUserIdRef.current = null;
           readyToSaveRef.current = false;
+          window.localStorage.removeItem(PROGRESS_OWNER_KEY);
         }
       }
     });
@@ -54,6 +61,14 @@ export default function UserProgressSync() {
     const initialize = async () => {
       readyToSaveRef.current = false;
       applyingRemoteRef.current = true;
+
+      const cachedOwnerId = window.localStorage.getItem(PROGRESS_OWNER_KEY);
+      const isSwitchingAccount = cachedOwnerId && cachedOwnerId !== userId;
+
+      if (isSwitchingAccount) {
+        window.localStorage.removeItem('kids.progress.v2');
+      }
+
       useAppStore.setState({
         progress: createDefaultProgress(),
         settings: DEFAULT_SETTINGS,
@@ -74,6 +89,7 @@ export default function UserProgressSync() {
         settings: remoteSnapshot.settings,
       });
 
+      window.localStorage.setItem(PROGRESS_OWNER_KEY, userId);
       applyingRemoteRef.current = false;
       readyToSaveRef.current = true;
       initializedUserIdRef.current = userId;
@@ -82,8 +98,8 @@ export default function UserProgressSync() {
     initialize().catch((error) => {
       console.error('Failed to initialize progress sync:', error);
       applyingRemoteRef.current = false;
-      readyToSaveRef.current = true;
-      initializedUserIdRef.current = userId;
+      readyToSaveRef.current = false;
+      initializedUserIdRef.current = null;
     });
 
     return () => {

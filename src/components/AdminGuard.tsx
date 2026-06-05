@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/auth-client';
-import { isAdminAuthenticated } from '@/lib/admin-auth-client';
+import { getCurrentAdmin } from '@/lib/admin-auth-client';
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -18,30 +18,20 @@ export function AdminGuard({ children }: AdminGuardProps) {
 
     const checkUserRole = async () => {
       try {
-        const supabase = getSupabaseClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const admin = await getCurrentAdmin();
 
         if (!isMounted) return;
 
-        if (!user) {
-          router.push('/login');
-          setAuthorized(false);
-          return;
-        }
-
-        // Resolve admin via the server-side check (/api/admin/me reads
-        // ADMIN_EMAILS on the server) so we don't depend on
-        // NEXT_PUBLIC_ADMIN_EMAILS being baked into the client bundle.
-        const isAdmin = await isAdminAuthenticated();
-        if (!isMounted) return;
-
-        if (isAdmin) {
+        if (admin) {
           setAuthorized(true);
           return;
         }
 
+        const supabase = getSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
         if (!isMounted) return;
-        router.push('/progress');
+
+        router.push(user ? '/progress' : '/login');
         setAuthorized(false);
       } catch (err: unknown) {
         // Supabase auth-js throws AbortError when component unmounts during lock acquisition
