@@ -3,8 +3,16 @@
  * Centralized admin settings
  */
 
-// Admin emails read from environment variable (comma-separated)
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
+const DEFAULT_ADMIN_EMAILS = [
+  'admin1@engkids.local',
+  'admin2@engkids.local',
+  'admin3@engkids.local',
+];
+
+// Admin emails read from environment variable (comma-separated).
+// The default list keeps the production droplet usable even when the server env
+// was not updated after creating the shared Engkids admin accounts.
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.NEXT_PUBLIC_ADMIN_EMAILS || DEFAULT_ADMIN_EMAILS.join(','))
   .split(',')
   .map(e => e.trim().toLowerCase())
   .filter(Boolean);
