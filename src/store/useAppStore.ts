@@ -21,6 +21,7 @@ import {
   normalizeProgressSnapshot,
 } from '@/lib/progress';
 import { trackEvent } from '@/lib/analytics';
+import { syncSavedWordToSRS } from '@/services/vocabulary';
 
 const MAX_WORD_INTERACTIONS = 2000;
 
@@ -207,6 +208,10 @@ export const useAppStore = create<AppState>()(
       },
 
       saveWord: (word, vi, isFavorite = false, ipa = '', storyId = '', exampleSentence = '') => {
+        const alreadySaved = get().progress.savedWords.some(
+          (item) => item.word.toLowerCase().trim() === word.toLowerCase().trim(),
+        );
+
         set((state) => {
           const exists = state.progress.savedWords.some(
             (item) => item.word.toLowerCase().trim() === word.toLowerCase().trim(),
@@ -253,6 +258,21 @@ export const useAppStore = create<AppState>()(
             })),
           };
         });
+
+        // Best-effort: mirror newly saved words into the SRS schedule for
+        // logged-in users. Fire-and-forget, never blocks; safe no-op for guests
+        // (addVocabulary returns null when unauthenticated). Skip if the word
+        // was already saved to avoid unnecessary calls.
+        if (!alreadySaved) {
+          syncSavedWordToSRS({
+            word,
+            meaningVi: vi,
+            pronunciation: ipa || undefined,
+            exampleSentence: exampleSentence || undefined,
+            sourceType: storyId ? 'story' : 'manual',
+            sourceId: storyId || undefined,
+          });
+        }
       },
 
       toggleWordFavorite: (wordText) => {

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAppStore } from '@/store/useAppStore';
 import { pronounceWord } from '@/services/dictionary';
+import { getSupabaseClient } from '@/lib/auth-client';
+import { getWordsForReview, submitReview, VocabularyItem } from '@/services/vocabulary';
 import Header from '@/components/layout/Header';
 import { SavedWord } from '@/types';
 
@@ -24,9 +26,34 @@ const MASTERY_LABELS: Record<number, { label: string; bgClass: string; textClass
   5: { label: 'Thành thạo', bgClass: 'bg-green-100', textClass: 'text-green-600' },
 };
 
+// Mode of the review session.
+// - 'loading': detecting auth / loading due words
+// - 'srs': logged-in user, server-side spaced repetition (due-based)
+// - 'local': guest fallback using local savedWords
+type ReviewMode = 'loading' | 'srs' | 'local';
+
+// Normalized view model the flashcard renders, regardless of source.
+interface CardView {
+  word: string;
+  vi: string;
+  ipa?: string;
+  exampleSentence?: string;
+  masteryLevel: number;
+}
+
 export default function ReviewPage() {
   const { progress, updateWordMastery } = useAppStore();
-  const [reviewWords, setReviewWords] = useState<SavedWord[]>([]);
+
+  const [mode, setMode] = useState<ReviewMode>('loading');
+
+  // SRS (logged-in) state
+  const [srsWords, setSrsWords] = useState<VocabularyItem[]>([]);
+  const [srsError, setSrsError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Local (guest) state
+  const [localWords, setLocalWords] = useState<SavedWord[]>([]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [sessionStats, setSessionStats] = useState({
@@ -37,7 +64,51 @@ export default function ReviewPage() {
   });
   const [isComplete, setIsComplete] = useState(false);
 
+  // On mount: detect auth and choose mode. SRS for logged-in users, local fallback otherwise.
   useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      try {
+        const supabase = getSupabaseClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (cancelled) return;
+
+        if (user) {
+          // Logged-in → load due words via SRS service.
+          try {
+            const words = await getWordsForReview(20);
+            if (cancelled) return;
+            setSrsWords(words);
+            setSessionStats((prev) => ({ ...prev, total: words.length }));
+            setMode('srs');
+          } catch (err) {
+            // SRS load failed (network/table missing) → fall back to local mode safely.
+            console.error('Failed to load review words, falling back to local mode:', err);
+            if (cancelled) return;
+            setMode('local');
+          }
+        } else {
+          setMode('local');
+        }
+      } catch (err) {
+        // Any unexpected auth error → never crash, fall back to local.
+        console.error('Auth detection failed, falling back to local mode:', err);
+        if (cancelled) return;
+        setMode('local');
+      }
+    }
+
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Local mode: keep existing behavior — sort savedWords by mastery then lastReviewedAt.
+  useEffect(() => {
+    if (mode !== 'local') return;
+
     const wordsToReview = [...progress.savedWords].sort((a, b) => {
       const masteryDiff = (a.masteryLevel || 0) - (b.masteryLevel || 0);
       if (masteryDiff !== 0) return masteryDiff;
@@ -47,11 +118,34 @@ export default function ReviewPage() {
       return aReviewed - bReviewed;
     });
 
-    setReviewWords(wordsToReview);
+    setLocalWords(wordsToReview);
     setSessionStats((prev) => ({ ...prev, total: wordsToReview.length }));
-  }, [progress.savedWords]);
+  }, [progress.savedWords, mode]);
 
-  const currentWord = reviewWords[currentIndex];
+  const totalCount = mode === 'srs' ? srsWords.length : localWords.length;
+  const currentItem = mode === 'srs' ? srsWords[currentIndex] : undefined;
+  const currentLocalWord = mode === 'local' ? localWords[currentIndex] : undefined;
+
+  // Map the active source row to the shared card view model.
+  const currentCard: CardView | undefined = mode === 'srs'
+    ? (currentItem
+      ? {
+          word: currentItem.word,
+          vi: currentItem.meaningVi,
+          ipa: currentItem.pronunciation,
+          exampleSentence: currentItem.exampleSentence,
+          masteryLevel: currentItem.masteryLevel,
+        }
+      : undefined)
+    : (currentLocalWord
+      ? {
+          word: currentLocalWord.word,
+          vi: currentLocalWord.vi,
+          ipa: currentLocalWord.ipa,
+          exampleSentence: currentLocalWord.exampleSentence,
+          masteryLevel: currentLocalWord.masteryLevel || 0,
+        }
+      : undefined);
 
   const calculateNewMastery = (currentLevel: number, quality: number): 0 | 1 | 2 | 3 | 4 | 5 => {
     if (quality < 2) {
@@ -63,22 +157,8 @@ export default function ReviewPage() {
     return currentLevel as 0 | 1 | 2 | 3 | 4 | 5;
   };
 
-  const handleResponse = (quality: number) => {
-    if (!currentWord) return;
-
-    const currentMastery = currentWord.masteryLevel || 0;
-    const newMastery = calculateNewMastery(currentMastery, quality);
-
-    updateWordMastery(currentWord.word, newMastery);
-
-    setSessionStats((prev) => ({
-      ...prev,
-      reviewed: prev.reviewed + 1,
-      correct: quality >= 3 ? prev.correct + 1 : prev.correct,
-      incorrect: quality < 3 ? prev.incorrect + 1 : prev.incorrect,
-    }));
-
-    if (currentIndex < reviewWords.length - 1) {
+  const advance = () => {
+    if (currentIndex < totalCount - 1) {
       setCurrentIndex((prev) => prev + 1);
       setIsFlipped(false);
     } else {
@@ -86,9 +166,62 @@ export default function ReviewPage() {
     }
   };
 
+  const recordStats = (quality: number) => {
+    setSessionStats((prev) => ({
+      ...prev,
+      reviewed: prev.reviewed + 1,
+      correct: quality >= 3 ? prev.correct + 1 : prev.correct,
+      incorrect: quality < 3 ? prev.incorrect + 1 : prev.incorrect,
+    }));
+  };
+
+  // Local (guest) flow — unchanged behavior: calculateNewMastery + updateWordMastery.
+  const handleLocalResponse = (quality: number) => {
+    if (!currentLocalWord) return;
+
+    const currentMastery = currentLocalWord.masteryLevel || 0;
+    const newMastery = calculateNewMastery(currentMastery, quality);
+
+    updateWordMastery(currentLocalWord.word, newMastery);
+
+    recordStats(quality);
+    advance();
+  };
+
+  // SRS flow — submit quality to the server, then advance. On failure keep progress.
+  const handleSrsResponse = async (quality: 0 | 1 | 2 | 3 | 4 | 5) => {
+    if (!currentItem || submitting) return;
+
+    setSubmitting(true);
+    setSrsError(null);
+
+    try {
+      const result = await submitReview(currentItem.id, quality);
+      if (!result) {
+        setSrsError('Không lưu được kết quả ôn, nhưng bạn vẫn có thể tiếp tục.');
+      }
+    } catch (err) {
+      console.error('submitReview failed:', err);
+      setSrsError('Không lưu được kết quả ôn, nhưng bạn vẫn có thể tiếp tục.');
+    }
+
+    // Update stats and advance regardless of save outcome so progress is never lost.
+    recordStats(quality);
+    advance();
+    setSubmitting(false);
+  };
+
+  const handleResponse = (quality: number) => {
+    if (mode === 'srs') {
+      void handleSrsResponse(quality as 0 | 1 | 2 | 3 | 4 | 5);
+    } else {
+      handleLocalResponse(quality);
+    }
+  };
+
   const handlePronounce = () => {
-    if (currentWord) {
-      pronounceWord(currentWord.word);
+    if (currentCard) {
+      pronounceWord(currentCard.word);
     }
   };
 
@@ -96,15 +229,69 @@ export default function ReviewPage() {
     setCurrentIndex(0);
     setIsFlipped(false);
     setIsComplete(false);
+    setSrsError(null);
     setSessionStats({
-      total: reviewWords.length,
+      total: totalCount,
       correct: 0,
       incorrect: 0,
       reviewed: 0,
     });
   };
 
-  if (reviewWords.length === 0) {
+  // Loading state while detecting auth / fetching due words.
+  if (mode === 'loading') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <Header />
+        <main className="max-w-2xl mx-auto px-4 py-12 flex flex-col items-center justify-center text-center">
+          <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-500 rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-500">Đang chuẩn bị phiên ôn tập...</p>
+        </main>
+      </div>
+    );
+  }
+
+  // SRS empty state: no words due today (Requirement 2.3).
+  if (mode === 'srs' && srsWords.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <Header />
+        <main className="max-w-2xl mx-auto px-4 py-12 text-center">
+          <div className="bg-white rounded-2xl p-12 shadow-sm">
+            <div className="text-6xl mb-4">🎉</div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">Hôm nay không có từ cần ôn</h1>
+            <p className="text-gray-500 mb-6">
+              Tuyệt vời! Bạn đã ôn hết các từ đến hạn. Hãy đọc truyện hoặc xem video để thêm từ mới
+              vào lịch ôn tập nhé.
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Link
+                href="/stories"
+                className="inline-block px-6 py-3 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-colors"
+              >
+                Đọc truyện
+              </Link>
+              <Link
+                href="/videos"
+                className="inline-block px-6 py-3 bg-pink-500 text-white rounded-xl hover:bg-pink-600 transition-colors"
+              >
+                Xem video
+              </Link>
+              <Link
+                href="/progress"
+                className="inline-block px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+              >
+                ← Quay lại
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Local empty state: guest with no saved words.
+  if (mode === 'local' && localWords.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         <Header />
@@ -173,34 +360,62 @@ export default function ReviewPage() {
     );
   }
 
-  const masteryInfo = MASTERY_LABELS[currentWord?.masteryLevel || 0];
+  const masteryInfo = MASTERY_LABELS[currentCard?.masteryLevel || 0];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       <Header />
 
       <main className="max-w-2xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
+        {/* Guest banner: invite login to unlock smart review (SRS) */}
+        {mode === 'local' && (
+          <div className="mb-6 bg-white border border-purple-100 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <p className="text-sm text-gray-600">
+              Đăng nhập để mở khóa ôn tập thông minh (Spaced Repetition) — chỉ ôn đúng từ đến hạn.
+            </p>
+            <Link
+              href="/login"
+              className="text-sm font-medium px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors whitespace-nowrap"
+            >
+              Đăng nhập
+            </Link>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mb-2">
           <Link href="/progress" className="text-gray-500 hover:text-gray-700">
             ← Quay lại
           </Link>
           <div className="text-sm text-gray-500">
-            {currentIndex + 1} / {reviewWords.length}
+            {currentIndex + 1} / {totalCount}
           </div>
         </div>
+
+        {/* Session progress: reviewed / total due */}
+        {mode === 'srs' && (
+          <p className="text-xs text-gray-400 mb-4">
+            Đã ôn {sessionStats.reviewed} / {totalCount} từ đến hạn
+          </p>
+        )}
 
         <div className="h-2 bg-gray-200 rounded-full mb-8 overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
-            style={{ width: `${((currentIndex + 1) / reviewWords.length) * 100}%` }}
+            style={{ width: `${((currentIndex + 1) / totalCount) * 100}%` }}
           />
         </div>
+
+        {srsError && (
+          <div className="mb-6 bg-orange-50 border border-orange-200 text-orange-700 text-sm rounded-xl px-4 py-3">
+            {srsError}
+          </div>
+        )}
 
         <div onClick={() => setIsFlipped(!isFlipped)} className="relative w-full aspect-[3/2] cursor-pointer perspective-1000 mb-8">
           <div className={`relative w-full h-full transition-transform duration-500 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
             <div className={`absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden shadow-xl ${isFlipped ? 'invisible' : ''}`}>
               <div className="text-white/50 text-sm mb-2">Từ vựng</div>
-              <h2 className="text-4xl font-bold text-white mb-4">{currentWord?.word}</h2>
+              <h2 className="text-4xl font-bold text-white mb-4">{currentCard?.word}</h2>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -218,10 +433,10 @@ export default function ReviewPage() {
               style={{ transform: 'rotateY(180deg)' }}
             >
               <div className="text-gray-400 text-sm mb-2">Nghĩa tiếng Việt</div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-4">{currentWord?.vi}</h2>
-              {currentWord?.ipa && <p className="text-gray-400 text-lg mb-4">/{currentWord.ipa}/</p>}
-              {currentWord?.exampleSentence && (
-                <p className="text-gray-500 italic text-center">&quot;{currentWord.exampleSentence}&quot;</p>
+              <h2 className="text-3xl font-bold text-gray-800 mb-4">{currentCard?.vi}</h2>
+              {currentCard?.ipa && <p className="text-gray-400 text-lg mb-4">/{currentCard.ipa}/</p>}
+              {currentCard?.exampleSentence && (
+                <p className="text-gray-500 italic text-center">&quot;{currentCard.exampleSentence}&quot;</p>
               )}
               <div className={`mt-4 px-3 py-1 rounded-full text-sm ${masteryInfo.bgClass} ${masteryInfo.textClass}`}>
                 {masteryInfo.label}
@@ -238,7 +453,8 @@ export default function ReviewPage() {
                 <button
                   key={response.quality}
                   onClick={() => handleResponse(response.quality)}
-                  className={`flex flex-col items-center gap-1 p-3 rounded-xl bg-gradient-to-br ${response.color} text-white hover:scale-105 transition-transform`}
+                  disabled={submitting}
+                  className={`flex flex-col items-center gap-1 p-3 rounded-xl bg-gradient-to-br ${response.color} text-white hover:scale-105 transition-transform disabled:opacity-60 disabled:hover:scale-100`}
                 >
                   <span className="text-xs font-medium">{response.label}</span>
                 </button>

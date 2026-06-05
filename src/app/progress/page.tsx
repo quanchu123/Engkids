@@ -7,6 +7,8 @@ import Header from '@/components/layout/Header';
 import { useAppStore } from '@/store/useAppStore';
 import { getAllStories } from '@/data/stories';
 import { pronounceWord } from '@/services/dictionary';
+import { getSupabaseClient } from '@/lib/auth-client';
+import { getVocabularyStats } from '@/services/vocabulary';
 import { Story } from '@/types';
 
 type TabType = 'overview' | 'vocabulary' | 'stories' | 'achievements';
@@ -36,9 +38,49 @@ export default function ProgressPage() {
   const [showFlashcard, setShowFlashcard] = useState(false);
   const [currentFlashcardIndex, setCurrentFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [srsStats, setSrsStats] = useState<{
+    total: number;
+    dueToday: number;
+    accuracy: number;
+    byMastery: Record<number, number>;
+  } | null>(null);
 
   useEffect(() => {
     getAllStories().then(setStories);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSrsStats = async () => {
+      try {
+        const supabase = getSupabaseClient();
+        const { data } = await supabase.auth.getUser();
+        if (!data?.user) {
+          if (active) setSrsStats(null);
+          return;
+        }
+
+        const stats = await getVocabularyStats();
+        if (active) {
+          setSrsStats({
+            total: stats.total,
+            dueToday: stats.dueToday,
+            accuracy: stats.accuracy,
+            byMastery: stats.byMastery,
+          });
+        }
+      } catch (error) {
+        console.error('Error loading SRS stats:', error);
+        if (active) setSrsStats(null);
+      }
+    };
+
+    loadSrsStats();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const completedStories = useMemo(
@@ -181,6 +223,8 @@ export default function ProgressPage() {
 
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              <SrsCard stats={srsStats} />
+
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <MetricCard title="Tổng sao" value={progress.totalStars} tint="from-amber-400 to-orange-400" />
                 <MetricCard title="Từ đã học" value={vocabStats.total} tint="from-sky-400 to-indigo-500" />
@@ -600,6 +644,73 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
     <div>
       <div className="text-3xl font-black">{value}</div>
       <div className="text-xs font-bold uppercase tracking-wide text-white/70">{label}</div>
+    </div>
+  );
+}
+
+function SrsCard({
+  stats,
+}: {
+  stats: { total: number; dueToday: number; accuracy: number; byMastery: Record<number, number> } | null;
+}) {
+  // Guest or not loaded: friendly invite to log in (additive, never crashes).
+  if (!stats) {
+    return (
+      <div className="soft-feature rounded-[2rem] p-6 text-white">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-2xl font-black">Ôn tập giãn cách</h2>
+            <p className="mt-1 text-sm text-white/85">
+              Đăng nhập để bật lịch ôn tập thông minh, nhắc bạn ôn đúng từ vào đúng lúc.
+            </p>
+          </div>
+          <Link
+            href="/login"
+            className="inline-flex flex-shrink-0 items-center justify-center rounded-2xl bg-white/15 px-5 py-3 text-sm font-black text-white"
+          >
+            Đăng nhập để bật
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const hasDue = stats.dueToday > 0;
+
+  return (
+    <div className="soft-feature rounded-[2rem] p-6 text-white">
+      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-5">
+          <div className="flex h-20 w-20 flex-shrink-0 flex-col items-center justify-center rounded-3xl bg-white/15">
+            <span className="text-3xl font-black leading-none">{stats.dueToday}</span>
+            <span className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/80">đến hạn</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-black">Đến hạn hôm nay</h2>
+            <p className="mt-1 text-sm text-white/85">
+              {hasDue
+                ? `Có ${stats.dueToday} từ cần ôn để nhớ lâu hơn.`
+                : 'Tuyệt vời! Hôm nay bạn không có từ nào đến hạn.'}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="rounded-xl bg-white/15 px-3 py-1 text-xs font-black">
+                Tổng từ: {stats.total}
+              </span>
+              <span className="rounded-xl bg-white/15 px-3 py-1 text-xs font-black">
+                Độ chính xác: {stats.accuracy}%
+              </span>
+            </div>
+          </div>
+        </div>
+        <Link
+          href="/progress/review"
+          className={`inline-flex flex-shrink-0 items-center justify-center rounded-2xl px-6 py-3 text-sm font-black shadow-lg transition-transform hover:-translate-y-0.5 ${
+            hasDue ? 'bg-white text-violet-700' : 'bg-white/15 text-white'
+          }`}
+        >
+          {hasDue ? `Ôn ${stats.dueToday} từ hôm nay` : 'Không có từ đến hạn'}
+        </Link>
+      </div>
     </div>
   );
 }

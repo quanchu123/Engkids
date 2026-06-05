@@ -4,12 +4,8 @@
  * Best practices: SM-2 algorithm for learning
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { getSupabaseClient } from '@/lib/auth-client';
+import { calculateNextReview, calculateMasteryLevel } from '@/lib/srs';
 
 // Types
 export interface VocabularyItem {
@@ -51,47 +47,15 @@ export interface ReviewResult {
   quality: 0 | 1 | 2 | 3 | 4 | 5; // 0-2 = fail, 3-5 = pass
 }
 
-// SM-2 Algorithm Implementation (client-side)
-function calculateNextReview(easeFactor: number, interval: number, quality: number) {
-  const minEase = 1.3;
-  
-  // Calculate new ease factor
-  let newEase = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-  if (newEase < minEase) newEase = minEase;
-  
-  // Calculate new interval
-  let newInterval: number;
-  if (quality < 3) {
-    // Failed: reset
-    newInterval = 1;
-  } else if (interval === 1) {
-    newInterval = 1;
-  } else if (interval <= 2) {
-    newInterval = 6;
-  } else {
-    newInterval = Math.round(interval * newEase);
-  }
-  
-  return { newEase, newInterval };
-}
-
-// Calculate mastery level based on stats
-function calculateMasteryLevel(reviewCount: number, correctCount: number, interval: number): 0 | 1 | 2 | 3 | 4 | 5 {
-  if (reviewCount === 0) return 0; // New
-  
-  const accuracy = correctCount / reviewCount;
-  
-  if (interval >= 30 && accuracy >= 0.9) return 5; // Mastered
-  if (interval >= 14 && accuracy >= 0.8) return 4; // Known
-  if (interval >= 7 && accuracy >= 0.7) return 3; // Familiar
-  if (reviewCount >= 3) return 2; // Reviewing
-  return 1; // Learning
-}
+// SM-2 algorithm lives in `@/lib/srs` (calculateNextReview, calculateMasteryLevel).
 
 /**
  * Get user profile ID from auth
  */
 async function getUserProfileId(): Promise<string | null> {
+  // Loosely typed for PostgREST table ops, consistent with other client
+  // services (e.g. progress-sync.ts); row shapes are validated via mapDbToVocab.
+  const supabase = getSupabaseClient() as any;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   
@@ -108,6 +72,7 @@ async function getUserProfileId(): Promise<string | null> {
  * Add a new word to vocabulary
  */
 export async function addVocabulary(input: AddVocabularyInput): Promise<VocabularyItem | null> {
+  const supabase = getSupabaseClient() as any;
   const profileId = await getUserProfileId();
   if (!profileId) {
     console.error('User not authenticated');
@@ -142,9 +107,23 @@ export async function addVocabulary(input: AddVocabularyInput): Promise<Vocabula
 }
 
 /**
+ * Best-effort sync of a saved word into the SRS schedule (`vocabulary_items`).
+ *
+ * Fire-and-forget: never throws and never blocks the caller. It is a safe
+ * no-op for guests because `addVocabulary` resolves to `null` when there is no
+ * authenticated user. Relies on the `(user_profile_id, word_lower)` upsert in
+ * `addVocabulary`, so calling it for an existing word does not create
+ * duplicates or reset existing SRS state.
+ */
+export function syncSavedWordToSRS(input: AddVocabularyInput): void {
+  void addVocabulary(input).catch((e) => console.warn('SRS sync skipped:', e));
+}
+
+/**
  * Remove word from vocabulary
  */
 export async function removeVocabulary(vocabularyId: string): Promise<boolean> {
+  const supabase = getSupabaseClient() as any;
   const { error } = await supabase
     .from('vocabulary_items')
     .delete()
@@ -168,6 +147,7 @@ export async function getAllVocabulary(options?: {
   filterMastery?: number[];
   favoritesOnly?: boolean;
 }): Promise<VocabularyItem[]> {
+  const supabase = getSupabaseClient() as any;
   const profileId = await getUserProfileId();
   if (!profileId) return [];
   
@@ -222,6 +202,7 @@ export async function getAllVocabulary(options?: {
  * Get words due for review (for flashcard practice)
  */
 export async function getWordsForReview(limit: number = 20): Promise<VocabularyItem[]> {
+  const supabase = getSupabaseClient() as any;
   const profileId = await getUserProfileId();
   if (!profileId) return [];
   
@@ -248,6 +229,7 @@ export async function getWordsForReview(limit: number = 20): Promise<VocabularyI
  * Submit review result for a word
  */
 export async function submitReview(vocabularyId: string, quality: 0 | 1 | 2 | 3 | 4 | 5): Promise<VocabularyItem | null> {
+  const supabase = getSupabaseClient() as any;
   // Get current word data
   const { data: current, error: fetchError } = await supabase
     .from('vocabulary_items')
@@ -303,6 +285,7 @@ export async function submitReview(vocabularyId: string, quality: 0 | 1 | 2 | 3 
  * Toggle favorite status
  */
 export async function toggleFavorite(vocabularyId: string): Promise<boolean> {
+  const supabase = getSupabaseClient() as any;
   const { data: current } = await supabase
     .from('vocabulary_items')
     .select('is_favorite')
@@ -327,6 +310,7 @@ export async function getVocabularyStats(): Promise<{
   favorites: number;
   accuracy: number;
 }> {
+  const supabase = getSupabaseClient() as any;
   const profileId = await getUserProfileId();
   if (!profileId) {
     return { total: 0, byMastery: {}, dueToday: 0, favorites: 0, accuracy: 0 };
@@ -349,7 +333,13 @@ export async function getVocabularyStats(): Promise<{
   let totalReviews = 0;
   let totalCorrect = 0;
   
-  data.forEach(item => {
+  data.forEach((item: {
+    mastery_level: number;
+    is_favorite: boolean;
+    next_review_date: string;
+    review_count: number;
+    correct_count: number;
+  }) => {
     byMastery[item.mastery_level] = (byMastery[item.mastery_level] || 0) + 1;
     if (item.next_review_date <= today) dueToday++;
     if (item.is_favorite) favorites++;
@@ -380,6 +370,7 @@ function sanitizeSearchQuery(query: string): string {
  * Search vocabulary
  */
 export async function searchVocabulary(query: string): Promise<VocabularyItem[]> {
+  const supabase = getSupabaseClient() as any;
   const profileId = await getUserProfileId();
   if (!profileId) return [];
 
