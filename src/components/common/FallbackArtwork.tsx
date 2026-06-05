@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { Story, Video } from '@/types';
 
 type ArtTone = {
@@ -25,19 +28,67 @@ const ART_TONES: Record<string, ArtTone> = {
   weather: { gradient: 'from-sky-400 via-blue-400 to-indigo-400', accent: 'bg-white/25', icon: '☀️' },
 };
 
+const ICONSCOUT_ASSET_KEYS = new Set([
+  'animals',
+  'space',
+  'weather',
+  'family',
+  'body',
+  'music',
+  'story',
+  'game',
+]);
+
 function normalizeToken(value?: string): string {
   return value?.trim().toLowerCase().replace(/\s+/g, '-') || '';
 }
 
+function pickArtKey(topics?: string[], category?: Video['category'], feature?: string): string | undefined {
+  if (category === 'music') return 'music';
+  const tokens = [feature, ...(topics || [])].map(normalizeToken);
+  return tokens.find((token) => ART_TONES[token] || ICONSCOUT_ASSET_KEYS.has(token));
+}
+
 function pickTone(topics?: string[], category?: Video['category'], feature?: string): ArtTone {
   if (category === 'music') return ART_TONES.music;
-  const tokens = [feature, ...(topics || [])].map(normalizeToken);
-  const found = tokens.find((token) => ART_TONES[token]);
-  return found ? ART_TONES[found] : DEFAULT_TONE;
+  const found = pickArtKey(topics, category, feature);
+  return found && ART_TONES[found] ? ART_TONES[found] : DEFAULT_TONE;
+}
+
+function ArtworkIcon({
+  assetKey,
+  fallback,
+  className,
+}: {
+  assetKey?: string;
+  fallback: string;
+  className: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  if (!assetKey || !ICONSCOUT_ASSET_KEYS.has(assetKey) || failed) {
+    return <div className={className}>{fallback}</div>;
+  }
+
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/assets/iconscout/${assetKey}.png`}
+        alt=""
+        className={`${loaded ? 'block' : 'hidden'} mb-1 h-12 w-12 object-contain drop-shadow-md`}
+        onLoad={() => setLoaded(true)}
+        onError={() => setFailed(true)}
+      />
+      {!loaded && <div className={className}>{fallback}</div>}
+    </>
+  );
 }
 
 export function StoryFallbackArtwork({ story }: { story: Story }) {
   const tone = pickTone(story.topics);
+  const assetKey = pickArtKey(story.topics) || 'story';
   const topic = story.topics?.[0] || story.level;
   const coverToken = story.cover_image?.trim();
   const icon = coverToken && coverToken.length <= 3 ? coverToken : tone.icon;
@@ -50,7 +101,7 @@ export function StoryFallbackArtwork({ story }: { story: Story }) {
         Story
       </div>
       <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-white/18 p-3 text-white backdrop-blur-sm">
-        <div className="mb-1 text-3xl drop-shadow-sm">{icon}</div>
+        <ArtworkIcon assetKey={assetKey} fallback={icon} className="mb-1 text-3xl drop-shadow-sm" />
         <div className="line-clamp-2 text-base font-black leading-tight drop-shadow-sm">{story.title_en}</div>
         <div className="mt-1 line-clamp-1 text-xs font-bold text-white/85">{topic}</div>
       </div>
@@ -60,6 +111,7 @@ export function StoryFallbackArtwork({ story }: { story: Story }) {
 
 export function VideoFallbackArtwork({ video, icon }: { video: Video; icon?: string }) {
   const tone = pickTone(video.topics, video.category, video.feature);
+  const assetKey = pickArtKey(video.topics, video.category, video.feature);
   const label = video.feature?.trim() || video.topics?.[0] || video.titleVi || video.title;
   const badge = video.category === 'music' ? 'Song' : 'Lesson';
 
@@ -71,7 +123,11 @@ export function VideoFallbackArtwork({ video, icon }: { video: Video; icon?: str
         {badge}
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center text-white">
-        <div className="mb-1 text-4xl drop-shadow-md">{icon || tone.icon || (video.category === 'music' ? '🎵' : '🎬')}</div>
+        <ArtworkIcon
+          assetKey={assetKey}
+          fallback={icon || tone.icon || (video.category === 'music' ? '🎵' : '🎬')}
+          className="mb-1 text-4xl drop-shadow-md"
+        />
         <div className="line-clamp-2 text-base font-black leading-tight drop-shadow-md">{label}</div>
       </div>
     </div>

@@ -13,7 +13,8 @@
     "test:features": "node test-features.js",
     "test:e2e": "npx playwright test",
     "setup:db": "node setup-database.js",
-    "migrate:spaces": "node scripts/migrate-bunny-to-spaces.js"
+    "migrate:spaces": "node scripts/migrate-bunny-to-spaces.js",
+    "iconscout:download": "node scripts/download-iconscout-assets.js"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
