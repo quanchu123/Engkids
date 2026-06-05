@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Brain, CheckCircle2, Lightbulb, PartyPopper, Trophy, XCircle } from 'lucide-react';
 import { VideoQuizQuestion } from '@/types';
 import Fireworks from '@/components/common/Fireworks';
 
@@ -37,8 +38,8 @@ export default function VideoQuizPanel({ questions, onCorrect, onComplete }: Vid
     setAnswered(true);
 
     if (index === question.correctIndex) {
-      setCorrectCount((c) => c + 1);
-      setFireworksKey((k) => k + 1); // trigger fireworks
+      setCorrectCount((count) => count + 1);
+      setFireworksKey((key) => key + 1);
       onCorrect?.(question);
     }
   };
@@ -49,7 +50,7 @@ export default function VideoQuizPanel({ questions, onCorrect, onComplete }: Vid
       onComplete?.(correctCount, total);
       return;
     }
-    setCurrent((c) => c + 1);
+    setCurrent((value) => value + 1);
     setSelected(null);
     setAnswered(false);
   };
@@ -67,7 +68,13 @@ export default function VideoQuizPanel({ questions, onCorrect, onComplete }: Vid
     return (
       <div className="toy-panel mb-4 p-5 text-center" data-testid="video-quiz-result">
         <Fireworks trigger={allCorrect ? fireworksKey + 1 : 0} />
-        <div className="mb-2 text-4xl">{allCorrect ? '🏆' : '🎉'}</div>
+        <div className="mb-2 flex justify-center text-violet-600">
+          {allCorrect ? (
+            <Trophy className="h-10 w-10" fill="currentColor" aria-hidden="true" />
+          ) : (
+            <PartyPopper className="h-10 w-10" aria-hidden="true" />
+          )}
+        </div>
         <h3 className="text-xl font-black text-slate-800">
           {allCorrect ? 'Giỏi quá!' : 'Làm tốt lắm!'}
         </h3>
@@ -88,15 +95,16 @@ export default function VideoQuizPanel({ questions, onCorrect, onComplete }: Vid
     <div className="toy-panel mb-4 p-5" data-testid="video-quiz-panel">
       <Fireworks trigger={fireworksKey} />
 
-      {/* Header + progress */}
       <div className="mb-3 flex items-center justify-between">
         <h3 className="flex items-center gap-2 font-black text-violet-700">
-          <span>🧠</span> Câu hỏi cho bé
+          <Brain className="h-5 w-5" aria-hidden="true" />
+          Câu hỏi cho bé
         </h3>
         <span className="kid-chip px-3 py-1 text-xs font-bold text-slate-600">
           {current + 1}/{total}
         </span>
       </div>
+
       <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-slate-100">
         <div
           className="progress-bar h-full"
@@ -104,7 +112,6 @@ export default function VideoQuizPanel({ questions, onCorrect, onComplete }: Vid
         />
       </div>
 
-      {/* Question */}
       <div className="mb-4">
         <p className="text-lg font-bold leading-snug text-slate-800">{question.question}</p>
         {question.questionVi && (
@@ -112,7 +119,6 @@ export default function VideoQuizPanel({ questions, onCorrect, onComplete }: Vid
         )}
       </div>
 
-      {/* Options */}
       <div className="space-y-2">
         {question.options.map((option, index) => {
           const isCorrect = index === question.correctIndex;
@@ -141,18 +147,21 @@ export default function VideoQuizPanel({ questions, onCorrect, onComplete }: Vid
                 {String.fromCharCode(65 + index)}
               </span>
               <span className="flex-1">{option}</span>
-              {answered && isCorrect && <span className="text-lg">✅</span>}
-              {answered && isChosen && !isCorrect && <span className="text-lg">❌</span>}
+              {answered && isCorrect && (
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+              )}
+              {answered && isChosen && !isCorrect && (
+                <XCircle className="h-5 w-5 text-red-500" aria-hidden="true" />
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* Feedback + next */}
       {answered && (
         <div className="mt-4 animate-bounce-in">
           {selected === question.correctIndex ? (
-            <p className="mb-3 font-bold text-emerald-600">🎆 Chính xác! Tuyệt vời!</p>
+            <p className="mb-3 font-bold text-emerald-600">Chính xác! Tuyệt vời!</p>
           ) : (
             <p className="mb-3 font-bold text-red-500">
               Chưa đúng rồi. Đáp án đúng là{' '}
@@ -160,8 +169,9 @@ export default function VideoQuizPanel({ questions, onCorrect, onComplete }: Vid
             </p>
           )}
           {question.explanation && (
-            <p className="mb-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
-              💡 {question.explanation}
+            <p className="mb-3 flex gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+              <Lightbulb className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" aria-hidden="true" />
+              <span>{question.explanation}</span>
             </p>
           )}
           <button

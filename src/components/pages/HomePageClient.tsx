@@ -3,18 +3,19 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BookOpen, Clapperboard, Gamepad2, Music, Sparkles, Star } from 'lucide-react';
+import { BookOpen, Clapperboard, Music, Play, Sparkles, Star } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { Story, Video } from '@/types';
 import Header from '@/components/layout/Header';
 import BackgroundMusic from '@/components/common/BackgroundMusic';
 import { StoryFallbackArtwork, VideoFallbackArtwork } from '@/components/common/FallbackArtwork';
+import { DecorIcon } from '@/components/common/DecorIcon';
 
 const GAMES = [
-  { id: 'rpg-world', title: 'RPG World', icon: '🗺️', color: 'from-emerald-400 to-teal-500', href: '/games/rpg-world' },
-  { id: 'word-burst', title: 'Word Burst', icon: '💥', color: 'from-violet-500 to-purple-500', href: '/games/word-burst' },
-  { id: 'word-puzzle', title: 'Word Puzzle', icon: '🧩', color: 'from-blue-500 to-indigo-500', href: '/games/word-puzzle' },
-  { id: 'memory-match', title: 'Memory Match', icon: '🃏', color: 'from-pink-500 to-rose-500', href: '/games/memory-match' },
+  { id: 'rpg-world', title: 'RPG World', icon: 'game', color: 'from-emerald-400 to-teal-500', href: '/games/rpg-world' },
+  { id: 'word-burst', title: 'Word Burst', icon: 'sparkles', color: 'from-violet-500 to-purple-500', href: '/games/word-burst' },
+  { id: 'word-puzzle', title: 'Word Puzzle', icon: 'puzzle', color: 'from-blue-500 to-indigo-500', href: '/games/word-puzzle' },
+  { id: 'memory-match', title: 'Memory Match', icon: 'story', color: 'from-pink-500 to-rose-500', href: '/games/memory-match' },
 ];
 
 interface HomePageClientProps {
@@ -163,7 +164,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                         const parent = (e.target as HTMLImageElement).parentElement;
-                        if (parent) parent.innerHTML = '<span style="font-size:6rem;line-height:1">🐨</span>';
+                        if (parent) parent.innerHTML = '';
                       }}
                     />
                   </div>
@@ -188,11 +189,11 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
       <section className="px-4 py-6">
           <div className="section-shell section-shell-amber max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
-          <SectionHeader emoji="🎯" title="Bắt đầu học nhé!" />
+          <SectionHeader icon="sparkles" title="Bắt đầu học nhé!" />
           <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
             <FeatureCard
               href="/games"
-              emoji="🎮"
+              icon="game"
               title="Game"
               count={6}
               unit="trò chơi"
@@ -201,7 +202,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
             />
             <FeatureCard
               href="/stories"
-              emoji="📖"
+              icon="story"
               title="Truyện tranh"
               count={liveStories.length}
               unit="truyện"
@@ -210,7 +211,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
             />
             <FeatureCard
               href="/videos"
-              emoji="🎬"
+              icon="video"
               title="Video học"
               count={liveVideos.length}
               unit="video"
@@ -219,7 +220,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
             />
             <FeatureCard
               href="/music"
-              emoji="🎤"
+              icon="mic"
               title="Học nhạc"
               count={liveMusicVideos.length}
               unit="bài hát"
@@ -228,7 +229,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
             />
             <FeatureCard
               href="/progress"
-              emoji="⭐"
+              icon="progress"
               title="Tiến trình"
               count={totalStars}
               unit="sao"
@@ -241,8 +242,8 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
       <div className="max-w-full overflow-hidden bg-gradient-to-r from-violet-500 via-pink-500 to-orange-400 py-2.5 shadow-inner">
         <div className="inline-flex min-w-max gap-8 whitespace-nowrap will-change-transform" style={{ animation: 'marquee 18s linear infinite' }}>
-          {['🌟 Giỏi lắm!', '⭐ Tuyệt vời!', '🎉 Xuất sắc!', '🏆 Cố lên!', '💪 Học nào!', '🚀 Tiếp tục!',
-            '🌟 Giỏi lắm!', '⭐ Tuyệt vời!', '🎉 Xuất sắc!', '🏆 Cố lên!', '💪 Học nào!', '🚀 Tiếp tục!'].map((t, i) => (
+          {['Giỏi lắm!', 'Tuyệt vời!', 'Xuất sắc!', 'Cố lên!', 'Học nào!', 'Tiếp tục!',
+            'Giỏi lắm!', 'Tuyệt vời!', 'Xuất sắc!', 'Cố lên!', 'Học nào!', 'Tiếp tục!'].map((t, i) => (
             <span key={i} className="text-sm font-black text-white">{t}</span>
           ))}
         </div>
@@ -251,7 +252,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
       {liveStories.length > 0 && (
         <section className="px-4 py-6">
           <div className="section-shell section-shell-sky max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
-            <SectionHeader emoji="📚" title="Truyện nổi bật" href="/stories" hrefLabel="Xem tất cả" color="text-blue-700" />
+            <SectionHeader icon="story" title="Truyện nổi bật" href="/stories" hrefLabel="Xem tất cả" color="text-blue-700" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {liveStories.slice(0, 4).map((story) => (
                 <StoryCard key={story.id} story={story} />
@@ -263,13 +264,13 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
       <section className="px-4 py-6">
           <div className="section-shell section-shell-mint max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
-          <SectionHeader emoji="🎮" title="Game học tiếng Anh" href="/games" hrefLabel="Xem tất cả" color="text-emerald-700" />
+          <SectionHeader icon="game" title="Game học tiếng Anh" href="/games" hrefLabel="Xem tất cả" color="text-emerald-700" />
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {GAMES.map((game) => (
               <Link key={game.id} href={game.href}>
                 <div className="playful-card group cursor-pointer rounded-[18px] border border-slate-100 bg-white p-4 text-center shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
                   <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${game.color} text-3xl shadow-sm`}>
-                    {game.icon}
+                      <DecorIcon name={game.icon} iconClassName="h-8 w-8 text-white" imageClassName="h-10 w-10 object-contain" />
                   </div>
                   <p className="text-sm font-bold text-gray-800">{game.title}</p>
                 </div>
@@ -290,7 +291,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
       {liveVideos.length > 0 && (
         <section className="bg-violet-50/60 px-4 py-6">
           <div className="section-shell section-shell-violet max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
-            <SectionHeader emoji="🎬" title="Video mới nhất" href="/videos" hrefLabel="Xem tất cả" color="text-violet-700" />
+            <SectionHeader icon="video" title="Video mới nhất" href="/videos" hrefLabel="Xem tất cả" color="text-violet-700" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {liveVideos.slice(0, 4).map((video) => (
                 <VideoCard key={video.id} video={video} />
@@ -311,7 +312,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
       {liveMusicVideos.length > 0 && (
         <section className="px-4 py-6">
           <div className="section-shell section-shell-pink max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
-            <SectionHeader emoji="🎵" title="Bài hát vui nhộn" href="/music" hrefLabel="Xem tất cả" color="text-pink-700" />
+            <SectionHeader icon="music" title="Bài hát vui nhộn" href="/music" hrefLabel="Xem tất cả" color="text-pink-700" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {liveMusicVideos.slice(0, 4).map((video, index) => (
                 <MusicCard key={video.id} video={video} colorIndex={index} />
@@ -324,7 +325,12 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
       {liveStories.length === 0 && liveVideos.length === 0 && liveMusicVideos.length === 0 && (
         <section className="px-4 py-8">
           <div className="max-w-md mx-auto rounded-3xl border-4 border-purple-100 bg-white p-8 text-center shadow-lg">
-            <div className="mb-4 text-7xl deco-float">🎒</div>
+            <DecorIcon
+              name="story"
+              className="deco-float mx-auto mb-4 h-20 w-20 rounded-3xl bg-violet-100 text-violet-600 shadow-sm"
+              iconClassName="h-11 w-11"
+              imageClassName="h-16 w-16 object-contain"
+            />
             <h3 className="mb-2 text-2xl font-black text-gray-800">Sẵn sàng học chưa?</h3>
             <p className="mb-4 text-gray-600">
               Hãy vào Admin để thêm truyện và video học nhé!
@@ -334,7 +340,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               className="btn-kid bg-violet-500 text-white"
               style={{ boxShadow: '0 6px 0 rgba(91,33,182,0.5)' }}
             >
-              ⚙️ Vào Admin
+              Vào Admin
             </Link>
           </div>
         </section>
@@ -347,33 +353,40 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = 'none';
                 const parent = (e.target as HTMLImageElement).parentElement;
-                if (parent) parent.innerHTML = '<span style="font-size:3rem;line-height:1">🐨</span>';
+                if (parent) parent.innerHTML = '';
               }}
             />
           </div>
           <div className="mb-3 flex flex-wrap justify-center gap-3">
-            {['🌈','🦄','⭐','🎉','🚀','💖','🎵','📚'].map((e,i) => (
-              <span key={i} className="text-2xl deco-float" style={{ animationDelay: `${i*0.2}s`, animationDuration: `${2+i*0.3}s` }}>{e}</span>
+            {['weather','animals','progress','sparkles','rocket','family','music','story'].map((iconName,i) => (
+              <DecorIcon
+                key={iconName}
+                name={iconName}
+                className="deco-float h-9 w-9 rounded-2xl bg-white/65 shadow-sm"
+                iconClassName="h-5 w-5 text-violet-600"
+                imageClassName="h-7 w-7 object-contain"
+                strokeWidth={2.7}
+              />
             ))}
           </div>
           <p className="text-sm font-bold text-gray-600">
-            Engkids © 2026 · Học tiếng Anh thật vui! 💖
+            Engkids © 2026 · Học tiếng Anh thật vui!
           </p>
-          <p className="mt-1 text-xs text-gray-400">Dành cho các bé yêu tiếng Anh 🌟</p>
+          <p className="mt-1 text-xs text-gray-400">Dành cho các bé yêu tiếng Anh</p>
         </div>
       </footer>
     </div>
   );
 }
 
-function SectionHeader({ emoji, title, href, hrefLabel, color = 'text-gray-800' }: {
-  emoji: string; title: string; href?: string; hrefLabel?: string; color?: string;
+function SectionHeader({ icon, title, href, hrefLabel, color = 'text-gray-800' }: {
+  icon: string; title: string; href?: string; hrefLabel?: string; color?: string;
 }) {
   return (
     <div className="mb-5 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-100 bg-white text-2xl shadow-sm">
-          {emoji}
+          <DecorIcon name={icon} iconClassName="h-6 w-6 text-slate-700" imageClassName="h-8 w-8 object-contain" />
         </div>
         <div>
           <h2 className={`text-xl md:text-2xl font-black ${color}`}>{title}</h2>
@@ -390,16 +403,16 @@ function SectionHeader({ emoji, title, href, hrefLabel, color = 'text-gray-800' 
 }
 
 function FeatureCard({
-  href, emoji, title, count, unit, gradient, bg,
+  href, icon, title, count, unit, gradient, bg,
 }: {
-  href: string; emoji: string; title: string; count: number; unit: string;
+  href: string; icon: string; title: string; count: number; unit: string;
   gradient: string; bg: string;
 }) {
   return (
     <Link href={href}>
       <div className={`${bg} playful-card group cursor-pointer rounded-[20px] border border-white/90 p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md`}>
         <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} shadow-sm transition-transform group-hover:scale-105`}>
-          <span className="text-3xl">{emoji}</span>
+          <DecorIcon name={icon} iconClassName="h-7 w-7 text-white" imageClassName="h-9 w-9 object-contain" />
         </div>
         <h3 className="mb-1 text-sm font-black text-gray-800 md:text-base">{title}</h3>
         <p className="text-2xl font-black text-gray-700">
@@ -434,7 +447,7 @@ function StoryCard({ story }: { story: Story }) {
           <p className="mb-2 truncate text-xs text-gray-500">{story.title_vi}</p>
           <div className="flex items-center gap-2">
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${levelColors[story.level]}`}>
-              {story.level === 'Beginner' ? '🌱' : story.level === 'Elementary' ? '🌿' : '🌳'} {story.level}
+              {story.level}
             </span>
           </div>
         </div>
@@ -461,7 +474,7 @@ function VideoCard({ video }: { video: Video }) {
           )}
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg">
-              <span className="ml-1 text-xl">▶️</span>
+              <Play className="ml-0.5 h-5 w-5 text-slate-900" fill="currentColor" aria-hidden="true" />
             </div>
           </div>
           {video.duration > 0 && (
@@ -486,9 +499,9 @@ function MusicCard({ video, colorIndex }: { video: Video; colorIndex: number }) 
     'from-blue-400 to-cyan-400',
     'from-green-400 to-emerald-400',
   ];
-  const emojis = ['🎤', '🎵', '🎸', '🎹'];
+  const iconNames = ['mic', 'music', 'sparkles', 'story'];
   const gradient = gradients[colorIndex % gradients.length];
-  const emoji = emojis[colorIndex % emojis.length];
+  const iconName = iconNames[colorIndex % iconNames.length];
 
   return (
     <Link href={`/videos/${video.id}`}>
@@ -497,11 +510,11 @@ function MusicCard({ video, colorIndex }: { video: Video; colorIndex: number }) 
           {video.thumbnailUrl ? (
             <Image src={video.thumbnailUrl} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform" sizes="(max-width: 768px) 50vw, 25vw" />
           ) : (
-            <VideoFallbackArtwork video={video} icon={emoji} />
+            <VideoFallbackArtwork video={video} icon={iconName} />
           )}
           <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity group-hover:opacity-100">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg">
-              <span className="ml-1 text-xl">▶️</span>
+              <Play className="ml-0.5 h-5 w-5 text-slate-900" fill="currentColor" aria-hidden="true" />
             </div>
           </div>
         </div>

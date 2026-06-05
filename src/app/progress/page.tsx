@@ -145,7 +145,7 @@ export default function ProgressPage() {
                   Tiến Độ Học Tập!
                 </h1>
                 <p className="mt-0.5 text-sm font-bold" style={{ color: '#6b5b8f' }}>
-                  Theo dõi hành trình học tiếng Anh của bạn 🌈
+                  Theo dõi hành trình học tiếng Anh của bạn
                 </p>
               </div>
             </div>
@@ -156,7 +156,7 @@ export default function ProgressPage() {
                 boxShadow: '0 6px 20px rgba(249,115,22,0.4)',
               }}
             >
-              🦊 {progress.currentStreak} ngày liên tiếp!
+              {progress.currentStreak} ngày liên tiếp!
             </div>
           </div>
 
@@ -648,4 +648,3 @@ function EmptyPanel({
     </div>
   );
 }
-

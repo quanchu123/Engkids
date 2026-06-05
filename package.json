@@ -6,6 +6,7 @@
     "dev": "next dev",
     "postinstall": "node scripts/setup-droplet-ssl.js",
     "build": "next build",
+    "postbuild": "node scripts/backfill-video-thumbnails.js",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
@@ -14,7 +15,8 @@
     "test:e2e": "npx playwright test",
     "setup:db": "node setup-database.js",
     "migrate:spaces": "node scripts/migrate-bunny-to-spaces.js",
-    "iconscout:download": "node scripts/download-iconscout-assets.js"
+    "iconscout:download": "node scripts/download-iconscout-assets.js",
+    "thumbnails:backfill": "node scripts/backfill-video-thumbnails.js"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",

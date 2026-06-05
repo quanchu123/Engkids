@@ -10,6 +10,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { filterStories, getStoryTopics } from '@/lib/content-selectors';
 import { onContentChange } from '@/lib/content-sync';
 import { StoryFallbackArtwork } from '@/components/common/FallbackArtwork';
+import { DecorIcon } from '@/components/common/DecorIcon';
 
 type SortOption = 'recommended' | 'new' | 'shortest';
 
@@ -74,8 +75,8 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
       <Header />
       <main className="mx-auto max-w-7xl px-4 py-6">
         <section className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-violet-400 via-purple-500 to-indigo-500 p-5 shadow-lg">
-          <div className="absolute top-2 right-4 hidden text-5xl opacity-30 animate-pulse sm:block">🦄</div>
-          <div className="absolute bottom-2 left-3 hidden text-4xl opacity-25 sm:block">📚</div>
+          <DecorIcon name="story" className="absolute top-4 right-5 hidden h-14 w-14 rounded-2xl bg-white/15 text-white opacity-50 sm:flex" iconClassName="h-8 w-8" imageClassName="h-11 w-11 object-contain" />
+          <DecorIcon name="sparkles" className="absolute bottom-4 left-4 hidden h-11 w-11 rounded-2xl bg-white/15 text-white opacity-45 sm:flex" iconClassName="h-6 w-6" imageClassName="h-9 w-9 object-contain" />
           <div className="relative z-10 max-w-2xl">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white backdrop-blur-sm">
               <BookOpen size={14} aria-hidden="true" />
@@ -161,8 +162,6 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
 function StoryGridCard({ story, completed }: { story: Story; completed: boolean }) {
   const [imageError, setImageError] = useState(false);
   const isImageUrl = !imageError && (story.cover_image?.startsWith('http') || story.cover_image?.startsWith('data:'));
-  const levelIcon = story.level === 'Beginner' ? '🌱' : story.level === 'Elementary' ? '🌿' : '🌳';
-
   return (
               <Link href={`/stories/${story.id}`} className="playful-card group overflow-hidden rounded-[20px] border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
@@ -188,7 +187,7 @@ function StoryGridCard({ story, completed }: { story: Story; completed: boolean 
         <h3 className="line-clamp-2 font-black leading-tight text-slate-900">{story.title_en}</h3>
         <p className="mt-1 line-clamp-1 text-sm text-slate-500">{story.title_vi}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-600">
-          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{levelIcon} {story.level}</span>
+          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{story.level}</span>
           <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">{story.estimated_minutes} phút</span>
           {story.topics?.[0] && (
             <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-700">{story.topics[0]}</span>

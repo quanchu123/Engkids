@@ -10,6 +10,7 @@ import { DEFAULT_FEATURE } from '@/config/constants';
 import { filterVideos, groupVideosByFeature } from '@/lib/content-selectors';
 import { Video } from '@/types';
 import { onContentChange } from '@/lib/content-sync';
+import { DecorIcon } from '@/components/common/DecorIcon';
 
 // Rotating palette for feature sections.
 const FEATURE_COLORS: Array<'pink' | 'purple' | 'blue' | 'green' | 'orange' | 'yellow'> = [
@@ -98,8 +99,8 @@ export default function VideosPageClient() {
         <section className="relative mb-6 overflow-hidden">
           <div className="mx-auto max-w-7xl px-4">
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-kid-purple via-kid-pink to-kid-orange p-5 shadow-lg">
-              <div className="absolute top-2 right-4 hidden text-5xl opacity-30 animate-pulse sm:block">🎬</div>
-              <div className="absolute bottom-2 left-3 hidden text-4xl opacity-25 sm:block">⭐</div>
+              <DecorIcon name="video" className="absolute top-4 right-5 hidden h-14 w-14 rounded-2xl bg-white/15 text-white opacity-50 sm:flex" iconClassName="h-8 w-8" imageClassName="h-11 w-11 object-contain" />
+              <DecorIcon name="sparkles" className="absolute bottom-4 left-4 hidden h-11 w-11 rounded-2xl bg-white/15 text-white opacity-45 sm:flex" iconClassName="h-6 w-6" imageClassName="h-9 w-9 object-contain" />
               <div className="relative z-10 max-w-2xl">
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white backdrop-blur-sm">
                   <Clapperboard size={14} aria-hidden="true" />

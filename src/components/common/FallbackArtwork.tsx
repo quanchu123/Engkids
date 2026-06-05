@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { Story, Video } from '@/types';
+import { DecorIcon } from './DecorIcon';
 
 type ArtTone = {
   gradient: string;
@@ -12,31 +12,32 @@ type ArtTone = {
 const DEFAULT_TONE: ArtTone = {
   gradient: 'from-violet-500 via-fuchsia-400 to-orange-300',
   accent: 'bg-white/20',
-  icon: '✨',
+  icon: 'sparkles',
 };
 
 const ART_TONES: Record<string, ArtTone> = {
-  animals: { gradient: 'from-amber-400 via-orange-400 to-rose-400', accent: 'bg-yellow-100/25', icon: '🦁' },
-  body: { gradient: 'from-rose-400 via-pink-400 to-violet-500', accent: 'bg-white/20', icon: '🙋' },
-  family: { gradient: 'from-pink-400 via-rose-400 to-orange-300', accent: 'bg-white/20', icon: '🏠' },
-  food: { gradient: 'from-lime-400 via-emerald-400 to-cyan-400', accent: 'bg-white/25', icon: '🍎' },
-  music: { gradient: 'from-pink-500 via-purple-500 to-sky-500', accent: 'bg-white/20', icon: '🎵' },
-  nature: { gradient: 'from-emerald-400 via-teal-400 to-sky-400', accent: 'bg-white/25', icon: '🌿' },
-  school: { gradient: 'from-blue-500 via-cyan-400 to-emerald-300', accent: 'bg-white/20', icon: '✏️' },
-  science: { gradient: 'from-cyan-500 via-blue-500 to-indigo-500', accent: 'bg-white/20', icon: '🔬' },
-  space: { gradient: 'from-indigo-600 via-violet-600 to-fuchsia-500', accent: 'bg-white/15', icon: '🚀' },
-  weather: { gradient: 'from-sky-400 via-blue-400 to-indigo-400', accent: 'bg-white/25', icon: '☀️' },
+  animals: { gradient: 'from-amber-400 via-orange-400 to-rose-400', accent: 'bg-yellow-100/25', icon: 'animals' },
+  body: { gradient: 'from-rose-400 via-pink-400 to-violet-500', accent: 'bg-white/20', icon: 'body' },
+  family: { gradient: 'from-pink-400 via-rose-400 to-orange-300', accent: 'bg-white/20', icon: 'family' },
+  food: { gradient: 'from-lime-400 via-emerald-400 to-cyan-400', accent: 'bg-white/25', icon: 'sparkles' },
+  music: { gradient: 'from-pink-500 via-purple-500 to-sky-500', accent: 'bg-white/20', icon: 'music' },
+  nature: { gradient: 'from-emerald-400 via-teal-400 to-sky-400', accent: 'bg-white/25', icon: 'weather' },
+  school: { gradient: 'from-blue-500 via-cyan-400 to-emerald-300', accent: 'bg-white/20', icon: 'story' },
+  science: { gradient: 'from-cyan-500 via-blue-500 to-indigo-500', accent: 'bg-white/20', icon: 'sparkles' },
+  space: { gradient: 'from-indigo-600 via-violet-600 to-fuchsia-500', accent: 'bg-white/15', icon: 'space' },
+  weather: { gradient: 'from-sky-400 via-blue-400 to-indigo-400', accent: 'bg-white/25', icon: 'weather' },
 };
 
 const ICONSCOUT_ASSET_KEYS = new Set([
   'animals',
-  'space',
-  'weather',
-  'family',
   'body',
-  'music',
-  'story',
+  'family',
   'game',
+  'music',
+  'rocket',
+  'space',
+  'story',
+  'weather',
 ]);
 
 function normalizeToken(value?: string): string {
@@ -55,34 +56,14 @@ function pickTone(topics?: string[], category?: Video['category'], feature?: str
   return found && ART_TONES[found] ? ART_TONES[found] : DEFAULT_TONE;
 }
 
-function ArtworkIcon({
-  assetKey,
-  fallback,
-  className,
-}: {
-  assetKey?: string;
-  fallback: string;
-  className: string;
-}) {
-  const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  if (!assetKey || !ICONSCOUT_ASSET_KEYS.has(assetKey) || failed) {
-    return <div className={className}>{fallback}</div>;
-  }
-
+function ArtworkMark({ name }: { name: string }) {
   return (
-    <>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={`/assets/iconscout/${assetKey}.png`}
-        alt=""
-        className={`${loaded ? 'block' : 'hidden'} mb-1 h-12 w-12 object-contain drop-shadow-md`}
-        onLoad={() => setLoaded(true)}
-        onError={() => setFailed(true)}
-      />
-      {!loaded && <div className={className}>{fallback}</div>}
-    </>
+    <DecorIcon
+      name={name}
+      className="mb-1 h-12 w-12"
+      iconClassName="h-9 w-9 text-white drop-shadow-md"
+      imageClassName="h-12 w-12 object-contain drop-shadow-md"
+    />
   );
 }
 
@@ -90,8 +71,6 @@ export function StoryFallbackArtwork({ story }: { story: Story }) {
   const tone = pickTone(story.topics);
   const assetKey = pickArtKey(story.topics) || 'story';
   const topic = story.topics?.[0] || story.level;
-  const coverToken = story.cover_image?.trim();
-  const icon = coverToken && coverToken.length <= 3 ? coverToken : tone.icon;
 
   return (
     <div className={`absolute inset-0 overflow-hidden bg-gradient-to-br ${tone.gradient}`}>
@@ -101,7 +80,7 @@ export function StoryFallbackArtwork({ story }: { story: Story }) {
         Story
       </div>
       <div className="absolute inset-x-4 bottom-4 rounded-2xl bg-white/18 p-3 text-white backdrop-blur-sm">
-        <ArtworkIcon assetKey={assetKey} fallback={icon} className="mb-1 text-3xl drop-shadow-sm" />
+        <ArtworkMark name={assetKey || tone.icon} />
         <div className="line-clamp-2 text-base font-black leading-tight drop-shadow-sm">{story.title_en}</div>
         <div className="mt-1 line-clamp-1 text-xs font-bold text-white/85">{topic}</div>
       </div>
@@ -111,7 +90,7 @@ export function StoryFallbackArtwork({ story }: { story: Story }) {
 
 export function VideoFallbackArtwork({ video, icon }: { video: Video; icon?: string }) {
   const tone = pickTone(video.topics, video.category, video.feature);
-  const assetKey = pickArtKey(video.topics, video.category, video.feature);
+  const assetKey = icon || pickArtKey(video.topics, video.category, video.feature) || tone.icon;
   const label = video.feature?.trim() || video.topics?.[0] || video.titleVi || video.title;
   const badge = video.category === 'music' ? 'Song' : 'Lesson';
 
@@ -123,11 +102,7 @@ export function VideoFallbackArtwork({ video, icon }: { video: Video; icon?: str
         {badge}
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center text-white">
-        <ArtworkIcon
-          assetKey={assetKey}
-          fallback={icon || tone.icon || (video.category === 'music' ? '🎵' : '🎬')}
-          className="mb-1 text-4xl drop-shadow-md"
-        />
+        <ArtworkMark name={assetKey} />
         <div className="line-clamp-2 text-base font-black leading-tight drop-shadow-md">{label}</div>
       </div>
     </div>
