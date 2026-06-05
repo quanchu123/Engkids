@@ -29,9 +29,9 @@ function normalizeToken(value?: string): string {
   return value?.trim().toLowerCase().replace(/\s+/g, '-') || '';
 }
 
-function pickTone(topics?: string[], category?: Video['category']): ArtTone {
+function pickTone(topics?: string[], category?: Video['category'], feature?: string): ArtTone {
   if (category === 'music') return ART_TONES.music;
-  const tokens = (topics || []).map(normalizeToken);
+  const tokens = [feature, ...(topics || [])].map(normalizeToken);
   const found = tokens.find((token) => ART_TONES[token]);
   return found ? ART_TONES[found] : DEFAULT_TONE;
 }
@@ -59,7 +59,7 @@ export function StoryFallbackArtwork({ story }: { story: Story }) {
 }
 
 export function VideoFallbackArtwork({ video, icon }: { video: Video; icon?: string }) {
-  const tone = pickTone(video.topics, video.category);
+  const tone = pickTone(video.topics, video.category, video.feature);
   const label = video.feature?.trim() || video.topics?.[0] || video.titleVi || video.title;
   const badge = video.category === 'music' ? 'Song' : 'Lesson';
 

@@ -90,6 +90,7 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
   const [category, setCategory] = useState<'video' | 'music'>(initialCategory);
   const [feature, setFeature] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [customThumbnail, setCustomThumbnail] = useState(false);
   const [thumbnailStatus, setThumbnailStatus] = useState('');
 
   const [busy, setBusy] = useState(false);
@@ -120,6 +121,7 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
       try {
         const generatedThumbnail = await generateVideoThumbnail(selectedFile);
         setThumbnailUrl(generatedThumbnail);
+        setCustomThumbnail(false);
         setThumbnailStatus('Thumbnail generated from video.');
       } catch (error) {
         console.warn('Failed to generate video thumbnail:', error);
@@ -141,6 +143,7 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
       setThumbnailStatus('Optimizing thumbnail...');
       const resized = await resizeImage(selectedFile, 640, 360, 0.82);
       setThumbnailUrl(resized);
+      setCustomThumbnail(true);
       setThumbnailStatus('Custom thumbnail selected.');
     } catch (error) {
       console.error('Thumbnail upload error:', error);
@@ -169,7 +172,10 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
 
   // Upload the raw file to our server, which streams it to the droplet disk.
   // Returns the stored object key. Tracks progress via XMLHttpRequest.
-  const uploadFile = (selectedFile: File, accessToken: string): Promise<string> => {
+  const uploadFile = (
+    selectedFile: File,
+    accessToken: string,
+  ): Promise<{ objectKey: string; thumbnailUrl?: string }> => {
     return new Promise((resolve, reject) => {
       const ext = (selectedFile.name.split('.').pop() || 'mp4').toLowerCase();
       const xhr = new XMLHttpRequest();
@@ -190,7 +196,12 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const data = JSON.parse(xhr.responseText);
-            if (data.objectKey) resolve(data.objectKey);
+            if (data.objectKey) {
+              resolve({
+                objectKey: data.objectKey,
+                thumbnailUrl: typeof data.thumbnailUrl === 'string' ? data.thumbnailUrl : undefined,
+              });
+            }
             else reject(new Error('Upload succeeded but no object key was returned'));
           } catch {
             reject(new Error('Invalid server response'));
@@ -211,7 +222,7 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
     });
   };
 
-  const uploadFileWithFreshAuth = async (selectedFile: File): Promise<string> => {
+  const uploadFileWithFreshAuth = async (selectedFile: File): Promise<{ objectKey: string; thumbnailUrl?: string }> => {
     let accessToken = (await getAnyAccessToken()) || '';
 
     try {
@@ -243,16 +254,19 @@ export default function VideoUploader({ onUploadComplete, onError, initialCatego
     setProgressPct(0);
     try {
       // 1. Stream the file to the server (stored on the droplet disk).
-      const objectKey = await uploadFileWithFreshAuth(file);
+      const uploaded = await uploadFileWithFreshAuth(file);
       setProgressPct(95);
+      const finalThumbnailUrl = customThumbnail
+        ? thumbnailUrl
+        : uploaded.thumbnailUrl || thumbnailUrl;
 
       // 2. Record the video metadata.
       const data = await videoApi.create({
-        objectKey,
+        objectKey: uploaded.objectKey,
         title,
         titleVi,
         description,
-        thumbnailUrl,
+        thumbnailUrl: finalThumbnailUrl,
         level,
         topics: [],
         category,

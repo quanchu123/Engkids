@@ -19,7 +19,7 @@ html {
 
 body {
   font-family: var(--font-primary);
-  background: linear-gradient(135deg, #fef3c7 0%, #fce7f3 50%, #dbeafe 100%);
+  background: linear-gradient(180deg, #f8fbff 0%, #fff7ed 42%, #f7f8ff 100%);
   background-attachment: fixed;
   min-height: 100vh;
   overflow-x: clip;
@@ -114,24 +114,26 @@ body {
 .btn-kid {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 0.875rem 1.75rem;
-  border-radius: 9999px;
-  font-size: 1.1rem;
+  min-height: 48px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 1rem;
+  font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
-  box-shadow: 0 6px 0 rgba(0,0,0,0.18);
+  box-shadow: 0 10px 22px rgba(15,23,42,0.10);
   border: none;
   user-select: none;
 }
 .btn-kid:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 0 rgba(0,0,0,0.18);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(15,23,42,0.14);
 }
 .btn-kid:active {
-  transform: translateY(3px);
-  box-shadow: 0 3px 0 rgba(0,0,0,0.18);
+  transform: translateY(1px);
+  box-shadow: 0 8px 18px rgba(15,23,42,0.10);
 }
 
 /* ============================================================
@@ -921,6 +923,49 @@ a {
   opacity: 0;
   transform: rotate(var(--fw-angle, 0deg)) translateY(0);
   animation: fwShoot 1.1s ease-out forwards;
+}
+
+/* ============================================================
+   VISUAL SYSTEM TUNING
+   ============================================================ */
+.home-shell::before,
+.home-shell::after,
+.hero-card::before,
+.section-shell::before,
+.section-shell::after,
+.playful-card::before {
+  display: none;
+}
+
+.section-shell {
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.07);
+  backdrop-filter: blur(10px);
+}
+
+.section-shell-amber,
+.section-shell-sky,
+.section-shell-mint,
+.section-shell-violet,
+.section-shell-pink {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 252, 0.9) 100%);
+}
+
+.playful-card {
+  border-color: rgba(226, 232, 240, 0.88);
+}
+
+.toy-panel {
+  border-radius: 1.25rem;
+  border-color: rgba(226, 232, 240, 0.92);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+}
+
+.kid-chip {
+  border-color: rgba(226, 232, 240, 0.9);
+  box-shadow: none;
 }
 
 @keyframes fwShoot {

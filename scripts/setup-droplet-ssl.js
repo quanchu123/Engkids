@@ -59,11 +59,20 @@ function writeNginxConfig() {
   }
 }
 
+function installServerPackages() {
+  run('apt-get', ['update']);
+  run('apt-get', ['install', '-y', 'nginx', 'certbot', 'python3-certbot-nginx', 'ffmpeg'], {
+    env: { ...process.env, DEBIAN_FRONTEND: 'noninteractive' },
+  });
+}
+
 function main() {
   if (!shouldRun()) {
     console.log('[ssl] Skipping droplet SSL setup outside /root/Engkids on Linux root.');
     return;
   }
+
+  installServerPackages();
 
   const marker = path.join('/var/tmp', 'engkids-ssl-setup-attempted');
   const recentlyAttempted = fs.existsSync(marker)
@@ -73,11 +82,6 @@ function main() {
     return;
   }
   fs.writeFileSync(marker, new Date().toISOString());
-
-  run('apt-get', ['update']);
-  run('apt-get', ['install', '-y', 'nginx', 'certbot', 'python3-certbot-nginx'], {
-    env: { ...process.env, DEBIAN_FRONTEND: 'noninteractive' },
-  });
 
   writeNginxConfig();
   run('nginx', ['-t']);

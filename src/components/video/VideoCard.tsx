@@ -4,6 +4,7 @@
 
 import { memo, useState } from 'react';
 import Link from 'next/link';
+import { Play } from 'lucide-react';
 import { Video } from '@/types';
 import { ROUTES } from '@/config/constants';
 import { VideoFallbackArtwork } from '@/components/common/FallbackArtwork';
@@ -75,7 +76,7 @@ export default memo(function VideoCard({
       >
         <div
           className={`
-            playful-card toy-panel relative aspect-video overflow-hidden rounded-2xl
+            playful-card toy-panel relative aspect-video overflow-hidden rounded-[20px]
             transition-all duration-300
             ${isHovered ? 'scale-105 -translate-y-1' : ''}
             ring-4 ring-transparent
@@ -103,8 +104,8 @@ export default memo(function VideoCard({
               ${isHovered ? 'opacity-100' : 'opacity-0'}
             `}
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-lg transition-transform group-hover:scale-110">
-              <span className="text-sm font-black uppercase">Play</span>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/92 text-slate-900 shadow-lg transition-transform group-hover:scale-110">
+              <Play size={22} fill="currentColor" aria-hidden="true" />
             </div>
           </div>
 

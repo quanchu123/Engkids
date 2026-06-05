@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { onContentChange } from '@/lib/content-sync';
 
 interface MusicSetting {
@@ -9,20 +10,9 @@ interface MusicSetting {
   volume: number;
 }
 
-// Events the browser accepts as a "user gesture" to unlock audio.
 const GESTURE_EVENTS = ['pointerdown', 'click', 'touchend', 'keydown'] as const;
 const MUSIC_DISABLED_KEY = 'engkids.backgroundMusic.disabled';
 
-/**
- * Home-page background music. Loops a track set by the admin.
- *
- * Browsers block autoplay WITH SOUND until the user interacts with the page.
- * Strategy to play as early as possible:
- *   1. Try to play unmuted (works if the browser already trusts this site).
- *   2. If blocked, start MUTED (autoplay muted is always allowed) so the track
- *      is already running, then unmute on the very first user gesture anywhere
- *      on the page — the user does not need to find the music button.
- */
 export default function BackgroundMusic() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [setting, setSetting] = useState<MusicSetting | null>(null);
@@ -31,10 +21,10 @@ export default function BackgroundMusic() {
   const [userDisabled, setUserDisabled] = useState(false);
   const userToggledRef = useRef(false);
 
-  // Load the current music setting.
   useEffect(() => {
     let active = true;
     setUserDisabled(window.localStorage.getItem(MUSIC_DISABLED_KEY) === 'true');
+
     const loadSetting = () => fetch('/api/settings/background-music', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((res) => {
@@ -49,17 +39,19 @@ export default function BackgroundMusic() {
         }
       })
       .catch(() => {});
+
     const handleFocus = () => {
       loadSetting();
     };
+
     loadSetting();
     const unsubscribe = onContentChange((kind) => {
-      if (kind === 'site-settings' || kind === 'all') {
-        loadSetting();
-      }
+      if (kind === 'site-settings' || kind === 'all') loadSetting();
     });
+
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
+
     return () => {
       active = false;
       unsubscribe();
@@ -81,7 +73,6 @@ export default function BackgroundMusic() {
       GESTURE_EVENTS.forEach((ev) => window.removeEventListener(ev, unlock));
     };
 
-    // Unmute + play at the first real user gesture.
     const unlock = () => {
       if (unlocked || userToggledRef.current) return;
       unlocked = true;
@@ -102,16 +93,13 @@ export default function BackgroundMusic() {
       return removeUnlockListeners;
     }
 
-    // 1. Try unmuted autoplay.
     audio.muted = false;
-    audio
-      .play()
+    audio.play()
       .then(() => {
         setPlaying(true);
         setMuted(false);
       })
       .catch(() => {
-        // 2. Blocked — fall back to muted autoplay, unmute on first gesture.
         audio.muted = true;
         setMuted(true);
         audio.play().then(() => setPlaying(true)).catch(() => {});
@@ -128,15 +116,15 @@ export default function BackgroundMusic() {
 
   if (!setting?.url) return null;
 
-  const toggle = (e?: React.SyntheticEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+  const toggle = (event?: React.SyntheticEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
     }
     userToggledRef.current = true;
     const audio = audioRef.current;
     if (!audio) return;
-    
+
     if (audio.paused || audio.muted || userDisabled) {
       window.localStorage.removeItem(MUSIC_DISABLED_KEY);
       setUserDisabled(false);
@@ -161,16 +149,16 @@ export default function BackgroundMusic() {
       <audio ref={audioRef} src={setting.url} preload="auto" />
       <button
         onClickCapture={toggle}
-        onPointerDownCapture={(e) => e.stopPropagation()}
+        onPointerDownCapture={(event) => event.stopPropagation()}
         aria-label={isOn ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
         title={isOn ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
-        className={`fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full text-xl shadow-lg transition-all hover:scale-110 ${
+        className={`fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg transition-all hover:-translate-y-0.5 ${
           isOn
-            ? 'bg-gradient-to-br from-violet-500 to-pink-500 text-white'
-            : 'bg-white text-violet-600 ring-2 ring-violet-300 animate-pulse'
+            ? 'bg-slate-900 text-white'
+            : 'bg-white text-slate-700 ring-1 ring-slate-200'
         }`}
       >
-        {isOn ? '🔊' : '🎵'}
+        {isOn ? <Volume2 size={22} aria-hidden="true" /> : <VolumeX size={22} aria-hidden="true" />}
       </button>
     </>
   );

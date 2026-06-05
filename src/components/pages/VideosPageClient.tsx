@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Clapperboard, SlidersHorizontal, Search } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import VideoCard from '@/components/video/VideoCard';
 import VideoFilters, { VideoFiltersState } from '@/components/video/VideoFilters';
@@ -93,32 +94,29 @@ export default function VideosPageClient() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-b from-amber-50 via-pink-50 to-blue-50 pb-12 pt-2">
+      <main className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-violet-50 pb-12 pt-6">
         <section className="relative mb-6 overflow-hidden">
           <div className="mx-auto max-w-7xl px-4">
-            <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-kid-purple via-kid-pink to-kid-orange p-5 shadow-lg">
-              <div className="absolute top-2 right-4 text-5xl opacity-30 animate-pulse">🎬</div>
-              <div className="absolute bottom-2 left-3 text-4xl opacity-25">⭐</div>
-              <div className="absolute top-4 left-1/4 text-3xl opacity-20">🎥</div>
-              <div className="absolute bottom-3 right-1/4 text-2xl opacity-20">📺</div>
-
+            <div className="relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-br from-orange-50 via-sky-50 to-violet-50 md:block" aria-hidden />
               <div className="relative z-10 max-w-2xl">
-                <h1 className="mb-3 text-3xl font-bold text-white drop-shadow-lg md:text-4xl">
-                  🎬 Học tiếng Anh qua Video
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-black text-orange-700">
+                  <Clapperboard size={14} aria-hidden="true" />
+                  Kho video
+                </div>
+                <h1 className="mb-3 text-3xl font-black text-slate-950 md:text-4xl">
+                  Học tiếng Anh qua Video
                 </h1>
 
-                <div className="relative max-w-xs">
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <circle cx="11" cy="11" r="7" stroke="white" strokeWidth="2.5" />
-                    <path d="M16.5 16.5 L21 21" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                  </svg>
+                <div className="relative max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} aria-hidden="true" />
                 <input
                   type="text"
                   data-testid="videos-search"
                   placeholder="Tìm video..."
                   value={filters.search}
                   onChange={(e) => setFilters((current) => ({ ...current, search: e.target.value }))}
-                    className="w-full rounded-xl py-2 pl-9 pr-3 text-sm font-semibold text-gray-700 placeholder-gray-500 focus:outline-none"
+                    className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-700 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
                 />
                 </div>
               </div>
@@ -130,25 +128,26 @@ export default function VideosPageClient() {
           <div className="mb-6 flex items-center justify-between">
             <button
               onClick={() => setShowFilters((current) => !current)}
-              className={`rounded-2xl px-5 py-3 font-bold transition-colors ${showFilters ? 'bg-kid-purple text-white' : 'bg-white text-slate-700 shadow'}`}
+              className={`flex min-h-[44px] items-center gap-2 rounded-xl px-4 font-black transition-colors ${showFilters ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'}`}
             >
+              <SlidersHorizontal size={17} aria-hidden="true" />
               Lọc video
             </button>
           </div>
 
           {showFilters && (
-            <div className="soft-panel mb-8 rounded-[1.75rem] p-4">
+            <div className="soft-panel mb-8 rounded-[20px] p-4">
               <VideoFilters filters={filters} onFiltersChange={setFilters} />
             </div>
           )}
 
           {/* Feature ("chủ đề") tabs */}
           {liveVideos.length > 0 && featureList.length > 1 && (
-            <div className="soft-panel mb-6 flex flex-wrap gap-2 rounded-[1.75rem] p-4">
+            <div className="soft-panel mb-6 flex flex-wrap gap-2 rounded-[20px] p-4">
               <button
                 onClick={() => setSelectedFeature(null)}
-                className={`rounded-2xl px-4 py-2 text-sm font-bold transition-colors ${
-                  selectedFeature === null ? 'bg-kid-purple text-white' : 'bg-white text-violet-700 shadow'
+                className={`min-h-[40px] rounded-xl px-4 text-sm font-bold transition-colors ${
+                  selectedFeature === null ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'
                 }`}
               >
                 Tất cả ({liveVideos.length})
@@ -159,8 +158,8 @@ export default function VideosPageClient() {
                   <button
                     key={f}
                     onClick={() => setSelectedFeature(f)}
-                    className={`rounded-2xl px-4 py-2 text-sm font-bold transition-colors ${
-                      selectedFeature === f ? 'bg-kid-purple text-white' : 'bg-white text-violet-700 shadow'
+                    className={`min-h-[40px] rounded-xl px-4 text-sm font-bold transition-colors ${
+                      selectedFeature === f ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'
                     }`}
                   >
                     {f} ({count})

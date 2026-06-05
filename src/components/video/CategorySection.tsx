@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Video } from '@/types';
 import VideoCard from './VideoCard';
 
@@ -47,21 +48,21 @@ export default function CategorySection({
   }, [videos]);
 
   const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: direction === 'left' ? -300 : 300, behavior: 'smooth' });
-    }
+    scrollRef.current?.scrollBy({
+      left: direction === 'left' ? -300 : 300,
+      behavior: 'smooth',
+    });
   };
 
   if (videos.length === 0) return null;
 
   return (
-    <section className="soft-panel relative rounded-[1.75rem] px-3 py-6 md:px-4">
-      <div className="mb-4 flex items-center justify-between px-4 md:px-0">
-        <div className="flex items-center gap-3">
-          <h2 className={`bg-gradient-to-r ${COLOR_CLASSES[color]} bg-clip-text text-xl font-bold text-transparent md:text-2xl`}>
-            {title}
-          </h2>
-          <span className="kid-chip px-2 py-0.5 text-sm font-medium text-gray-500">
+    <section className="soft-panel relative mb-6 rounded-[24px] border border-slate-200/80 px-3 py-6 md:px-5">
+      <div className="mb-4 flex items-center justify-between gap-3 px-4 md:px-0">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className={`h-8 w-2 flex-shrink-0 rounded-full bg-gradient-to-b ${COLOR_CLASSES[color]}`} aria-hidden="true" />
+          <h2 className="truncate text-xl font-black text-slate-900 md:text-2xl">{title}</h2>
+          <span className="kid-chip flex-shrink-0 px-2.5 py-1 text-sm font-bold text-slate-500">
             {videos.length} video
           </span>
         </div>
@@ -69,10 +70,10 @@ export default function CategorySection({
         {showViewAll && onViewAll && (
           <button
             onClick={onViewAll}
-            className={`flex items-center gap-2 rounded-2xl bg-gradient-to-r ${COLOR_CLASSES[color]} px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg`}
+            className="hidden min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50 sm:flex"
           >
             <span>Xem tất cả</span>
-            <span>→</span>
+            <ArrowRight size={16} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -81,18 +82,20 @@ export default function CategorySection({
         {canScrollLeft && (
           <button
             onClick={() => scroll('left')}
-            className="absolute left-0 top-1/2 z-10 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white shadow-lg opacity-0 transition-opacity duration-200 hover:scale-110 hover:bg-gray-50 group-hover:opacity-100 md:h-12 md:w-12"
+            className="absolute left-1 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-md opacity-0 transition-opacity duration-200 hover:bg-slate-50 group-hover:opacity-100 md:flex"
+            aria-label="Cuộn sang trái"
           >
-            <span className="text-sm font-black uppercase">Prev</span>
+            <ArrowLeft size={18} aria-hidden="true" />
           </button>
         )}
 
         {canScrollRight && (
           <button
             onClick={() => scroll('right')}
-            className="absolute right-0 top-1/2 z-10 flex h-11 w-11 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-white shadow-lg opacity-0 transition-opacity duration-200 hover:scale-110 hover:bg-gray-50 group-hover:opacity-100 md:h-12 md:w-12"
+            className="absolute right-1 top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-md opacity-0 transition-opacity duration-200 hover:bg-slate-50 group-hover:opacity-100 md:flex"
+            aria-label="Cuộn sang phải"
           >
-            <span className="text-sm font-black uppercase">Next</span>
+            <ArrowRight size={18} aria-hidden="true" />
           </button>
         )}
 
@@ -111,10 +114,10 @@ export default function CategorySection({
           {showViewAll && videos.length >= 5 && onViewAll && (
             <button
               onClick={onViewAll}
-              className="toy-panel group flex-none aspect-video w-56 rounded-2xl border-2 border-dashed border-gray-300 transition-all duration-200 hover:border-kid-purple hover:bg-kid-purple/5"
+              className="toy-panel group flex-none aspect-video w-56 rounded-[20px] border border-dashed border-slate-300 transition-all duration-200 hover:border-violet-300 hover:bg-violet-50"
             >
               <div className="flex h-full flex-col items-center justify-center gap-2">
-                <span className="font-semibold text-gray-500 group-hover:text-kid-purple">Xem thêm video</span>
+                <span className="font-semibold text-slate-500 group-hover:text-violet-700">Xem thêm video</span>
               </div>
             </button>
           )}

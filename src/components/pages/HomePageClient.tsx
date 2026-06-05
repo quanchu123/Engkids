@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { BookOpen, Clapperboard, Gamepad2, Music, Sparkles, Star } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { Story, Video } from '@/types';
 import Header from '@/components/layout/Header';
@@ -95,63 +96,53 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
       <Header />
       <BackgroundMusic />
 
-      <section className="relative overflow-hidden px-4 pb-2 pt-8">
+      <section className="relative overflow-hidden px-4 pb-2 pt-6">
         <div className="max-w-6xl mx-auto">
-          <div className="hero-card relative overflow-hidden rounded-3xl border border-white/25 bg-gradient-to-br from-violet-600 via-pink-500 to-orange-400 p-7 shadow-2xl md:p-12"
-            style={{ boxShadow: '0 8px 0 rgba(0,0,0,0.2), 0 20px 60px rgba(139,92,246,0.4)' }}>
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24" aria-hidden>
-              <div className="absolute -bottom-8 -left-6 h-24 w-64 rounded-[999px] bg-white/10" />
-              <div className="absolute -bottom-10 left-[30%] h-28 w-72 rounded-[999px] bg-white/10" />
-              <div className="absolute -bottom-9 right-[8%] h-24 w-60 rounded-[999px] bg-white/10" />
-            </div>
-            <span aria-hidden className="absolute left-[55%] top-4 hidden text-5xl opacity-20 deco-twinkle delay-1 sm:block">⭐</span>
-            <span aria-hidden className="absolute right-[8%] top-12 hidden text-4xl opacity-25 deco-float delay-3 sm:block">🌈</span>
-            <span aria-hidden className="absolute bottom-6 left-[50%] hidden text-5xl opacity-20 deco-float delay-2 sm:block">✨</span>
-            <span aria-hidden className="absolute right-[25%] top-6 hidden text-3xl opacity-20 deco-spin sm:block">🌟</span>
+          <div className="hero-card relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] md:p-10">
+            <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-br from-sky-50 via-violet-50 to-amber-50 md:block" aria-hidden />
+            <div className="pointer-events-none absolute left-6 top-6 h-2 w-24 rounded-full bg-gradient-to-r from-sky-300 via-emerald-300 to-amber-300" aria-hidden />
 
-            <div className="relative z-10 flex flex-col items-center gap-6 md:flex-row">
+            <div className="relative z-10 flex flex-col items-center gap-7 md:flex-row">
               <div className="flex-1 text-center md:text-left">
-                <div className="mb-3 inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
-                  🚀 Học tiếng Anh cùng Engkids!
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-xs font-black text-sky-700">
+                  <Sparkles size={14} aria-hidden="true" />
+                  Học qua truyện, video và game
                 </div>
-                <h1 className="mb-3 text-3xl font-black leading-tight text-white drop-shadow-lg md:text-5xl">
-                  Chào mừng bé đến với<br/>
-                  <span className="text-yellow-300 drop-shadow-xl">Engkids! 🎉</span>
+                <h1 className="mb-3 text-3xl font-black leading-tight text-slate-950 md:text-5xl">
+                  Engkids giúp bé học tiếng Anh mỗi ngày
                 </h1>
-                <p className="mb-6 max-w-xl text-base text-white/90 md:text-lg">
-                  Học tiếng Anh siêu vui qua truyện tranh, video hoạt hình và bài hát!
-                  Bấm vào từ để học nghĩa ngay nhé! 🚀
+                <p className="mb-6 max-w-xl text-base font-semibold leading-relaxed text-slate-600 md:text-lg">
+                  Nội dung ngắn, rõ và có hình ảnh để bé dễ chọn bài học. Bắt đầu bằng một truyện, một video hoặc một bài hát.
                 </p>
 
                 <div className="flex flex-wrap justify-center gap-3 md:justify-start">
                   <Link
                     href="/stories"
-                    className="btn-kid bg-white text-violet-600 hover:bg-yellow-50"
-                    style={{ boxShadow: '0 6px 0 rgba(109,40,217,0.4)' }}
+                    className="btn-kid bg-slate-950 text-white hover:bg-slate-800"
                   >
-                    📚 Đọc truyện
+                    <BookOpen size={20} aria-hidden="true" />
+                    Đọc truyện
                   </Link>
                   <Link
                     href="/videos"
-                    className="btn-kid bg-yellow-400 text-gray-900 hover:bg-yellow-300"
-                    style={{ boxShadow: '0 6px 0 rgba(180,83,9,0.5)' }}
+                    className="btn-kid bg-white text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50"
                   >
-                    🎬 Xem video
+                    <Clapperboard size={20} aria-hidden="true" />
+                    Xem video
                   </Link>
                   <Link
                     href="/music"
-                    className="btn-kid bg-pink-400 text-white hover:bg-pink-300"
-                    style={{ boxShadow: '0 6px 0 rgba(157,23,77,0.4)' }}
+                    className="btn-kid bg-white text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50"
                   >
-                    🎵 Bài hát
+                    <Music size={20} aria-hidden="true" />
+                    Bài hát
                   </Link>
                 </div>
               </div>
 
               <div className="flex-shrink-0 text-center max-sm:-mt-1" aria-hidden>
                 <div className="relative inline-block">
-                  <div className="deco-float flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-4 border-white/40 bg-white/20 shadow-2xl backdrop-blur-sm sm:h-36 sm:w-36 md:h-52 md:w-52"
-                    style={{ animationDuration: '3s' }}>
+                  <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-xl sm:h-36 sm:w-36 md:h-52 md:w-52">
                     <Image
                       src="/engkids-logo.png"
                       alt="Engkids mascot"
@@ -166,12 +157,12 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
                       }}
                     />
                   </div>
-                  <div className="absolute -right-3 -top-3 rounded-2xl border-2 border-purple-200 bg-white px-3 py-1.5 text-xs font-black text-purple-600 shadow-lg deco-float delay-2 sm:text-sm"
-                    style={{ animationDuration: '2s' }}>
-                    Hello! 👋
+                  <div className="absolute -right-3 -top-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 shadow-sm sm:text-sm">
+                    Hello!
                   </div>
-                  <span className="absolute -bottom-2 -left-2 text-2xl deco-twinkle delay-1 sm:text-3xl">⭐</span>
-                  <span className="absolute -left-3 top-2 text-xl deco-twinkle delay-4 sm:text-2xl">✨</span>
+                  <div className="absolute -bottom-3 -left-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 shadow-sm ring-1 ring-amber-100">
+                    <Star size={22} fill="currentColor" aria-hidden="true" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -185,7 +176,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
       </section>
 
       <section className="px-4 py-6">
-        <div className="section-shell section-shell-amber max-w-6xl mx-auto rounded-[2rem] p-5 md:p-6">
+          <div className="section-shell section-shell-amber max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
           <SectionHeader emoji="🎯" title="Bắt đầu học nhé!" />
           <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
             <FeatureCard
@@ -195,7 +186,6 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               count={6}
               unit="trò chơi"
               gradient="from-emerald-400 to-teal-500"
-              shadow="rgba(16,185,129,0.5)"
               bg="bg-emerald-50"
             />
             <FeatureCard
@@ -205,7 +195,6 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               count={liveStories.length}
               unit="truyện"
               gradient="from-blue-500 to-cyan-400"
-              shadow="rgba(6,182,212,0.5)"
               bg="bg-blue-50"
             />
             <FeatureCard
@@ -215,7 +204,6 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               count={liveVideos.length}
               unit="video"
               gradient="from-violet-500 to-pink-400"
-              shadow="rgba(139,92,246,0.5)"
               bg="bg-violet-50"
             />
             <FeatureCard
@@ -225,7 +213,6 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               count={liveMusicVideos.length}
               unit="bài hát"
               gradient="from-pink-500 to-rose-400"
-              shadow="rgba(244,63,94,0.5)"
               bg="bg-pink-50"
             />
             <FeatureCard
@@ -235,25 +222,26 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               count={totalStars}
               unit="sao"
               gradient="from-amber-400 to-orange-400"
-              shadow="rgba(245,158,11,0.5)"
               bg="bg-amber-50"
             />
           </div>
         </div>
       </section>
 
-      <div className="max-w-full overflow-hidden bg-gradient-to-r from-violet-500 via-pink-500 to-orange-400 py-2.5 shadow-inner">
-        <div className="inline-flex min-w-max gap-8 whitespace-nowrap will-change-transform" style={{ animation: 'marquee 18s linear infinite' }}>
-          {['🌟 Giỏi lắm!', '⭐ Tuyệt vời!', '🎉 Xuất sắc!', '🏆 Cố lên!', '💪 Học nào!', '🚀 Tiếp tục!',
-            '🌟 Giỏi lắm!', '⭐ Tuyệt vời!', '🎉 Xuất sắc!', '🏆 Cố lên!', '💪 Học nào!', '🚀 Tiếp tục!'].map((t, i) => (
-            <span key={i} className="text-sm font-black text-white">{t}</span>
+      <div className="max-w-full overflow-hidden border-y border-slate-200/80 bg-white/82 py-2 shadow-sm backdrop-blur">
+        <div className="inline-flex min-w-max gap-5 whitespace-nowrap will-change-transform" style={{ animation: 'marquee 24s linear infinite' }}>
+          {['Giỏi lắm!', 'Tuyệt vời!', 'Học nào!', 'Tiếp tục!', 'Cố lên!', 'Xuất sắc!',
+            'Giỏi lắm!', 'Tuyệt vời!', 'Học nào!', 'Tiếp tục!', 'Cố lên!', 'Xuất sắc!'].map((t, i) => (
+            <span key={i} className="rounded-full bg-slate-50 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-100">
+              {t}
+            </span>
           ))}
         </div>
       </div>
 
       {liveStories.length > 0 && (
         <section className="px-4 py-6">
-          <div className="section-shell section-shell-sky max-w-6xl mx-auto rounded-[2rem] p-5 md:p-6">
+          <div className="section-shell section-shell-sky max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
             <SectionHeader emoji="📚" title="Truyện nổi bật" href="/stories" hrefLabel="Xem tất cả" color="text-blue-700" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {liveStories.slice(0, 4).map((story) => (
@@ -265,13 +253,13 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
       )}
 
       <section className="px-4 py-6">
-        <div className="section-shell section-shell-mint max-w-6xl mx-auto rounded-[2rem] p-5 md:p-6">
+          <div className="section-shell section-shell-mint max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
           <SectionHeader emoji="🎮" title="Game học tiếng Anh" href="/games" hrefLabel="Xem tất cả" color="text-emerald-700" />
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {GAMES.map((game) => (
               <Link key={game.id} href={game.href}>
-                <div className="playful-card group cursor-pointer rounded-2xl bg-white p-4 text-center shadow-md transition-all hover:scale-105 hover:shadow-lg">
-                  <div className={`w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br ${game.color} flex items-center justify-center text-3xl`}>
+                <div className="playful-card group cursor-pointer rounded-[18px] border border-slate-100 bg-white p-4 text-center shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+                  <div className={`mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${game.color} text-3xl shadow-sm`}>
                     {game.icon}
                   </div>
                   <p className="text-sm font-bold text-gray-800">{game.title}</p>
@@ -292,7 +280,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
       {liveVideos.length > 0 && (
         <section className="bg-violet-50/60 px-4 py-6">
-          <div className="section-shell section-shell-violet max-w-6xl mx-auto rounded-[2rem] p-5 md:p-6">
+          <div className="section-shell section-shell-violet max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
             <SectionHeader emoji="🎬" title="Video mới nhất" href="/videos" hrefLabel="Xem tất cả" color="text-violet-700" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {liveVideos.slice(0, 4).map((video) => (
@@ -313,7 +301,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
       {liveMusicVideos.length > 0 && (
         <section className="px-4 py-6">
-          <div className="section-shell section-shell-pink max-w-6xl mx-auto rounded-[2rem] p-5 md:p-6">
+          <div className="section-shell section-shell-pink max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
             <SectionHeader emoji="🎵" title="Bài hát vui nhộn" href="/music" hrefLabel="Xem tất cả" color="text-pink-700" />
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {liveMusicVideos.slice(0, 4).map((video, index) => (
@@ -375,7 +363,7 @@ function SectionHeader({ emoji, title, href, hrefLabel, color = 'text-gray-800' 
   return (
     <div className="mb-5 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-white bg-white/95 text-2xl shadow-md">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-100 bg-white text-2xl shadow-sm">
           {emoji}
         </div>
         <div>
@@ -384,7 +372,7 @@ function SectionHeader({ emoji, title, href, hrefLabel, color = 'text-gray-800' 
         </div>
       </div>
       {href && hrefLabel && (
-        <Link href={href} className="rounded-full border border-white bg-white/85 px-3 py-1.5 text-sm font-bold text-violet-600 transition-all hover:bg-violet-100 hover:text-violet-800">
+        <Link href={href} className="flex min-h-[40px] items-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 transition-all hover:bg-slate-50 hover:text-slate-950">
           {hrefLabel} →
         </Link>
       )}
@@ -393,20 +381,19 @@ function SectionHeader({ emoji, title, href, hrefLabel, color = 'text-gray-800' 
 }
 
 function FeatureCard({
-  href, emoji, title, count, unit, gradient, shadow, bg,
+  href, emoji, title, count, unit, gradient, bg,
 }: {
   href: string; emoji: string; title: string; count: number; unit: string;
-  gradient: string; shadow: string; bg: string;
+  gradient: string; bg: string;
 }) {
   return (
     <Link href={href}>
-      <div className={`${bg} playful-card group cursor-pointer rounded-3xl border-2 border-white/90 p-5 card-bouncy shadow-lg`}>
-        <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform shadow-md`}
-          style={{ boxShadow: `0 4px 0 ${shadow}` }}>
+      <div className={`${bg} playful-card group cursor-pointer rounded-[20px] border border-white/90 p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md`}>
+        <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} shadow-sm transition-transform group-hover:scale-105`}>
           <span className="text-3xl">{emoji}</span>
         </div>
         <h3 className="mb-1 text-sm font-black text-gray-800 md:text-base">{title}</h3>
-        <p className="text-3xl font-black text-gray-700">
+        <p className="text-2xl font-black text-gray-700">
           {count} <span className="text-sm font-bold text-gray-400">{unit}</span>
         </p>
       </div>
@@ -425,7 +412,7 @@ function StoryCard({ story }: { story: Story }) {
 
   return (
     <Link href={`/stories/${story.id}`}>
-      <div className="playful-card group cursor-pointer overflow-hidden rounded-3xl border-2 border-gray-50 bg-white shadow-md card-bouncy">
+      <div className="playful-card group cursor-pointer overflow-hidden rounded-[20px] border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
         <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100">
           {isImageUrl ? (
             <Image src={story.cover_image} alt={story.title_en} fill className="object-cover group-hover:scale-105 transition-transform" sizes="(max-width: 768px) 50vw, 25vw" />
@@ -456,7 +443,7 @@ function VideoCard({ video }: { video: Video }) {
 
   return (
     <Link href={`/videos/${video.id}`}>
-      <div className="playful-card group cursor-pointer overflow-hidden rounded-3xl border-2 border-gray-50 bg-white shadow-md card-bouncy">
+      <div className="playful-card group cursor-pointer overflow-hidden rounded-[20px] border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
         <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-purple-200 to-pink-200">
           {video.thumbnailUrl ? (
             <Image src={video.thumbnailUrl} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform" sizes="(max-width: 768px) 50vw, 25vw" />
@@ -496,7 +483,7 @@ function MusicCard({ video, colorIndex }: { video: Video; colorIndex: number }) 
 
   return (
     <Link href={`/videos/${video.id}`}>
-      <div className="playful-card group cursor-pointer overflow-hidden rounded-3xl border-2 border-gray-50 bg-white shadow-md card-bouncy">
+      <div className="playful-card group cursor-pointer overflow-hidden rounded-[20px] border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
         <div className={`relative flex aspect-video items-center justify-center overflow-hidden bg-gradient-to-br ${gradient}`}>
           {video.thumbnailUrl ? (
             <Image src={video.thumbnailUrl} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform" sizes="(max-width: 768px) 50vw, 25vw" />

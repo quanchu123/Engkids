@@ -1,24 +1,36 @@
 'use client';
 
-import { useState, useCallback, memo, useEffect } from 'react';
-import Link from 'next/link';
+import { memo, useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  BookOpen,
+  Clapperboard,
+  Gamepad2,
+  Home,
+  LogIn,
+  LogOut,
+  Menu,
+  Music,
+  Sparkles,
+  Star,
+  X,
+} from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { onAuthStateChange, User, signOut } from '@/lib/auth-client';
+import { onAuthStateChange, signOut, User } from '@/lib/auth-client';
 
 const NAV_ITEMS = [
-  { name: 'Trang chủ', path: '/', icon: '🏠', active: 'bg-sky-100 text-sky-600 shadow-md shadow-sky-200/60', mobileActive: 'bg-gradient-to-r from-sky-400 to-cyan-400 text-white shadow-md' },
-  { name: 'Truyện tranh', path: '/stories', icon: '🦄', active: 'bg-fuchsia-100 text-fuchsia-600 shadow-md shadow-fuchsia-200/60', mobileActive: 'bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white shadow-md' },
-  { name: 'Videos', path: '/videos', icon: '🎬', active: 'bg-orange-100 text-orange-600 shadow-md shadow-orange-200/60', mobileActive: 'bg-gradient-to-r from-orange-400 to-red-400 text-white shadow-md' },
-  { name: 'Music', path: '/music', icon: '🎵', active: 'bg-rose-100 text-rose-600 shadow-md shadow-rose-200/60', mobileActive: 'bg-gradient-to-r from-rose-400 to-pink-500 text-white shadow-md' },
-  { name: 'Games', path: '/games', icon: '🎮', active: 'bg-green-100 text-green-600 shadow-md shadow-green-200/60', mobileActive: 'bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-md' },
-  { name: 'Tiến độ', path: '/progress', icon: '🐾', active: 'bg-amber-100 text-amber-600 shadow-md shadow-amber-200/60', mobileActive: 'bg-gradient-to-r from-amber-400 to-yellow-400 text-white shadow-md' },
+  { name: 'Trang chủ', path: '/', icon: Home, tone: 'text-sky-600 bg-sky-50 border-sky-100' },
+  { name: 'Truyện', path: '/stories', icon: BookOpen, tone: 'text-violet-600 bg-violet-50 border-violet-100' },
+  { name: 'Video', path: '/videos', icon: Clapperboard, tone: 'text-orange-600 bg-orange-50 border-orange-100' },
+  { name: 'Nhạc', path: '/music', icon: Music, tone: 'text-rose-600 bg-rose-50 border-rose-100' },
+  { name: 'Game', path: '/games', icon: Gamepad2, tone: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+  { name: 'Tiến trình', path: '/progress', icon: Star, tone: 'text-amber-600 bg-amber-50 border-amber-100' },
 ];
 
 function Header() {
   const pathname = usePathname();
-  const router = useRouter();
   const totalStars = useAppStore((state) => state.progress.totalStars);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -40,151 +52,147 @@ function Header() {
 
   const isActive = useCallback((path: string) => {
     if (path === '/') return pathname === '/';
-    return pathname === path || pathname.startsWith(path + '/');
+    return pathname === path || pathname.startsWith(`${path}/`);
   }, [pathname]);
 
-  const toggleMobileMenu = useCallback(() => setMobileMenuOpen((prev) => !prev), []);
-
   return (
-    <header
-      className="sticky top-0 z-50 bg-gradient-to-r from-violet-600 via-pink-500 to-orange-400 shadow-xl"
-      style={{ boxShadow: '0 4px 0 rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.1)' }}
-    >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2">
-        <Link href="/" className="group flex items-center gap-2" aria-label="Engkids - Trang chủ">
-          <div className="relative h-10 w-10 flex-shrink-0 transition-transform group-hover:scale-110 sm:h-12 sm:w-12">
+    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/92 shadow-sm backdrop-blur-xl">
+      <div className="mx-auto flex min-h-[64px] max-w-7xl items-center justify-between gap-3 px-4">
+        <Link href="/" className="group flex min-h-[48px] items-center gap-3" aria-label="Engkids - Trang chủ">
+          <div className="relative h-11 w-11 flex-shrink-0 rounded-2xl bg-sky-50 p-1 ring-1 ring-sky-100 transition-transform group-hover:scale-105">
             <Image
               src="/engkids-logo.png"
-              alt="Engkids mascot"
+              alt="Engkids"
               fill
-              className="object-contain drop-shadow-lg"
-              sizes="48px"
+              className="object-contain p-1"
+              sizes="44px"
               priority
-              onError={(event) => {
-                const parent = (event.target as HTMLImageElement).parentElement;
-                if (parent) {
-                  (event.target as HTMLImageElement).style.display = 'none';
-                  parent.innerHTML = '<span style="font-size:2.5rem;line-height:1">🐨</span>';
-                }
-              }}
             />
           </div>
           <div className="hidden sm:block">
-            <span className="text-xl font-black tracking-wide text-white drop-shadow-lg">Engkids</span>
-            <div className="mt-[-2px] text-[10px] font-bold text-white/80">Học Tiếng Anh Vui! 🌟</div>
+            <span className="block text-lg font-black leading-tight text-slate-900">Engkids</span>
+            <span className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
+              <Sparkles size={12} aria-hidden="true" />
+              Học tiếng Anh vui
+            </span>
           </div>
         </Link>
 
-        <button
-          className="rounded-lg bg-white/20 p-1.5 transition-colors hover:bg-white/30 md:hidden"
-          onClick={toggleMobileMenu}
-          aria-label={mobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
-          aria-expanded={mobileMenuOpen}
-        >
-          <span className="text-lg text-white">{mobileMenuOpen ? '✕' : '☰'}</span>
-        </button>
-
-        <nav className="hidden items-center gap-1 rounded-2xl bg-black/10 p-1.5 backdrop-blur-sm md:flex" role="navigation" aria-label="Menu chính">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.path}
-              href={item.path}
-              className={`group relative flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-bold transition-all duration-200 ${
-                isActive(item.path)
-                  ? `${item.active} scale-105`
-                  : 'text-white/90 hover:scale-110 hover:bg-white/25 hover:text-white'
-              }`}
-              aria-current={isActive(item.path) ? 'page' : undefined}
-            >
-              <span className="text-base transition-transform duration-200 group-hover:scale-125" aria-hidden="true">{item.icon}</span>
-              <span>{item.name}</span>
-            </Link>
-          ))}
+        <nav className="hidden items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50/80 p-1 md:flex" role="navigation" aria-label="Menu chính">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            return (
+              <Link
+                key={item.path}
+                href={item.path}
+                className={`flex min-h-[44px] items-center gap-2 rounded-xl border px-3 text-sm font-black transition ${
+                  active
+                    ? item.tone
+                    : 'border-transparent text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm'
+                }`}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon size={17} strokeWidth={2.6} aria-hidden="true" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/progress"
-            className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-black text-purple-600 transition-all hover:scale-105 hover:shadow-lg"
+            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 text-sm font-black text-amber-700"
             aria-label={`Bạn có ${totalStars} sao`}
           >
-            <span aria-hidden="true">🌟</span>
+            <Star size={17} fill="currentColor" aria-hidden="true" />
             <span>{totalStars}</span>
           </Link>
 
           {user ? (
-            <div className="flex items-center gap-2 ml-2">
-              <span className="text-sm font-bold text-white hidden lg:block">
-                {user.name || user.email?.split('@')[0]}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="rounded-full bg-white/20 px-4 py-1.5 text-sm font-bold text-white transition-all hover:bg-white/30 hover:scale-105"
-                aria-label="Đăng xuất"
-              >
-                Đăng xuất
-              </button>
-            </div>
+            <button
+              onClick={handleLogout}
+              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-black text-white transition hover:bg-slate-700"
+              aria-label="Đăng xuất"
+            >
+              <LogOut size={16} aria-hidden="true" />
+              <span className="hidden lg:inline">Đăng xuất</span>
+            </button>
           ) : (
             <Link
               href="/login"
-              className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-purple-600 transition-all hover:scale-105 hover:shadow-lg"
+              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-black text-white transition hover:bg-slate-700"
               aria-label="Đăng nhập"
             >
-              Đăng nhập
+              <LogIn size={16} aria-hidden="true" />
+              <span>Đăng nhập</span>
             </Link>
           )}
         </div>
+
+        <button
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm md:hidden"
+          onClick={() => setMobileMenuOpen((current) => !current)}
+          aria-label={mobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
+          aria-expanded={mobileMenuOpen}
+        >
+          {mobileMenuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
+        </button>
       </div>
 
       {mobileMenuOpen && (
-        <nav
-          className="space-y-1.5 border-t border-white/30 bg-white/95 px-4 py-3 backdrop-blur-sm md:hidden"
-          role="navigation"
-          aria-label="Menu mobile"
-        >
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.path}
-              href={item.path}
-              onClick={() => setMobileMenuOpen(false)}
-              className={`group flex items-center gap-3 rounded-xl px-4 py-2.5 font-bold transition-all ${
-                isActive(item.path) ? item.mobileActive : 'text-gray-700 hover:bg-gray-100'
-              }`}
-              aria-current={isActive(item.path) ? 'page' : undefined}
-            >
-              <span className="text-xl transition-transform duration-200 group-hover:scale-125" aria-hidden="true">{item.icon}</span>
-              <span>{item.name}</span>
-            </Link>
-          ))}
-          <div className="flex items-center justify-between border-t border-purple-100 pt-2">
+        <nav className="border-t border-slate-200 bg-white px-4 py-3 md:hidden" role="navigation" aria-label="Menu mobile">
+          <div className="grid gap-2">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex min-h-[48px] items-center gap-3 rounded-2xl border px-4 text-sm font-black transition ${
+                    active ? item.tone : 'border-slate-100 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                  }`}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <Icon size={19} strokeWidth={2.6} aria-hidden="true" />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
             <Link
               href="/progress"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-full border-2 border-purple-200 bg-white px-4 py-2 font-black text-purple-600 shadow-sm"
+              className="flex min-h-[44px] items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-4 text-sm font-black text-amber-700"
             >
-              <span>🌟</span>
+              <Star size={17} fill="currentColor" aria-hidden="true" />
               <span>{totalStars} sao</span>
             </Link>
-            
             {user ? (
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
                   handleLogout();
                 }}
-                className="rounded-full bg-rose-500 px-4 py-2 font-bold text-white"
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white"
                 aria-label="Đăng xuất"
               >
+                <LogOut size={16} aria-hidden="true" />
                 Đăng xuất
               </button>
             ) : (
               <Link
                 href="/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="rounded-full bg-purple-600 px-4 py-2 font-bold text-white"
+                className="flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white"
                 aria-label="Đăng nhập"
               >
+                <LogIn size={16} aria-hidden="true" />
                 Đăng nhập
               </Link>
             )}

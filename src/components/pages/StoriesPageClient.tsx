@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { BookOpen, Search } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { Story } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
@@ -72,41 +73,36 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-violet-50 to-white">
       <Header />
       <main className="mx-auto max-w-7xl px-4 py-6">
-        <section className="relative mb-6 overflow-hidden">
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-violet-400 via-purple-500 to-indigo-500 p-5 shadow-lg">
-            <div className="absolute top-2 right-4 text-5xl opacity-30 animate-pulse">🦄</div>
-            <div className="absolute bottom-2 left-3 text-4xl opacity-25">📚</div>
-            <div className="absolute top-4 left-1/4 text-3xl opacity-20">✨</div>
-            <div className="absolute bottom-3 right-1/4 text-2xl opacity-20">🌈</div>
+        <section className="relative mb-6 overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-br from-violet-50 via-sky-50 to-amber-50 md:block" aria-hidden />
+          <div className="relative z-10 max-w-2xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-100 bg-violet-50 px-3 py-1 text-xs font-black text-violet-700">
+              <BookOpen size={14} aria-hidden="true" />
+              Kho truyện tranh
+            </div>
+            <h1 className="mb-3 text-3xl font-black text-slate-950 md:text-4xl">
+              Truyện Tranh
+            </h1>
 
-            <div className="relative z-10 max-w-2xl">
-              <h1 className="mb-3 text-3xl font-bold text-white drop-shadow-lg md:text-4xl">
-                📚 Truyện Tranh
-              </h1>
-
-              <div className="relative max-w-xs">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <circle cx="11" cy="11" r="7" stroke="white" strokeWidth="2.5" />
-                  <path d="M16.5 16.5 L21 21" stroke="white" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-            <input
-              type="text"
-              data-testid="stories-search"
-              placeholder="Tìm truyện..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-xl py-2 pl-9 pr-3 text-sm font-semibold text-gray-700 placeholder-gray-500 focus:outline-none"
-            />
-              </div>
+            <div className="relative max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} aria-hidden="true" />
+              <input
+                type="text"
+                data-testid="stories-search"
+                placeholder="Tìm truyện..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-700 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-200"
+              />
             </div>
           </div>
         </section>
 
-        <section className="soft-panel mb-6 flex flex-wrap gap-3 rounded-[1.75rem] p-4">
+        <section className="soft-panel mb-6 flex flex-wrap gap-3 rounded-[20px] p-4">
           <select
             value={selectedLevel}
             onChange={(e) => setSelectedLevel(e.target.value)}
-            className="rounded-2xl bg-white px-4 py-3 font-semibold text-slate-700 shadow"
+            className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm"
           >
             <option value="all">Mọi level</option>
             <option value="Beginner">Beginner</option>
@@ -116,7 +112,7 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
           <select
             value={selectedTopic}
             onChange={(e) => setSelectedTopic(e.target.value)}
-            className="rounded-2xl bg-white px-4 py-3 font-semibold text-slate-700 shadow"
+            className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm"
           >
             <option value="all">Chủ đề</option>
             {allTopics.map((topic) => (
@@ -128,7 +124,7 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="rounded-2xl bg-white px-4 py-3 font-semibold text-slate-700 shadow"
+            className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm"
           >
             <option value="recommended">Đề xuất</option>
             <option value="new">Mới</option>
@@ -167,7 +163,7 @@ function StoryGridCard({ story, completed }: { story: Story; completed: boolean 
   const levelIcon = story.level === 'Beginner' ? '🌱' : story.level === 'Elementary' ? '🌿' : '🌳';
 
   return (
-    <Link href={`/stories/${story.id}`} className="playful-card group overflow-hidden rounded-3xl bg-white shadow-lg transition-transform hover:-translate-y-1">
+              <Link href={`/stories/${story.id}`} className="playful-card group overflow-hidden rounded-[20px] border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         {isImageUrl ? (
           <Image

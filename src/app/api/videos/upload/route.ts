@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkAdminAuth } from '@/lib/api-auth';
-import { saveVideoStream, normalizeExtension } from '@/services/storage';
+import { generateVideoThumbnailObject, normalizeExtension, saveVideoStream } from '@/services/storage';
 
 // Large uploads stream straight to disk; allow a long duration and Node runtime.
 export const runtime = 'nodejs';
@@ -32,7 +32,13 @@ export async function POST(request: NextRequest) {
     }
 
     const objectKey = await saveVideoStream(request.body, ext);
-    return NextResponse.json({ objectKey });
+    const thumbnail = await generateVideoThumbnailObject(objectKey);
+
+    return NextResponse.json({
+      objectKey,
+      thumbnailUrl: thumbnail?.url,
+      thumbnailObjectKey: thumbnail?.objectKey,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Upload failed';
     const tooLarge = /too large/i.test(message);

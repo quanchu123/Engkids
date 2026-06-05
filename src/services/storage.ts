@@ -11,6 +11,8 @@ import { Transform } from 'stream';
 import { pipeline } from 'stream/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 
 // Allowed upload types and their extensions.
 export const ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'ogg'] as const;
@@ -24,6 +26,7 @@ export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
 // Public route prefix and on-disk directory.
 const PUBLIC_PREFIX = '/uploads';
 export const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(process.cwd(), 'public', 'uploads');
+const execFileAsync = promisify(execFile);
 
 /** Normalize and validate a file extension against the allowed set. */
 export function normalizeExtension(extension: string): string | null {
@@ -105,6 +108,55 @@ export function getVideoPublicUrl(objectKey: string): string {
   return `/api/videos/file/${encodeURIComponent(name)}`;
 }
 
+function getUploadPath(objectKey: string): string {
+  const name = objectKey.replace(`${PUBLIC_PREFIX}/`, '').replace(/^\/+/, '');
+  return path.join(UPLOADS_DIR, path.basename(name));
+}
+
+function getGeneratedThumbnailKey(objectKey: string): string {
+  const name = objectKey.replace(`${PUBLIC_PREFIX}/`, '').replace(/^\/+/, '');
+  return `${path.parse(path.basename(name)).name}.jpg`;
+}
+
+/**
+ * Generate a JPEG thumbnail from a stored video using the system ffmpeg binary.
+ * Returns null if ffmpeg is unavailable or the video cannot be decoded.
+ */
+export async function generateVideoThumbnailObject(objectKey: string): Promise<{ objectKey: string; url: string } | null> {
+  if (!objectKey || /^https?:\/\//i.test(objectKey)) return null;
+
+  await mkdir(UPLOADS_DIR, { recursive: true });
+  const videoPath = getUploadPath(objectKey);
+  const thumbnailKey = getGeneratedThumbnailKey(objectKey);
+  const thumbnailPath = getUploadPath(thumbnailKey);
+
+  try {
+    await execFileAsync('ffmpeg', [
+      '-y',
+      '-ss',
+      '00:00:01',
+      '-i',
+      videoPath,
+      '-frames:v',
+      '1',
+      '-vf',
+      'scale=640:-2',
+      '-q:v',
+      '3',
+      thumbnailPath,
+    ], { timeout: 30_000 });
+
+    return {
+      objectKey: thumbnailKey,
+      url: getVideoPublicUrl(thumbnailKey),
+    };
+  } catch (error) {
+    await unlink(thumbnailPath).catch(() => {});
+    console.warn('Failed to generate video thumbnail with ffmpeg:', error);
+    return null;
+  }
+}
+
 /**
  * Stream an incoming audio upload to disk (used for background music).
  * Returns the stored object key.
@@ -151,5 +203,6 @@ export async function saveAudioStream(
 export async function deleteVideoObject(objectKey: string): Promise<void> {
   if (!objectKey || /^https?:\/\//i.test(objectKey)) return;
   const name = objectKey.replace(`${PUBLIC_PREFIX}/`, '').replace(/^\/+/, '');
-  await unlink(path.join(UPLOADS_DIR, name)).catch(() => {});
+  await unlink(path.join(UPLOADS_DIR, path.basename(name))).catch(() => {});
+  await unlink(getUploadPath(getGeneratedThumbnailKey(objectKey))).catch(() => {});
 }
