@@ -8,6 +8,7 @@ import { Story } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { filterStories, getStoryTopics } from '@/lib/content-selectors';
 import { onContentChange } from '@/lib/content-sync';
+import { StoryFallbackArtwork } from '@/components/common/FallbackArtwork';
 
 type SortOption = 'recommended' | 'new' | 'shortest';
 
@@ -142,30 +143,11 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
         {filteredStories.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
             {filteredStories.map((story) => (
-              <Link key={story.id} href={`/stories/${story.id}`} className="playful-card overflow-hidden rounded-3xl bg-white shadow-lg transition-transform hover:-translate-y-1">
-                <div className="relative aspect-[4/3] bg-slate-100">
-                  {story.cover_image?.startsWith('http') || story.cover_image?.startsWith('data:') ? (
-                    <Image src={story.cover_image} alt={story.title_en} fill className="object-cover" sizes="(max-width: 768px) 100vw, 25vw" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-5xl font-black text-violet-400">
-                      {story.cover_image || story.title_en.charAt(0)}
-                    </div>
-                  )}
-                  {storiesProgress[story.id]?.completed && (
-                    <div className="absolute right-3 top-3 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white">
-                      Done
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-black text-slate-900">{story.title_en}</h3>
-                  <p className="text-sm text-slate-500">{story.title_vi}</p>
-                  <div className="mt-3 flex items-center justify-between text-sm font-semibold text-slate-500">
-                    <span>{story.level}</span>
-                    <span>{story.estimated_minutes} phút</span>
-                  </div>
-                </div>
-              </Link>
+              <StoryGridCard
+                key={story.id}
+                story={story}
+                completed={Boolean(storiesProgress[story.id]?.completed)}
+              />
             ))}
           </div>
         ) : (
@@ -176,5 +158,46 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
         )}
       </main>
     </div>
+  );
+}
+
+function StoryGridCard({ story, completed }: { story: Story; completed: boolean }) {
+  const [imageError, setImageError] = useState(false);
+  const isImageUrl = !imageError && (story.cover_image?.startsWith('http') || story.cover_image?.startsWith('data:'));
+  const levelIcon = story.level === 'Beginner' ? '🌱' : story.level === 'Elementary' ? '🌿' : '🌳';
+
+  return (
+    <Link href={`/stories/${story.id}`} className="playful-card group overflow-hidden rounded-3xl bg-white shadow-lg transition-transform hover:-translate-y-1">
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+        {isImageUrl ? (
+          <Image
+            src={story.cover_image}
+            alt={story.title_en}
+            fill
+            className="object-cover transition-transform group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, 25vw"
+            onError={() => setImageError(true)}
+          />
+        ) : (
+          <StoryFallbackArtwork story={story} />
+        )}
+        {completed && (
+          <div className="absolute right-3 top-3 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-md">
+            Đã xong
+          </div>
+        )}
+      </div>
+      <div className="p-4">
+        <h3 className="line-clamp-2 font-black leading-tight text-slate-900">{story.title_en}</h3>
+        <p className="mt-1 line-clamp-1 text-sm text-slate-500">{story.title_vi}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-600">
+          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{levelIcon} {story.level}</span>
+          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">{story.estimated_minutes} phút</span>
+          {story.topics?.[0] && (
+            <span className="rounded-full bg-violet-50 px-2.5 py-1 text-violet-700">{story.topics[0]}</span>
+          )}
+        </div>
+      </div>
+    </Link>
   );
 }

@@ -7,6 +7,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { Story, Video } from '@/types';
 import Header from '@/components/layout/Header';
 import BackgroundMusic from '@/components/common/BackgroundMusic';
+import { StoryFallbackArtwork, VideoFallbackArtwork } from '@/components/common/FallbackArtwork';
 
 const GAMES = [
   { id: 'rpg-world', title: 'RPG World', icon: '🗺️', color: 'from-emerald-400 to-teal-500', href: '/games/rpg-world' },
@@ -103,10 +104,10 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               <div className="absolute -bottom-10 left-[30%] h-28 w-72 rounded-[999px] bg-white/10" />
               <div className="absolute -bottom-9 right-[8%] h-24 w-60 rounded-[999px] bg-white/10" />
             </div>
-            <span aria-hidden className="absolute left-[55%] top-4 text-5xl opacity-20 deco-twinkle delay-1">⭐</span>
-            <span aria-hidden className="absolute right-[8%] top-12 text-4xl opacity-25 deco-float delay-3">🌈</span>
-            <span aria-hidden className="absolute bottom-6 left-[50%] text-5xl opacity-20 deco-float delay-2">✨</span>
-            <span aria-hidden className="absolute right-[25%] top-6 text-3xl opacity-20 deco-spin">🌟</span>
+            <span aria-hidden className="absolute left-[55%] top-4 hidden text-5xl opacity-20 deco-twinkle delay-1 sm:block">⭐</span>
+            <span aria-hidden className="absolute right-[8%] top-12 hidden text-4xl opacity-25 deco-float delay-3 sm:block">🌈</span>
+            <span aria-hidden className="absolute bottom-6 left-[50%] hidden text-5xl opacity-20 deco-float delay-2 sm:block">✨</span>
+            <span aria-hidden className="absolute right-[25%] top-6 hidden text-3xl opacity-20 deco-spin sm:block">🌟</span>
 
             <div className="relative z-10 flex flex-col items-center gap-6 md:flex-row">
               <div className="flex-1 text-center md:text-left">
@@ -147,9 +148,9 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
                 </div>
               </div>
 
-              <div className="flex-shrink-0 text-center" aria-hidden>
+              <div className="flex-shrink-0 text-center max-sm:-mt-1" aria-hidden>
                 <div className="relative inline-block">
-                  <div className="deco-float flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-4 border-white/40 bg-white/20 shadow-2xl backdrop-blur-sm md:h-52 md:w-52"
+                  <div className="deco-float flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-4 border-white/40 bg-white/20 shadow-2xl backdrop-blur-sm sm:h-36 sm:w-36 md:h-52 md:w-52"
                     style={{ animationDuration: '3s' }}>
                     <Image
                       src="/engkids-logo.png"
@@ -165,12 +166,12 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
                       }}
                     />
                   </div>
-                  <div className="absolute -right-4 -top-4 rounded-2xl border-2 border-purple-200 bg-white px-3 py-1.5 text-sm font-black text-purple-600 shadow-lg deco-float delay-2"
+                  <div className="absolute -right-3 -top-3 rounded-2xl border-2 border-purple-200 bg-white px-3 py-1.5 text-xs font-black text-purple-600 shadow-lg deco-float delay-2 sm:text-sm"
                     style={{ animationDuration: '2s' }}>
                     Hello! 👋
                   </div>
-                  <span className="absolute -bottom-2 -left-2 text-3xl deco-twinkle delay-1">⭐</span>
-                  <span className="absolute -left-4 top-2 text-2xl deco-twinkle delay-4">✨</span>
+                  <span className="absolute -bottom-2 -left-2 text-2xl deco-twinkle delay-1 sm:text-3xl">⭐</span>
+                  <span className="absolute -left-3 top-2 text-xl deco-twinkle delay-4 sm:text-2xl">✨</span>
                 </div>
               </div>
             </div>
@@ -241,8 +242,8 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         </div>
       </section>
 
-      <div className="overflow-hidden bg-gradient-to-r from-violet-500 via-pink-500 to-orange-400 py-2.5 shadow-inner">
-        <div className="flex gap-8 whitespace-nowrap" style={{ animation: 'marquee 18s linear infinite' }}>
+      <div className="max-w-full overflow-hidden bg-gradient-to-r from-violet-500 via-pink-500 to-orange-400 py-2.5 shadow-inner">
+        <div className="inline-flex min-w-max gap-8 whitespace-nowrap will-change-transform" style={{ animation: 'marquee 18s linear infinite' }}>
           {['🌟 Giỏi lắm!', '⭐ Tuyệt vời!', '🎉 Xuất sắc!', '🏆 Cố lên!', '💪 Học nào!', '🚀 Tiếp tục!',
             '🌟 Giỏi lắm!', '⭐ Tuyệt vời!', '🎉 Xuất sắc!', '🏆 Cố lên!', '💪 Học nào!', '🚀 Tiếp tục!'].map((t, i) => (
             <span key={i} className="text-sm font-black text-white">{t}</span>
@@ -429,7 +430,7 @@ function StoryCard({ story }: { story: Story }) {
           {isImageUrl ? (
             <Image src={story.cover_image} alt={story.title_en} fill className="object-cover group-hover:scale-105 transition-transform" sizes="(max-width: 768px) 50vw, 25vw" />
           ) : (
-            <span className="text-5xl transition-transform group-hover:scale-110">{story.cover_image || '🦄'}</span>
+            <StoryFallbackArtwork story={story} />
           )}
         </div>
         <div className="p-3">
@@ -460,9 +461,7 @@ function VideoCard({ video }: { video: Video }) {
           {video.thumbnailUrl ? (
             <Image src={video.thumbnailUrl} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform" sizes="(max-width: 768px) 50vw, 25vw" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <span className="text-5xl">🎬</span>
-            </div>
+            <VideoFallbackArtwork video={video} />
           )}
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg">
@@ -502,7 +501,7 @@ function MusicCard({ video, colorIndex }: { video: Video; colorIndex: number }) 
           {video.thumbnailUrl ? (
             <Image src={video.thumbnailUrl} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform" sizes="(max-width: 768px) 50vw, 25vw" />
           ) : (
-            <span className="text-6xl transition-transform group-hover:scale-125 drop-shadow-lg">{emoji}</span>
+            <VideoFallbackArtwork video={video} icon={emoji} />
           )}
           <div className="absolute inset-0 flex items-center justify-center bg-black/10 opacity-0 transition-opacity group-hover:opacity-100">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg">

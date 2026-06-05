@@ -14,6 +14,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
@@ -21,6 +22,7 @@ body {
   background: linear-gradient(135deg, #fef3c7 0%, #fce7f3 50%, #dbeafe 100%);
   background-attachment: fixed;
   min-height: 100vh;
+  overflow-x: clip;
 }
 
 /* ============================================================
@@ -377,8 +379,8 @@ button, a {
 .shadow-kid-lg { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
 
 @keyframes marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
 }
 
 /* scrollbar-hide utility */

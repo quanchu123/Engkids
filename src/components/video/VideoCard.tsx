@@ -2,10 +2,11 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, memo } from 'react';
+import { memo, useState } from 'react';
 import Link from 'next/link';
 import { Video } from '@/types';
 import { ROUTES } from '@/config/constants';
+import { VideoFallbackArtwork } from '@/components/common/FallbackArtwork';
 
 const TOPIC_COLORS: Record<string, { bg: string; text: string }> = {
   Animals: { bg: 'bg-amber-100', text: 'text-amber-700' },
@@ -65,12 +66,6 @@ export default memo(function VideoCard({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const defaultThumbnail = (
-    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-kid-pink via-kid-purple to-kid-blue">
-      <span className="text-lg font-black tracking-[0.3em] text-white/90">VIDEO</span>
-    </div>
-  );
-
   return (
     <Link href={ROUTES.VIDEO_DETAIL(video.id)} aria-label={video.titleVi || video.title}>
       <div
@@ -96,7 +91,7 @@ export default memo(function VideoCard({
               loading="lazy"
             />
           ) : (
-            defaultThumbnail
+            <VideoFallbackArtwork video={video} />
           )}
 
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
