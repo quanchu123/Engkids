@@ -49,6 +49,8 @@ export const ROUTES = {
     VIDEO_SUBTITLES_TRANSLATE: (id: string) => `/api/videos/${id}/subtitles/translate`,
     VIDEO_QUIZ: (id: string) => `/api/videos/${id}/quiz`,
     VIDEO_QUIZ_GENERATE: (id: string) => `/api/videos/${id}/quiz/generate`,
+    VIDEO_VOCAB: (id: string) => `/api/videos/${id}/vocab`,
+    WORD_BANK: '/api/games/word-bank',
   },
 } as const;
 

@@ -9,6 +9,7 @@ import { videoApi, ApiError } from '@/services/api';
 import { LEVEL_OPTIONS, ROUTES } from '@/config/constants';
 import SubtitleEditor from '@/components/video/SubtitleEditor';
 import QuizEditor from '@/components/video/QuizEditor';
+import VocabExtractor from '@/components/video/VocabExtractor';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { resizeImage } from '@/services/image';
 import { broadcastContentChange } from '@/lib/content-sync';
@@ -348,6 +349,12 @@ export default function EditVideoPage() {
             setMessage('Quiz saved successfully.');
             loadVideo();
           }}
+        />
+
+        {/* Vocabulary Extractor (AI) */}
+        <VocabExtractor
+          videoId={videoId}
+          hasSubtitles={(video.subtitles?.length || 0) > 0}
         />
       </div>
     </div>

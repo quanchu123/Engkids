@@ -220,6 +220,7 @@ export const api = {
 
 import { Story, Video } from '@/types';
 import type { VideoQuizQuestion } from '@/types';
+import type { WordPair } from '@/lib/word-bank';
 
 interface CreateVideoRequest {
   objectKey: string;
@@ -327,6 +328,21 @@ export const videoApi = {
   // Generate quiz questions from subtitles via AI (requires auth, not saved yet)
   async generateQuiz(id: string, count?: number): Promise<{ quiz: VideoQuizQuestion[]; count: number }> {
     return api.post(ROUTES.API.VIDEO_QUIZ_GENERATE(id), count ? { count } : {}, { auth: true });
+  },
+
+  // Extract vocabulary from subtitles via AI (requires auth, not saved yet)
+  async extractVocab(id: string, count?: number): Promise<{ words: WordPair[]; count: number }> {
+    return api.post(ROUTES.API.VIDEO_VOCAB(id), count ? { count } : {}, { auth: true });
+  },
+};
+
+// Shared word-bank API
+export const wordBankApi = {
+  async get(): Promise<{ data: WordPair[] }> {
+    return api.get(ROUTES.API.WORD_BANK);
+  },
+  async save(words: WordPair[]): Promise<{ data: WordPair[] }> {
+    return api.put(ROUTES.API.WORD_BANK, { data: words }, { auth: true });
   },
 };
 
