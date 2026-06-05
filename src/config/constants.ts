@@ -46,6 +46,7 @@ export const ROUTES = {
     VIDEO_UPLOAD: '/api/videos/upload',
     VIDEO_STATUS: (id: string) => `/api/videos/${id}/status`,
     VIDEO_SUBTITLES: (id: string) => `/api/videos/${id}/subtitles`,
+    VIDEO_SUBTITLES_TRANSLATE: (id: string) => `/api/videos/${id}/subtitles/translate`,
     VIDEO_QUIZ: (id: string) => `/api/videos/${id}/quiz`,
     VIDEO_QUIZ_GENERATE: (id: string) => `/api/videos/${id}/quiz/generate`,
   },

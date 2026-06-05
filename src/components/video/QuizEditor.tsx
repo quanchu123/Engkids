@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { VideoQuizQuestion } from '@/types';
 import { videoApi } from '@/services/api';
+import { speakWord } from '@/services/dictionary';
 import { broadcastContentChange } from '@/lib/content-sync';
 
 interface QuizEditorProps {
@@ -210,13 +211,25 @@ export default function QuizEditor({ videoId, initialQuiz = [], onSave }: QuizEd
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Câu hỏi (English)</label>
-                  <input
-                    type="text"
-                    value={q.question}
-                    onChange={(e) => updateQuestion(qIndex, { question: e.target.value })}
-                    placeholder="What color is the cat?"
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={q.question}
+                      onChange={(e) => updateQuestion(qIndex, { question: e.target.value })}
+                      placeholder="What color is the cat?"
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { if (q.question.trim()) speakWord(q.question.trim()); }}
+                      disabled={!q.question.trim()}
+                      className="flex-shrink-0 w-9 h-9 rounded-full bg-violet-100 text-violet-600 hover:bg-violet-200 transition-colors flex items-center justify-center disabled:opacity-40"
+                      title="Nghe phát âm câu hỏi"
+                      aria-label="Nghe phát âm"
+                    >
+                      🔊
+                    </button>
+                  </div>
                 </div>
 
                 <div>

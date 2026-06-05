@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { SubtitleCue } from '@/types';
 import { parseVTT, parseSRT, generateVTT } from '@/lib/vtt-parser';
 import { videoApi } from '@/services/api';
+import { speakWord } from '@/services/dictionary';
 import { broadcastContentChange } from '@/lib/content-sync';
 
 interface SubtitleEditorProps {
@@ -18,8 +19,35 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
   const [subtitles, setSubtitles] = useState<SubtitleCue[]>(initialSubtitles);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [message, setMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-translate all English lines to Vietnamese via AI. Fills empty textVi
+  // (and overwrites existing ones) for review; admin still presses "Save All".
+  const handleTranslateAll = async () => {
+    const lines = subtitles.map((s) => s.textEn?.trim() || '');
+    if (lines.every((l) => !l)) {
+      setMessage('Chưa có nội dung tiếng Anh để dịch.');
+      return;
+    }
+    setTranslating(true);
+    setMessage('');
+    try {
+      const { translations } = await videoApi.translateSubtitles(videoId, lines);
+      setSubtitles((prev) =>
+        prev.map((cue, i) => (translations[i] ? { ...cue, textVi: translations[i] } : cue)),
+      );
+      const done = translations.filter(Boolean).length;
+      setMessage(`Đã dịch ${done}/${lines.length} dòng sang tiếng Việt. Kiểm tra rồi bấm "Save All".`);
+    } catch (error) {
+      console.error('Translate error:', error);
+      const msg = error instanceof Error ? error.message : 'Dịch tự động thất bại';
+      setMessage(msg);
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   // Import subtitles from VTT/SRT file
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,6 +175,14 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
             Import VTT/SRT
           </button>
           <button
+            onClick={handleTranslateAll}
+            disabled={translating || subtitles.length === 0}
+            className="px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 font-semibold"
+            title="Dùng AI dịch toàn bộ phụ đề tiếng Anh sang tiếng Việt"
+          >
+            {translating ? 'Đang dịch...' : '✨ Dịch tất cả (AI)'}
+          </button>
+          <button
             onClick={handleExport}
             disabled={subtitles.length === 0}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-300"
@@ -172,7 +208,9 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
       {/* Status Message */}
       {message && (
         <div className={`mb-4 p-3 rounded-md ${
-          message.includes('successfully') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+          message.includes('successfully') || message.includes('Đã dịch') || message.includes('Imported')
+            ? 'bg-green-50 text-green-700'
+            : 'bg-red-50 text-red-700'
         }`}>
           {message}
         </div>
@@ -233,13 +271,28 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
                 <div className="flex-1 space-y-2">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">English</label>
-                    <input
-                      type="text"
-                      value={cue.textEn}
-                      onChange={(e) => updateSubtitle(index, { textEn: e.target.value })}
-                      placeholder="English subtitle text..."
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={cue.textEn}
+                        onChange={(e) => updateSubtitle(index, { textEn: e.target.value })}
+                        placeholder="English subtitle text..."
+                        className="w-full px-3 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (cue.textEn?.trim()) speakWord(cue.textEn.trim());
+                        }}
+                        disabled={!cue.textEn?.trim()}
+                        className="flex-shrink-0 w-9 h-9 rounded-full bg-violet-100 text-violet-600 hover:bg-violet-200 transition-colors flex items-center justify-center disabled:opacity-40"
+                        title="Nghe phát âm tiếng Anh"
+                        aria-label="Nghe phát âm"
+                      >
+                        🔊
+                      </button>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Vietnamese</label>

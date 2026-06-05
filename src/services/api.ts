@@ -309,6 +309,11 @@ export const videoApi = {
     return api.put(ROUTES.API.VIDEO_SUBTITLES(id), { subtitles }, { auth: true });
   },
 
+  // Translate English subtitle lines to Vietnamese via AI (requires auth, not saved)
+  async translateSubtitles(id: string, lines: string[]): Promise<{ translations: string[] }> {
+    return api.post(ROUTES.API.VIDEO_SUBTITLES_TRANSLATE(id), { lines }, { auth: true });
+  },
+
   // Get quiz questions
   async getQuiz(id: string): Promise<{ quiz: VideoQuizQuestion[] }> {
     return api.get(ROUTES.API.VIDEO_QUIZ(id));
