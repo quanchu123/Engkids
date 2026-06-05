@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BookOpen, Clapperboard, ExternalLink, Gamepad2, LogOut, Music2, Plus } from 'lucide-react';
 import { signOut } from '@/lib/auth-client';
+import AdminIcon from '@/components/admin/AdminIcon';
+import type { AdminIconKey } from '@/config/admin-icons';
 
-const menuItems = [
-  { name: 'Truyện', path: '/admin', icon: BookOpen },
-  { name: 'Video & Nhạc', path: '/admin/videos', icon: Clapperboard },
-  { name: 'Game', path: '/admin/games', icon: Gamepad2 },
-  { name: 'Nhạc nền', path: '/admin/music', icon: Music2 },
+const menuItems: { name: string; path: string; icon: typeof BookOpen; iconKey: AdminIconKey }[] = [
+  { name: 'Truyện', path: '/admin', icon: BookOpen, iconKey: 'stories' },
+  { name: 'Video & Nhạc', path: '/admin/videos', icon: Clapperboard, iconKey: 'videos' },
+  { name: 'Game', path: '/admin/games', icon: Gamepad2, iconKey: 'games' },
+  { name: 'Nhạc nền', path: '/admin/music', icon: Music2, iconKey: 'music' },
 ];
 
 export default function AdminSidebar() {
@@ -25,20 +27,23 @@ export default function AdminSidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-white/10 bg-slate-950/88 text-white shadow-2xl backdrop-blur-xl">
-      <div className="border-b border-white/10 p-5">
+    <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-admin-border bg-admin-surface/80 text-admin-text shadow-admin-lg backdrop-blur-xl">
+      <div className="border-b border-admin-border p-5">
         <Link href="/admin" className="block">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-pink-300">Engkids</p>
-          <h1 className="mt-1 text-xl font-black tracking-tight text-white">Admin Panel</h1>
-          <p className="mt-1 text-xs font-bold text-violet-200/70">Quản lý nội dung</p>
+          <div
+            className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl text-lg font-black text-white shadow-admin-md"
+            style={{ backgroundImage: 'var(--admin-gradient)' }}
+          >
+            E
+          </div>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-admin-primary">Engkids</p>
+          <h1 className="mt-1 text-xl font-black tracking-tight text-admin-text">Admin Panel</h1>
+          <p className="mt-1 text-xs font-bold text-admin-text-muted">Quản lý nội dung</p>
         </Link>
       </div>
 
-      <div className="border-b border-white/10 p-4">
-        <Link
-          href="/admin/new"
-          className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-violet-500 px-4 text-sm font-black text-white shadow-lg shadow-pink-950/30 transition-transform hover:-translate-y-0.5"
-        >
+      <div className="border-b border-admin-border p-4">
+        <Link href="/admin/new" className="admin-btn admin-btn-primary w-full">
           <Plus className="h-4 w-4" aria-hidden="true" />
           Thêm truyện
         </Link>
@@ -54,11 +59,12 @@ export default function AdminSidebar() {
               href={item.path}
               className={`flex min-h-[42px] items-center gap-3 rounded-xl px-3 text-sm font-bold transition-colors ${
                 active
-                  ? 'bg-white/14 text-white shadow-inner ring-1 ring-white/12'
-                  : 'text-violet-100/75 hover:bg-white/9 hover:text-white'
+                  ? 'text-white shadow-admin-md'
+                  : 'text-admin-text-muted hover:bg-admin-surface-muted hover:text-admin-primary'
               }`}
+              style={active ? { backgroundImage: 'var(--admin-gradient)' } : undefined}
             >
-              <Icon className="h-4 w-4" aria-hidden="true" />
+              <AdminIcon name={item.iconKey} fallback={Icon} className="h-4 w-4" />
               {item.name}
             </Link>
           );
@@ -66,17 +72,17 @@ export default function AdminSidebar() {
 
         <Link
           href="/"
-          className="flex min-h-[42px] items-center gap-3 rounded-xl px-3 text-sm font-bold text-violet-100/75 transition-colors hover:bg-white/9 hover:text-white"
+          className="flex min-h-[42px] items-center gap-3 rounded-xl px-3 text-sm font-bold text-admin-text-muted transition-colors hover:bg-admin-surface-muted hover:text-admin-primary"
         >
           <ExternalLink className="h-4 w-4" aria-hidden="true" />
           Xem website
         </Link>
       </nav>
 
-      <div className="border-t border-white/10 p-3">
+      <div className="border-t border-admin-border p-3">
         <button
           onClick={handleLogout}
-          className="flex min-h-[42px] w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-violet-100/70 transition-colors hover:bg-red-500/15 hover:text-red-200"
+          className="flex min-h-[42px] w-full items-center gap-3 rounded-xl px-3 text-sm font-bold text-admin-text-muted transition-colors hover:bg-red-50 hover:text-red-600"
         >
           <LogOut className="h-4 w-4" aria-hidden="true" />
           Đăng xuất

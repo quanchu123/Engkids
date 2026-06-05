@@ -25,31 +25,30 @@ const EDITABLE_GAMES = [
 
 export default function AdminGamesPage() {
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-5xl mx-auto px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Nội dung Game</h1>
-          <p className="text-gray-600 mt-1">
-            Chỉnh sửa câu hỏi cho các game. Để trống sẽ dùng nội dung mặc định có sẵn.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <header className="admin-card flex flex-col gap-1 p-5">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-admin-primary">Nội dung học</p>
+        <h1 className="text-2xl font-black text-admin-text">Nội dung Game</h1>
+        <p className="text-sm text-admin-text-muted">
+          Chỉnh sửa câu hỏi cho các game. Để trống sẽ dùng nội dung mặc định có sẵn.
+        </p>
+      </header>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {EDITABLE_GAMES.map((game) => (
-            <Link
-              key={game.type}
-              href={`/admin/games/${game.type}`}
-              className="block rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5"
-            >
-              <div className="mb-3 text-4xl">{game.emoji}</div>
-              <h2 className="text-xl font-bold text-gray-800">{game.title}</h2>
-              <p className="mt-1 text-sm text-gray-500">{game.desc}</p>
-              <span className="mt-4 inline-block text-sm font-semibold text-blue-600">
-                Chỉnh sửa nội dung →
-              </span>
-            </Link>
-          ))}
-        </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {EDITABLE_GAMES.map((game) => (
+          <Link
+            key={game.type}
+            href={`/admin/games/${game.type}`}
+            className="admin-card p-6 transition-all hover:-translate-y-0.5 hover:shadow-admin-lg"
+          >
+            <div className="mb-3 text-4xl">{game.emoji}</div>
+            <h2 className="text-xl font-black text-admin-text">{game.title}</h2>
+            <p className="mt-1 text-sm text-admin-text-muted">{game.desc}</p>
+            <span className="mt-4 inline-block text-sm font-black text-admin-primary">
+              Chỉnh sửa nội dung →
+            </span>
+          </Link>
+        ))}
       </div>
     </div>
   );

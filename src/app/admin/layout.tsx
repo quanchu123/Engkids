@@ -18,7 +18,7 @@ export default function AdminLayout({
 
   return (
     <AdminGuard>
-      <div className="admin-theme flex min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(236,72,153,0.22),transparent_34%),linear-gradient(135deg,#160f38_0%,#2e1065_42%,#0f172a_100%)]">
+      <div className="admin-theme flex min-h-screen" style={{ background: 'var(--admin-bg)' }}>
         <AdminSidebar />
         <main className="ml-64 flex-1 p-6">
           <div className="mx-auto max-w-7xl">

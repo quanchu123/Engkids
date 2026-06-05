@@ -13,6 +13,13 @@ const DEFAULT_QUERIES = {
   music: 'music note 3d icon',
   story: 'storybook 3d icon',
   game: 'game controller 3d icon',
+  // Admin panel icons
+  'admin-stories': 'open book 3d icon',
+  'admin-videos': 'video play 3d icon',
+  'admin-games': 'game controller 3d icon',
+  'admin-music': 'music note 3d icon',
+  'admin-dashboard': 'dashboard chart 3d icon',
+  'admin-upload': 'cloud upload 3d icon',
 };
 
 function parseQueries(value) {

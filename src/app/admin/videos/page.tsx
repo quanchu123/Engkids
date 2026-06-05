@@ -33,13 +33,13 @@ function formatDuration(seconds: number) {
 function statusBadge(status: Video['status']) {
   switch (status) {
     case 'ready':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      return 'admin-badge admin-badge-success';
     case 'error':
-      return 'bg-red-50 text-red-700 border-red-100';
+      return 'admin-badge admin-badge-danger';
     case 'uploading':
-      return 'bg-amber-50 text-amber-700 border-amber-100';
+      return 'admin-badge admin-badge-warning';
     default:
-      return 'bg-sky-50 text-sky-700 border-sky-100';
+      return 'admin-badge admin-badge-info';
   }
 }
 
@@ -145,23 +145,23 @@ export default function AdminVideosPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+      <header className="admin-card flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-500">Kho media</p>
-          <h1 className="mt-1 text-2xl font-black text-slate-950">Video & Nhạc</h1>
-          <p className="mt-1 text-sm text-slate-500">Upload, sửa metadata, kiểm tra thumbnail và xóa nội dung khỏi website.</p>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-admin-primary">Kho media</p>
+          <h1 className="mt-1 text-2xl font-black text-admin-text">Video & Nhạc</h1>
+          <p className="mt-1 text-sm text-admin-text-muted">Upload, sửa metadata, kiểm tra thumbnail và xóa nội dung khỏi website.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={loadVideos}
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition-colors hover:bg-slate-50"
+            className="admin-btn admin-btn-secondary"
           >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
             Tải lại
           </button>
           <Link
             href={`/admin/videos/new?category=${category}`}
-            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-black text-white shadow-sm transition-colors hover:bg-violet-700"
+            className="admin-btn admin-btn-primary"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Upload
@@ -176,10 +176,10 @@ export default function AdminVideosPage() {
         <StatCard label="Thiếu thumbnail" value={missingThumbnailCount} icon={AlertTriangle} warn={missingThumbnailCount > 0} />
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="space-y-4 border-b border-slate-200 p-4">
+      <section className="admin-card">
+        <div className="space-y-4 border-b border-admin-border p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="inline-flex rounded-xl bg-slate-100 p-1">
+            <div className="inline-flex rounded-xl bg-admin-surface-muted p-1">
               {([
                 { key: 'video', label: 'Video học', icon: VideoIcon },
                 { key: 'music', label: 'Nhạc', icon: Music2 },
@@ -190,25 +190,23 @@ export default function AdminVideosPage() {
                   <button
                     key={tab.key}
                     onClick={() => setCategory(tab.key)}
-                    className={`flex min-h-[40px] items-center gap-2 rounded-lg px-4 text-sm font-black transition-colors ${
-                      category === tab.key ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-900'
-                    }`}
+                    className={`admin-tab ${category === tab.key ? 'admin-tab-active' : ''}`}
                   >
                     <Icon className="h-4 w-4" aria-hidden="true" />
                     {tab.label}
-                    <span className="text-xs text-slate-400">{count}</span>
+                    <span className="text-xs text-admin-text-muted">{count}</span>
                   </button>
                 );
               })}
             </div>
 
             <label className="relative block w-full lg:w-80">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-text-muted" aria-hidden="true" />
               <input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Tìm video, nhạc, chủ đề..."
-                className="min-h-[42px] w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm font-semibold outline-none transition-colors focus:border-violet-300 focus:bg-white focus:ring-2 focus:ring-violet-100"
+                className="admin-input pl-9"
               />
             </label>
           </div>
@@ -216,14 +214,16 @@ export default function AdminVideosPage() {
           <div className="flex flex-wrap gap-2">
             {STATUS_FILTERS.map((status) => {
               const count = status === 'all' ? categoryVideos.length : categoryVideos.filter((video) => video.status === status).length;
+              const isActive = filter === status;
               return (
                 <button
                   key={status}
                   onClick={() => setFilter(status)}
+                  style={isActive ? { background: 'var(--admin-primary)' } : undefined}
                   className={`min-h-[36px] rounded-xl px-3 text-xs font-black transition-colors ${
-                    filter === status
-                      ? 'bg-slate-900 text-white'
-                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    isActive
+                      ? 'text-white'
+                      : 'border border-admin-border bg-admin-surface text-admin-text-muted hover:bg-admin-surface-muted'
                   }`}
                 >
                   {status === 'all' ? 'Tất cả' : status} · {count}
@@ -236,28 +236,28 @@ export default function AdminVideosPage() {
         {loading ? (
           <div className="p-12 text-center">
             <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-violet-600 border-t-transparent" />
-            <p className="mt-4 text-sm font-bold text-slate-500">Đang tải video...</p>
+            <p className="mt-4 text-sm font-bold text-admin-text-muted">Đang tải video...</p>
           </div>
         ) : categoryVideos.length === 0 ? (
           <div className="p-12 text-center">
             <VideoIcon className="mx-auto h-10 w-10 text-slate-300" aria-hidden="true" />
-            <h3 className="mt-3 font-black text-slate-900">
+            <h3 className="mt-3 font-black text-admin-text">
               {category === 'music' ? 'Chưa có video nhạc' : 'Chưa có video học'}
             </h3>
-            <p className="mt-1 text-sm text-slate-500">Upload file đầu tiên để hiển thị trên website.</p>
+            <p className="mt-1 text-sm text-admin-text-muted">Upload file đầu tiên để hiển thị trên website.</p>
             <Link
               href={`/admin/videos/new?category=${category}`}
-              className="mt-5 inline-flex min-h-[42px] items-center rounded-xl bg-violet-600 px-4 text-sm font-black text-white hover:bg-violet-700"
+              className="admin-btn admin-btn-primary mt-5"
             >
               Upload video
             </Link>
           </div>
         ) : filteredVideos.length === 0 ? (
-          <div className="p-10 text-center text-sm font-bold text-slate-500">Không có nội dung khớp bộ lọc.</div>
+          <div className="p-10 text-center text-sm font-bold text-admin-text-muted">Không có nội dung khớp bộ lọc.</div>
         ) : (
           <div className="divide-y divide-slate-100">
             {filteredVideos.map((video) => (
-              <article key={video.id} className="grid gap-4 p-4 transition-colors hover:bg-slate-50 xl:grid-cols-[1fr_auto] xl:items-center">
+              <article key={video.id} className="grid gap-4 p-4 transition-colors hover:bg-admin-surface-muted xl:grid-cols-[1fr_auto] xl:items-center">
                 <div className="flex min-w-0 gap-4">
                   <div className="relative h-24 w-40 flex-shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-violet-100 to-sky-100">
                     {video.thumbnailUrl ? (
@@ -274,17 +274,17 @@ export default function AdminVideosPage() {
 
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className={`rounded-full border px-2.5 py-1 text-xs font-black ${statusBadge(video.status)}`}>
+                      <span className={statusBadge(video.status)}>
                         {video.status}
                       </span>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">{video.level}</span>
-                      <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700">
+                      <span className="admin-badge admin-badge-neutral">{video.level}</span>
+                      <span className="admin-badge admin-badge-neutral">
                         {video.feature?.trim() || 'Tổng hợp'}
                       </span>
-                      <span className="text-xs font-bold text-slate-400">{formatDate(video.createdAt)}</span>
+                      <span className="text-xs font-bold text-admin-text-muted">{formatDate(video.createdAt)}</span>
                     </div>
-                    <h3 className="truncate font-black text-slate-950">{video.title}</h3>
-                    <p className="truncate text-sm text-slate-500">{video.titleVi}</p>
+                    <h3 className="truncate font-black text-admin-text">{video.title}</h3>
+                    <p className="truncate text-sm text-admin-text-muted">{video.titleVi}</p>
                     {(!video.duration || video.duration <= 0 || !video.thumbnailUrl) && (
                       <p className="mt-2 flex items-center gap-1 text-xs font-bold text-amber-600">
                         <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
@@ -300,7 +300,7 @@ export default function AdminVideosPage() {
                 <div className="flex flex-wrap gap-2 xl:justify-end">
                   <Link
                     href={`/admin/videos/${video.id}`}
-                    className="inline-flex min-h-[38px] items-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-bold text-white hover:bg-slate-700"
+                    className="admin-btn admin-btn-secondary"
                   >
                     <Edit3 className="h-4 w-4" aria-hidden="true" />
                     Sửa
@@ -308,7 +308,7 @@ export default function AdminVideosPage() {
                   {video.status === 'ready' && (
                     <Link
                       href={`/videos/${video.id}`}
-                      className="inline-flex min-h-[38px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-700 hover:bg-slate-100"
+                      className="admin-btn admin-btn-secondary"
                     >
                       <Eye className="h-4 w-4" aria-hidden="true" />
                       Xem
@@ -332,7 +332,7 @@ export default function AdminVideosPage() {
                   )}
                   <button
                     onClick={() => handleDelete(video.id)}
-                    className="inline-flex min-h-[38px] items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 text-sm font-bold text-red-700 hover:bg-red-100"
+                    className="admin-btn admin-btn-danger"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
                     Xóa
@@ -359,14 +359,14 @@ function StatCard({
   warn?: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${
-        warn ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-700'
+    <div className="admin-card p-4">
+      <div className={`mb-3 ${
+        warn ? 'flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700' : 'admin-stat-icon'
       }`}>
         <Icon className="h-5 w-5" aria-hidden="true" />
       </div>
-      <p className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-2xl font-black text-slate-950">{value}</p>
+      <p className="text-xs font-black uppercase tracking-wide text-admin-text-muted">{label}</p>
+      <p className="mt-1 text-2xl font-black text-admin-text">{value}</p>
     </div>
   );
 }
