@@ -73,14 +73,15 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-violet-50 to-white">
       <Header />
       <main className="mx-auto max-w-7xl px-4 py-6">
-        <section className="relative mb-6 overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-br from-violet-50 via-sky-50 to-amber-50 md:block" aria-hidden />
+        <section className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-violet-400 via-purple-500 to-indigo-500 p-5 shadow-lg">
+          <div className="absolute top-2 right-4 hidden text-5xl opacity-30 animate-pulse sm:block">🦄</div>
+          <div className="absolute bottom-2 left-3 hidden text-4xl opacity-25 sm:block">📚</div>
           <div className="relative z-10 max-w-2xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-100 bg-violet-50 px-3 py-1 text-xs font-black text-violet-700">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white backdrop-blur-sm">
               <BookOpen size={14} aria-hidden="true" />
               Kho truyện tranh
             </div>
-            <h1 className="mb-3 text-3xl font-black text-slate-950 md:text-4xl">
+            <h1 className="mb-3 text-3xl font-black text-white drop-shadow-lg md:text-4xl">
               Truyện Tranh
             </h1>
 
@@ -92,7 +93,7 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
                 placeholder="Tìm truyện..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-700 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-200"
+                className="min-h-[46px] w-full rounded-xl bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-700 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/60"
               />
             </div>
           </div>

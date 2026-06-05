@@ -98,41 +98,50 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
       <section className="relative overflow-hidden px-4 pb-2 pt-6">
         <div className="max-w-6xl mx-auto">
-          <div className="hero-card relative overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] md:p-10">
-            <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-br from-sky-50 via-violet-50 to-amber-50 md:block" aria-hidden />
-            <div className="pointer-events-none absolute left-6 top-6 h-2 w-24 rounded-full bg-gradient-to-r from-sky-300 via-emerald-300 to-amber-300" aria-hidden />
+          <div
+            className="hero-card relative overflow-hidden rounded-3xl border border-white/25 bg-gradient-to-br from-violet-600 via-pink-500 to-orange-400 p-6 shadow-2xl md:p-10"
+            style={{ boxShadow: '0 8px 0 rgba(0,0,0,0.2), 0 20px 60px rgba(139,92,246,0.4)' }}
+          >
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24" aria-hidden>
+              <div className="absolute -bottom-8 -left-6 h-24 w-64 rounded-[999px] bg-white/10" />
+              <div className="absolute -bottom-10 left-[30%] h-28 w-72 rounded-[999px] bg-white/10" />
+              <div className="absolute -bottom-9 right-[8%] h-24 w-60 rounded-[999px] bg-white/10" />
+            </div>
 
             <div className="relative z-10 flex flex-col items-center gap-7 md:flex-row">
               <div className="flex-1 text-center md:text-left">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-3 py-1.5 text-xs font-black text-sky-700">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 text-xs font-black text-white backdrop-blur-sm">
                   <Sparkles size={14} aria-hidden="true" />
                   Học qua truyện, video và game
                 </div>
-                <h1 className="mb-3 text-3xl font-black leading-tight text-slate-950 md:text-5xl">
+                <h1 className="mb-3 text-3xl font-black leading-tight text-white drop-shadow-lg md:text-5xl">
                   Engkids giúp bé học tiếng Anh mỗi ngày
                 </h1>
-                <p className="mb-6 max-w-xl text-base font-semibold leading-relaxed text-slate-600 md:text-lg">
+                <p className="mb-6 max-w-xl text-base font-semibold leading-relaxed text-white/90 md:text-lg">
                   Nội dung ngắn, rõ và có hình ảnh để bé dễ chọn bài học. Bắt đầu bằng một truyện, một video hoặc một bài hát.
                 </p>
 
                 <div className="flex flex-wrap justify-center gap-3 md:justify-start">
                   <Link
                     href="/stories"
-                    className="btn-kid bg-slate-950 text-white hover:bg-slate-800"
+                    className="btn-kid bg-white text-violet-600 hover:bg-yellow-50"
+                    style={{ boxShadow: '0 6px 0 rgba(109,40,217,0.4)' }}
                   >
                     <BookOpen size={20} aria-hidden="true" />
                     Đọc truyện
                   </Link>
                   <Link
                     href="/videos"
-                    className="btn-kid bg-white text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50"
+                    className="btn-kid bg-yellow-400 text-gray-900 hover:bg-yellow-300"
+                    style={{ boxShadow: '0 6px 0 rgba(180,83,9,0.5)' }}
                   >
                     <Clapperboard size={20} aria-hidden="true" />
                     Xem video
                   </Link>
                   <Link
                     href="/music"
-                    className="btn-kid bg-white text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50"
+                    className="btn-kid bg-pink-400 text-white hover:bg-pink-300"
+                    style={{ boxShadow: '0 6px 0 rgba(157,23,77,0.4)' }}
                   >
                     <Music size={20} aria-hidden="true" />
                     Bài hát
@@ -142,7 +151,8 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
               <div className="flex-shrink-0 text-center max-sm:-mt-1" aria-hidden>
                 <div className="relative inline-block">
-                  <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-xl sm:h-36 sm:w-36 md:h-52 md:w-52">
+                  <div className="deco-float flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-4 border-white/40 bg-white/20 shadow-2xl backdrop-blur-sm sm:h-36 sm:w-36 md:h-52 md:w-52"
+                    style={{ animationDuration: '3s' }}>
                     <Image
                       src="/engkids-logo.png"
                       alt="Engkids mascot"
@@ -157,10 +167,11 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
                       }}
                     />
                   </div>
-                  <div className="absolute -right-3 -top-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 shadow-sm sm:text-sm">
+                  <div className="absolute -right-3 -top-3 rounded-2xl border-2 border-purple-200 bg-white px-3 py-1.5 text-xs font-black text-purple-600 shadow-lg deco-float delay-2 sm:text-sm"
+                    style={{ animationDuration: '2s' }}>
                     Hello!
                   </div>
-                  <div className="absolute -bottom-3 -left-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 shadow-sm ring-1 ring-amber-100">
+                  <div className="absolute -bottom-3 -left-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-amber-500 shadow-lg ring-2 ring-amber-200">
                     <Star size={22} fill="currentColor" aria-hidden="true" />
                   </div>
                 </div>
@@ -228,13 +239,11 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
         </div>
       </section>
 
-      <div className="max-w-full overflow-hidden border-y border-slate-200/80 bg-white/82 py-2 shadow-sm backdrop-blur">
-        <div className="inline-flex min-w-max gap-5 whitespace-nowrap will-change-transform" style={{ animation: 'marquee 24s linear infinite' }}>
-          {['Giỏi lắm!', 'Tuyệt vời!', 'Học nào!', 'Tiếp tục!', 'Cố lên!', 'Xuất sắc!',
-            'Giỏi lắm!', 'Tuyệt vời!', 'Học nào!', 'Tiếp tục!', 'Cố lên!', 'Xuất sắc!'].map((t, i) => (
-            <span key={i} className="rounded-full bg-slate-50 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-slate-100">
-              {t}
-            </span>
+      <div className="max-w-full overflow-hidden bg-gradient-to-r from-violet-500 via-pink-500 to-orange-400 py-2.5 shadow-inner">
+        <div className="inline-flex min-w-max gap-8 whitespace-nowrap will-change-transform" style={{ animation: 'marquee 18s linear infinite' }}>
+          {['🌟 Giỏi lắm!', '⭐ Tuyệt vời!', '🎉 Xuất sắc!', '🏆 Cố lên!', '💪 Học nào!', '🚀 Tiếp tục!',
+            '🌟 Giỏi lắm!', '⭐ Tuyệt vời!', '🎉 Xuất sắc!', '🏆 Cố lên!', '💪 Học nào!', '🚀 Tiếp tục!'].map((t, i) => (
+            <span key={i} className="text-sm font-black text-white">{t}</span>
           ))}
         </div>
       </div>

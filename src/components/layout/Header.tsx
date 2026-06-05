@@ -56,10 +56,13 @@ function Header() {
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/92 shadow-sm backdrop-blur-xl">
+    <header
+      className="sticky top-0 z-50 bg-gradient-to-r from-violet-600 via-pink-500 to-orange-400 shadow-xl"
+      style={{ boxShadow: '0 4px 0 rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.1)' }}
+    >
       <div className="mx-auto flex min-h-[64px] max-w-7xl items-center justify-between gap-3 px-4">
         <Link href="/" className="group flex min-h-[48px] items-center gap-3" aria-label="Engkids - Trang chủ">
-          <div className="relative h-11 w-11 flex-shrink-0 rounded-2xl bg-sky-50 p-1 ring-1 ring-sky-100 transition-transform group-hover:scale-105">
+          <div className="relative h-11 w-11 flex-shrink-0 rounded-2xl bg-white/20 p-1 ring-1 ring-white/35 transition-transform group-hover:scale-105">
             <Image
               src="/engkids-logo.png"
               alt="Engkids"
@@ -70,15 +73,15 @@ function Header() {
             />
           </div>
           <div className="hidden sm:block">
-            <span className="block text-lg font-black leading-tight text-slate-900">Engkids</span>
-            <span className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
+            <span className="block text-lg font-black leading-tight text-white drop-shadow">Engkids</span>
+            <span className="flex items-center gap-1 text-[11px] font-bold text-white/85">
               <Sparkles size={12} aria-hidden="true" />
               Học tiếng Anh vui
             </span>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50/80 p-1 md:flex" role="navigation" aria-label="Menu chính">
+        <nav className="hidden items-center gap-1 rounded-2xl border border-white/15 bg-black/10 p-1 backdrop-blur-sm md:flex" role="navigation" aria-label="Menu chính">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -89,7 +92,7 @@ function Header() {
                 className={`flex min-h-[44px] items-center gap-2 rounded-xl border px-3 text-sm font-black transition ${
                   active
                     ? item.tone
-                    : 'border-transparent text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm'
+                    : 'border-transparent text-white/90 hover:bg-white/25 hover:text-white'
                 }`}
                 aria-current={active ? 'page' : undefined}
               >
@@ -103,7 +106,7 @@ function Header() {
         <div className="hidden items-center gap-2 md:flex">
           <Link
             href="/progress"
-            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-3 text-sm font-black text-amber-700"
+            className="flex min-h-[44px] items-center gap-2 rounded-full bg-white px-3 text-sm font-black text-purple-600 shadow-sm transition-all hover:scale-105 hover:shadow-lg"
             aria-label={`Bạn có ${totalStars} sao`}
           >
             <Star size={17} fill="currentColor" aria-hidden="true" />
@@ -113,7 +116,7 @@ function Header() {
           {user ? (
             <button
               onClick={handleLogout}
-              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-black text-white transition hover:bg-slate-700"
+              className="flex min-h-[44px] items-center gap-2 rounded-full bg-white/20 px-4 text-sm font-black text-white transition-all hover:bg-white/30"
               aria-label="Đăng xuất"
             >
               <LogOut size={16} aria-hidden="true" />
@@ -122,7 +125,7 @@ function Header() {
           ) : (
             <Link
               href="/login"
-              className="flex min-h-[44px] items-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-black text-white transition hover:bg-slate-700"
+              className="flex min-h-[44px] items-center gap-2 rounded-full bg-white px-4 text-sm font-black text-purple-600 transition-all hover:scale-105 hover:shadow-lg"
               aria-label="Đăng nhập"
             >
               <LogIn size={16} aria-hidden="true" />
@@ -132,7 +135,7 @@ function Header() {
         </div>
 
         <button
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm md:hidden"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/25 bg-white/20 text-white shadow-sm md:hidden"
           onClick={() => setMobileMenuOpen((current) => !current)}
           aria-label={mobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
           aria-expanded={mobileMenuOpen}

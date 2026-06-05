@@ -154,8 +154,8 @@ export default function BackgroundMusic() {
         title={isOn ? 'Tắt nhạc nền' : 'Bật nhạc nền'}
         className={`fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-2xl shadow-lg transition-all hover:-translate-y-0.5 ${
           isOn
-            ? 'bg-slate-900 text-white'
-            : 'bg-white text-slate-700 ring-1 ring-slate-200'
+            ? 'bg-gradient-to-br from-violet-500 to-pink-500 text-white'
+            : 'bg-white text-violet-600 ring-2 ring-violet-300'
         }`}
       >
         {isOn ? <Volume2 size={22} aria-hidden="true" /> : <VolumeX size={22} aria-hidden="true" />}

@@ -94,17 +94,18 @@ export default function VideosPageClient() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-violet-50 pb-12 pt-6">
+      <main className="min-h-screen bg-gradient-to-b from-amber-50 via-pink-50 to-blue-50 pb-12 pt-6">
         <section className="relative mb-6 overflow-hidden">
           <div className="mx-auto max-w-7xl px-4">
-            <div className="relative overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-gradient-to-br from-orange-50 via-sky-50 to-violet-50 md:block" aria-hidden />
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-kid-purple via-kid-pink to-kid-orange p-5 shadow-lg">
+              <div className="absolute top-2 right-4 hidden text-5xl opacity-30 animate-pulse sm:block">🎬</div>
+              <div className="absolute bottom-2 left-3 hidden text-4xl opacity-25 sm:block">⭐</div>
               <div className="relative z-10 max-w-2xl">
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-black text-orange-700">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-black text-white backdrop-blur-sm">
                   <Clapperboard size={14} aria-hidden="true" />
                   Kho video
                 </div>
-                <h1 className="mb-3 text-3xl font-black text-slate-950 md:text-4xl">
+                <h1 className="mb-3 text-3xl font-black text-white drop-shadow-lg md:text-4xl">
                   Học tiếng Anh qua Video
                 </h1>
 
@@ -116,7 +117,7 @@ export default function VideosPageClient() {
                   placeholder="Tìm video..."
                   value={filters.search}
                   onChange={(e) => setFilters((current) => ({ ...current, search: e.target.value }))}
-                    className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-700 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
+                    className="min-h-[46px] w-full rounded-xl bg-white py-2 pl-9 pr-3 text-sm font-semibold text-slate-700 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-white/60"
                 />
                 </div>
               </div>
@@ -128,7 +129,7 @@ export default function VideosPageClient() {
           <div className="mb-6 flex items-center justify-between">
             <button
               onClick={() => setShowFilters((current) => !current)}
-              className={`flex min-h-[44px] items-center gap-2 rounded-xl px-4 font-black transition-colors ${showFilters ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'}`}
+              className={`flex min-h-[44px] items-center gap-2 rounded-xl px-4 font-black transition-colors ${showFilters ? 'bg-kid-purple text-white' : 'bg-white text-slate-700 shadow'}`}
             >
               <SlidersHorizontal size={17} aria-hidden="true" />
               Lọc video
@@ -147,7 +148,7 @@ export default function VideosPageClient() {
               <button
                 onClick={() => setSelectedFeature(null)}
                 className={`min-h-[40px] rounded-xl px-4 text-sm font-bold transition-colors ${
-                  selectedFeature === null ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'
+                  selectedFeature === null ? 'bg-kid-purple text-white' : 'bg-white text-violet-700 shadow'
                 }`}
               >
                 Tất cả ({liveVideos.length})
@@ -159,7 +160,7 @@ export default function VideosPageClient() {
                     key={f}
                     onClick={() => setSelectedFeature(f)}
                     className={`min-h-[40px] rounded-xl px-4 text-sm font-bold transition-colors ${
-                      selectedFeature === f ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'
+                      selectedFeature === f ? 'bg-kid-purple text-white' : 'bg-white text-violet-700 shadow'
                     }`}
                   >
                     {f} ({count})

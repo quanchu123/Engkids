@@ -61,7 +61,7 @@ export default function CategorySection({
       <div className="mb-4 flex items-center justify-between gap-3 px-4 md:px-0">
         <div className="flex min-w-0 items-center gap-3">
           <div className={`h-8 w-2 flex-shrink-0 rounded-full bg-gradient-to-b ${COLOR_CLASSES[color]}`} aria-hidden="true" />
-          <h2 className="truncate text-xl font-black text-slate-900 md:text-2xl">{title}</h2>
+          <h2 className={`truncate bg-gradient-to-r ${COLOR_CLASSES[color]} bg-clip-text text-xl font-black text-transparent md:text-2xl`}>{title}</h2>
           <span className="kid-chip flex-shrink-0 px-2.5 py-1 text-sm font-bold text-slate-500">
             {videos.length} video
           </span>
@@ -70,7 +70,7 @@ export default function CategorySection({
         {showViewAll && onViewAll && (
           <button
             onClick={onViewAll}
-            className="hidden min-h-[44px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50 sm:flex"
+            className={`hidden min-h-[44px] items-center gap-2 rounded-xl bg-gradient-to-r ${COLOR_CLASSES[color]} px-4 text-sm font-black text-white shadow-md transition hover:shadow-lg sm:flex`}
           >
             <span>Xem tất cả</span>
             <ArrowRight size={16} aria-hidden="true" />
