@@ -30,7 +30,7 @@ export default function NewStoryPage() {
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '') + '-' + form.generateId();
 
-      const story = form.buildStory(storyId);
+      const story = { ...form.buildStory(storyId), published: true };
       await storyApi.create(story);
       toast.success('Tạo truyện thành công!');
       broadcastContentChange('stories');

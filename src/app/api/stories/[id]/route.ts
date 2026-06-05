@@ -7,16 +7,31 @@ import { revalidatePath } from 'next/cache';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-function isStory(value: unknown): value is Story {
-  if (!value || typeof value !== 'object') return false;
+function normalizeStory(value: unknown): Story | null {
+  if (!value || typeof value !== 'object') return null;
   const story = value as Partial<Story>;
-  return typeof story.id === 'string'
+  const valid = typeof story.id === 'string'
     && typeof story.title_en === 'string'
     && typeof story.title_vi === 'string'
-    && typeof story.published === 'boolean'
     && Array.isArray(story.panels)
     && Array.isArray(story.vocabulary)
     && Array.isArray(story.topics);
+
+  if (!valid) return null;
+
+  return {
+    id: story.id!,
+    title_en: story.title_en!,
+    title_vi: story.title_vi!,
+    level: story.level || 'Beginner',
+    topics: story.topics || [],
+    cover_image: story.cover_image || '',
+    estimated_minutes: story.estimated_minutes || Math.max(1, Math.ceil((story.panels || []).length * 0.5)),
+    published: typeof story.published === 'boolean' ? story.published : true,
+    panels: story.panels || [],
+    vocabulary: story.vocabulary || [],
+    games: story.games || { match: [], fill_blank: [] },
+  };
 }
 
 export async function GET(
@@ -59,11 +74,12 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json() as { story?: unknown };
-    if (!isStory(body.story)) {
+    const storyPayload = normalizeStory(body.story);
+    if (!storyPayload) {
       return NextResponse.json({ error: 'Invalid story payload' }, { status: 400 });
     }
 
-    const story = await updateStoryById(id, body.story);
+    const story = await updateStoryById(id, storyPayload);
     revalidatePath('/');
     revalidatePath('/stories');
     revalidatePath(`/stories/${id}`);

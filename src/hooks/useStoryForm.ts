@@ -92,7 +92,7 @@ export function useStoryForm(options?: UseStoryFormOptions) {
   const [availableTopics, setAvailableTopics] = useState<string[]>([]);
   const [coverImage, setCoverImage] = useState(options?.initialData?.coverImage ?? '');
   const [coverPreview, setCoverPreview] = useState(options?.initialData?.coverPreview ?? '');
-  const [published, setPublished] = useState(false);
+  const [published, setPublished] = useState(true);
 
   // Panels
   const [panels, setPanels] = useState<PanelForm[]>(
