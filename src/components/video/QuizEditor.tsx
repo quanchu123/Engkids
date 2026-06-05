@@ -27,7 +27,32 @@ export default function QuizEditor({ videoId, initialQuiz = [], onSave }: QuizEd
   const router = useRouter();
   const [questions, setQuestions] = useState<VideoQuizQuestion[]>(initialQuiz);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState('');
+
+  // Ask the AI to draft quiz questions from the video's saved subtitles.
+  // Generated questions are loaded into the editor for review — the admin must
+  // still press "Lưu câu hỏi" to persist them.
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setMessage('');
+    try {
+      const { quiz } = await videoApi.generateQuiz(videoId);
+      if (!quiz || quiz.length === 0) {
+        setMessage('AI không tạo được câu hỏi. Hãy kiểm tra phụ đề rồi thử lại.');
+        return;
+      }
+      // Append generated questions so any manual ones are kept.
+      setQuestions((prev) => [...prev, ...quiz]);
+      setMessage(`Đã tạo ${quiz.length} câu hỏi từ phụ đề. Kiểm tra/sửa rồi bấm "Lưu câu hỏi".`);
+    } catch (err) {
+      console.error('Generate quiz error:', err);
+      const msg = err instanceof Error ? err.message : 'Tạo câu hỏi bằng AI thất bại';
+      setMessage(msg);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const updateQuestion = (index: number, updates: Partial<VideoQuizQuestion>) => {
     setQuestions((prev) => {
@@ -127,6 +152,14 @@ export default function QuizEditor({ videoId, initialQuiz = [], onSave }: QuizEd
         </div>
         <div className="flex gap-3">
           <button
+            onClick={handleGenerate}
+            disabled={generating || saving}
+            className="px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 font-semibold"
+            title="Dùng AI tạo câu hỏi từ phụ đề tiếng Anh của video"
+          >
+            {generating ? 'Đang tạo...' : '✨ Tạo quiz từ phụ đề (AI)'}
+          </button>
+          <button
             onClick={addQuestion}
             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
           >
@@ -134,7 +167,7 @@ export default function QuizEditor({ videoId, initialQuiz = [], onSave }: QuizEd
           </button>
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || generating}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 font-semibold"
           >
             {saving ? 'Đang lưu...' : 'Lưu câu hỏi'}
@@ -145,7 +178,9 @@ export default function QuizEditor({ videoId, initialQuiz = [], onSave }: QuizEd
       {message && (
         <div
           className={`mb-4 p-3 rounded-md ${
-            message.includes('thành công') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+            message.includes('thành công') || message.includes('Đã tạo')
+              ? 'bg-green-50 text-green-700'
+              : 'bg-red-50 text-red-700'
           }`}
         >
           {message}

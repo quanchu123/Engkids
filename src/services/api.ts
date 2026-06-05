@@ -318,6 +318,11 @@ export const videoApi = {
   async saveQuiz(id: string, quiz: VideoQuizQuestion[]): Promise<{ success: boolean; count: number }> {
     return api.put(ROUTES.API.VIDEO_QUIZ(id), { quiz }, { auth: true });
   },
+
+  // Generate quiz questions from subtitles via AI (requires auth, not saved yet)
+  async generateQuiz(id: string, count?: number): Promise<{ quiz: VideoQuizQuestion[]; count: number }> {
+    return api.post(ROUTES.API.VIDEO_QUIZ_GENERATE(id), count ? { count } : {}, { auth: true });
+  },
 };
 
 interface StoryPayload {

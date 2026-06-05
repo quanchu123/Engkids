@@ -47,6 +47,7 @@ export const ROUTES = {
     VIDEO_STATUS: (id: string) => `/api/videos/${id}/status`,
     VIDEO_SUBTITLES: (id: string) => `/api/videos/${id}/subtitles`,
     VIDEO_QUIZ: (id: string) => `/api/videos/${id}/quiz`,
+    VIDEO_QUIZ_GENERATE: (id: string) => `/api/videos/${id}/quiz/generate`,
   },
 } as const;
 
