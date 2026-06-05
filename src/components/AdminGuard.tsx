@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/auth-client';
-import { resolveSupabaseAdminUser } from '@/lib/admin-access';
+import { isAdminAuthenticated } from '@/lib/admin-auth-client';
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -29,10 +29,13 @@ export function AdminGuard({ children }: AdminGuardProps) {
           return;
         }
 
-        const adminUser = await resolveSupabaseAdminUser(supabase, user);
+        // Resolve admin via the server-side check (/api/admin/me reads
+        // ADMIN_EMAILS on the server) so we don't depend on
+        // NEXT_PUBLIC_ADMIN_EMAILS being baked into the client bundle.
+        const isAdmin = await isAdminAuthenticated();
         if (!isMounted) return;
 
-        if (adminUser) {
+        if (isAdmin) {
           setAuthorized(true);
           return;
         }

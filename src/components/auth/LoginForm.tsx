@@ -2,8 +2,8 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn, signUp, getSupabaseClient } from '@/lib/auth-client';
-import { resolveSupabaseAdminUser } from '@/lib/admin-access';
+import { signIn, signUp } from '@/lib/auth-client';
+import { isAdminAuthenticated } from '@/lib/admin-auth-client';
 import { authConfig } from '@/config/auth';
 
 interface LoginFormProps {
@@ -66,20 +66,16 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
       } else {
         await signIn(email, password);
 
-        const supabase = getSupabaseClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-
-        if (user) {
-          const adminUser = await resolveSupabaseAdminUser(supabase, user);
-          if (adminUser) {
-            router.push('/admin');
-            return;
-          }
-
-          router.push('/progress');
+        // Decide admin vs regular redirect using the server-side check
+        // (/api/admin/me reads ADMIN_EMAILS on the server). This avoids relying
+        // on NEXT_PUBLIC_ADMIN_EMAILS being present in the client bundle.
+        const isAdmin = await isAdminAuthenticated();
+        if (isAdmin) {
+          router.push('/admin');
+          return;
         }
+
+        router.push('/progress');
       }
 
       onSuccess?.();
