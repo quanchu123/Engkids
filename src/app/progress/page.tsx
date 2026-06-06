@@ -35,6 +35,7 @@ const TABS: Array<{ id: TabType; label: string; icon: UiIconName }> = [
 
 export default function ProgressPage() {
   const { progress, unsaveWord, toggleWordFavorite, updateStreak } = useAppStore();
+  const coins = useAppStore((state) => state.coins);
   const [stories, setStories] = useState<Story[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [vocabFilter, setVocabFilter] = useState<'all' | 'favorites'>('all');
@@ -200,14 +201,23 @@ export default function ProgressPage() {
                 </p>
               </div>
             </div>
-            <div
-              className="action-btn flex-shrink-0 rounded-2xl px-5 py-2.5 text-sm font-black text-white"
-              style={{
-                background: 'linear-gradient(135deg, #fb923c, #f97316)',
-                boxShadow: '0 6px 20px rgba(249,115,22,0.4)',
-              }}
-            >
-              {progress.currentStreak} ngày liên tiếp!
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <Link
+                href="/shop"
+                className="flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-black text-amber-600 shadow"
+                aria-label={`Bạn có ${coins} xu`}
+              >
+                <UiIcon name="coins" size={20} /> {coins} xu
+              </Link>
+              <div
+                className="action-btn rounded-2xl px-5 py-2.5 text-sm font-black text-white"
+                style={{
+                  background: 'linear-gradient(135deg, #fb923c, #f97316)',
+                  boxShadow: '0 6px 20px rgba(249,115,22,0.4)',
+                }}
+              >
+                {progress.currentStreak} ngày liên tiếp!
+              </div>
             </div>
           </div>
 
@@ -726,7 +736,7 @@ function SrsCard({
             <h2 className="text-2xl font-black">Đến hạn hôm nay</h2>
             <p className="mt-1 text-sm text-white/85">
               {hasDue
-                ? `Có ${stats.dueToday} từ cần ôn để nhớ lâu hơn.`
+                ? `Có ${stats.dueToday} từ đến hạn. Mỗi phiên ôn tối đa 20 từ nhé!`
                 : 'Tuyệt vời! Hôm nay bạn không có từ nào đến hạn.'}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -745,7 +755,7 @@ function SrsCard({
             hasDue ? 'bg-white text-violet-700' : 'bg-white/15 text-white'
           }`}
         >
-          {hasDue ? `Ôn ${stats.dueToday} từ hôm nay` : 'Không có từ đến hạn'}
+          {hasDue ? `Ôn nhanh ${Math.min(stats.dueToday, 20)} từ` : 'Không có từ đến hạn'}
         </Link>
       </div>
     </div>

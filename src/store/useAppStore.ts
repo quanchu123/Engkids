@@ -25,6 +25,7 @@ import { syncSavedWordToSRS } from '@/services/vocabulary';
 import { AvatarCategory, EquippedAvatar, getDefaultEquipped, getItem } from '@/lib/avatar';
 
 const MAX_WORD_INTERACTIONS = 2000;
+const STREAK_FREEZE_COST = 50;
 
 export interface WordInteraction {
   word: string;
@@ -43,8 +44,12 @@ interface AppState {
   settings: UserSettings;
   equippedAvatar: EquippedAvatar;
   ownedAvatarItems: string[];
+  coins: number;
+  streakFreezes: number;
   equipAvatarItem: (category: AvatarCategory, itemId: string) => void;
   unlockAvatarItem: (itemId: string) => void;
+  purchaseAvatarItem: (itemId: string) => boolean;
+  buyStreakFreeze: () => boolean;
   isAvatarItemOwned: (itemId: string) => boolean;
   markPanelViewed: (storyId: string, panelId: number) => void;
   completeStory: (storyId: string, stars: number) => void;
@@ -114,6 +119,8 @@ export const useAppStore = create<AppState>()(
       wordInteractions: new Map(),
       equippedAvatar: getDefaultEquipped(),
       ownedAvatarItems: [],
+      coins: 0,
+      streakFreezes: 0,
 
       unlockAvatarItem: (itemId) => {
         set((state) => {
@@ -121,6 +128,31 @@ export const useAppStore = create<AppState>()(
           if (!getItem(itemId)) return state;
           return { ownedAvatarItems: [...state.ownedAvatarItems, itemId] };
         });
+      },
+
+      // Spend coins to buy an avatar item. Returns false (no-op) when the item
+      // is unknown, already owned, or the child can't afford it. Free items
+      // (price 0) are always purchasable.
+      purchaseAvatarItem: (itemId) => {
+        const item = getItem(itemId);
+        if (!item) return false;
+        const state = get();
+        if (state.ownedAvatarItems.includes(itemId)) return true;
+        const price = item.requiredStars;
+        if (state.coins < price) return false;
+        set({
+          coins: state.coins - price,
+          ownedAvatarItems: [...state.ownedAvatarItems, itemId],
+        });
+        return true;
+      },
+
+      // Buy a streak-freeze token (protects the streak when a day is missed).
+      buyStreakFreeze: () => {
+        const state = get();
+        if (state.coins < STREAK_FREEZE_COST) return false;
+        set({ coins: state.coins - STREAK_FREEZE_COST, streakFreezes: state.streakFreezes + 1 });
+        return true;
       },
 
       equipAvatarItem: (category, itemId) => {
@@ -199,8 +231,9 @@ export const useAppStore = create<AppState>()(
       },
 
       completeStory: (storyId, stars) => {
-        set((state) => ({
-          progress: withNormalizedProgress(state.progress, (progress) => {
+        set((state) => {
+          const prevStars = state.progress.totalStars;
+          const nextProgress = withNormalizedProgress(state.progress, (progress) => {
             const currentProgress = progress.storiesProgress[storyId] || {
               storyId,
               completed: false,
@@ -232,8 +265,11 @@ export const useAppStore = create<AppState>()(
               totalStars: progress.totalStars + starsGained,
               dailyQuestState: nextQuest,
             };
-          }),
-        }));
+          });
+          // Spendable coins grow with every newly-earned star.
+          const gained = Math.max(0, nextProgress.totalStars - prevStars);
+          return { progress: nextProgress, coins: state.coins + gained };
+        });
       },
 
       saveWord: (word, vi, isFavorite = false, ipa = '', storyId = '', exampleSentence = '') => {
@@ -354,8 +390,9 @@ export const useAppStore = create<AppState>()(
       },
 
       applyGameResult: (result) => {
-        set((state) => ({
-          progress: withNormalizedProgress(state.progress, (progress) => {
+        set((state) => {
+          const prevStars = state.progress.totalStars;
+          const nextProgress = withNormalizedProgress(state.progress, (progress) => {
             const nextQuest = incrementQuestStep(progress.dailyQuestState, 'game', 1);
             const nextScore = createGameScore(result);
             const rewardStars = result.rewards?.stars || 0;
@@ -375,8 +412,10 @@ export const useAppStore = create<AppState>()(
               totalStars: progress.totalStars + rewardStars,
               dailyQuestState: nextQuest,
             };
-          }),
-        }));
+          });
+          const gained = Math.max(0, nextProgress.totalStars - prevStars);
+          return { progress: nextProgress, coins: state.coins + gained };
+        });
       },
 
       completeQuestStep: (step, amount = 1) => {
@@ -431,12 +470,26 @@ export const useAppStore = create<AppState>()(
             };
           }
 
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
-          const newStreak = lastActive === yesterdayStr ? state.progress.currentStreak + 1 : 1;
+          const MS_DAY = 86400000;
+          const diffDays = Math.round((Date.parse(today) - Date.parse(lastActive)) / MS_DAY);
+
+          let newStreak: number;
+          let freezesLeft = state.streakFreezes;
+
+          if (diffDays <= 1) {
+            // Consecutive day (or same/again) → extend the streak.
+            newStreak = state.progress.currentStreak + 1;
+          } else if (diffDays === 2 && state.streakFreezes > 0) {
+            // Missed exactly one day but a freeze token saves the streak.
+            newStreak = Math.max(1, state.progress.currentStreak);
+            freezesLeft = state.streakFreezes - 1;
+          } else {
+            // Missed two+ days (or no freeze) → reset.
+            newStreak = 1;
+          }
 
           return {
+            streakFreezes: freezesLeft,
             progress: withNormalizedProgress(
               {
                 ...state.progress,
@@ -516,6 +569,8 @@ export const useAppStore = create<AppState>()(
         wordInteractions: Array.from(state.wordInteractions.entries()),
         equippedAvatar: state.equippedAvatar,
         ownedAvatarItems: state.ownedAvatarItems,
+        coins: state.coins,
+        streakFreezes: state.streakFreezes,
       }),
       merge: (persistedState: unknown, currentState) => {
         const persisted = persistedState as Partial<AppState & { wordInteractions: [string, WordInteraction][] }>;
@@ -532,6 +587,9 @@ export const useAppStore = create<AppState>()(
           wordInteractions: new Map(persisted.wordInteractions || []),
           equippedAvatar: persisted.equippedAvatar || getDefaultEquipped(),
           ownedAvatarItems: persisted.ownedAvatarItems || [],
+          // Grandfather existing players: first run seeds coins from lifetime stars.
+          coins: typeof persisted.coins === 'number' ? persisted.coins : snapshot.progress.totalStars,
+          streakFreezes: typeof persisted.streakFreezes === 'number' ? persisted.streakFreezes : 0,
         };
       },
       onRehydrateStorage: () => (state) => {

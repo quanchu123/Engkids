@@ -34,6 +34,8 @@ const ICONS = {
   'graduation-cap': '12197',
   microphone: '12379',
   calendar: '12776',
+  coins: '13009',
+  snowflake: '17365',
 };
 
 async function main() {

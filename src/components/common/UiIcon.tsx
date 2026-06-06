@@ -32,7 +32,9 @@ export type UiIconName =
   | 'sprout'
   | 'graduation-cap'
   | 'microphone'
-  | 'calendar';
+  | 'calendar'
+  | 'coins'
+  | 'snowflake';
 
 interface UiIconProps {
   name: UiIconName;

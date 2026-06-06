@@ -11,7 +11,6 @@ import {
   AvatarCategory,
   AvatarItem,
   getItemsByCategory,
-  isUnlocked,
 } from '@/lib/avatar';
 
 const CATEGORY_LABELS: Record<AvatarCategory, string> = {
@@ -43,19 +42,22 @@ function ItemArt({ item, px }: { item: AvatarItem; px: number }) {
 }
 
 export default function ShopPage() {
-  const totalStars = useAppStore((state) => state.progress.totalStars);
+  const coins = useAppStore((state) => state.coins);
+  const streakFreezes = useAppStore((state) => state.streakFreezes);
   const equippedAvatar = useAppStore((state) => state.equippedAvatar);
   const equipAvatarItem = useAppStore((state) => state.equipAvatarItem);
-  const unlockAvatarItem = useAppStore((state) => state.unlockAvatarItem);
+  const purchaseAvatarItem = useAppStore((state) => state.purchaseAvatarItem);
+  const buyStreakFreeze = useAppStore((state) => state.buyStreakFreeze);
   const isAvatarItemOwned = useAppStore((state) => state.isAvatarItemOwned);
 
   const [activeCategory, setActiveCategory] = useState<AvatarCategory>('character');
 
   const items = getItemsByCategory(activeCategory);
 
-  const handleUnlockAndEquip = (item: AvatarItem) => {
-    unlockAvatarItem(item.id);
-    equipAvatarItem(item.category, item.id);
+  const handleBuyAndEquip = (item: AvatarItem) => {
+    if (purchaseAvatarItem(item.id)) {
+      equipAvatarItem(item.category, item.id);
+    }
   };
 
   return (
@@ -74,8 +76,8 @@ export default function ShopPage() {
                   Học chăm để có sao, rồi mở khóa nhân vật và phụ kiện thật xịn cho bé!
                 </p>
                 <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-base font-black text-amber-600 shadow-lg">
-                  <UiIcon name="star" size={22} />
-                  <span>{totalStars} sao</span>
+                  <UiIcon name="coins" size={22} />
+                  <span>{coins} xu</span>
                 </div>
               </div>
               <div className="rounded-[2rem] bg-white/15 p-4 backdrop-blur">
@@ -110,8 +112,8 @@ export default function ShopPage() {
             {items.map((item) => {
               const owned = isAvatarItemOwned(item.id);
               const equipped = equippedAvatar[item.category] === item.id;
-              const unlocked = isUnlocked(item, totalStars);
-              const locked = !owned && !equipped && !unlocked;
+              const canAfford = coins >= item.requiredStars;
+              const locked = !owned && !equipped && !canAfford;
 
               return (
                 <div
@@ -143,21 +145,41 @@ export default function ShopPage() {
                     >
                       Trang bị
                     </button>
-                  ) : unlocked ? (
+                  ) : canAfford ? (
                     <button
-                      onClick={() => handleUnlockAndEquip(item)}
+                      onClick={() => handleBuyAndEquip(item)}
                       className="flex w-full items-center justify-center gap-1 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-black text-white shadow-md transition-transform hover:scale-105"
                     >
-                      <UiIcon name="star" size={14} /> Mở khóa
+                      <UiIcon name="coins" size={14} /> Mua {item.requiredStars}
                     </button>
                   ) : (
                     <span className="flex w-full items-center justify-center gap-1 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-400">
-                      <UiIcon name="star" size={14} /> Cần {item.requiredStars}
+                      <UiIcon name="coins" size={14} /> Cần {item.requiredStars} xu
                     </span>
                   )}
                 </div>
               );
             })}
+          </section>
+
+          {/* Streak freeze: a consumable that saves the streak if a day is missed */}
+          <section className="mt-6 flex flex-col items-center gap-3 rounded-[1.75rem] bg-white p-6 text-center shadow-md sm:flex-row sm:text-left">
+            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-sky-100 to-cyan-200">
+              <UiIcon name="snowflake" size={48} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg font-black text-slate-900">Vé giữ lửa 🧊</h3>
+              <p className="text-sm font-semibold text-slate-500">
+                Lỡ học mất 1 ngày? Vé này giữ nguyên chuỗi ngày học của bé. Đang có: <b>{streakFreezes}</b> vé.
+              </p>
+            </div>
+            <button
+              onClick={() => buyStreakFreeze()}
+              disabled={coins < 50}
+              className="flex items-center justify-center gap-1 rounded-2xl bg-gradient-to-r from-sky-500 to-cyan-500 px-5 py-3 text-sm font-black text-white shadow-md transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <UiIcon name="coins" size={16} /> Mua 50 xu
+            </button>
           </section>
         </div>
       </main>

@@ -21,6 +21,7 @@ function friendlyMessage(streak: number): string {
 
 export default function StreakCard() {
   const currentStreak = useAppStore((state) => state.progress.currentStreak);
+  const streakFreezes = useAppStore((state) => state.streakFreezes);
 
   // Number of lit dots in the 7-day strip (capped at the week length).
   const litCount = Math.min(Math.max(currentStreak, 0), WEEK_LENGTH);
@@ -42,6 +43,9 @@ export default function StreakCard() {
             {currentStreak} ngày liên tiếp 🔥
           </p>
           <p className="mt-1 text-sm font-semibold text-slate-600">{friendlyMessage(currentStreak)}</p>
+          {streakFreezes > 0 && (
+            <p className="mt-1 text-xs font-bold text-sky-600">🧊 {streakFreezes} vé giữ lửa</p>
+          )}
         </div>
       </div>
 
