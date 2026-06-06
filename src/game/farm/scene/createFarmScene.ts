@@ -1,27 +1,32 @@
-// Phaser scene factory for the English Farming Game (MVP) — Task 11.
+// Phaser scene factory for the English Farming Game — ISOMETRIC CARTOON farm.
 //
 // IMPORTANT: This module must TYPE-CHECK and load on the server (SSR) WITHOUT
 // importing Phaser at runtime. We therefore:
 //   - use a TYPE-ONLY import for Phaser (`import type Phaser from 'phaser'`),
 //     which is erased at compile time and never emits a runtime `require`;
 //   - take the live Phaser namespace as a *parameter* (`PhaserNS`) so the page
-//     can `await import('phaser')` and pass it in (see Task 12 + rpg-world).
+//     can `await import('phaser')` and pass it in.
 //
 // The scene is a THIN renderer + input router. It contains NO game-rule logic:
 // every mutation is delegated to the pure systems (farmingSystem) operating on a
 // single `FarmState` owned by the React page via the `FarmBridge`. The scene
 // reads state through `bridge.getState()`, asks the pure view helpers
-// (farmSceneView) how to draw + lay out scenery, and writes back through
-// `bridge.setState()`. All geometry/visual MATH lives in farmSceneView — this
-// file only turns those descriptors into Phaser game objects, tweens + particles
-// (the "polish") and routes input. Every texture is guarded by a loaderror
-// fallback so a missing asset degrades to an emoji and never breaks rendering.
+// (farmSceneView) for the isometric geometry + per-plot appearance, and writes
+// back through `bridge.setState()`.
+//
+// VISUAL TARGET: a cute 2.5D cartoon farm (Hay Day / Khu Vườn Trên Mây) — a real
+// isometric DIAMOND field with depth, shadows and cohesive cartoon art. All the
+// geometry MATH lives in farmSceneView (pure + unit-tested); this file turns it
+// into Phaser game objects, tweens + particles and routes input. Every texture
+// is guarded by a `loaderror` fallback so a missing asset degrades to an emoji
+// and never breaks rendering. The primary art is the isometric icon set in
+// `public/games/english-farm/iso/` (resolved via `isoIconSrc`).
 
 import type Phaser from 'phaser'
 import type { FarmState, VocabLevel } from '../types'
 import { GRID_COLS, GRID_ROWS } from '../constants'
 import { getCropById } from '../data/crops'
-import { farmIconSrc } from '../data/farmIcons'
+import { isoIconSrc, isoFallbackSrc } from '../data/isoIcons'
 import {
   till,
   plant,
@@ -30,19 +35,14 @@ import {
   isMature,
 } from '../systems/farmingSystem'
 import {
-  computeGridLayout,
-  plotCenter,
   describePlot,
   isInventoryFullReason,
-  computeBackgroundLayout,
-  computeDecorLayout,
-  gridTopInset,
-  farmerHome,
-  wrapValue,
   shadeColor,
-  type GridLayout,
-  type BackgroundLayout,
-  type DecorLayout,
+  isoToScreen,
+  screenToIso,
+  isoGridLayout,
+  tileDepth,
+  type IsoLayout,
 } from './farmSceneView'
 
 /** The currently selected tool (mirrors `FarmTool` in the React HUD). */
@@ -84,15 +84,15 @@ export interface FarmSceneInstance extends Phaser.Scene {
 }
 
 /**
- * Icon manifest names to preload as textures. Missing/broken files fall back to
- * an emoji (see `loaderror` tracking) so the scene always renders. Covers the
- * crops, growth stages, the farmer, scenery + every particle/effect sprite.
+ * Isometric art names to preload as textures (from `iso/manifest.json`). Missing
+ * or broken files fall back to an emoji (see `loaderror` tracking) so the scene
+ * always renders. Covers crops, growth stages, the farmer + animals, scenery and
+ * the effect/particle sprites.
  */
 const TEXTURE_NAMES = [
-  // soil + growth
-  'soil',
+  // growth stages
   'sprout',
-  'bush',
+  'leaf',
   // crops
   'carrot',
   'tomato',
@@ -100,22 +100,20 @@ const TEXTURE_NAMES = [
   'pumpkin',
   'strawberry',
   'potato',
-  // character
+  // characters
   'farmer',
+  'cow',
+  'chicken',
   // scenery
-  'sun',
-  'cloud',
-  'fence',
   'barn',
   'tree',
-  'scarecrow',
-  'grass',
-  // effects / ui
-  'water',
-  'water-drop',
-  'sparkle',
+  'fence',
+  // tools / effects / ui
+  'watering-can',
+  'shovel',
+  'coins',
   'star',
-  'coin',
+  'water',
 ] as const
 
 const SCENE_KEY = 'FarmScene'
@@ -123,26 +121,35 @@ const SCENE_KEY = 'FarmScene'
 /** Runtime key for the generated white-circle particle texture (no asset). */
 const PARTICLE_DOT = 'farm-particle-dot'
 
-/** Stacking order so background/decor sit behind plots, which sit behind the farmer. */
+/**
+ * Static stacking order. Ground diamonds use small `tileDepth` values; every
+ * TALL object (crop, farmer, decor) sorts by its feet screen-Y so nearer tiles
+ * correctly overlap farther ones (always far above the flat ground tiles).
+ */
 const DEPTH = {
-  sky: -100,
-  sun: -85,
-  cloud: -80,
-  scenery: -70,
-  fence: -60,
-  bedShadow: 0,
-  bed: 1,
-  wetIcon: 3,
-  hit: 4,
-  crop: 6,
-  label: 7,
-  farmer: 10,
-  flash: 14,
-  particles: 22,
+  sky: -10_000,
+  light: -9_500,
+  fieldShadow: -9_000,
+  // ground tiles: tileDepth(col,row) in [0 .. cols+rows-2]
+  particles: 1_000_000,
+  flash: 900_000,
+  flyUp: 1_100_000,
 } as const
+
+/** Cartoon palette for the isometric ground block. */
+const GRASS_LIGHT = 0x9bd861
+const GRASS_DARK = 0x86c94e
+const GRASS_SIDE = 0x5f9437 // darker "extrude" face of the raised field
+const GRASS_TOP_EDGE = 0xb6e887
 
 /** A textured sprite OR its emoji text fallback (both share x/y/scale/flipX). */
 type Sprite = Phaser.GameObjects.Image | Phaser.GameObjects.Text
+
+/** A grid cell. */
+interface Cell {
+  col: number
+  row: number
+}
 
 /**
  * Build a `FarmScene` class bound to the provided Phaser namespace + bridge.
@@ -155,10 +162,10 @@ export function createFarmScene(
 ): new () => FarmSceneInstance {
   class FarmScene extends PhaserNS.Scene implements FarmSceneInstance {
     // --- per-plot rendered objects, indexed by plot id -----------------------
-    /** Invisible interactive hit boxes that route pointer input per plot. */
-    private hits: Phaser.GameObjects.Rectangle[] = []
-    /** Re-drawn soil bed graphics (shadow + bed + highlight + furrows + border). */
-    private beds: Phaser.GameObjects.Graphics[] = []
+    /** Ground diamond + raised side faces + soil bed graphics (re-drawn). */
+    private beds: Array<Phaser.GameObjects.Graphics | null> = []
+    /** Soft contact shadow ellipse under each crop. */
+    private cropShadows: Array<Phaser.GameObjects.Graphics | null> = []
     private cropObjects: Array<Sprite | null> = []
     private labels: Array<Phaser.GameObjects.Text | null> = []
     private wetIcons: Array<Sprite | null> = []
@@ -167,20 +174,22 @@ export function createFarmScene(
 
     // --- background + scenery -------------------------------------------------
     private backgroundGfx: Phaser.GameObjects.Graphics | null = null
+    private fieldShadowGfx: Phaser.GameObjects.Graphics | null = null
     private decorObjects: Sprite[] = []
-    private cloudTweens: Phaser.Tweens.Tween[] = []
+    private decorTweens: Phaser.Tweens.Tween[] = []
 
     // --- character ------------------------------------------------------------
     private farmer: Sprite | null = null
-    private farmerPos = { x: 0, y: 0, size: 40 }
+    private farmerCell: Cell = { col: 0, row: GRID_ROWS - 1 }
+    private farmerSize = 48
     private farmerIdleTween: Phaser.Tweens.Tween | null = null
-    private farmerReturnTimer: Phaser.Time.TimerEvent | null = null
+    private farmerBusy = false
 
     // --- effects --------------------------------------------------------------
     private activeEmitters = new Set<Phaser.GameObjects.Particles.ParticleEmitter>()
     private flashOverlays = new Set<Phaser.GameObjects.Graphics>()
 
-    private layout: GridLayout = { tileSize: 8, gap: 8, originX: 0, originY: 0 }
+    private layout: IsoLayout = { tileW: 64, tileH: 32, originX: 0, originY: 0 }
     /** Texture keys that actually loaded (missing ones fall back to emoji). */
     private loadedTextures = new Set<string>()
 
@@ -189,28 +198,49 @@ export function createFarmScene(
     }
 
     preload(): void {
-      // Robust loading: a missing/broken asset must never break the scene. Track
-      // successes so render can fall back to emoji for the rest.
+      // Robust loading: a missing/broken asset must never break the scene. Each
+      // texture is loaded from its PREFERRED source first — a user drop-in
+      // override at `assets/<name>.png` (e.g. exported Unity art) — and on
+      // `loaderror` we transparently retry the bundled iso art under the same
+      // key. If that also fails the texture stays absent and render falls back to
+      // an emoji. Files queued during a `loaderror` are picked up by the loader
+      // while it is still running, so this chain resolves within preload.
+      const pendingFallback = new Map<string, string>()
+
       this.load.on('loaderror', (file: Phaser.Loader.File) => {
         this.loadedTextures.delete(file.key)
+        const fallback = pendingFallback.get(file.key)
+        if (fallback) {
+          pendingFallback.delete(file.key)
+          this.load.image(file.key, fallback)
+        }
       })
       this.load.on('filecomplete', (key: string) => {
         this.loadedTextures.add(key)
+        pendingFallback.delete(key)
       })
 
       for (const name of TEXTURE_NAMES) {
-        const src = farmIconSrc(name)
-        if (src) {
-          // Load PNG icons by URL from public/games/english-farm/icons/.
-          this.load.image(name, src)
+        const primary = isoIconSrc(name) // user override at assets/<name>.png
+        const fallback = isoFallbackSrc(name) // bundled iso art
+        if (primary) {
+          if (fallback && fallback !== primary) pendingFallback.set(name, fallback)
+          this.load.image(name, primary)
+        } else if (fallback) {
+          this.load.image(name, fallback)
         }
       }
     }
 
     create(): void {
-      this.cameras.main.setBackgroundColor('#8fbc5a')
+      this.cameras.main.setBackgroundColor('#bfe9ff')
       this.ensureParticleTexture()
       this.buildScene()
+
+      // A single scene-level pointer handler routes taps to the nearest tile via
+      // the inverse isometric projection (overlapping diamonds make per-tile hit
+      // boxes unreliable).
+      this.input.on('pointerdown', this.handlePointer, this)
 
       // Redraw on resize so the RESIZE scale mode keeps everything centered.
       this.scale.on('resize', this.handleResize, this)
@@ -218,6 +248,7 @@ export function createFarmScene(
       // Tear everything down on shutdown/destroy to avoid tween/emitter leaks.
       const teardown = (): void => this.teardown()
       this.events.once(PhaserNS.Scenes.Events.SHUTDOWN, () => {
+        this.input.off('pointerdown', this.handlePointer, this)
         this.scale.off('resize', this.handleResize, this)
         teardown()
       })
@@ -250,18 +281,19 @@ export function createFarmScene(
 
     /** Destroy all transient objects/tweens/timers/emitters (rebuild + shutdown). */
     private teardown(): void {
-      this.cancelFarmerAction()
-
+      this.cancelFarmerMotion()
       this.farmer?.destroy()
       this.farmer = null
 
-      this.cloudTweens.forEach((t) => t.remove())
-      this.cloudTweens = []
+      this.decorTweens.forEach((t) => t.remove())
+      this.decorTweens = []
       this.decorObjects.forEach((o) => o.destroy())
       this.decorObjects = []
 
       this.backgroundGfx?.destroy()
       this.backgroundGfx = null
+      this.fieldShadowGfx?.destroy()
+      this.fieldShadowGfx = null
 
       this.clearGrid()
 
@@ -274,10 +306,10 @@ export function createFarmScene(
     /** Destroy every per-plot object + kill its tweens/timers. */
     private clearGrid(): void {
       for (let i = 0; i < this.beds.length; i += 1) this.clearTile(i)
-      this.hits.forEach((h) => h.destroy())
-      this.beds.forEach((b) => b.destroy())
-      this.hits = []
+      this.beds.forEach((b) => b?.destroy())
+      this.cropShadows.forEach((s) => s?.destroy())
       this.beds = []
+      this.cropShadows = []
       this.cropObjects = []
       this.labels = []
       this.wetIcons = []
@@ -285,241 +317,188 @@ export function createFarmScene(
       this.sparkleTimers = []
     }
 
-    /** Build background, scenery, grid + farmer from the current screen size. */
+    /** Build background, field, decor + farmer from the current screen size. */
     private buildScene(): void {
       this.teardown()
 
       const width = this.scale.width
       const height = this.scale.height
-      const bg = computeBackgroundLayout(width, height)
-      const decor = computeDecorLayout(bg)
-
-      this.drawBackground(bg)
-      this.drawDecor(bg, decor)
-      this.buildGrid(bg)
-      this.buildFarmer(bg)
-    }
-
-    // --- background + scenery ------------------------------------------------
-
-    private drawBackground(bg: BackgroundLayout): void {
-      const g = this.add.graphics().setDepth(DEPTH.sky)
-      // Sky band: a soft blue gradient fading toward the horizon.
-      g.fillGradientStyle(0x5fb8ef, 0x5fb8ef, 0xc6ecfb, 0xc6ecfb, 1)
-      g.fillRect(0, 0, bg.width, bg.skyHeight)
-      // Grass field: bright green up top easing into the camera background green.
-      g.fillGradientStyle(0xa7d96c, 0xa7d96c, 0x7fae4f, 0x7fae4f, 1)
-      g.fillRect(0, bg.skyHeight, bg.width, bg.grassHeight)
-      this.backgroundGfx = g
-    }
-
-    private drawDecor(bg: BackgroundLayout, decor: DecorLayout): void {
-      // Sun in the corner of the sky.
-      this.decorObjects.push(
-        this.makeSprite('sun', decor.sun.x, decor.sun.y, decor.sun.size, '☀️')
-          .setDepth(DEPTH.sun),
-      )
-
-      // Drifting clouds: a looping tween advances a counter; wrapValue re-enters
-      // the cloud from the far edge so the loop has no visible jump.
-      decor.clouds.forEach((c, i) => {
-        const cloud = this.makeSprite('cloud', c.x, c.y, c.size, '☁️').setDepth(
-          DEPTH.cloud,
-        )
-        this.decorObjects.push(cloud)
-
-        const half = c.size
-        const min = -half
-        const max = bg.width + half
-        const span = max - min
-        const speed = 12 + i * 5 // px/sec — gentle, slightly varied drift
-        const proxy = { v: c.x }
-        const tween = this.tweens.add({
-          targets: proxy,
-          v: c.x + span,
-          duration: (span / speed) * 1000,
-          repeat: -1,
-          onUpdate: () => {
-            if (cloud.active) cloud.x = wrapValue(proxy.v, min, max)
-          },
-        })
-        this.cloudTweens.push(tween)
-      })
-
-      // Static framing scenery — anchored at their base so they sit on the grass.
-      this.decorObjects.push(
-        this.makeSprite('barn', decor.barn.x, decor.barn.y, decor.barn.size, '🏠', 0.5, 1)
-          .setDepth(DEPTH.scenery),
-      )
-      this.decorObjects.push(
-        this.makeSprite('tree', decor.tree.x, decor.tree.y, decor.tree.size, '🌳', 0.5, 1)
-          .setDepth(DEPTH.scenery),
-      )
-      this.decorObjects.push(
-        this.makeSprite(
-          'scarecrow',
-          decor.scarecrow.x,
-          decor.scarecrow.y,
-          decor.scarecrow.size,
-          '🎃',
-          0.5,
-          1,
-        ).setDepth(DEPTH.scenery),
-      )
-
-      // A row of fence posts along the sky/grass seam.
-      for (const x of decor.fence.xs) {
-        this.decorObjects.push(
-          this.makeSprite('fence', x, decor.fence.y, decor.fence.size, '🪵', 0.5, 0.5)
-            .setDepth(DEPTH.fence),
-        )
-      }
-    }
-
-    // --- grid ----------------------------------------------------------------
-
-    private buildGrid(bg: BackgroundLayout): void {
       const state = this.safeGetState()
       const cols = state.grid.cols || GRID_COLS
       const rows = state.grid.rows || GRID_ROWS
 
-      // Drop the grid below the fence line so it sits on the grass.
-      this.layout = computeGridLayout(this.scale.width, this.scale.height, cols, rows, {
-        topInset: gridTopInset(this.scale.height, bg.skyHeight),
-      })
+      this.layout = isoGridLayout(width, height, cols, rows, { topInset: 132 })
 
-      const size = this.layout.tileSize
+      this.drawBackground(width, height)
+      this.drawFieldShadow(cols, rows)
+      this.drawDecorBack(cols, rows)
+      this.buildGrid(cols, rows)
+      this.drawDecorFront(cols, rows)
+      this.buildFarmer(cols, rows)
+    }
+
+    // --- background ----------------------------------------------------------
+
+    private drawBackground(width: number, height: number): void {
+      const g = this.add.graphics().setDepth(DEPTH.sky)
+      // Soft sky -> meadow vertical gradient across the whole screen.
+      const horizon = Math.round(height * 0.42)
+      g.fillGradientStyle(0xbfe9ff, 0xbfe9ff, 0xdff6c9, 0xdff6c9, 1)
+      g.fillRect(0, 0, width, horizon)
+      g.fillGradientStyle(0xdff6c9, 0xdff6c9, 0x9fd86a, 0x9fd86a, 1)
+      g.fillRect(0, horizon, width, height - horizon)
+      this.backgroundGfx = g
+
+      // Big soft radial light from the upper area (gentle sunny glow).
+      const light = this.add.graphics().setDepth(DEPTH.light)
+      const cx = width * 0.5
+      const cy = height * 0.34
+      const maxR = Math.max(width, height) * 0.6
+      for (let i = 6; i >= 1; i -= 1) {
+        const r = (maxR / 6) * i
+        light.fillStyle(0xffffff, 0.05)
+        light.fillCircle(cx, cy, r)
+      }
+      this.decorObjects.push(light as unknown as Sprite)
+    }
+
+    /** A single soft shadow blob under the whole raised field. */
+    private drawFieldShadow(cols: number, rows: number): void {
+      const g = this.add.graphics().setDepth(DEPTH.fieldShadow)
+      const c = this.isoCenter((cols - 1) / 2, (rows - 1) / 2)
+      const w = (cols + rows) * this.layout.tileW * 0.5
+      const h = (cols + rows) * this.layout.tileH * 0.5
+      g.fillStyle(0x3f6b2a, 0.28)
+      g.fillEllipse(c.x, c.y + this.layout.tileH * 0.7, w * 0.92, h * 0.78)
+      this.fieldShadowGfx = g
+    }
+
+    // --- grid ----------------------------------------------------------------
+
+    private buildGrid(cols: number, rows: number): void {
+      const state = this.safeGetState()
       for (const plot of state.grid.plots) {
-        const { x, y } = plotCenter(this.layout, plot.id, cols)
-
-        // The soil bed is pure graphics (re-drawn per render); a transparent
-        // rectangle on top carries the interactivity (routes pointer input).
-        const bed = this.add.graphics().setDepth(DEPTH.bed)
-        const hit = this.add
-          .rectangle(x, y, size, size, 0x000000, 0)
-          .setDepth(DEPTH.hit)
-          .setInteractive({ useHandCursor: true })
-        hit.on('pointerdown', () => this.handlePlotPointer(plot.id))
-
+        const { col, row } = this.cellOf(plot.id, cols)
+        // Flat ground tiles sort by tileDepth so the raised field self-occludes.
+        const bed = this.add.graphics().setDepth(tileDepth(col, row))
+        const shadow = this.add.graphics()
         this.beds[plot.id] = bed
-        this.hits[plot.id] = hit
+        this.cropShadows[plot.id] = shadow
         this.cropObjects[plot.id] = null
         this.labels[plot.id] = null
         this.wetIcons[plot.id] = null
         this.cropTweens[plot.id] = null
         this.sparkleTimers[plot.id] = null
       }
-
+      void rows
       this.renderAllPlots()
     }
 
     // --- character -----------------------------------------------------------
 
-    private buildFarmer(bg: BackgroundLayout): void {
-      const home = farmerHome(bg)
-      this.farmerPos = { x: home.x, y: home.y, size: home.size }
-      this.farmer = this.makeSprite('farmer', home.x, home.y, home.size, '🧑‍🌾', 0.5, 1)
-        .setDepth(DEPTH.farmer)
+    private buildFarmer(cols: number, rows: number): void {
+      // Keep the farmer's cell across rebuilds; clamp into the (possibly new) grid.
+      this.farmerCell = {
+        col: Math.max(0, Math.min(this.farmerCell.col, cols - 1)),
+        row: Math.max(0, Math.min(this.farmerCell.row, rows - 1)),
+      }
+      this.farmerSize = Math.max(36, Math.round(this.layout.tileW * 1.5))
+      const c = this.isoCenter(this.farmerCell.col, this.farmerCell.row)
+      this.farmer = this.makeSprite('farmer', c.x, c.y, this.farmerSize, '🧑‍🌾', 0.5, 1)
+      this.farmer.setDepth(c.y + 2)
       this.startFarmerIdle()
     }
 
     /** Gentle vertical bob around the farmer's current resting position. */
     private startFarmerIdle(): void {
-      if (!this.farmer) return
+      if (!this.farmer || this.farmerBusy) return
       const baseY = this.farmer.y
       this.farmerIdleTween = this.tweens.add({
         targets: this.farmer,
-        y: baseY - Math.max(3, this.farmerPos.size * 0.05),
-        duration: 900,
+        y: baseY - Math.max(2, this.farmerSize * 0.04),
+        duration: 950,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',
       })
     }
 
-    /** Stop any walk/return/idle motion (latest tap wins, no overlap). */
-    private cancelFarmerAction(): void {
+    /** Stop any walk/idle motion (latest tap wins, no overlap). */
+    private cancelFarmerMotion(): void {
       if (this.farmer) this.tweens.killTweensOf(this.farmer)
+      this.farmerIdleTween?.remove()
       this.farmerIdleTween = null
-      if (this.farmerReturnTimer) {
-        this.farmerReturnTimer.remove(false)
-        this.farmerReturnTimer = null
-      }
     }
 
     /**
-     * Walk the farmer beside the plot with a little hop, run `onArrive` (the
-     * action), then ease back toward home after a beat. Purely visual — the
-     * action result still comes from the pure systems via the bridge.
+     * Walk the farmer tile-by-tile to `target` (tween through iso tile centers,
+     * flipX by direction), then run `onArrive`. Purely visual — the action
+     * result still comes from the pure systems via the bridge.
      */
-    private moveFarmerToPlot(plotId: number, onArrive: () => void): void {
+    private moveFarmerToCell(target: Cell, onArrive: () => void): void {
       if (!this.farmer) {
         onArrive()
         return
       }
-      this.cancelFarmerAction()
+      this.cancelFarmerMotion()
+      this.farmerBusy = true
 
-      const cols = this.safeGetState().grid.cols || GRID_COLS
-      const c = plotCenter(this.layout, plotId, cols)
-      const offset = this.layout.tileSize * 0.5 + this.farmerPos.size * 0.35
-      const fromLeft = this.farmer.x <= c.x
-      const besideX = fromLeft ? c.x - offset : c.x + offset
-      const targetY = c.y
+      const path = this.buildPath(this.farmerCell, target)
+      const stepDur = 170
 
-      this.farmer.setFlipX(besideX < this.farmer.x)
+      const stepTo = (index: number): void => {
+        if (!this.farmer) return
+        if (index >= path.length) {
+          this.farmerBusy = false
+          onArrive()
+          this.startFarmerIdle()
+          return
+        }
+        const cell = path[index]
+        const c = this.isoCenter(cell.col, cell.row)
+        if (c.x < this.farmer.x - 0.5) this.farmer.setFlipX(true)
+        else if (c.x > this.farmer.x + 0.5) this.farmer.setFlipX(false)
 
-      const dist = Math.hypot(besideX - this.farmer.x, targetY - this.farmer.y)
-      const dur = Math.min(560, Math.max(220, dist * 1.1))
-      const apexY = Math.min(this.farmer.y, targetY) - this.layout.tileSize * 0.35
-      const midX = (this.farmer.x + besideX) / 2
+        this.tweens.add({
+          targets: this.farmer,
+          x: c.x,
+          y: c.y,
+          duration: stepDur,
+          ease: 'Sine.easeInOut',
+          onUpdate: () => {
+            if (this.farmer) this.farmer.setDepth(this.farmer.y + 2)
+          },
+          onComplete: () => {
+            this.farmerCell = cell
+            stepTo(index + 1)
+          },
+        })
+      }
 
-      // Two-leg hop arc: up to the apex, then down beside the plot.
-      this.tweens.add({
-        targets: this.farmer,
-        x: midX,
-        y: apexY,
-        duration: dur / 2,
-        ease: 'Sine.easeOut',
-        onComplete: () => {
-          if (!this.farmer) return
-          this.tweens.add({
-            targets: this.farmer,
-            x: besideX,
-            y: targetY,
-            duration: dur / 2,
-            ease: 'Sine.easeIn',
-            onComplete: () => {
-              onArrive()
-              this.farmerReturnTimer = this.time.delayedCall(650, () =>
-                this.returnFarmerHome(),
-              )
-            },
-          })
-        },
-      })
+      stepTo(0)
     }
 
-    /** Ease the farmer back to its home spot and resume the idle bob. */
-    private returnFarmerHome(): void {
-      if (!this.farmer) return
-      this.farmer.setFlipX(this.farmerPos.x < this.farmer.x)
-      this.tweens.add({
-        targets: this.farmer,
-        x: this.farmerPos.x,
-        y: this.farmerPos.y,
-        duration: 320,
-        ease: 'Sine.easeInOut',
-        onComplete: () => this.startFarmerIdle(),
-      })
+    /** Manhattan path of cells from `from` (exclusive) to `to` (inclusive). */
+    private buildPath(from: Cell, to: Cell): Cell[] {
+      const path: Cell[] = []
+      let col = from.col
+      let row = from.row
+      while (col !== to.col) {
+        col += Math.sign(to.col - col)
+        path.push({ col, row })
+      }
+      while (row !== to.row) {
+        row += Math.sign(to.row - row)
+        path.push({ col, row })
+      }
+      return path
     }
 
     // --- rendering -----------------------------------------------------------
 
     private renderAllPlots(): void {
       const state = this.safeGetState()
-      for (const plot of state.grid.plots) {
-        this.renderPlot(plot.id)
-      }
+      for (const plot of state.grid.plots) this.renderPlot(plot.id)
     }
 
     /** Destroy a tile's crop/label/wet overlay + kill its tweens/timers. */
@@ -534,6 +513,7 @@ export function createFarmScene(
       this.labels[plotId] = null
       this.wetIcons[plotId]?.destroy()
       this.wetIcons[plotId] = null
+      this.cropShadows[plotId]?.clear()
     }
 
     private renderPlot(plotId: number, opts: { pop?: boolean } = {}): void {
@@ -542,47 +522,60 @@ export function createFarmScene(
       const bed = this.beds[plotId]
       if (!plot || !bed) return
 
+      const cols = state.grid.cols || GRID_COLS
+      const { col, row } = this.cellOf(plotId, cols)
+      const c = this.isoCenter(col, row)
+
       const cropType = plot.crop ? getCropById(plot.crop.cropTypeId) : undefined
       const visual = describePlot(plot, cropType)
 
-      const cols = state.grid.cols || GRID_COLS
-      const { x, y } = plotCenter(this.layout, plotId, cols)
-      const size = this.layout.tileSize
-
-      this.drawBed(bed, x, y, size, visual)
+      this.drawTile(bed, col, row, c.x, c.y, visual)
 
       // Reset previous crop overlay / label / wet indicator before redrawing.
       this.clearTile(plotId)
 
-      // Wet soil gets a tiny droplet indicator in the top-right corner.
+      // Wet soil gets a little water sheen sprite near the tile.
       if (visual.wet) {
-        const dropSize = Math.max(10, size * 0.18)
+        const dropSize = Math.max(12, this.layout.tileW * 0.22)
         const drop = this.makeSprite(
-          this.firstTexture('water-drop', 'water') ?? 'water-drop',
-          x + size * 0.32,
-          y - size * 0.32,
+          'water',
+          c.x + this.layout.tileW * 0.22,
+          c.y,
           dropSize,
           '💧',
-        ).setDepth(DEPTH.wetIcon)
+        )
+        drop.setDepth(c.y - 0.5)
         this.wetIcons[plotId] = drop
       }
 
       if (!visual.crop) return
 
-      const target = size * visual.crop.scale
+      const target = this.layout.tileW * (0.7 + visual.crop.scale * 0.85)
+      const feetY = c.y + this.layout.tileH * 0.12
       const crop = this.makeSprite(
-        visual.crop.textureName,
-        x,
-        y - size * 0.06,
+        this.isoCropTexture(visual.crop.textureName),
+        c.x,
+        feetY,
         target,
         visual.crop.fallbackEmoji,
-      ).setDepth(DEPTH.crop)
+        0.5,
+        1,
+      )
+      crop.setDepth(feetY)
       this.cropObjects[plotId] = crop
+
+      // Soft contact shadow under the crop.
+      const shadow = this.cropShadows[plotId]
+      if (shadow) {
+        shadow.clear()
+        shadow.setDepth(feetY - 1)
+        shadow.fillStyle(0x2f5320, 0.26)
+        shadow.fillEllipse(c.x, feetY, this.layout.tileW * 0.52, this.layout.tileH * 0.42)
+      }
 
       const baseScale = crop.scaleX
 
       if (opts.pop) {
-        // Plant pop-in: spring the sprout up from nothing, then settle to idle.
         crop.setScale(0)
         this.cropTweens[plotId] = this.tweens.add({
           targets: crop,
@@ -590,7 +583,8 @@ export function createFarmScene(
           scaleY: baseScale,
           duration: 320,
           ease: 'Back.easeOut',
-          onComplete: () => this.startCropIdle(plotId, baseScale, visual.crop?.mature ?? false),
+          onComplete: () =>
+            this.startCropIdle(plotId, baseScale, visual.crop?.mature ?? false),
         })
       } else {
         this.startCropIdle(plotId, baseScale, visual.crop.mature)
@@ -598,15 +592,15 @@ export function createFarmScene(
 
       if (visual.label) {
         const label = this.add
-          .text(x, y + size / 2 - 6, visual.label, {
+          .text(c.x, c.y + this.layout.tileH * 0.55, visual.label, {
             fontFamily: 'Arial',
-            fontSize: `${Math.max(10, Math.round(size * 0.16))}px`,
+            fontSize: `${Math.max(10, Math.round(this.layout.tileW * 0.18))}px`,
             color: '#ffffff',
-            backgroundColor: '#00000066',
-            padding: { x: 3, y: 1 },
+            backgroundColor: '#00000055',
+            padding: { x: 4, y: 1 },
           })
-          .setOrigin(0.5, 1)
-          .setDepth(DEPTH.label)
+          .setOrigin(0.5, 0.5)
+          .setDepth(feetY + 1)
         this.labels[plotId] = label
       }
     }
@@ -619,28 +613,26 @@ export function createFarmScene(
     private startCropIdle(plotId: number, baseScale: number, mature: boolean): void {
       const crop = this.cropObjects[plotId]
       if (!crop) return
-
       this.cropTweens[plotId]?.remove()
 
       if (mature) {
         const baseY = crop.y
         this.cropTweens[plotId] = this.tweens.add({
           targets: crop,
-          y: baseY - Math.max(3, this.layout.tileSize * 0.06),
+          y: baseY - Math.max(3, this.layout.tileH * 0.12),
           angle: { from: -3, to: 3 },
           duration: 1200,
           yoyo: true,
           repeat: -1,
           ease: 'Sine.easeInOut',
         })
-        // Occasional sparkle near a harvest-ready crop.
         this.sparkleTimers[plotId]?.remove(false)
         this.sparkleTimers[plotId] = this.time.addEvent({
           delay: 2200,
           loop: true,
           callback: () => {
-            const c = this.cropObjects[plotId]
-            if (c && c.active) this.emitSparkle(c.x, c.y, 4)
+            const cr = this.cropObjects[plotId]
+            if (cr && cr.active) this.emitSparkle(cr.x, cr.y - this.layout.tileH * 0.4, 4)
           },
         })
       } else {
@@ -656,84 +648,205 @@ export function createFarmScene(
       }
     }
 
-    /** Paint a raised garden bed: shadow, soil, top highlight, furrows, border. */
-    private drawBed(
+    /**
+     * Paint one isometric tile into `bed`: a raised grass diamond (checkerboard
+     * of two greens) with darker south side faces (the 3D "extrude"), then — for
+     * tilled/planted plots — an inset soil diamond with a top highlight + furrow
+     * lines following the iso axes, and a wet sheen when freshly watered.
+     */
+    private drawTile(
       bed: Phaser.GameObjects.Graphics,
+      col: number,
+      row: number,
       cx: number,
       cy: number,
-      size: number,
       visual: ReturnType<typeof describePlot>,
     ): void {
       bed.clear()
-      const left = cx - size / 2
-      const top = cy - size / 2
-      const radius = Math.max(4, Math.round(size * 0.12))
+      const w = this.layout.tileW
+      const h = this.layout.tileH
+      const ext = Math.max(4, Math.round(h * 0.5))
 
-      // Soft drop shadow underneath the bed.
-      bed.fillStyle(shadeColor(visual.bgColor, -0.5), 0.3)
-      bed.fillRoundedRect(left, top + Math.max(3, size * 0.06), size, size, radius)
+      const top = { x: cx, y: cy - h / 2 }
+      const right = { x: cx + w / 2, y: cy }
+      const bottom = { x: cx, y: cy + h / 2 }
+      const left = { x: cx - w / 2, y: cy }
 
-      // The soil bed itself.
+      // South-west + south-east side faces (the raised block). Front tiles draw
+      // their top diamond over these, so only the field's front edges show.
+      bed.fillStyle(GRASS_SIDE, 1)
+      bed.fillPoints(
+        [left, bottom, { x: bottom.x, y: bottom.y + ext }, { x: left.x, y: left.y + ext }],
+        true,
+      )
+      bed.fillPoints(
+        [bottom, right, { x: right.x, y: right.y + ext }, { x: bottom.x, y: bottom.y + ext }],
+        true,
+      )
+
+      // Grass top (checkerboard of two greens for a "tended garden" feel).
+      const grass = (col + row) % 2 === 0 ? GRASS_LIGHT : GRASS_DARK
+      bed.fillStyle(grass, 1)
+      bed.fillPoints([top, right, bottom, left], true)
+      // Thin lighter rim along the back edges for a soft top highlight.
+      bed.lineStyle(Math.max(1, Math.round(h * 0.06)), GRASS_TOP_EDGE, 0.7)
+      bed.lineBetween(left.x, left.y, top.x, top.y)
+      bed.lineBetween(top.x, top.y, right.x, right.y)
+
+      if (!visual.furrows && !visual.crop) return
+
+      // Inset soil diamond for tilled/planted beds.
+      const inset = 0.84
+      const sTop = this.lerp(top, { x: cx, y: cy }, 1 - inset)
+      const sRight = this.lerp(right, { x: cx, y: cy }, 1 - inset)
+      const sBottom = this.lerp(bottom, { x: cx, y: cy }, 1 - inset)
+      const sLeft = this.lerp(left, { x: cx, y: cy }, 1 - inset)
+
       bed.fillStyle(visual.bgColor, 1)
-      bed.fillRoundedRect(left, top, size, size, radius)
+      bed.fillPoints([sTop, sRight, sBottom, sLeft], true)
+      // Lighter highlight on the upper-back half of the soil.
+      bed.fillStyle(shadeColor(visual.bgColor, 0.28), 0.9)
+      bed.fillPoints([sTop, sRight, { x: cx, y: cy }, sLeft], true)
 
-      // Lighter highlight band across the upper third (rounded top, flat bottom).
-      bed.fillStyle(shadeColor(visual.bgColor, 0.35), 1)
-      bed.fillRoundedRect(left, top, size, size * 0.34, {
-        tl: radius,
-        tr: radius,
-        bl: 0,
-        br: 0,
-      })
-
-      // Furrow lines across the lower soil for tilled/planted beds.
+      // Furrow lines parallel to the NE soil edge.
       if (visual.furrows) {
-        const furrowColor = shadeColor(visual.bgColor, -0.25)
-        bed.lineStyle(Math.max(1, Math.round(size * 0.03)), furrowColor, 0.9)
-        const startY = top + size * 0.5
-        const stepY = size * 0.16
-        const inset = size * 0.16
-        for (let i = 0; i < 3; i += 1) {
-          const ly = startY + stepY * i
-          bed.lineBetween(left + inset, ly, left + size - inset, ly)
+        const furrow = shadeColor(visual.bgColor, -0.28)
+        bed.lineStyle(Math.max(1, Math.round(h * 0.05)), furrow, 0.85)
+        for (let i = 1; i <= 3; i += 1) {
+          const t = i / 4
+          const a = this.lerp(sTop, sLeft, t)
+          const b = this.lerp(sRight, sBottom, t)
+          bed.lineBetween(a.x, a.y, b.x, b.y)
         }
       }
 
-      // Border (gold + thicker when the crop is mature).
-      bed.lineStyle(visual.borderWidth, visual.borderColor, 1)
-      bed.strokeRoundedRect(left, top, size, size, radius)
+      // Wet sheen: a soft light-blue highlight across the soil.
+      if (visual.wet) {
+        bed.fillStyle(0x86c5ff, 0.22)
+        bed.fillPoints([sTop, sRight, sBottom, sLeft], true)
+      }
+    }
+
+    // --- decor (depth-sorted by feet-Y so it occludes correctly) -------------
+
+    /** Scenery that sits BEHIND the field (barn + back fence): low feet-Y. */
+    private drawDecorBack(cols: number, rows: number): void {
+      // Barn at the back corner (north / top of the diamond).
+      const barnCell = this.isoCenter(-0.9, -0.9)
+      this.decorObjects.push(
+        this.makeSprite('barn', barnCell.x, barnCell.y, this.layout.tileW * 2.4, '🏠', 0.5, 1)
+          .setDepth(barnCell.y),
+      )
+
+      // Back-edge fence posts framing the two north edges of the field.
+      const fenceSize = Math.max(20, this.layout.tileW * 0.5)
+      for (let col = 0; col < cols; col += 1) {
+        const p = this.isoCenter(col, -0.7)
+        this.decorObjects.push(
+          this.makeSprite('fence', p.x, p.y, fenceSize, '🪵', 0.5, 1).setDepth(p.y),
+        )
+      }
+      for (let row = 0; row < rows; row += 1) {
+        const p = this.isoCenter(-0.7, row)
+        this.decorObjects.push(
+          this.makeSprite('fence', p.x, p.y, fenceSize, '🪵', 0.5, 1).setDepth(p.y),
+        )
+      }
+    }
+
+    /** Scenery + animals around/in front of the field: feet-Y depth-sorted. */
+    private drawDecorFront(cols: number, rows: number): void {
+      // Trees flanking the field.
+      const treeL = this.isoCenter(-1.4, rows - 1)
+      this.decorObjects.push(
+        this.makeSprite('tree', treeL.x, treeL.y, this.layout.tileW * 2.0, '🌳', 0.5, 1)
+          .setDepth(treeL.y),
+      )
+      const treeR = this.isoCenter(cols - 1, -1.4)
+      this.decorObjects.push(
+        this.makeSprite('tree', treeR.x, treeR.y, this.layout.tileW * 1.8, '🌳', 0.5, 1)
+          .setDepth(treeR.y),
+      )
+
+      // A cow + a chicken wandering on the grass outside the plots.
+      const cowPos = this.isoCenter(-1.7, rows + 0.2)
+      const cow = this.makeSprite('cow', cowPos.x, cowPos.y, this.layout.tileW * 1.3, '🐄', 0.5, 1)
+        .setDepth(cowPos.y)
+      this.decorObjects.push(cow)
+      this.addWander(cow, this.layout.tileW * 0.6)
+
+      const chickPos = this.isoCenter(cols + 0.4, rows - 0.6)
+      const chicken = this.makeSprite(
+        'chicken',
+        chickPos.x,
+        chickPos.y,
+        this.layout.tileW * 0.8,
+        '🐔',
+        0.5,
+        1,
+      ).setDepth(chickPos.y)
+      this.decorObjects.push(chicken)
+      this.addWander(chicken, this.layout.tileW * 0.8)
+    }
+
+    /** Gentle back-and-forth wander for an animal sprite (flips with direction). */
+    private addWander(sprite: Sprite, range: number): void {
+      const baseX = sprite.x
+      const proxy = { v: 0 }
+      const tween = this.tweens.add({
+        targets: proxy,
+        v: 1,
+        duration: 2600 + Math.random() * 1200,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+        onUpdate: () => {
+          if (!sprite.active) return
+          sprite.x = baseX + (proxy.v - 0.5) * range
+          sprite.setFlipX(proxy.v > 0.5)
+        },
+      })
+      this.decorTweens.push(tween)
     }
 
     // --- input routing -------------------------------------------------------
 
-    private handlePlotPointer(plotId: number): void {
-      // Walk the farmer over first; the action runs on arrival (routing below is
-      // identical to operating directly on the pure systems).
+    private handlePointer(pointer: Phaser.Input.Pointer): void {
+      const state = this.safeGetState()
+      const cols = state.grid.cols || GRID_COLS
+      const rows = state.grid.rows || GRID_ROWS
+      const { col, row } = screenToIso(
+        pointer.x,
+        pointer.y,
+        this.layout.originX,
+        this.layout.originY,
+        this.layout.tileW,
+        this.layout.tileH,
+      )
+      if (col < 0 || col >= cols || row < 0 || row >= rows) return
+      if (this.farmerBusy) return
+
+      const plotId = row * cols + col
       const tool = bridge.getSelectedTool()
-      this.moveFarmerToPlot(plotId, () => this.performToolAction(tool, plotId))
+      this.moveFarmerToCell({ col, row }, () => this.performToolAction(tool, plotId))
     }
 
     /** Route the selected tool to its pure system (no rule logic here). */
     private performToolAction(tool: FarmTool, plotId: number): void {
       const state = this.safeGetState()
       switch (tool) {
-        case 'hoe': {
+        case 'hoe':
           this.applyResult(till(state, plotId), plotId, 'till')
           break
-        }
-        case 'seed': {
-          const seedId = bridge.getSelectedSeed()
-          this.applyResult(plant(state, plotId, seedId), plotId, 'plant')
+        case 'seed':
+          this.applyResult(plant(state, plotId, bridge.getSelectedSeed()), plotId, 'plant')
           break
-        }
-        case 'water': {
+        case 'water':
           this.applyResult(water(state, plotId), plotId, 'water')
           break
-        }
-        case 'harvest': {
+        case 'harvest':
           this.handleHarvest(state, plotId)
           break
-        }
         default:
           break
       }
@@ -759,17 +872,13 @@ export function createFarmScene(
       const result = harvest(state, plotId, getCropById)
       if (result.ok) {
         bridge.setState(result.state)
-        // Fly the harvested crop up toward the HUD before redrawing empty soil.
         this.popHarvestCrop(plotId)
         this.renderPlot(plotId)
         bridge.onHarvest(result.word)
         bridge.onAction?.('harvest')
         return
       }
-
-      if (isInventoryFullReason(result.reason)) {
-        bridge.onInventoryFull()
-      }
+      if (isInventoryFullReason(result.reason)) bridge.onInventoryFull()
       this.flashPlot(plotId)
     }
 
@@ -777,18 +886,18 @@ export function createFarmScene(
 
     private playActionEffect(kind: string, plotId: number): void {
       const cols = this.safeGetState().grid.cols || GRID_COLS
-      const { x, y } = plotCenter(this.layout, plotId, cols)
-      const size = this.layout.tileSize
+      const { col, row } = this.cellOf(plotId, cols)
+      const c = this.isoCenter(col, row)
 
       switch (kind) {
         case 'till':
-          this.emitDust(x, y, 14)
+          this.emitDust(c.x, c.y, 14)
           break
         case 'plant':
-          this.emitDust(x, y + size * 0.2, 6)
+          this.emitDust(c.x, c.y + this.layout.tileH * 0.2, 6)
           break
         case 'water':
-          this.emitWater(x, y, size)
+          this.emitWater(c.x, c.y, this.layout.tileW)
           break
         default:
           break
@@ -810,20 +919,20 @@ export function createFarmScene(
 
     /** Blue droplets falling onto the tile (watering). */
     private emitWater(x: number, y: number, size: number): void {
-      const tex = this.firstTexture('water-drop', 'water')
-      const fromY = y - size * 0.55
+      const tex = this.firstTexture('water')
+      const fromY = y - size * 0.5
       if (tex) {
         this.burst(tex, x, fromY, 10, 650, {
-          x: { min: -size * 0.32, max: size * 0.32 },
+          x: { min: -size * 0.3, max: size * 0.3 },
           speedY: { min: 30, max: 80 },
           gravityY: 320,
           lifespan: 650,
-          scale: { start: size / 900, end: size / 1800 },
+          scale: { start: size / 1400, end: size / 2800 },
           alpha: { start: 0.95, end: 0 },
         })
       } else {
         this.burst(PARTICLE_DOT, x, fromY, 10, 650, {
-          x: { min: -size * 0.32, max: size * 0.32 },
+          x: { min: -size * 0.3, max: size * 0.3 },
           speedY: { min: 30, max: 90 },
           gravityY: 320,
           lifespan: 650,
@@ -836,16 +945,15 @@ export function createFarmScene(
 
     /** Sparkle/star burst (harvest + occasional mature shimmer). */
     private emitSparkle(x: number, y: number, count: number): void {
-      const tex = this.firstTexture('sparkle', 'star')
+      const tex = this.firstTexture('star')
       if (tex) {
         this.burst(tex, x, y, count, 750, {
           speed: { min: 60, max: 200 },
           angle: { min: 0, max: 360 },
           lifespan: 750,
-          scale: { start: 0.6, end: 0 },
+          scale: { start: 0.18, end: 0 },
           alpha: { start: 1, end: 0 },
           rotate: { min: 0, max: 360 },
-          blendMode: 'ADD',
         })
       } else {
         this.burst(PARTICLE_DOT, x, y, count, 750, {
@@ -860,28 +968,49 @@ export function createFarmScene(
       }
     }
 
+    /** Coins burst (harvest reward pop). */
+    private emitCoins(x: number, y: number, count: number): void {
+      const tex = this.firstTexture('coins')
+      if (tex) {
+        this.burst(tex, x, y, count, 800, {
+          speed: { min: 80, max: 220 },
+          angle: { min: 250, max: 290 },
+          gravityY: 360,
+          lifespan: 800,
+          scale: { start: 0.16, end: 0.05 },
+          alpha: { start: 1, end: 0 },
+          rotate: { min: -30, max: 30 },
+        })
+      } else {
+        this.emitSparkle(x, y, count)
+      }
+    }
+
     /**
-     * Detach the current crop sprite (without destroying it) and tween it up
-     * toward the HUD basket while fading, then destroy it. Also bursts sparkles.
+     * Detach the current crop sprite (without destroying it via clearTile) and
+     * tween it up toward the HUD basket while fading, then destroy it. Also
+     * bursts coins + sparkles for a juicy harvest.
      */
     private popHarvestCrop(plotId: number): void {
       const crop = this.cropObjects[plotId]
-      // Stop the tile's idle tween/sparkle timer + release ownership so the
-      // upcoming renderPlot (empty soil) won't destroy the flying sprite.
       this.cropTweens[plotId]?.remove()
       this.cropTweens[plotId] = null
       this.sparkleTimers[plotId]?.remove(false)
       this.sparkleTimers[plotId] = null
       this.cropObjects[plotId] = null
 
-      this.emitSparkle(crop?.x ?? 0, crop?.y ?? 0, 16)
+      const x = crop?.x ?? 0
+      const y = crop?.y ?? 0
+      this.emitCoins(x, y, 12)
+      this.emitSparkle(x, y, 14)
 
       if (!crop) return
       this.tweens.killTweensOf(crop)
+      crop.setDepth(DEPTH.flyUp)
       const baseScale = crop.scaleX
       this.tweens.add({
         targets: crop,
-        y: crop.y - this.scale.height * 0.18,
+        y: crop.y - this.scale.height * 0.2,
         x: this.scale.width * 0.5,
         scaleX: baseScale * 1.25,
         scaleY: baseScale * 1.25,
@@ -892,22 +1021,31 @@ export function createFarmScene(
       })
     }
 
-    /** Gentle red flash to signal an invalid action; never throws. */
+    /** Gentle red diamond flash to signal an invalid action; never throws. */
     private flashPlot(plotId: number): void {
       const cols = this.safeGetState().grid.cols || GRID_COLS
-      const { x, y } = plotCenter(this.layout, plotId, cols)
-      const size = this.layout.tileSize
-      const radius = Math.max(4, Math.round(size * 0.12))
+      const { col, row } = this.cellOf(plotId, cols)
+      const c = this.isoCenter(col, row)
+      const w = this.layout.tileW
+      const h = this.layout.tileH
 
       const overlay = this.add.graphics().setDepth(DEPTH.flash)
       overlay.fillStyle(0xef4444, 0.5)
-      overlay.fillRoundedRect(x - size / 2, y - size / 2, size, size, radius)
+      overlay.fillPoints(
+        [
+          { x: c.x, y: c.y - h / 2 },
+          { x: c.x + w / 2, y: c.y },
+          { x: c.x, y: c.y + h / 2 },
+          { x: c.x - w / 2, y: c.y },
+        ],
+        true,
+      )
       this.flashOverlays.add(overlay)
 
       this.tweens.add({
         targets: overlay,
         alpha: 0,
-        duration: 260,
+        duration: 280,
         ease: 'Quad.easeOut',
         onComplete: () => {
           this.flashOverlays.delete(overlay)
@@ -917,6 +1055,39 @@ export function createFarmScene(
     }
 
     // --- helpers -------------------------------------------------------------
+
+    /** Grid cell for a plot id given the column count. */
+    private cellOf(plotId: number, cols: number): Cell {
+      const safeCols = Math.max(1, cols)
+      return { col: plotId % safeCols, row: Math.floor(plotId / safeCols) }
+    }
+
+    /** Screen-space center of a (possibly fractional) iso cell. */
+    private isoCenter(col: number, row: number): { x: number; y: number } {
+      return isoToScreen(
+        col,
+        row,
+        this.layout.originX,
+        this.layout.originY,
+        this.layout.tileW,
+        this.layout.tileH,
+      )
+    }
+
+    /** Linear interpolation between two screen points. */
+    private lerp(
+      a: { x: number; y: number },
+      b: { x: number; y: number },
+      t: number,
+    ): { x: number; y: number } {
+      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
+    }
+
+    /** Map a growth-stage texture name onto the iso art set. */
+    private isoCropTexture(name: string): string {
+      // describePlot uses 'bush' for the mid stage; the iso set ships 'leaf'.
+      return name === 'bush' ? 'leaf' : name
+    }
 
     /**
      * Fire a one-shot particle burst from a generated/loaded texture, then clean

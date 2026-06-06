@@ -14,6 +14,10 @@ import {
   shadeColor,
   computeDecorLayout,
   farmerHome,
+  isoToScreen,
+  screenToIso,
+  isoGridLayout,
+  tileDepth,
 } from './farmSceneView'
 import { GRID_COLS, GRID_ROWS, GROWTH_STAGE_MAX } from '../constants'
 import type { CropType, Plot } from '../types'
@@ -342,5 +346,119 @@ describe('farmerHome', () => {
     expect(home.x).toBeLessThan(500)
     expect(home.y).toBeGreaterThan(bg.skyHeight)
     expect(home.size).toBeGreaterThan(0)
+  })
+})
+
+describe('isoToScreen', () => {
+  it('projects the origin tile to the origin point', () => {
+    const p = isoToScreen(0, 0, 500, 200, 100, 50)
+    expect(p.x).toBe(500)
+    expect(p.y).toBe(200)
+  })
+
+  it('moves +col down-right and +row down-left', () => {
+    const origin = isoToScreen(0, 0, 0, 0, 100, 50)
+    const rightCol = isoToScreen(1, 0, 0, 0, 100, 50)
+    const downRow = isoToScreen(0, 1, 0, 0, 100, 50)
+    // +col: x increases, y increases
+    expect(rightCol.x).toBeGreaterThan(origin.x)
+    expect(rightCol.y).toBeGreaterThan(origin.y)
+    // +row: x decreases, y increases
+    expect(downRow.x).toBeLessThan(origin.x)
+    expect(downRow.y).toBeGreaterThan(origin.y)
+  })
+
+  it('uses a 2:1 diamond (half tile per step)', () => {
+    const p = isoToScreen(2, 0, 0, 0, 100, 50)
+    expect(p.x).toBe(100) // (2 - 0) * 100/2
+    expect(p.y).toBe(50) // (2 + 0) * 50/2
+  })
+})
+
+describe('screenToIso', () => {
+  it('is the inverse of isoToScreen at tile centers', () => {
+    const tileW = 96
+    const tileH = 48
+    const originX = 640
+    const originY = 180
+    for (let col = 0; col < 6; col += 1) {
+      for (let row = 0; row < 4; row += 1) {
+        const p = isoToScreen(col, row, originX, originY, tileW, tileH)
+        const cell = screenToIso(p.x, p.y, originX, originY, tileW, tileH)
+        expect(cell.col).toBe(col)
+        expect(cell.row).toBe(row)
+      }
+    }
+  })
+
+  it('rounds a point near a tile center to that tile', () => {
+    const tileW = 100
+    const tileH = 50
+    const center = isoToScreen(3, 2, 400, 100, tileW, tileH)
+    const cell = screenToIso(center.x + 4, center.y - 3, 400, 100, tileW, tileH)
+    expect(cell).toEqual({ col: 3, row: 2 })
+  })
+
+  it('never returns NaN for a degenerate (zero) tile size', () => {
+    const cell = screenToIso(120, 90, 0, 0, 0, 0)
+    expect(Number.isFinite(cell.col)).toBe(true)
+    expect(Number.isFinite(cell.row)).toBe(true)
+  })
+})
+
+describe('tileDepth', () => {
+  it('increases toward the front (south) of the diamond', () => {
+    expect(tileDepth(0, 0)).toBe(0)
+    expect(tileDepth(5, 3)).toBe(8)
+    expect(tileDepth(1, 0)).toBeLessThan(tileDepth(1, 1))
+  })
+})
+
+describe('isoGridLayout', () => {
+  it('produces a positive 2:1 tile and a centered origin', () => {
+    const layout = isoGridLayout(1280, 720, GRID_COLS, GRID_ROWS)
+    expect(layout.tileW).toBeGreaterThan(0)
+    expect(layout.tileH).toBe(Math.floor(layout.tileW / 2))
+    expect(layout.originX).toBeGreaterThan(0)
+    expect(layout.originY).toBeGreaterThan(0)
+  })
+
+  it('never returns NaN or sub-minimum tiles for degenerate sizes', () => {
+    const layout = isoGridLayout(0, 0, GRID_COLS, GRID_ROWS)
+    expect(Number.isFinite(layout.tileW)).toBe(true)
+    expect(layout.tileW).toBeGreaterThanOrEqual(8)
+    expect(layout.tileH).toBeGreaterThanOrEqual(4)
+  })
+
+  it('fits the whole diamond grid below the HUD inset', () => {
+    const w = 1024
+    const h = 768
+    const topInset = 120
+    const layout = isoGridLayout(w, h, GRID_COLS, GRID_ROWS, { topInset })
+
+    // Every projected tile center stays within the screen, below the inset.
+    for (let col = 0; col < GRID_COLS; col += 1) {
+      for (let row = 0; row < GRID_ROWS; row += 1) {
+        const p = isoToScreen(
+          col,
+          row,
+          layout.originX,
+          layout.originY,
+          layout.tileW,
+          layout.tileH,
+        )
+        // Allow half a tile of overhang for the diamond's points.
+        expect(p.x).toBeGreaterThanOrEqual(-1)
+        expect(p.x).toBeLessThanOrEqual(w + 1)
+        expect(p.y - layout.tileH / 2).toBeGreaterThanOrEqual(topInset - 1)
+        expect(p.y + layout.tileH / 2).toBeLessThanOrEqual(h + 1)
+      }
+    }
+  })
+
+  it('reserves the requested top inset for the HUD', () => {
+    const layout = isoGridLayout(800, 600, GRID_COLS, GRID_ROWS, { topInset: 150 })
+    // Top point of tile (0,0) must sit at or below the inset.
+    expect(layout.originY - layout.tileH / 2).toBeGreaterThanOrEqual(149)
   })
 })

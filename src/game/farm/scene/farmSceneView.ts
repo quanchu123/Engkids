@@ -450,3 +450,137 @@ export function farmerHome(
     size,
   }
 }
+
+// --- isometric projection (pure) --------------------------------------------
+//
+// The farm field is rendered as a diamond (2:1) isometric grid. These helpers
+// compute the screen geometry for that projection so the Phaser scene stays a
+// thin renderer. `tileW` is the diamond's full width; `tileH = tileW / 2` is its
+// full height. A tile at grid (col, row) projects to a screen point; the inverse
+// maps a tap back to the nearest tile; `isoGridLayout` chooses a `tileW` that
+// fits the whole diamond on screen (with a top inset reserved for the HUD); and
+// `tileDepth` gives a painter's-order key so nearer tiles overlap farther ones.
+
+/** A point in screen pixels. */
+export interface IsoPoint {
+  x: number
+  y: number
+}
+
+/** A grid coordinate (column, row). */
+export interface IsoCell {
+  col: number
+  row: number
+}
+
+/** Geometry for an isometric diamond grid centered on screen. */
+export interface IsoLayout {
+  /** Full width (px) of one diamond tile. */
+  tileW: number
+  /** Full height (px) of one diamond tile (= tileW / 2). */
+  tileH: number
+  /** Screen x of the tile (0, 0) center. */
+  originX: number
+  /** Screen y of the tile (0, 0) center. */
+  originY: number
+}
+
+/**
+ * Project a grid cell (col, row) to its screen-space tile center. The classic
+ * diamond projection: moving +col goes down-right, +row goes down-left. Pure.
+ */
+export function isoToScreen(
+  col: number,
+  row: number,
+  originX: number,
+  originY: number,
+  tileW: number,
+  tileH: number,
+): IsoPoint {
+  return {
+    x: originX + (col - row) * (tileW / 2),
+    y: originY + (col + row) * (tileH / 2),
+  }
+}
+
+/**
+ * Inverse of {@link isoToScreen}: map a screen point to the nearest grid cell
+ * (rounded). Used to turn a tap into the plot the player meant. Guards against a
+ * degenerate (zero) tile size so it never divides by zero or returns NaN. Pure.
+ */
+export function screenToIso(
+  px: number,
+  py: number,
+  originX: number,
+  originY: number,
+  tileW: number,
+  tileH: number,
+): IsoCell {
+  const safeW = tileW === 0 ? 1 : tileW
+  const safeH = tileH === 0 ? 1 : tileH
+  const dx = px - originX
+  const dy = py - originY
+  // Solve the 2x2 system from isoToScreen for (col, row):
+  //   dx = (col - row) * tileW/2  ->  (col - row) = 2*dx/tileW
+  //   dy = (col + row) * tileH/2  ->  (col + row) = 2*dy/tileH
+  const a = dx / safeW // = (col - row) / 2
+  const b = dy / safeH // = (col + row) / 2
+  return {
+    col: Math.round(b + a),
+    row: Math.round(b - a),
+  }
+}
+
+/** Painter's-order depth key for a tile: farther (smaller col+row) draws first. */
+export function tileDepth(col: number, row: number): number {
+  return col + row
+}
+
+/**
+ * Choose a diamond `tileW` so the whole `cols x rows` isometric grid fits on a
+ * `screenW x screenH` screen, reserving `topInset` for the React HUD. Returns
+ * the tile size plus the origin (screen position of tile (0, 0)) so the diamond
+ * is horizontally centered and vertically centered in the area below the HUD.
+ * Inputs are clamped so degenerate sizes never produce NaN/negative tiles. Pure.
+ */
+export function isoGridLayout(
+  screenW: number,
+  screenH: number,
+  cols: number,
+  rows: number,
+  opts: { padding?: number; topInset?: number; bottomInset?: number } = {},
+): IsoLayout {
+  const safeW = Math.max(1, screenW)
+  const safeH = Math.max(1, screenH)
+  const safeCols = Math.max(1, Math.floor(cols))
+  const safeRows = Math.max(1, Math.floor(rows))
+
+  const padding = Math.max(0, opts.padding ?? 32)
+  const topInset = Math.max(0, opts.topInset ?? 120)
+  const bottomInset = Math.max(0, opts.bottomInset ?? 48)
+
+  const availW = Math.max(1, safeW - padding * 2)
+  const availH = Math.max(1, safeH - topInset - bottomInset)
+
+  // The diamond of tiles (including the half-tile edges) spans:
+  //   width  = (cols + rows) * tileW / 2
+  //   height = (cols + rows) * tileH / 2 = (cols + rows) * tileW / 4
+  const span = safeCols + safeRows
+  const tileFromW = (2 * availW) / span
+  const tileFromH = (4 * availH) / span
+  const tileW = Math.max(8, Math.floor(Math.min(tileFromW, tileFromH)))
+  const tileH = Math.max(4, Math.floor(tileW / 2))
+
+  // Center the diamond horizontally. The x-extent of tile centers runs from
+  // -(rows-1)*tileW/2 to (cols-1)*tileW/2, whose midpoint is (cols-rows)*tileW/4.
+  const originX = Math.round(safeW / 2 - ((safeCols - safeRows) * tileW) / 4)
+
+  // Center vertically within the area below the HUD; the top point of the
+  // diamond sits half a tile above tile (0, 0), so nudge down by tileH/2.
+  const gridHeight = (span * tileH) / 2
+  const originY = Math.round(
+    topInset + Math.max(0, (availH - gridHeight) / 2) + tileH / 2,
+  )
+
+  return { tileW, tileH, originX, originY }
+}
