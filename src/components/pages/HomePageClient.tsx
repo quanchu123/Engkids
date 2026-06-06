@@ -8,7 +8,6 @@ import { useAppStore } from '@/store/useAppStore';
 import { Story, Video } from '@/types';
 import Header from '@/components/layout/Header';
 import BackgroundMusic from '@/components/common/BackgroundMusic';
-import TodayHero from '@/components/pages/TodayHero';
 import { StoryFallbackArtwork, VideoFallbackArtwork } from '@/components/common/FallbackArtwork';
 import { DecorIcon } from '@/components/common/DecorIcon';
 
@@ -97,7 +96,6 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
     <div className="home-shell min-h-screen bg-gradient-to-b from-amber-50 via-pink-50 to-blue-50">
       <Header />
       <BackgroundMusic />
-      <TodayHero />
 
       <section className="relative overflow-hidden px-4 pb-2 pt-6">
         <div className="max-w-6xl mx-auto">
