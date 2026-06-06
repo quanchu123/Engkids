@@ -8,6 +8,7 @@ import {
   BookOpen,
   Clapperboard,
   Gamepad2,
+  Gift,
   Home,
   LogIn,
   LogOut,
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { onAuthStateChange, signOut, User } from '@/lib/auth-client';
+import AvatarDisplay from '@/components/learning/AvatarDisplay';
 
 const NAV_ITEMS = [
   { name: 'Trang chủ', path: '/', icon: Home, tone: 'text-sky-600 bg-sky-50 border-sky-100' },
@@ -27,6 +29,7 @@ const NAV_ITEMS = [
   { name: 'Nhạc', path: '/music', icon: Music, tone: 'text-rose-600 bg-rose-50 border-rose-100' },
   { name: 'Game', path: '/games', icon: Gamepad2, tone: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
   { name: 'Tiến trình', path: '/progress', icon: Star, tone: 'text-amber-600 bg-amber-50 border-amber-100' },
+  { name: 'Cửa hàng', path: '/shop', icon: Gift, tone: 'text-fuchsia-600 bg-fuchsia-50 border-fuchsia-100' },
 ];
 
 function Header() {
@@ -104,6 +107,13 @@ function Header() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          <Link
+            href="/shop"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/35 transition-transform hover:scale-105"
+            aria-label="Cửa hàng phần thưởng"
+          >
+            <AvatarDisplay size="sm" />
+          </Link>
           <Link
             href="/progress"
             className="flex min-h-[44px] items-center gap-2 rounded-full bg-white px-3 text-sm font-black text-purple-600 shadow-sm transition-all hover:scale-105 hover:shadow-lg"

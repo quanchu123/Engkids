@@ -10,6 +10,9 @@ import { pronounceWord } from '@/services/dictionary';
 import { getSupabaseClient } from '@/lib/auth-client';
 import { getVocabularyStats } from '@/services/vocabulary';
 import { Story } from '@/types';
+import DailyQuestCard from '@/components/learning/DailyQuestCard';
+import StreakCard from '@/components/learning/StreakCard';
+import BadgeGrid from '@/components/learning/BadgeGrid';
 
 type TabType = 'overview' | 'vocabulary' | 'stories' | 'achievements';
 
@@ -30,7 +33,7 @@ const TABS: Array<{ id: TabType; label: string; icon: string }> = [
 ];
 
 export default function ProgressPage() {
-  const { progress, unsaveWord, toggleWordFavorite } = useAppStore();
+  const { progress, unsaveWord, toggleWordFavorite, updateStreak } = useAppStore();
   const [stories, setStories] = useState<Story[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [vocabFilter, setVocabFilter] = useState<'all' | 'favorites'>('all');
@@ -48,6 +51,11 @@ export default function ProgressPage() {
   useEffect(() => {
     getAllStories().then(setStories);
   }, []);
+
+  // Refresh the learning streak once when the progress page mounts.
+  useEffect(() => {
+    updateStreak();
+  }, [updateStreak]);
 
   useEffect(() => {
     let active = true;
@@ -224,6 +232,28 @@ export default function ProgressPage() {
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <SrsCard stats={srsStats} />
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <DailyQuestCard />
+                <StreakCard />
+              </div>
+
+              <div className="toy-panel p-4">
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/learn/today" className="kid-chip px-4 py-2 text-sm font-black text-violet-700">
+                    Hôm nay học gì 📅
+                  </Link>
+                  <Link href="/shop" className="kid-chip px-4 py-2 text-sm font-black text-violet-700">
+                    Cửa hàng 🎁
+                  </Link>
+                  <Link href="/parent" className="kid-chip px-4 py-2 text-sm font-black text-violet-700">
+                    Phụ huynh 👨‍👩‍👧
+                  </Link>
+                  <Link href="/progress/certificate" className="kid-chip px-4 py-2 text-sm font-black text-violet-700">
+                    Chứng nhận 🏅
+                  </Link>
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 <MetricCard title="Tổng sao" value={progress.totalStars} tint="from-amber-400 to-orange-400" />
@@ -544,6 +574,8 @@ export default function ProgressPage() {
                   />
                 </div>
               </div>
+
+              <BadgeGrid />
 
               <div className="grid gap-4 md:grid-cols-2">
                 {achievements.map((item) => (

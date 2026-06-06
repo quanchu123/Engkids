@@ -22,6 +22,7 @@ import {
 } from '@/lib/progress';
 import { trackEvent } from '@/lib/analytics';
 import { syncSavedWordToSRS } from '@/services/vocabulary';
+import { AvatarCategory, EquippedAvatar, getDefaultEquipped, getItem } from '@/lib/avatar';
 
 const MAX_WORD_INTERACTIONS = 2000;
 
@@ -40,6 +41,11 @@ interface AppState {
   hydrated: boolean;
   wordInteractions: Map<string, WordInteraction>;
   settings: UserSettings;
+  equippedAvatar: EquippedAvatar;
+  ownedAvatarItems: string[];
+  equipAvatarItem: (category: AvatarCategory, itemId: string) => void;
+  unlockAvatarItem: (itemId: string) => void;
+  isAvatarItemOwned: (itemId: string) => boolean;
   markPanelViewed: (storyId: string, panelId: number) => void;
   completeStory: (storyId: string, stars: number) => void;
   saveWord: (word: string, vi: string, isFavorite?: boolean, ipa?: string, storyId?: string, exampleSentence?: string) => void;
@@ -106,6 +112,29 @@ export const useAppStore = create<AppState>()(
       hydrated: false,
       settings: DEFAULT_SETTINGS,
       wordInteractions: new Map(),
+      equippedAvatar: getDefaultEquipped(),
+      ownedAvatarItems: [],
+
+      unlockAvatarItem: (itemId) => {
+        set((state) => {
+          if (state.ownedAvatarItems.includes(itemId)) return state;
+          if (!getItem(itemId)) return state;
+          return { ownedAvatarItems: [...state.ownedAvatarItems, itemId] };
+        });
+      },
+
+      equipAvatarItem: (category, itemId) => {
+        set((state) => ({
+          equippedAvatar: { ...state.equippedAvatar, [category]: itemId },
+        }));
+      },
+
+      isAvatarItemOwned: (itemId) => {
+        const state = get();
+        if (state.ownedAvatarItems.includes(itemId)) return true;
+        const item = getItem(itemId);
+        return Boolean(item && item.requiredStars === 0);
+      },
 
       trackWordClick: (word, storyId) => {
         set((state) => {
@@ -485,6 +514,8 @@ export const useAppStore = create<AppState>()(
         progress: state.progress,
         settings: state.settings,
         wordInteractions: Array.from(state.wordInteractions.entries()),
+        equippedAvatar: state.equippedAvatar,
+        ownedAvatarItems: state.ownedAvatarItems,
       }),
       merge: (persistedState: unknown, currentState) => {
         const persisted = persistedState as Partial<AppState & { wordInteractions: [string, WordInteraction][] }>;
@@ -499,6 +530,8 @@ export const useAppStore = create<AppState>()(
           progress: snapshot.progress,
           settings: snapshot.settings,
           wordInteractions: new Map(persisted.wordInteractions || []),
+          equippedAvatar: persisted.equippedAvatar || getDefaultEquipped(),
+          ownedAvatarItems: persisted.ownedAvatarItems || [],
         };
       },
       onRehydrateStorage: () => (state) => {
