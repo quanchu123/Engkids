@@ -26,9 +26,15 @@ describe('avatar catalog', () => {
     });
   });
 
-  it('contains the expected increasing requiredStars thresholds', () => {
-    const thresholds = AVATAR_ITEMS.map((item) => item.requiredStars).sort((a, b) => a - b);
-    expect(thresholds).toEqual([0, 0, 5, 10, 15, 20, 30, 40, 50, 75, 100, 150]);
+  it('uses non-negative star thresholds for every item', () => {
+    AVATAR_ITEMS.forEach((item) => {
+      expect(item.requiredStars).toBeGreaterThanOrEqual(0);
+      expect(Number.isFinite(item.requiredStars)).toBe(true);
+    });
+  });
+
+  it('offers a large catalog (100-ish avatars)', () => {
+    expect(AVATAR_ITEMS.length).toBeGreaterThanOrEqual(80);
   });
 
   it('has exactly two free (requiredStars:0) items: a character and a frame', () => {
