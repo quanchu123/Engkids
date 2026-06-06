@@ -256,107 +256,120 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
     <div className="mx-auto max-w-7xl" data-testid="local-video-player">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          {/* Learning controls */}
-          <div className="soft-panel mb-3 flex flex-wrap items-center gap-3 rounded-[1.5rem] p-3">
-            <button
-              onClick={() => setLoopSentence((v) => !v)}
-              className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
-                loopSentence ? 'bg-violet-500 text-white shadow' : 'bg-white text-violet-700 shadow-sm'
-              }`}
-              aria-pressed={loopSentence}
-            >
-              Lặp câu 🔁
-            </button>
+          {/* Unified player: video + control bar + caption live in one card. */}
+          <div className="toy-panel mb-4 overflow-hidden rounded-[2rem]">
+            <div className="relative bg-black">
+              {src ? (
+                <video
+                  ref={videoRef}
+                  src={src}
+                  controls
+                  playsInline
+                  onPlay={handlePlay}
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onTimeUpdate={handleTimeUpdate}
+                  onEnded={handleEnded}
+                  className="aspect-video w-full"
+                />
+              ) : (
+                <div className="flex aspect-video w-full items-center justify-center text-white/70">
+                  Không tìm thấy video. (video not found)
+                </div>
+              )}
 
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-bold text-slate-500">Tốc độ</span>
-              {SPEED_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setSpeed(option)}
-                  className={`rounded-lg px-2.5 py-1.5 text-sm font-bold transition ${
-                    speed === option ? 'bg-sky-500 text-white shadow' : 'bg-white text-sky-700 shadow-sm'
-                  }`}
-                >
-                  {option}x
-                </button>
-              ))}
+              {resumeSeconds > 0 && (
+                <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-black/75 px-4 py-3 text-white backdrop-blur">
+                  <span className="text-sm font-bold">
+                    Xem tiếp từ phút {formatClock(resumeSeconds)}?
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={resumePlayback}
+                      className="rounded-xl bg-emerald-500 px-3 py-1.5 text-sm font-bold text-white"
+                    >
+                      Xem tiếp
+                    </button>
+                    <button
+                      onClick={restartFromStart}
+                      className="rounded-xl bg-white/20 px-3 py-1.5 text-sm font-bold text-white"
+                    >
+                      Xem từ đầu
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-bold text-slate-500">Phụ đề</span>
-              {([
-                ['both', 'Cả hai'],
-                ['en', 'Anh'],
-                ['vi', 'Việt'],
-              ] as const).map(([mode, label]) => (
-                <button
-                  key={mode}
-                  onClick={() => setSubtitleMode(mode)}
-                  className={`rounded-lg px-2.5 py-1.5 text-sm font-bold transition ${
-                    subtitleMode === mode ? 'bg-emerald-500 text-white shadow' : 'bg-white text-emerald-700 shadow-sm'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+            {/* Integrated learning control bar, attached under the video. */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-slate-100 bg-white px-4 py-3">
+              <button
+                onClick={() => setLoopSentence((v) => !v)}
+                className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold transition ${
+                  loopSentence ? 'bg-violet-500 text-white shadow' : 'bg-slate-100 text-violet-700 hover:bg-slate-200'
+                }`}
+                aria-pressed={loopSentence}
+                title="Lặp lại câu phụ đề hiện tại"
+              >
+                🔁 Lặp câu
+              </button>
 
-          <div className="toy-panel relative mb-4 overflow-hidden rounded-[2rem] bg-black">
-            {src ? (
-              <video
-                ref={videoRef}
-                src={src}
-                controls
-                playsInline
-                onPlay={handlePlay}
-                onLoadedMetadata={handleLoadedMetadata}
-                onTimeUpdate={handleTimeUpdate}
-                onEnded={handleEnded}
-                className="aspect-video w-full"
-              />
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Tốc độ</span>
+                <div className="flex overflow-hidden rounded-xl bg-slate-100">
+                  {SPEED_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => setSpeed(option)}
+                      className={`px-3 py-2 text-sm font-bold transition ${
+                        speed === option ? 'bg-sky-500 text-white shadow' : 'text-sky-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {option}x
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Phụ đề</span>
+                <div className="flex overflow-hidden rounded-xl bg-slate-100">
+                  {([
+                    ['both', 'Cả hai'],
+                    ['en', 'Anh'],
+                    ['vi', 'Việt'],
+                  ] as const).map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      onClick={() => setSubtitleMode(mode)}
+                      className={`px-3 py-2 text-sm font-bold transition ${
+                        subtitleMode === mode ? 'bg-emerald-500 text-white shadow' : 'text-emerald-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Live caption strip, also part of the player card. */}
+            {currentCue && (showEn || showVi) ? (
+              <div className="border-t border-slate-100 bg-gradient-to-br from-violet-600 to-fuchsia-600 p-5 text-white">
+                {showEn && (
+                  <div className="text-xl font-bold leading-relaxed sm:text-2xl">
+                    {renderClickableText(currentCue.textEn, activeWordIndex)}
+                  </div>
+                )}
+                {showVi && currentCue.textVi && (
+                  <div className="mt-2 text-base opacity-90 sm:text-lg">{currentCue.textVi}</div>
+                )}
+              </div>
             ) : (
-              <div className="flex aspect-video w-full items-center justify-center text-white/70">
-                Không tìm thấy video. (video not found)
-              </div>
-            )}
-
-            {resumeSeconds > 0 && (
-              <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-black/75 px-4 py-3 text-white backdrop-blur">
-                <span className="text-sm font-bold">
-                  Xem tiếp từ phút {formatClock(resumeSeconds)}?
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={resumePlayback}
-                    className="rounded-xl bg-emerald-500 px-3 py-1.5 text-sm font-bold text-white"
-                  >
-                    Xem tiếp
-                  </button>
-                  <button
-                    onClick={restartFromStart}
-                    className="rounded-xl bg-white/20 px-3 py-1.5 text-sm font-bold text-white"
-                  >
-                    Xem từ đầu
-                  </button>
-                </div>
+              <div className="border-t border-slate-100 bg-slate-50 px-5 py-4 text-center text-sm font-semibold text-slate-400">
+                Bấm play để xem phụ đề. Chạm vào từ tiếng Anh để tra nghĩa nhé!
               </div>
             )}
           </div>
-
-          {currentCue && (showEn || showVi) && (
-            <div className="soft-feature rounded-[1.75rem] p-6 text-white">
-              {showEn && (
-                <div className="mb-3 text-2xl font-bold leading-relaxed">
-                  {renderClickableText(currentCue.textEn, activeWordIndex)}
-                </div>
-              )}
-              {showVi && currentCue.textVi && (
-                <div className="text-lg opacity-90">{currentCue.textVi}</div>
-              )}
-            </div>
-          )}
         </div>
 
         <div className="lg:col-span-1">
@@ -387,7 +400,7 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
                 <div>
                   {selectedWord.info.vietnamese && (
                     <div className="toy-surface mb-3 rounded-2xl p-3">
-                      <span className="text-sm text-gray-600">Vietnamese:</span>
+                      <span className="text-sm text-gray-600">Tiếng Việt:</span>
                       <div className="font-semibold text-blue-700">{selectedWord.info.vietnamese}</div>
                     </div>
                   )}
@@ -395,7 +408,7 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
                     <div className="mb-2 text-gray-600">/{selectedWord.info.ipa}/</div>
                   )}
                   <div className="mb-3">
-                    <div className="mb-1 text-sm font-semibold text-gray-700">Definitions:</div>
+                    <div className="mb-1 text-sm font-semibold text-gray-700">Nghĩa tiếng Anh:</div>
                     <ul className="space-y-1 text-sm text-gray-600">
                       {selectedWord.info.definitions.slice(0, 3).map((def, i) => (
                         <li key={i}>• {def}</li>
@@ -446,7 +459,7 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
 
           {video.subtitles.length > 0 && (
             <div className="soft-panel max-h-[600px] overflow-y-auto rounded-[1.75rem] p-4">
-              <h3 className="mb-3 font-bold text-gray-800">Subtitles ({video.subtitles.length})</h3>
+              <h3 className="mb-3 font-bold text-gray-800">Phụ đề ({video.subtitles.length})</h3>
               <div className="space-y-2">
                 {video.subtitles.map((cue) => (
                   <div

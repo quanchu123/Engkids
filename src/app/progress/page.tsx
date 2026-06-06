@@ -13,23 +13,24 @@ import { Story } from '@/types';
 import DailyQuestCard from '@/components/learning/DailyQuestCard';
 import StreakCard from '@/components/learning/StreakCard';
 import BadgeGrid from '@/components/learning/BadgeGrid';
+import UiIcon, { UiIconName } from '@/components/common/UiIcon';
 
 type TabType = 'overview' | 'vocabulary' | 'stories' | 'achievements';
 
-const MASTERY = [
-  { level: 0, label: 'Mới', badge: 'Start', tint: 'bg-violet-100 text-violet-700' },
-  { level: 1, label: 'Đang học', badge: 'Learn', tint: 'bg-sky-100 text-sky-700' },
-  { level: 2, label: 'Quen thuộc', badge: 'Know', tint: 'bg-emerald-100 text-emerald-700' },
-  { level: 3, label: 'Nhớ tốt', badge: 'Star', tint: 'bg-amber-100 text-amber-700' },
-  { level: 4, label: 'Rất tốt', badge: 'Shine', tint: 'bg-pink-100 text-pink-700' },
-  { level: 5, label: 'Thành thạo', badge: 'Pro', tint: 'bg-indigo-100 text-indigo-700' },
+const MASTERY: Array<{ level: number; label: string; icon: UiIconName; tint: string }> = [
+  { level: 0, label: 'Mới', icon: 'sprout', tint: 'bg-violet-100 text-violet-700' },
+  { level: 1, label: 'Đang học', icon: 'light', tint: 'bg-sky-100 text-sky-700' },
+  { level: 2, label: 'Quen thuộc', icon: 'open-book', tint: 'bg-emerald-100 text-emerald-700' },
+  { level: 3, label: 'Nhớ tốt', icon: 'star', tint: 'bg-amber-100 text-amber-700' },
+  { level: 4, label: 'Rất tốt', icon: 'medal', tint: 'bg-pink-100 text-pink-700' },
+  { level: 5, label: 'Thành thạo', icon: 'trophy', tint: 'bg-indigo-100 text-indigo-700' },
 ];
 
-const TABS: Array<{ id: TabType; label: string; icon: string }> = [
-  { id: 'overview', label: 'Tổng quan', icon: 'Home' },
-  { id: 'vocabulary', label: 'Từ vựng', icon: 'Words' },
-  { id: 'stories', label: 'Truyện', icon: 'Story' },
-  { id: 'achievements', label: 'Thành tích', icon: 'Stars' },
+const TABS: Array<{ id: TabType; label: string; icon: UiIconName }> = [
+  { id: 'overview', label: 'Tổng quan', icon: 'home' },
+  { id: 'vocabulary', label: 'Từ vựng', icon: 'dictionary' },
+  { id: 'stories', label: 'Truyện', icon: 'open-book' },
+  { id: 'achievements', label: 'Thành tích', icon: 'medal' },
 ];
 
 export default function ProgressPage() {
@@ -129,14 +130,14 @@ export default function ProgressPage() {
 
   const achievements = useMemo(
     () => [
-      { id: 'first_story', name: 'Khởi đầu', desc: 'Hoàn thành truyện đầu tiên', icon: 'Start', earned: completedStories.length >= 1 },
-      { id: 'five_stories', name: 'Đọc nhiều', desc: 'Hoàn thành 5 truyện', icon: 'Books', earned: completedStories.length >= 5 },
-      { id: 'ten_words', name: 'Thu thập từ', desc: 'Lưu 10 từ vựng', icon: 'Word', earned: vocabStats.total >= 10 },
-      { id: 'fifty_words', name: 'Kho báu từ', desc: 'Lưu 50 từ vựng', icon: 'Vault', earned: vocabStats.total >= 50 },
-      { id: 'streak_3', name: 'Kiên trì', desc: 'Giữ streak 3 ngày', icon: 'Fire', earned: progress.currentStreak >= 3 },
-      { id: 'streak_7', name: 'Bền bỉ', desc: 'Giữ streak 7 ngày', icon: 'Crown', earned: progress.currentStreak >= 7 },
-      { id: 'ten_stars', name: 'Ngôi sao', desc: 'Đạt 10 sao', icon: 'Star', earned: progress.totalStars >= 10 },
-      { id: 'perfect_game', name: 'Hoàn hảo', desc: 'Đạt điểm tuyệt đối trong game', icon: 'Perfect', earned: progress.gameScores.some((item) => item.score === item.totalQuestions) },
+      { id: 'first_story', name: 'Khởi đầu', desc: 'Hoàn thành truyện đầu tiên', icon: 'open-book' as UiIconName, earned: completedStories.length >= 1 },
+      { id: 'five_stories', name: 'Đọc nhiều', desc: 'Hoàn thành 5 truyện', icon: 'books' as UiIconName, earned: completedStories.length >= 5 },
+      { id: 'ten_words', name: 'Thu thập từ', desc: 'Lưu 10 từ vựng', icon: 'notebook' as UiIconName, earned: vocabStats.total >= 10 },
+      { id: 'fifty_words', name: 'Kho báu từ', desc: 'Lưu 50 từ vựng', icon: 'treasure-chest' as UiIconName, earned: vocabStats.total >= 50 },
+      { id: 'streak_3', name: 'Kiên trì', desc: 'Giữ streak 3 ngày', icon: 'fire' as UiIconName, earned: progress.currentStreak >= 3 },
+      { id: 'streak_7', name: 'Bền bỉ', desc: 'Giữ streak 7 ngày', icon: 'crown' as UiIconName, earned: progress.currentStreak >= 7 },
+      { id: 'ten_stars', name: 'Ngôi sao', desc: 'Đạt 10 sao', icon: 'star' as UiIconName, earned: progress.totalStars >= 10 },
+      { id: 'perfect_game', name: 'Hoàn hảo', desc: 'Đạt điểm tuyệt đối trong game', icon: 'trophy' as UiIconName, earned: progress.gameScores.some((item) => item.score === item.totalQuestions) },
     ],
     [completedStories.length, progress.currentStreak, progress.gameScores, progress.totalStars, vocabStats.total],
   );
@@ -217,13 +218,14 @@ export default function ProgressPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`rounded-2xl px-4 py-3 text-sm font-black transition-all ${
+                  className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition-all ${
                     active
                       ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-lg'
                       : 'bg-white text-violet-700 shadow'
                   }`}
                 >
-                  {tab.icon} {tab.label}
+                  <UiIcon name={tab.icon} size={22} />
+                  {tab.label}
                 </button>
               );
             })}
@@ -240,26 +242,26 @@ export default function ProgressPage() {
 
               <div className="toy-panel p-4">
                 <div className="flex flex-wrap gap-2">
-                  <Link href="/learn/today" className="kid-chip px-4 py-2 text-sm font-black text-violet-700">
-                    Hôm nay học gì 📅
+                  <Link href="/learn/today" className="kid-chip flex items-center gap-2 px-4 py-2 text-sm font-black text-violet-700">
+                    <UiIcon name="calendar" size={20} /> Hôm nay học gì
                   </Link>
-                  <Link href="/shop" className="kid-chip px-4 py-2 text-sm font-black text-violet-700">
-                    Cửa hàng 🎁
+                  <Link href="/shop" className="kid-chip flex items-center gap-2 px-4 py-2 text-sm font-black text-violet-700">
+                    <UiIcon name="gift" size={20} /> Cửa hàng
                   </Link>
-                  <Link href="/parent" className="kid-chip px-4 py-2 text-sm font-black text-violet-700">
-                    Phụ huynh 👨‍👩‍👧
+                  <Link href="/parent" className="kid-chip flex items-center gap-2 px-4 py-2 text-sm font-black text-violet-700">
+                    <UiIcon name="family" size={20} /> Phụ huynh
                   </Link>
-                  <Link href="/progress/certificate" className="kid-chip px-4 py-2 text-sm font-black text-violet-700">
-                    Chứng nhận 🏅
+                  <Link href="/progress/certificate" className="kid-chip flex items-center gap-2 px-4 py-2 text-sm font-black text-violet-700">
+                    <UiIcon name="certificate" size={20} /> Chứng nhận
                   </Link>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                <MetricCard title="Tổng sao" value={progress.totalStars} tint="from-amber-400 to-orange-400" />
-                <MetricCard title="Từ đã học" value={vocabStats.total} tint="from-sky-400 to-indigo-500" />
-                <MetricCard title="Truyện xong" value={completedStories.length} tint="from-emerald-400 to-teal-500" />
-                <MetricCard title="Streak" value={progress.currentStreak} tint="from-pink-400 to-rose-500" />
+                <MetricCard title="Tổng sao" value={progress.totalStars} icon="star" tint="from-amber-400 to-orange-400" />
+                <MetricCard title="Từ đã học" value={vocabStats.total} icon="abc" tint="from-sky-400 to-indigo-500" />
+                <MetricCard title="Truyện xong" value={completedStories.length} icon="open-book" tint="from-emerald-400 to-teal-500" />
+                <MetricCard title="Streak" value={progress.currentStreak} icon="fire" tint="from-pink-400 to-rose-500" />
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
@@ -277,7 +279,9 @@ export default function ProgressPage() {
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {MASTERY.map((item) => (
                       <div key={item.level} className={`rounded-2xl px-3 py-4 text-center ${item.tint}`}>
-                        <div className="text-lg font-black">{item.badge}</div>
+                        <div className="flex justify-center">
+                          <UiIcon name={item.icon} size={32} />
+                        </div>
                         <div className="mt-1 text-2xl font-black">{vocabStats.byMastery[item.level] || 0}</div>
                         <div className="mt-1 text-xs font-bold">{item.label}</div>
                       </div>
@@ -403,17 +407,18 @@ export default function ProgressPage() {
                         <div className="flex items-center gap-4">
                           <button
                             onClick={() => pronounceWord(item.word)}
-                            className="h-12 w-12 rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 text-sm font-black text-white shadow-lg"
+                            className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 text-white shadow-lg"
+                            aria-label="Nghe phát âm"
                           >
-                            Play
+                            <UiIcon name="audio" size={24} />
                           </button>
                           <div className="min-w-0 flex-1">
                             <h3 className="text-lg font-black text-slate-900">{item.word}</h3>
                             <p className="text-sm text-slate-500">{item.vi}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`rounded-xl px-3 py-1 text-xs font-black ${mastery.tint}`}>
-                              {mastery.badge} {mastery.label}
+                            <span className={`flex items-center gap-1 rounded-xl px-3 py-1 text-xs font-black ${mastery.tint}`}>
+                              <UiIcon name={mastery.icon} size={16} /> {mastery.label}
                             </span>
                             <button
                               onClick={() => toggleWordFavorite(item.word)}
@@ -584,8 +589,8 @@ export default function ProgressPage() {
                     className={`toy-panel p-5 ${item.earned ? '' : 'opacity-70 grayscale-[0.15]'}`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl font-black ${item.earned ? 'bg-gradient-to-br from-amber-300 to-orange-400 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                        {item.icon}
+                      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${item.earned ? 'bg-gradient-to-br from-amber-300 to-orange-400' : 'bg-slate-100 grayscale'}`}>
+                        <UiIcon name={item.icon} size={32} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="font-black text-slate-900">{item.name}</h3>
@@ -609,8 +614,8 @@ export default function ProgressPage() {
 
                       return (
                         <div key={`${item.storyId}-${index}`} className="toy-surface flex items-center gap-4 rounded-2xl p-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-pink-100 font-black text-violet-600">
-                            {item.gameType === 'match' ? 'Match' : 'Blank'}
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-pink-100">
+                            <UiIcon name="controller" size={26} />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="truncate font-black text-slate-900">{story?.title_en || item.storyId}</p>
@@ -633,11 +638,11 @@ export default function ProgressPage() {
   );
 }
 
-function MetricCard({ title, value, tint }: { title: string; value: number; tint: string }) {
+function MetricCard({ title, value, tint, icon }: { title: string; value: number; tint: string; icon: UiIconName }) {
   return (
     <div className="toy-panel p-5 text-center">
-      <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tint} font-black text-white shadow-lg`}>
-        {title.slice(0, 1)}
+      <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${tint} shadow-lg`}>
+        <UiIcon name={icon} size={28} />
       </div>
       <div className={`bg-gradient-to-r ${tint} bg-clip-text text-4xl font-black text-transparent`}>{value}</div>
       <div className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400">{title}</div>

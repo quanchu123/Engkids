@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Star } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import AvatarDisplay from '@/components/learning/AvatarDisplay';
+import UiIcon from '@/components/common/UiIcon';
 import { useAppStore } from '@/store/useAppStore';
 import {
   AVATAR_CATEGORIES,
@@ -59,7 +60,7 @@ export default function ShopPage() {
               Dùng sao để mở khóa nhân vật và phụ kiện đáng yêu!
             </p>
             <div className="kid-chip mt-1 flex items-center gap-2 px-4 py-2 text-base font-black text-amber-600">
-              <Star size={18} fill="currentColor" aria-hidden="true" />
+              <UiIcon name="star" size={22} />
               <span>{totalStars} sao</span>
             </div>
           </div>
