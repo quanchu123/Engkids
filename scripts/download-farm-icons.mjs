@@ -38,6 +38,28 @@ const QUERIES = {
   star: 'star 3d icon',
   basket: 'harvest basket 3d icon',
   soil: 'soil dirt ground 3d icon',
+  // Character + scenery (visual overhaul)
+  farmer: 'farmer character 3d',
+  'farmer-girl': 'woman farmer 3d',
+  barn: 'barn farm house 3d',
+  tree: 'tree 3d icon',
+  fence: 'wooden fence 3d',
+  scarecrow: 'scarecrow 3d',
+  grass: 'grass field 3d',
+  cloud: 'cloud 3d icon',
+  sun: 'sun 3d icon',
+  water: 'water drop 3d icon',
+  // Decor + feedback (visual overhaul)
+  tree: 'tree 3d icon',
+  fence: 'wood fence 3d icon',
+  flower: 'flower 3d icon',
+  barn: 'barn farm house 3d icon',
+  'water-drop': 'water drop 3d icon',
+  sparkle: 'sparkle star shine 3d icon',
+  sun: 'sun sunny 3d icon',
+  cloud: 'cloud 3d icon',
+  scarecrow: 'scarecrow 3d icon',
+  bush: 'bush shrub 3d icon',
 };
 
 function pickItems(p) {

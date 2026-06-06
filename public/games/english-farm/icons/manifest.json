@@ -1,7 +1,7 @@
 {
   "asset": "3d",
   "format": "png",
-  "generatedAt": "2026-06-05T19:40:56.636Z",
+  "generatedAt": "2026-06-05T23:40:13.235Z",
   "results": [
     {
       "name": "carrot",
@@ -99,6 +99,104 @@
       "query": "soil dirt ground 3d icon",
       "uuid": "6861f990-00d7-11f1-91b3-0242ac140003",
       "file": "/games/english-farm/icons/soil.png",
+      "source": "thumb"
+    },
+    {
+      "name": "farmer",
+      "query": "farmer character 3d",
+      "uuid": "47deab70-f1bb-11ee-b407-0242ac140003",
+      "file": "/games/english-farm/icons/farmer.png",
+      "source": "thumb"
+    },
+    {
+      "name": "farmer-girl",
+      "query": "woman farmer 3d",
+      "uuid": "9f7447a0-c50e-11f0-9307-0242ac140003",
+      "file": "/games/english-farm/icons/farmer-girl.png",
+      "source": "thumb"
+    },
+    {
+      "name": "barn",
+      "query": "barn farm house 3d icon",
+      "uuid": "e76b4930-b8d8-11ed-af95-0242ac140003",
+      "file": "/games/english-farm/icons/barn.png",
+      "source": "thumb"
+    },
+    {
+      "name": "tree",
+      "query": "tree 3d icon",
+      "uuid": "85dcb180-cfd7-11ee-92ec-0242ac140003",
+      "file": "/games/english-farm/icons/tree.png",
+      "source": "thumb"
+    },
+    {
+      "name": "fence",
+      "query": "wood fence 3d icon",
+      "uuid": "f0b436c0-905f-11ef-9e53-0242ac140003",
+      "file": "/games/english-farm/icons/fence.png",
+      "source": "thumb"
+    },
+    {
+      "name": "scarecrow",
+      "query": "scarecrow 3d icon",
+      "uuid": "974266e0-55ed-11ee-9155-0242ac140003",
+      "file": "/games/english-farm/icons/scarecrow.png",
+      "source": "thumb"
+    },
+    {
+      "name": "grass",
+      "query": "grass field 3d",
+      "uuid": "886304e0-8ad9-11ef-94e6-0242ac140003",
+      "file": "/games/english-farm/icons/grass.png",
+      "source": "thumb"
+    },
+    {
+      "name": "cloud",
+      "query": "cloud 3d icon",
+      "uuid": "79d9abe0-a248-11ef-8806-0242ac140003",
+      "file": "/games/english-farm/icons/cloud.png",
+      "source": "thumb"
+    },
+    {
+      "name": "sun",
+      "query": "sun sunny 3d icon",
+      "uuid": "a0c26190-7f11-11ef-8d04-0242ac140003",
+      "file": "/games/english-farm/icons/sun.png",
+      "source": "thumb"
+    },
+    {
+      "name": "water",
+      "query": "water drop 3d icon",
+      "uuid": "b8dd4640-dc46-11ee-ac72-0242ac140003",
+      "file": "/games/english-farm/icons/water.png",
+      "source": "thumb"
+    },
+    {
+      "name": "flower",
+      "query": "flower 3d icon",
+      "uuid": "55e74ab0-f477-11ed-95e2-0242ac140003",
+      "file": "/games/english-farm/icons/flower.png",
+      "source": "thumb"
+    },
+    {
+      "name": "water-drop",
+      "query": "water drop 3d icon",
+      "uuid": "b8dd4640-dc46-11ee-ac72-0242ac140003",
+      "file": "/games/english-farm/icons/water-drop.png",
+      "source": "thumb"
+    },
+    {
+      "name": "sparkle",
+      "query": "sparkle star shine 3d icon",
+      "uuid": "bb7a3360-1c5f-11f1-aada-0242ac140003",
+      "file": "/games/english-farm/icons/sparkle.png",
+      "source": "thumb"
+    },
+    {
+      "name": "bush",
+      "query": "bush shrub 3d icon",
+      "uuid": "0a688000-2f2b-11f0-b0ff-0242ac140003",
+      "file": "/games/english-farm/icons/bush.png",
       "source": "thumb"
     }
   ]
