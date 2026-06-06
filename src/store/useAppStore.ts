@@ -24,6 +24,7 @@ import { trackEvent } from '@/lib/analytics';
 import { syncSavedWordToSRS } from '@/services/vocabulary';
 import { AvatarCategory, EquippedAvatar, getDefaultEquipped, getItem } from '@/lib/avatar';
 import { canSpin, rollSpin } from '@/lib/daily-spin';
+import { PetState, PetActionKey, createPet, applyDecay, applyAction, PET_ACTIONS } from '@/lib/pet';
 
 const MAX_WORD_INTERACTIONS = 2000;
 const STREAK_FREEZE_COST = 50;
@@ -48,12 +49,16 @@ interface AppState {
   coins: number;
   streakFreezes: number;
   lastSpinDate: string | null;
+  pet: PetState | null;
   /** Transient celebration trigger (not persisted). */
   rewardEvent: { id: number; stars: number; coins: number } | null;
   equipAvatarItem: (category: AvatarCategory, itemId: string) => void;
   purchaseAvatarItem: (itemId: string) => boolean;
   buyStreakFreeze: () => boolean;
   spinDailyWheel: () => { kind: 'coins' | 'freeze'; amount: number; index: number } | null;
+  adoptPet: (species: string, name: string) => void;
+  carePet: (action: PetActionKey) => boolean;
+  syncPetDecay: () => void;
   triggerReward: (stars: number, coins: number) => void;
   clearReward: () => void;
   isAvatarItemOwned: (itemId: string) => boolean;
@@ -129,6 +134,30 @@ export const useAppStore = create<AppState>()(
       streakFreezes: 0,
       lastSpinDate: null,
       rewardEvent: null,
+      pet: null,
+
+      adoptPet: (species, name) => {
+        set({ pet: createPet(species, name.trim().slice(0, 20) || 'Bạn nhỏ') });
+      },
+
+      // Apply a care action: requires an adopted pet and enough coins. Returns
+      // false (no-op) otherwise. Coins are deducted by the action's cost.
+      carePet: (action) => {
+        const state = get();
+        if (!state.pet) return false;
+        const def = PET_ACTIONS[action];
+        if (state.coins < def.coinCost) return false;
+        const { pet, cost } = applyAction(state.pet, action, Date.now());
+        set({ pet, coins: state.coins - cost });
+        return true;
+      },
+
+      // Apply time-based decay (call on mount / when the room opens).
+      syncPetDecay: () => {
+        const state = get();
+        if (!state.pet) return;
+        set({ pet: applyDecay(state.pet, Date.now()) });
+      },
 
       // Spend coins to buy an avatar item. Returns false (no-op) when the item
       // is unknown, already owned, or the child can't afford it. Free items
@@ -603,6 +632,7 @@ export const useAppStore = create<AppState>()(
         coins: state.coins,
         streakFreezes: state.streakFreezes,
         lastSpinDate: state.lastSpinDate,
+        pet: state.pet,
       }),
       merge: (persistedState: unknown, currentState) => {
         const persisted = persistedState as Partial<AppState & { wordInteractions: [string, WordInteraction][] }>;
@@ -623,6 +653,7 @@ export const useAppStore = create<AppState>()(
           coins: typeof persisted.coins === 'number' ? persisted.coins : snapshot.progress.totalStars,
           streakFreezes: typeof persisted.streakFreezes === 'number' ? persisted.streakFreezes : 0,
           lastSpinDate: persisted.lastSpinDate ?? null,
+          pet: persisted.pet ?? null,
           rewardEvent: null,
         };
       },
