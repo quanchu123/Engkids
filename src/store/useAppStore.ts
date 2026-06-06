@@ -23,6 +23,7 @@ import {
 import { trackEvent } from '@/lib/analytics';
 import { syncSavedWordToSRS } from '@/services/vocabulary';
 import { AvatarCategory, EquippedAvatar, getDefaultEquipped, getItem } from '@/lib/avatar';
+import { canSpin, rollSpin } from '@/lib/daily-spin';
 
 const MAX_WORD_INTERACTIONS = 2000;
 const STREAK_FREEZE_COST = 50;
@@ -46,9 +47,15 @@ interface AppState {
   ownedAvatarItems: string[];
   coins: number;
   streakFreezes: number;
+  lastSpinDate: string | null;
+  /** Transient celebration trigger (not persisted). */
+  rewardEvent: { id: number; stars: number; coins: number } | null;
   equipAvatarItem: (category: AvatarCategory, itemId: string) => void;
   purchaseAvatarItem: (itemId: string) => boolean;
   buyStreakFreeze: () => boolean;
+  spinDailyWheel: () => { kind: 'coins' | 'freeze'; amount: number; index: number } | null;
+  triggerReward: (stars: number, coins: number) => void;
+  clearReward: () => void;
   isAvatarItemOwned: (itemId: string) => boolean;
   markPanelViewed: (storyId: string, panelId: number) => void;
   completeStory: (storyId: string, stars: number) => void;
@@ -120,6 +127,8 @@ export const useAppStore = create<AppState>()(
       ownedAvatarItems: [],
       coins: 0,
       streakFreezes: 0,
+      lastSpinDate: null,
+      rewardEvent: null,
 
       // Spend coins to buy an avatar item. Returns false (no-op) when the item
       // is unknown, already owned, or the child can't afford it. Free items
@@ -145,6 +154,29 @@ export const useAppStore = create<AppState>()(
         set({ coins: state.coins - STREAK_FREEZE_COST, streakFreezes: state.streakFreezes + 1 });
         return true;
       },
+
+      // Spin the daily lucky wheel (once per day). Returns the prize, or null
+      // if already spun today.
+      spinDailyWheel: () => {
+        const state = get();
+        const today = getTodayDate();
+        if (!canSpin(state.lastSpinDate, today)) return null;
+        const { index, prize } = rollSpin();
+        if (prize.kind === 'coins') {
+          set({ lastSpinDate: today, coins: state.coins + prize.amount });
+        } else {
+          set({ lastSpinDate: today, streakFreezes: state.streakFreezes + prize.amount });
+        }
+        return { kind: prize.kind, amount: prize.amount, index };
+      },
+
+      // Fire a celebration (flying coins/stars). Transient, never persisted.
+      triggerReward: (stars, coins) => {
+        if (stars <= 0 && coins <= 0) return;
+        set({ rewardEvent: { id: Date.now(), stars, coins } });
+      },
+
+      clearReward: () => set({ rewardEvent: null }),
 
       equipAvatarItem: (category, itemId) => {
         set((state) => ({
@@ -259,7 +291,11 @@ export const useAppStore = create<AppState>()(
           });
           // Spendable coins grow with every newly-earned star.
           const gained = Math.max(0, nextProgress.totalStars - prevStars);
-          return { progress: nextProgress, coins: state.coins + gained };
+          return {
+            progress: nextProgress,
+            coins: state.coins + gained,
+            ...(gained > 0 ? { rewardEvent: { id: Date.now(), stars: gained, coins: gained } } : {}),
+          };
         });
       },
 
@@ -405,7 +441,11 @@ export const useAppStore = create<AppState>()(
             };
           });
           const gained = Math.max(0, nextProgress.totalStars - prevStars);
-          return { progress: nextProgress, coins: state.coins + gained };
+          return {
+            progress: nextProgress,
+            coins: state.coins + gained,
+            ...(gained > 0 ? { rewardEvent: { id: Date.now(), stars: gained, coins: gained } } : {}),
+          };
         });
       },
 
@@ -562,6 +602,7 @@ export const useAppStore = create<AppState>()(
         ownedAvatarItems: state.ownedAvatarItems,
         coins: state.coins,
         streakFreezes: state.streakFreezes,
+        lastSpinDate: state.lastSpinDate,
       }),
       merge: (persistedState: unknown, currentState) => {
         const persisted = persistedState as Partial<AppState & { wordInteractions: [string, WordInteraction][] }>;
@@ -581,6 +622,8 @@ export const useAppStore = create<AppState>()(
           // Grandfather existing players: first run seeds coins from lifetime stars.
           coins: typeof persisted.coins === 'number' ? persisted.coins : snapshot.progress.totalStars,
           streakFreezes: typeof persisted.streakFreezes === 'number' ? persisted.streakFreezes : 0,
+          lastSpinDate: persisted.lastSpinDate ?? null,
+          rewardEvent: null,
         };
       },
       onRehydrateStorage: () => (state) => {

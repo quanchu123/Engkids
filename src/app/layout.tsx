@@ -3,6 +3,8 @@ import { Nunito } from 'next/font/google';
 import './globals.css';
 import RouterLoading from '@/components/common/RouterLoading';
 import UserProgressSync from '@/components/common/UserProgressSync';
+import RewardOverlay from '@/components/common/RewardOverlay';
+import DailyGoalBar from '@/components/common/DailyGoalBar';
 
 const DEFAULT_PRODUCTION_URL = 'https://engkidstienganhchobe.tech';
 
@@ -68,6 +70,8 @@ export default function RootLayout({
         <RouterLoading />
         <UserProgressSync />
         {children}
+        <RewardOverlay />
+        <DailyGoalBar />
       </body>
     </html>
   );

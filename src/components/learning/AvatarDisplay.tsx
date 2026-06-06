@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useAppStore } from '@/store/useAppStore';
 import { getItem, AvatarItem } from '@/lib/avatar';
+import { getTodayDate } from '@/lib/progress';
 
 type AvatarSize = 'sm' | 'md' | 'lg';
 
@@ -39,8 +40,9 @@ function Art({ item, px }: { item: AvatarItem | undefined; px: number }) {
  * (frame tint from the equipped frame item), with hat (top) and pet
  * (bottom-right) accessories overlaid when equipped.
  */
-export default function AvatarDisplay({ size = 'md' }: { size?: AvatarSize }) {
+export default function AvatarDisplay({ size = 'md', showMood = false }: { size?: AvatarSize; showMood?: boolean }) {
   const equipped = useAppStore((state) => state.equippedAvatar);
+  const lastActiveDate = useAppStore((state) => state.progress.lastActiveDate);
   const dims = SIZE_MAP[size];
 
   const character = getItem(equipped.character);
@@ -49,6 +51,7 @@ export default function AvatarDisplay({ size = 'md' }: { size?: AvatarSize }) {
   const pet = equipped.pet ? getItem(equipped.pet) : undefined;
 
   const frameTint = frame?.tint ?? '#bae6fd';
+  const activeToday = lastActiveDate === getTodayDate();
 
   return (
     <div
@@ -84,6 +87,16 @@ export default function AvatarDisplay({ size = 'md' }: { size?: AvatarSize }) {
           aria-hidden="true"
         >
           <Art item={pet} px={dims.accessory} />
+        </span>
+      )}
+
+      {showMood && (
+        <span
+          className="absolute -right-1 -top-1 rounded-full bg-white px-1.5 py-0.5 text-xs shadow"
+          aria-hidden="true"
+          title={activeToday ? 'Đang vui vì học hôm nay!' : 'Học một chút để mình vui nhé!'}
+        >
+          {activeToday ? '✨' : '💤'}
         </span>
       )}
     </div>
