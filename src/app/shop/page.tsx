@@ -5,6 +5,9 @@ import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import AvatarDisplay from '@/components/learning/AvatarDisplay';
 import UiIcon from '@/components/common/UiIcon';
+import SpinWheel from '@/components/common/SpinWheel';
+import { canSpin } from '@/lib/daily-spin';
+import { getTodayDate } from '@/lib/progress';
 import { useAppStore } from '@/store/useAppStore';
 import {
   AVATAR_CATEGORIES,
@@ -49,8 +52,11 @@ export default function ShopPage() {
   const purchaseAvatarItem = useAppStore((state) => state.purchaseAvatarItem);
   const buyStreakFreeze = useAppStore((state) => state.buyStreakFreeze);
   const isAvatarItemOwned = useAppStore((state) => state.isAvatarItemOwned);
+  const lastSpinDate = useAppStore((state) => state.lastSpinDate);
 
   const [activeCategory, setActiveCategory] = useState<AvatarCategory>('character');
+  const [showSpin, setShowSpin] = useState(false);
+  const spinAvailable = canSpin(lastSpinDate, getTodayDate());
 
   const items = getItemsByCategory(activeCategory);
 
@@ -78,6 +84,17 @@ export default function ShopPage() {
                 <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-base font-black text-amber-600 shadow-lg">
                   <UiIcon name="coins" size={22} />
                   <span>{coins} xu</span>
+                </div>
+                <div className="mt-3">
+                  <button
+                    onClick={() => setShowSpin(true)}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black shadow-lg transition-transform hover:scale-105 ${
+                      spinAvailable ? 'bg-yellow-300 text-amber-900' : 'bg-white/20 text-white'
+                    }`}
+                  >
+                    Vòng quay may mắn 🎡
+                    {spinAvailable && <span className="rounded-full bg-rose-500 px-1.5 text-[10px] text-white">mới</span>}
+                  </button>
                 </div>
               </div>
               <div className="rounded-[2rem] bg-white/15 p-4 backdrop-blur">
@@ -183,6 +200,7 @@ export default function ShopPage() {
           </section>
         </div>
       </main>
+      {showSpin && <SpinWheel onClose={() => setShowSpin(false)} />}
     </>
   );
 }
