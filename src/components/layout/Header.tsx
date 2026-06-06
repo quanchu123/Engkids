@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { onAuthStateChange, signOut, User } from '@/lib/auth-client';
-import AvatarDisplay from '@/components/learning/AvatarDisplay';
+import ProfileMenu from '@/components/layout/ProfileMenu';
 
 const NAV_ITEMS = [
   { name: 'Trang chủ', path: '/', icon: Home, tone: 'text-sky-600 bg-sky-50 border-sky-100' },
@@ -108,13 +108,6 @@ function Header() {
 
         <div className="hidden items-center gap-2 md:flex">
           <Link
-            href="/shop"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/35 transition-transform hover:scale-105"
-            aria-label="Cửa hàng phần thưởng"
-          >
-            <AvatarDisplay size="sm" />
-          </Link>
-          <Link
             href="/progress"
             className="flex min-h-[44px] items-center gap-2 rounded-full bg-white px-3 text-sm font-black text-purple-600 shadow-sm transition-all hover:scale-105 hover:shadow-lg"
             aria-label={`Bạn có ${totalStars} sao`}
@@ -123,16 +116,7 @@ function Header() {
             <span>{totalStars}</span>
           </Link>
 
-          {user ? (
-            <button
-              onClick={handleLogout}
-              className="flex min-h-[44px] items-center gap-2 rounded-full bg-white/20 px-4 text-sm font-black text-white transition-all hover:bg-white/30"
-              aria-label="Đăng xuất"
-            >
-              <LogOut size={16} aria-hidden="true" />
-              <span className="hidden lg:inline">Đăng xuất</span>
-            </button>
-          ) : (
+          {!user && (
             <Link
               href="/login"
               className="flex min-h-[44px] items-center gap-2 rounded-full bg-white px-4 text-sm font-black text-purple-600 transition-all hover:scale-105 hover:shadow-lg"
@@ -142,6 +126,8 @@ function Header() {
               <span>Đăng nhập</span>
             </Link>
           )}
+
+          <ProfileMenu user={user} onLogout={handleLogout} />
         </div>
 
         <button
