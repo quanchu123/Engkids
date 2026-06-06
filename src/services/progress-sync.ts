@@ -255,10 +255,13 @@ export async function saveRemoteProgressSnapshot(snapshot: ProgressSnapshot): Pr
           example_sentence: word.exampleSentence || null,
           source_type: word.storyId ? 'story' : 'manual',
           source_id: word.storyId || null,
-          mastery_level: word.masteryLevel ?? 0,
           is_favorite: Boolean(word.isFavorite),
-          review_count: word.reviewCount ?? 0,
-          last_reviewed_at: word.lastReviewedAt || null,
+          // NOTE: SRS-managed columns (mastery_level, review_count,
+          // last_reviewed_at, ease_factor, interval_days, next_review_date) are
+          // deliberately NOT written here. The review flow (submitReview) owns
+          // them; including them in this periodic upsert would overwrite a
+          // word's real spaced-repetition progress with stale local values.
+          // New words rely on the DB column defaults for their initial SRS state.
         })),
         { onConflict: 'user_profile_id,word_lower' },
       );
