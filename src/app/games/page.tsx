@@ -9,8 +9,8 @@ import { DecorIcon } from '@/components/common/DecorIcon';
 const GAMES = [
   {
     id: 'pet',
-    title: 'Thú Cưng Của Bé',
-    desc: 'Nuôi và chăm sóc thú cưng dễ thương.',
+    title: 'Thú Cưng Thần Thoại',
+    desc: 'Nuôi trứng thành rồng, phượng hoàng, kỳ lân...',
     icon: 'animals',
     grad: 'from-sky-400 via-violet-400 to-fuchsia-500',
     border: '#8b5cf6',

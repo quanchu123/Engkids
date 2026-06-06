@@ -1,12 +1,14 @@
 'use client';
 
 /**
- * "Thú Cưng Của Bé" — a cute Tamagotchi-style pet room (Phase 1).
+ * "Thú Cưng Thần Thoại" — raise a baby creature into a legendary beast.
  *
- * The child adopts a pet (one of the colorful Icons8 animals), then keeps its
- * needs up with care actions that cost coins and grant EXP. Pure React + CSS +
- * Icons8 art (no game engine) for a clean, mobile-friendly look. All state
- * lives in the app store (persisted); needs decay over real time.
+ * The child adopts one of four mythical chains (Thủy Long / Phượng Hoàng /
+ * Kỳ Lân / Long Bạo Chúa) starting from an egg, then keeps its needs up with
+ * care actions that cost coins and grant EXP. Leveling up EVOLVES the creature
+ * through dramatic stages with a glowing burst celebration. Pure React + CSS +
+ * Icons8 art (no game engine). State lives in the app store (persisted); needs
+ * decay over real time.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -14,16 +16,24 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import UiIcon from '@/components/common/UiIcon';
+import Fireworks from '@/components/common/Fireworks';
 import { useAppStore } from '@/store/useAppStore';
-import { getItem, getItemsByCategory } from '@/lib/avatar';
 import {
   PET_ACTIONS,
   PetActionKey,
   PetStatKey,
   levelFromExp,
   petMood,
-  MAX_STAT,
 } from '@/lib/pet';
+import {
+  PET_SPECIES,
+  PetSpecies,
+  getSpecies,
+  stageIndexForLevel,
+  currentStage,
+  nextStage,
+  isFinalStage,
+} from '@/lib/pet-species';
 
 const STAT_META: Record<PetStatKey, { labelVi: string; emoji: string; bar: string }> = {
   hunger: { labelVi: 'No bụng', emoji: '🍎', bar: 'from-orange-400 to-amber-500' },
@@ -33,7 +43,35 @@ const STAT_META: Record<PetStatKey, { labelVi: string; emoji: string; bar: strin
 };
 
 const ACTION_ORDER: PetActionKey[] = ['feed', 'play', 'bath', 'sleep'];
-const MOOD_FACE: Record<'happy' | 'ok' | 'sad', string> = { happy: '😸', ok: '🙂', sad: '😿' };
+const MOOD_FACE: Record<'happy' | 'ok' | 'sad', string> = { happy: '😄', ok: '🙂', sad: '😢' };
+
+/** Tiny WebAudio rising arpeggio for the evolution moment. */
+function playEvolveChime() {
+  try {
+    if (typeof window === 'undefined') return;
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const notes = [523, 659, 784, 1047, 1319]; // C5 E5 G5 C6 E6
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i * 0.1;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.2, start + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.34);
+    });
+    setTimeout(() => ctx.close().catch(() => {}), 1200);
+  } catch {
+    /* ignore */
+  }
+}
 
 export default function PetGamePage() {
   const pet = useAppStore((state) => state.pet);
@@ -45,7 +83,14 @@ export default function PetGamePage() {
 
   const [hearts, setHearts] = useState<number[]>([]);
   const [bounceKey, setBounceKey] = useState(0);
+  const [evolveKey, setEvolveKey] = useState(0);
+  const [evolving, setEvolving] = useState(false);
   const heartId = useRef(0);
+
+  const lvl = pet ? levelFromExp(pet.exp) : null;
+  const species = pet ? getSpecies(pet.species) : undefined;
+  const stageIdx = species && lvl ? stageIndexForLevel(species, lvl.level) : 0;
+  const prevStageRef = useRef<number | null>(null);
 
   // Decay on mount + every 60s so the bars stay live.
   useEffect(() => {
@@ -54,16 +99,36 @@ export default function PetGamePage() {
     return () => clearInterval(t);
   }, [syncPetDecay]);
 
+  // Detect evolution: when the resolved stage index increases, celebrate.
+  useEffect(() => {
+    if (!species) return;
+    if (prevStageRef.current === null) {
+      prevStageRef.current = stageIdx;
+      return;
+    }
+    if (stageIdx > prevStageRef.current) {
+      setEvolving(true);
+      setEvolveKey((k) => k + 1);
+      playEvolveChime();
+      const t = setTimeout(() => setEvolving(false), 2200);
+      prevStageRef.current = stageIdx;
+      return () => clearTimeout(t);
+    }
+    prevStageRef.current = stageIdx;
+  }, [stageIdx, species]);
+
   if (!hydrated) {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gradient-to-b from-sky-100 to-violet-100" />
+        <main className="min-h-screen bg-gradient-to-b from-slate-900 to-indigo-950" />
       </>
     );
   }
 
-  if (!pet) return <AdoptScreen onAdopt={adoptPet} />;
+  if (!pet || !species || !lvl) {
+    return <AdoptScreen onAdopt={adoptPet} hasBadPet={!!pet && !species} />;
+  }
 
   const doAction = (action: PetActionKey) => {
     const ok = carePet(action);
@@ -74,53 +139,76 @@ export default function PetGamePage() {
     setTimeout(() => setHearts((h) => h.filter((x) => x !== id)), 1200);
   };
 
-  const species = getItem(pet.species);
-  const speciesImg = species?.image || '/avatars/char-fox.png';
-  const lvl = levelFromExp(pet.exp);
+  const stage = currentStage(species, lvl.level);
+  const next = nextStage(species, lvl.level);
+  const final = isFinalStage(species, lvl.level);
   const mood = petMood(pet);
+  const art = `/avatars/${stage.art}.png`;
 
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-100 to-pink-100 pb-28">
+      <Fireworks trigger={evolveKey} duration={2000} />
+      <main className={`min-h-screen bg-gradient-to-b ${species.bg} pb-28`}>
         <div className="mx-auto max-w-2xl px-4 py-6">
           <div className="mb-4 flex items-center justify-between">
-            <Link href="/games" className="kid-chip px-4 py-2 text-sm font-bold text-violet-700">← Game</Link>
-            <span className="flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-amber-600 shadow">
+            <Link href="/games" className="rounded-full bg-white/90 px-4 py-2 text-sm font-bold text-violet-700 shadow">← Game</Link>
+            <span className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-black text-amber-600 shadow">
               <UiIcon name="coins" size={20} /> {coins} xu
             </span>
           </div>
 
-          {/* Pet room */}
-          <section className="relative overflow-hidden rounded-[2.5rem] border-4 border-white bg-gradient-to-b from-sky-300 to-emerald-200 p-6 shadow-2xl">
-            <div className="pointer-events-none absolute left-6 top-6 text-4xl opacity-70">☁️</div>
-            <div className="pointer-events-none absolute right-8 top-10 text-3xl opacity-70">☁️</div>
+          {/* Creature stage */}
+          <section className="relative overflow-hidden rounded-[2.5rem] border-4 border-white/70 p-6 shadow-2xl">
+            {/* Themed glow backdrop */}
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{ background: `radial-gradient(circle at 50% 42%, ${species.glow} 0%, transparent 62%)` }}
+            />
+            {/* Floating sparkles */}
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              {SPARKLES.map((s, i) => (
+                <span key={i} className="pet-spark absolute text-lg" style={{ left: s.left, top: s.top, animationDelay: s.delay }}>
+                  {s.char}
+                </span>
+              ))}
+            </div>
 
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2 rounded-full bg-white/80 px-4 py-1.5 text-sm font-black text-violet-700 shadow">
-                {MOOD_FACE[mood]} {pet.name} · Cấp {lvl.level}
+            <div className="relative flex flex-col items-center">
+              <div className="flex items-center gap-2 rounded-full bg-white/85 px-4 py-1.5 text-sm font-black text-slate-700 shadow">
+                <span className="text-base">{species.emoji}</span> {pet.name} · Cấp {lvl.level}
+              </div>
+              <div className="mt-1 rounded-full bg-black/25 px-3 py-0.5 text-xs font-bold text-white backdrop-blur-sm">
+                {MOOD_FACE[mood]} {stage.nameVi}
               </div>
 
-              {/* Pet */}
-              <div className="relative mt-4 flex h-44 w-44 items-end justify-center">
+              {/* Creature */}
+              <div className="relative mt-3 flex h-56 w-56 items-end justify-center">
+                {/* aura ring */}
+                <div className="pet-aura absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                     style={{ background: `radial-gradient(circle, ${species.glow} 0%, transparent 70%)` }} />
                 {hearts.map((id) => (
                   <span key={id} className="pet-heart pointer-events-none absolute text-2xl">❤️</span>
                 ))}
-                <div key={bounceKey} className="pet-bounce">
-                  <Image src={speciesImg} alt={pet.name} width={150} height={150} unoptimized style={{ objectFit: 'contain' }} />
+                <div key={bounceKey} className={`relative ${evolving ? 'pet-evolve' : 'pet-bounce'}`}>
+                  <Image src={art} alt={stage.nameVi} width={180} height={180} unoptimized priority style={{ objectFit: 'contain', filter: 'drop-shadow(0 12px 18px rgba(0,0,0,0.35))' }} />
                 </div>
-                <div className="absolute bottom-0 h-4 w-32 rounded-full bg-black/15 blur-sm" />
+                {evolving && <div key={`flash-${evolveKey}`} className="pet-flash pointer-events-none absolute inset-0 rounded-full bg-white" />}
+                <div className="absolute bottom-1 h-4 w-32 rounded-full bg-black/25 blur-md" />
               </div>
 
-              {/* Level bar */}
-              <div className="mt-3 w-full max-w-xs">
-                <div className="mb-1 flex justify-between text-xs font-bold text-slate-600">
+              {/* Level / EXP bar */}
+              <div className="mt-2 w-full max-w-xs">
+                <div className="mb-1 flex justify-between text-xs font-bold text-white/90 drop-shadow">
                   <span>Kinh nghiệm</span>
                   <span>{lvl.intoLevel}/{lvl.needed}</span>
                 </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-white/70">
-                  <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-yellow-500" style={{ width: `${Math.max(lvl.progress * 100, 4)}%` }} />
+                <div className="h-3 overflow-hidden rounded-full bg-black/20">
+                  <div className={`h-full rounded-full bg-gradient-to-r ${species.accent} transition-all`} style={{ width: `${Math.max(lvl.progress * 100, 4)}%` }} />
                 </div>
+                <p className="mt-1.5 text-center text-xs font-bold text-white/90 drop-shadow">
+                  {final ? '⭐ Đã đạt hình dạng tối thượng!' : `Tiến hóa thành "${next?.nameVi}" ở cấp ${next?.minLevel}`}
+                </p>
               </div>
             </div>
           </section>
@@ -131,7 +219,7 @@ export default function PetGamePage() {
               const meta = STAT_META[k];
               const val = pet[k];
               return (
-                <div key={k} className="rounded-2xl bg-white p-3 shadow-sm">
+                <div key={k} className="rounded-2xl bg-white/95 p-3 shadow-sm">
                   <div className="mb-1 flex items-center justify-between text-sm font-black text-slate-700">
                     <span>{meta.emoji} {meta.labelVi}</span>
                     <span className={val < 25 ? 'text-rose-500' : 'text-slate-400'}>{val}%</span>
@@ -154,7 +242,7 @@ export default function PetGamePage() {
                   key={key}
                   onClick={() => doAction(key)}
                   disabled={tooPoor}
-                  className="flex flex-col items-center gap-1 rounded-2xl bg-white p-3 shadow-md transition-transform hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex flex-col items-center gap-1 rounded-2xl bg-white/95 p-3 shadow-md transition-transform hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Image src={`/games/pet/${def.asset}.png`} alt={def.labelVi} width={48} height={48} unoptimized />
                   <span className="text-xs font-black text-slate-700">{def.labelVi}</span>
@@ -166,44 +254,88 @@ export default function PetGamePage() {
             })}
           </section>
 
-          <p className="mt-4 text-center text-xs font-semibold text-slate-500">
-            Học bài để kiếm xu rồi chăm sóc thú cưng nhé! Chỉ số sẽ giảm dần theo thời gian.
+          <p className="mt-4 text-center text-xs font-semibold text-white/90 drop-shadow">
+            Học bài để kiếm xu, chăm sóc để lên cấp và tiến hóa thú cưng thần thoại của bé!
           </p>
         </div>
       </main>
 
       <style jsx global>{`
-        @keyframes pet-idle { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
-        .pet-bounce { animation: pet-idle 2.2s ease-in-out infinite; }
-        @keyframes pet-heart-float { 0% { transform: translateY(0) scale(0.6); opacity: 0 } 30% { opacity: 1 } 100% { transform: translateY(-90px) scale(1.2); opacity: 0 } }
-        .pet-heart { bottom: 60px; animation: pet-heart-float 1.2s ease-out forwards; }
-        @media (prefers-reduced-motion: reduce) { .pet-bounce, .pet-heart { animation-duration: 0.4s; } }
+        @keyframes pet-idle { 0%,100% { transform: translateY(0) rotate(-1deg) } 50% { transform: translateY(-10px) rotate(1deg) } }
+        .pet-bounce { animation: pet-idle 2.4s ease-in-out infinite; }
+        @keyframes pet-evolve-anim {
+          0% { transform: scale(1) rotate(0); }
+          25% { transform: scale(0.7) rotate(-8deg); filter: brightness(2); }
+          55% { transform: scale(1.35) rotate(8deg); filter: brightness(2.2); }
+          100% { transform: scale(1) rotate(0); }
+        }
+        .pet-evolve { animation: pet-evolve-anim 1.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+        @keyframes pet-flash-anim { 0% { opacity: 0; transform: scale(0.4); } 40% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1.8); } }
+        .pet-flash { animation: pet-flash-anim 1.2s ease-out forwards; }
+        @keyframes pet-aura-anim { 0%,100% { opacity: 0.55; transform: translate(-50%,-50%) scale(1); } 50% { opacity: 0.85; transform: translate(-50%,-50%) scale(1.12); } }
+        .pet-aura { animation: pet-aura-anim 3s ease-in-out infinite; }
+        @keyframes pet-spark-anim { 0%,100% { opacity: 0.2; transform: translateY(0) scale(0.8); } 50% { opacity: 1; transform: translateY(-10px) scale(1.1); } }
+        .pet-spark { animation: pet-spark-anim 2.8s ease-in-out infinite; }
+        @keyframes pet-heart-float { 0% { transform: translateY(0) scale(0.6); opacity: 0 } 30% { opacity: 1 } 100% { transform: translateY(-100px) scale(1.2); opacity: 0 } }
+        .pet-heart { bottom: 70px; animation: pet-heart-float 1.2s ease-out forwards; }
+        @media (prefers-reduced-motion: reduce) {
+          .pet-bounce, .pet-heart, .pet-aura, .pet-spark, .pet-evolve, .pet-flash { animation-duration: 0.5s; animation-iteration-count: 1; }
+        }
       `}</style>
     </>
   );
 }
 
+const SPARKLES = [
+  { char: '✨', left: '12%', top: '18%', delay: '0s' },
+  { char: '⭐', left: '82%', top: '22%', delay: '0.6s' },
+  { char: '✨', left: '20%', top: '70%', delay: '1.1s' },
+  { char: '💫', left: '78%', top: '66%', delay: '1.7s' },
+  { char: '✨', left: '50%', top: '10%', delay: '0.9s' },
+];
+
 /* ----------------------------- Adoption ----------------------------- */
 
-function AdoptScreen({ onAdopt }: { onAdopt: (species: string, name: string) => void }) {
-  const characters = useMemo(() => getItemsByCategory('character'), []);
-  const [selected, setSelected] = useState(characters[0]?.id ?? 'char-fox');
+function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: string) => void; hasBadPet?: boolean }) {
+  const [selectedId, setSelectedId] = useState(PET_SPECIES[0].id);
   const [name, setName] = useState('');
+  const selected = useMemo<PetSpecies>(() => getSpecies(selectedId) ?? PET_SPECIES[0], [selectedId]);
+  const eggArt = `/avatars/${selected.stages[0].art}.png`;
 
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-b from-sky-200 via-violet-100 to-pink-100 pb-24">
+      <main className={`min-h-screen bg-gradient-to-b ${selected.bg} pb-24 transition-colors duration-500`}>
         <div className="mx-auto max-w-2xl px-4 py-8">
-          <h1 className="text-center text-3xl font-black text-violet-700">Chọn thú cưng của bé 🐾</h1>
-          <p className="mt-1 text-center text-sm font-semibold text-slate-500">
-            Chọn một bạn thú và đặt tên — rồi cùng chăm sóc mỗi ngày nhé!
+          <h1 className="text-center text-3xl font-black text-white drop-shadow-lg">Chọn trứng thần thoại 🥚</h1>
+          <p className="mt-1 text-center text-sm font-semibold text-white/90 drop-shadow">
+            {hasBadPet
+              ? 'Hãy chọn lại một quả trứng để bắt đầu hành trình tiến hóa nhé!'
+              : 'Nuôi từ quả trứng nhỏ, lên cấp để tiến hóa thành sinh vật huyền thoại!'}
           </p>
 
           <div className="mt-5 flex flex-col items-center gap-3">
-            <div className="flex h-36 w-36 items-center justify-center rounded-[2rem] border-4 border-white bg-gradient-to-b from-sky-300 to-emerald-200 shadow-xl">
-              <Image src={getItem(selected)?.image || '/avatars/char-fox.png'} alt="pet" width={110} height={110} unoptimized />
+            <div className="relative flex h-44 w-44 items-center justify-center rounded-[2rem] border-4 border-white/70 shadow-xl"
+                 style={{ background: `radial-gradient(circle at 50% 45%, ${selected.glow} 0%, transparent 65%)` }}>
+              <Image src={eggArt} alt={selected.nameVi} width={120} height={120} unoptimized className="pet-bounce" style={{ filter: 'drop-shadow(0 8px 12px rgba(0,0,0,0.3))' }} />
             </div>
+            <div className="text-center">
+              <div className="text-xl font-black text-white drop-shadow">{selected.emoji} {selected.nameVi}</div>
+              <div className="text-xs font-semibold text-white/90 drop-shadow">{selected.tagline}</div>
+            </div>
+
+            {/* Evolution preview */}
+            <div className="flex items-center gap-1.5 rounded-2xl bg-white/85 px-3 py-2 shadow">
+              {selected.stages.map((st, i) => (
+                <div key={st.art} className="flex items-center gap-1.5">
+                  {i > 0 && <span className="text-slate-400">→</span>}
+                  <div className="flex flex-col items-center" title={`${st.nameVi} (Cấp ${st.minLevel})`}>
+                    <Image src={`/avatars/${st.art}.png`} alt={st.nameVi} width={34} height={34} unoptimized />
+                  </div>
+                </div>
+              ))}
+            </div>
+
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -212,33 +344,37 @@ function AdoptScreen({ onAdopt }: { onAdopt: (species: string, name: string) => 
               className="w-full max-w-xs rounded-2xl bg-white px-4 py-3 text-center font-bold text-slate-700 shadow outline-none"
             />
             <button
-              onClick={() => onAdopt(selected, name)}
-              className="rounded-2xl bg-gradient-to-r from-fuchsia-500 to-pink-500 px-8 py-3 text-base font-black text-white shadow-lg transition-transform hover:scale-105"
+              onClick={() => onAdopt(selected.id, name)}
+              className={`rounded-2xl bg-gradient-to-r ${selected.accent} px-8 py-3 text-base font-black text-white shadow-lg transition-transform hover:scale-105`}
             >
-              Nhận nuôi! 🏡
+              Ấp trứng! 🥚✨
             </button>
           </div>
 
-          <div className="mt-6 grid grid-cols-4 gap-3 sm:grid-cols-6">
-            {characters.map((c) => (
+          {/* Species picker */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {PET_SPECIES.map((s) => (
               <button
-                key={c.id}
-                onClick={() => setSelected(c.id)}
-                className={`flex items-center justify-center rounded-2xl bg-white p-2 shadow-sm transition-transform hover:-translate-y-1 ${
-                  selected === c.id ? 'ring-4 ring-fuchsia-400' : 'ring-1 ring-slate-100'
+                key={s.id}
+                onClick={() => setSelectedId(s.id)}
+                className={`flex flex-col items-center gap-1 rounded-2xl bg-white/90 p-3 shadow-sm transition-transform hover:-translate-y-1 ${
+                  selectedId === s.id ? 'ring-4 ring-white' : 'ring-1 ring-white/40'
                 }`}
-                title={c.nameVi}
+                title={s.nameVi}
               >
-                {c.image ? (
-                  <Image src={c.image} alt={c.nameVi} width={48} height={48} unoptimized />
-                ) : (
-                  <span className="text-3xl">{c.emoji}</span>
-                )}
+                <Image src={`/avatars/${s.stages[s.stages.length - 1].art}.png`} alt={s.nameVi} width={52} height={52} unoptimized />
+                <span className="text-xs font-black text-slate-700">{s.emoji} {s.nameVi}</span>
               </button>
             ))}
           </div>
         </div>
       </main>
+
+      <style jsx global>{`
+        @keyframes pet-idle { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+        .pet-bounce { animation: pet-idle 2.4s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .pet-bounce { animation-duration: 0.5s; } }
+      `}</style>
     </>
   );
 }
