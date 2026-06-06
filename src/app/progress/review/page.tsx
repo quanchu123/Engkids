@@ -7,6 +7,7 @@ import { pronounceWord } from '@/services/dictionary';
 import { getSupabaseClient } from '@/lib/auth-client';
 import { getWordsForReview, submitReview, VocabularyItem } from '@/services/vocabulary';
 import Header from '@/components/layout/Header';
+import PronunciationPractice from '@/components/learning/PronunciationPractice';
 import { SavedWord } from '@/types';
 
 const QUALITY_RESPONSES = [
@@ -56,6 +57,8 @@ export default function ReviewPage() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  // Optional, non-blocking pronunciation practice panel toggle (per flipped card).
+  const [showPractice, setShowPractice] = useState(false);
   const [sessionStats, setSessionStats] = useState({
     total: 0,
     correct: 0,
@@ -161,6 +164,7 @@ export default function ReviewPage() {
     if (currentIndex < totalCount - 1) {
       setCurrentIndex((prev) => prev + 1);
       setIsFlipped(false);
+      setShowPractice(false);
     } else {
       setIsComplete(true);
     }
@@ -228,6 +232,7 @@ export default function ReviewPage() {
   const restartSession = () => {
     setCurrentIndex(0);
     setIsFlipped(false);
+    setShowPractice(false);
     setIsComplete(false);
     setSrsError(null);
     setSessionStats({
@@ -460,6 +465,32 @@ export default function ReviewPage() {
                 </button>
               ))}
             </div>
+
+            {/* Optional, non-blocking pronunciation practice. Does not affect SRS submit/advance. */}
+            {currentCard && (
+              <div className="pt-2">
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowPractice((prev) => !prev)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-purple-600 font-bold border-2 border-purple-200 hover:bg-purple-50 hover:scale-105 active:scale-95 transition-transform shadow-sm"
+                  >
+                    {showPractice ? 'Đóng luyện nói ✖' : 'Luyện nói 🎤'}
+                  </button>
+                </div>
+
+                {showPractice && (
+                  <div className="mt-4">
+                    <PronunciationPractice
+                      key={currentCard.word}
+                      word={currentCard.word}
+                      ipa={currentCard.ipa}
+                      meaningVi={currentCard.vi}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
