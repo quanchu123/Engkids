@@ -61,6 +61,10 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
   const trackedStartRef = useRef(false);
   const lastSavedRef = useRef(0);
   const cueItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  // The cue that "Lặp câu" repeats. Frozen when loop is turned on (or when the
+  // child taps a subtitle while looping) so A-B repeat replays one sentence
+  // reliably instead of drifting with playback.
+  const loopCueRef = useRef<SubtitleCue | null>(null);
 
   const { saveWord, isWordSaved, unsaveWord, recordMediaActivity, applyGameResult } = useAppStore();
 
@@ -131,9 +135,10 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
     const t = e.currentTarget.currentTime;
     setCurrentTime(t);
 
-    // A-B repeat: loop the sentence the child is currently on.
-    if (loopSentence && currentCue && t >= currentCue.endTime) {
-      e.currentTarget.currentTime = currentCue.startTime;
+    // A-B repeat: replay the frozen sentence (loopCueRef) reliably.
+    const loopCue = loopCueRef.current;
+    if (loopSentence && loopCue && t >= loopCue.endTime) {
+      e.currentTarget.currentTime = loopCue.startTime;
     }
 
     // Throttle progress persistence to ~once every 5s.
@@ -141,6 +146,20 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
       lastSavedRef.current = t;
       setVideoProgress(video.id, t);
     }
+  };
+
+  // Toggle A-B repeat. Turning it on freezes the currently-shown sentence as
+  // the loop target (falls back to the first cue if none is active yet).
+  const toggleLoop = () => {
+    setLoopSentence((on) => {
+      const next = !on;
+      if (next) {
+        loopCueRef.current = currentCue ?? video.subtitles[0] ?? null;
+      } else {
+        loopCueRef.current = null;
+      }
+      return next;
+    });
   };
 
   const handleEnded = () => {
@@ -169,8 +188,10 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
     setSelectedWord({ word: cleanWord, info: null });
 
     try {
-      const wordInfo = await lookupWord(cleanWord);
-      const viTranslation = await translateToVietnamese(cleanWord);
+      const [wordInfo, viTranslation] = await Promise.all([
+        lookupWord(cleanWord),
+        translateToVietnamese(cleanWord),
+      ]);
       if (viTranslation.success && wordInfo) {
         wordInfo.vietnamese = viTranslation.vietnamese;
       }
@@ -198,6 +219,11 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
     if (videoRef.current) {
       videoRef.current.currentTime = seconds;
       videoRef.current.play().catch(() => {});
+    }
+    // When looping, tapping a subtitle re-targets the loop to that sentence.
+    if (loopSentence) {
+      const idx = findCurrentCueIndex(video.subtitles, seconds);
+      loopCueRef.current = idx >= 0 ? video.subtitles[idx] : loopCueRef.current;
     }
   };
 
@@ -303,7 +329,7 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
             {/* Integrated learning control bar, attached under the video. */}
             <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-slate-100 bg-white px-4 py-3">
               <button
-                onClick={() => setLoopSentence((v) => !v)}
+                onClick={toggleLoop}
                 className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold transition ${
                   loopSentence ? 'bg-violet-500 text-white shadow' : 'bg-slate-100 text-violet-700 hover:bg-slate-200'
                 }`}
