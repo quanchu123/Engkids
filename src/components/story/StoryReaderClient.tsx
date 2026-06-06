@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,9 @@ import { translateToVietnamese } from '@/services/translate';
 import { isBase64Image, isImageUrl } from '@/services/image';
 import { useSmartPopup, WordData } from '@/components/SmartPopup';
 import { trackEvent } from '@/lib/analytics';
+import { computeStoryStars } from '@/lib/story-rewards';
+import { readingRate } from '@/lib/reading-speed';
+import PronunciationPractice from '@/components/learning/PronunciationPractice';
 
 interface StoryReaderClientProps {
   story: Story;
@@ -25,7 +28,16 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
   const [vietnameseWord, setVietnameseWord] = useState('');
   const [isLoadingWord, setIsLoadingWord] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [showPractice, setShowPractice] = useState(false);
   const [currentPanel, setCurrentPanel] = useState(0);
+
+  // Karaoke highlight: index of the token currently being spoken (or null).
+  const [highlightTokenIndex, setHighlightTokenIndex] = useState<number | null>(null);
+
+  // Engagement tracking (fix A). Sets dedupe; count state drives star math.
+  const viewedPanelsRef = useRef<Set<number>>(new Set());
+  const clickedWordsRef = useRef<Set<string>>(new Set());
+  const [wordsClickedCount, setWordsClickedCount] = useState(0);
 
   const {
     markPanelViewed,
@@ -35,6 +47,7 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
     isWordSaved,
     updateStreak,
     trackWordClick,
+    settings,
   } = useAppStore();
 
   const handleSaveWordFromAI = useCallback((wordData: WordData) => {
@@ -43,23 +56,48 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
 
   const { PopupComponents } = useSmartPopup(handleSaveWordFromAI);
 
+  // Mount: streak + analytics only. Panels are marked as the child navigates.
   useEffect(() => {
     updateStreak();
     trackEvent('story_opened', { storyId: story.id });
-    story.panels.forEach((panel) => {
-      markPanelViewed(story.id, panel.panel_id);
-    });
-  }, [markPanelViewed, story.id, story.panels, updateStreak]);
+  }, [story.id, updateStreak]);
+
+  // Fix B: mark the CURRENT panel viewed whenever it changes, and record the
+  // index for engagement-based star scoring.
+  useEffect(() => {
+    const activePanel = story.panels[currentPanel];
+    if (!activePanel) return;
+    markPanelViewed(story.id, activePanel.panel_id);
+    viewedPanelsRef.current.add(currentPanel);
+  }, [currentPanel, markPanelViewed, story.id, story.panels]);
+
+  // Fix D: optionally auto-play the English sentence when the panel changes.
+  // Subtle and non-blocking; speakWord cancels any prior utterance.
+  useEffect(() => {
+    if (!settings.autoPlayAudio) return;
+    if (typeof window === 'undefined') return;
+    const activePanel = story.panels[currentPanel];
+    if (!activePanel) return;
+    speakWord(activePanel.sentence_en, readingRate(settings.readingSpeed));
+  }, [currentPanel, settings.autoPlayAudio, settings.readingSpeed, story.panels]);
 
   const handleWordClick = useCallback(async (token: Token) => {
     setSelectedWord(token);
     setShowPopup(true);
+    setShowPractice(false);
     setIsLoadingWord(true);
     setWordInfo(null);
     setVietnameseWord('');
     trackWordClick(token.norm || token.display, story.id);
 
     const cleanWord = (token.norm || token.display).replace(/[.,!?\"'`]/g, '').toLowerCase();
+
+    // Dedupe distinct clicked words for star scoring (fix A).
+    if (cleanWord && !clickedWordsRef.current.has(cleanWord)) {
+      clickedWordsRef.current.add(cleanWord);
+      setWordsClickedCount(clickedWordsRef.current.size);
+    }
+
     const [info, translation] = await Promise.all([
       lookupWord(cleanWord),
       translateToVietnamese(cleanWord),
@@ -72,6 +110,7 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
 
   const closePopup = useCallback(() => {
     setShowPopup(false);
+    setShowPractice(false);
     setSelectedWord(null);
     setWordInfo(null);
     setVietnameseWord('');
@@ -102,7 +141,12 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
   }, [closePopup, showPopup, story.panels.length]);
 
   const handleComplete = () => {
-    completeStory(story.id, 1);
+    const stars = computeStoryStars({
+      panelsViewed: viewedPanelsRef.current.size,
+      totalPanels: story.panels.length,
+      wordsClicked: wordsClickedCount,
+    });
+    completeStory(story.id, stars);
     router.push(`/stories/${story.id}/vocab`);
   };
 
@@ -112,11 +156,64 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
     if (isWordSaved(word)) {
       unsaveWord(word);
     } else {
-      saveWord(word, selectedWord.vi || '', false, wordInfo?.ipa || '', story.id);
+      // Fix C: best-available Vietnamese meaning + English example sentence.
+      const meaning = selectedWord.vi || vietnameseWord || '';
+      saveWord(word, meaning, false, wordInfo?.ipa || '', story.id, panel.sentence_en);
     }
   };
 
   const panel = story.panels[currentPanel];
+
+  // Fix E: read the whole English sentence with a karaoke-style word highlight.
+  const readWholeSentence = useCallback(() => {
+    const text = panel.sentence_en;
+    const rate = readingRate(settings.readingSpeed);
+
+    // SSR / unsupported guard — degrade to a plain speak, never throw.
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      try {
+        speakWord(text, rate);
+      } catch {
+        /* no-op */
+      }
+      return;
+    }
+
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = rate;
+      utterance.pitch = 1;
+
+      const voices = window.speechSynthesis.getVoices();
+      const enVoice =
+        voices.find((v) => v.lang.startsWith('en-US')) ||
+        voices.find((v) => v.lang.startsWith('en'));
+      if (enVoice) utterance.voice = enVoice;
+
+      // onboundary may be unsupported in some browsers — that's fine, we just
+      // won't highlight. Guard everything so it never throws.
+      utterance.onboundary = (event: SpeechSynthesisEvent) => {
+        if (typeof event.charIndex !== 'number') return;
+        const index = tokenIndexAtChar(panel.tokens, text, event.charIndex);
+        if (index >= 0) setHighlightTokenIndex(index);
+      };
+
+      const clearHighlight = () => setHighlightTokenIndex(null);
+      utterance.onend = clearHighlight;
+      utterance.onerror = clearHighlight;
+
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      setHighlightTokenIndex(null);
+      try {
+        speakWord(text, rate);
+      } catch {
+        /* no-op */
+      }
+    }
+  }, [panel, settings.readingSpeed]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-amber-50 to-pink-50" data-testid="story-reader">
@@ -156,24 +253,51 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <PanelCard
-            title="English"
-            actionLabel="Listen"
-            onSpeak={() => speakWord(panel.sentence_en)}
-            content={renderEnglishSentence(panel, selectedWord, handleWordClick)}
-          >
-            {renderPanelImage(panel, currentPanel)}
-          </PanelCard>
+        {/* Fix G: ONE image, full-width above the two text columns. */}
+        <div className="mx-auto mb-6 max-w-3xl">
+          {renderPanelImage(panel, currentPanel)}
+        </div>
 
-          <PanelCard
-            title="Tiếng Việt"
-            actionLabel="Nghe"
-            onSpeak={() => speakWord(panel.sentence_vi)}
-            content={<p className="text-lg font-semibold text-slate-800">{panel.sentence_vi}</p>}
-          >
-            {renderPanelImage(panel, currentPanel)}
-          </PanelCard>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* English column */}
+          <section className="toy-panel p-5">
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h2 className="text-lg font-black text-slate-900">English</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => speakWord(panel.sentence_en, readingRate(settings.readingSpeed))}
+                  className="kid-chip px-4 py-2 text-sm font-bold text-slate-700"
+                >
+                  Listen
+                </button>
+                <button
+                  onClick={readWholeSentence}
+                  className="kid-chip px-4 py-2 text-sm font-bold text-emerald-700"
+                >
+                  Đọc cả câu 🔊
+                </button>
+              </div>
+            </div>
+            <div className="toy-surface rounded-3xl p-4">
+              {renderEnglishSentence(panel, selectedWord, handleWordClick, highlightTokenIndex)}
+            </div>
+          </section>
+
+          {/* Vietnamese column */}
+          <section className="toy-panel p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-black text-slate-900">Tiếng Việt</h2>
+              <button
+                onClick={() => speakWord(panel.sentence_vi)}
+                className="kid-chip px-4 py-2 text-sm font-bold text-slate-700"
+              >
+                Nghe
+              </button>
+            </div>
+            <div className="toy-surface rounded-3xl p-4">
+              <p className="text-lg font-semibold text-slate-800">{panel.sentence_vi}</p>
+            </div>
+          </section>
         </div>
 
         <div className="soft-panel mx-auto mt-6 flex max-w-3xl items-center justify-between rounded-[1.75rem] px-4 py-4">
@@ -204,7 +328,10 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
 
       {showPopup && selectedWord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4" onClick={closePopup}>
-          <div className="toy-panel w-80 p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="toy-panel max-h-[85vh] w-80 overflow-y-auto p-5 shadow-2xl sm:w-96"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-xl font-black text-slate-900">{selectedWord.display}</h3>
@@ -250,7 +377,25 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
               >
                 {isWordSaved(selectedWord.norm || selectedWord.display) ? 'Đã lưu' : 'Lưu từ vựng'}
               </button>
+              <button
+                onClick={() => setShowPractice((value) => !value)}
+                className={`rounded-2xl px-4 py-3 font-bold ${
+                  showPractice ? 'bg-orange-100 text-orange-700' : 'bg-orange-500 text-white'
+                }`}
+              >
+                Luyện nói 🎤
+              </button>
             </div>
+
+            {showPractice && (
+              <div className="mt-4">
+                <PronunciationPractice
+                  word={selectedWord.display}
+                  ipa={wordInfo?.ipa}
+                  meaningVi={vietnameseWord || selectedWord.vi}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -260,31 +405,33 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
   );
 }
 
-function PanelCard({
-  title,
-  actionLabel,
-  onSpeak,
-  children,
-  content,
-}: {
-  title: string;
-  actionLabel: string;
-  onSpeak: () => void;
-  children: React.ReactNode;
-  content: React.ReactNode;
-}) {
-  return (
-    <section className="toy-panel p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-black text-slate-900">{title}</h2>
-        <button onClick={onSpeak} className="kid-chip px-4 py-2 text-sm font-bold text-slate-700">
-          {actionLabel}
-        </button>
-      </div>
-      <div className="mb-4">{children}</div>
-      <div className="toy-surface rounded-3xl p-4">{content}</div>
-    </section>
-  );
+/**
+ * Map a character offset within `sentence` to the index of the token in
+ * `tokens` that contains it. Walks tokens in order, matching each token's
+ * display text against the sentence. Returns the best (last start <= charIndex)
+ * match, or -1 if nothing sensible is found. Pure and defensive.
+ */
+function tokenIndexAtChar(tokens: Token[], sentence: string, charIndex: number): number {
+  let searchPos = 0;
+  let best = -1;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const display = tokens[i].display;
+    if (!display) continue;
+    const start = sentence.indexOf(display, searchPos);
+    if (start === -1) continue;
+    const end = start + display.length;
+    searchPos = end;
+
+    if (charIndex >= start && charIndex < end) {
+      return i;
+    }
+    if (start <= charIndex) {
+      best = i;
+    }
+  }
+
+  return best;
 }
 
 function renderPanelImage(panel: Panel, index: number) {
@@ -317,11 +464,13 @@ function renderEnglishSentence(
   panel: Panel,
   selectedWord: Token | null,
   onWordClick: (token: Token) => void,
+  highlightTokenIndex: number | null,
 ) {
   return (
     <p className="text-lg leading-relaxed">
       {panel.tokens.map((token, index) => {
         const isWord = /[a-zA-Z]/.test(token.display);
+        const isHighlighted = highlightTokenIndex === index;
         return (
           <span key={index}>
             {isWord ? (
@@ -329,13 +478,17 @@ function renderEnglishSentence(
                 type="button"
                 onClick={() => onWordClick(token)}
                 className={`rounded px-1 py-0.5 ${
-                  selectedWord?.display === token.display ? 'bg-emerald-200 text-emerald-900' : 'hover:bg-amber-100'
+                  isHighlighted
+                    ? 'bg-yellow-300 text-slate-900'
+                    : selectedWord?.display === token.display
+                    ? 'bg-emerald-200 text-emerald-900'
+                    : 'hover:bg-amber-100'
                 }`}
               >
                 {token.display}
               </button>
             ) : (
-              <span>{token.display}</span>
+              <span className={isHighlighted ? 'bg-yellow-300' : undefined}>{token.display}</span>
             )}
             {index < panel.tokens.length - 1 && ' '}
           </span>
