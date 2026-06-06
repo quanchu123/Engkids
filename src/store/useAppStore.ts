@@ -47,7 +47,6 @@ interface AppState {
   coins: number;
   streakFreezes: number;
   equipAvatarItem: (category: AvatarCategory, itemId: string) => void;
-  unlockAvatarItem: (itemId: string) => void;
   purchaseAvatarItem: (itemId: string) => boolean;
   buyStreakFreeze: () => boolean;
   isAvatarItemOwned: (itemId: string) => boolean;
@@ -121,14 +120,6 @@ export const useAppStore = create<AppState>()(
       ownedAvatarItems: [],
       coins: 0,
       streakFreezes: 0,
-
-      unlockAvatarItem: (itemId) => {
-        set((state) => {
-          if (state.ownedAvatarItems.includes(itemId)) return state;
-          if (!getItem(itemId)) return state;
-          return { ownedAvatarItems: [...state.ownedAvatarItems, itemId] };
-        });
-      },
 
       // Spend coins to buy an avatar item. Returns false (no-op) when the item
       // is unknown, already owned, or the child can't afford it. Free items
