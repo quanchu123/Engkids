@@ -1,20 +1,43 @@
 'use client';
 
+import Image from 'next/image';
 import { useAppStore } from '@/store/useAppStore';
-import { getItem } from '@/lib/avatar';
+import { getItem, AvatarItem } from '@/lib/avatar';
 
 type AvatarSize = 'sm' | 'md' | 'lg';
 
 const SIZE_MAP: Record<AvatarSize, { box: number; character: number; accessory: number; ring: number }> = {
-  sm: { box: 40, character: 20, accessory: 14, ring: 3 },
-  md: { box: 96, character: 48, accessory: 28, ring: 5 },
-  lg: { box: 160, character: 84, accessory: 44, ring: 7 },
+  sm: { box: 40, character: 26, accessory: 16, ring: 3 },
+  md: { box: 110, character: 74, accessory: 40, ring: 5 },
+  lg: { box: 180, character: 122, accessory: 64, ring: 8 },
 };
 
+/** Render an avatar piece as Icons8 art when available, else its emoji. */
+function Art({ item, px }: { item: AvatarItem | undefined; px: number }) {
+  if (!item) return null;
+  if (item.image) {
+    return (
+      <Image
+        src={item.image}
+        alt={item.nameVi}
+        width={px}
+        height={px}
+        style={{ width: px, height: px, objectFit: 'contain' }}
+        unoptimized
+      />
+    );
+  }
+  return (
+    <span style={{ fontSize: px * 0.8, lineHeight: 1 }} aria-hidden="true">
+      {item.emoji}
+    </span>
+  );
+}
+
 /**
- * Pure visual avatar: renders the equipped character emoji inside a circular
- * frame (frame tint from the equipped frame item), with hat (top) and pet
- * (bottom-right) accessory emoji overlaid when equipped.
+ * Pure visual avatar: the equipped character art inside a circular frame
+ * (frame tint from the equipped frame item), with hat (top) and pet
+ * (bottom-right) accessories overlaid when equipped.
  */
 export default function AvatarDisplay({ size = 'md' }: { size?: AvatarSize }) {
   const equipped = useAppStore((state) => state.equippedAvatar);
@@ -36,33 +59,31 @@ export default function AvatarDisplay({ size = 'md' }: { size?: AvatarSize }) {
       <div
         className="flex h-full w-full items-center justify-center rounded-full"
         style={{
-          background: `radial-gradient(circle at 30% 25%, #ffffff 0%, ${frameTint} 75%)`,
+          background: `radial-gradient(circle at 30% 22%, #ffffff 0%, ${frameTint} 78%)`,
           border: `${dims.ring}px solid ${frameTint}`,
-          boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+          boxShadow: '0 6px 18px rgba(0,0,0,0.14)',
         }}
       >
-        <span style={{ fontSize: dims.character, lineHeight: 1 }} aria-hidden="true">
-          {character?.emoji ?? '🦊'}
-        </span>
+        <Art item={character} px={dims.character} />
       </div>
 
       {hat && (
         <span
           className="absolute left-1/2 -translate-x-1/2"
-          style={{ top: -dims.accessory * 0.35, fontSize: dims.accessory, lineHeight: 1 }}
+          style={{ top: -dims.accessory * 0.42, lineHeight: 0 }}
           aria-hidden="true"
         >
-          {hat.emoji}
+          <Art item={hat} px={dims.accessory} />
         </span>
       )}
 
       {pet && (
         <span
           className="absolute"
-          style={{ right: -dims.accessory * 0.2, bottom: -dims.accessory * 0.15, fontSize: dims.accessory, lineHeight: 1 }}
+          style={{ right: -dims.accessory * 0.18, bottom: -dims.accessory * 0.12, lineHeight: 0 }}
           aria-hidden="true"
         >
-          {pet.emoji}
+          <Art item={pet} px={dims.accessory} />
         </span>
       )}
     </div>

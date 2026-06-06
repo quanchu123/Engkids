@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Star } from 'lucide-react';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import AvatarDisplay from '@/components/learning/AvatarDisplay';
 import UiIcon from '@/components/common/UiIcon';
@@ -20,6 +20,27 @@ const CATEGORY_LABELS: Record<AvatarCategory, string> = {
   pet: 'Thú cưng',
   frame: 'Khung viền',
 };
+
+/** Render an avatar item's art (Icons8 PNG) or its emoji fallback. */
+function ItemArt({ item, px }: { item: AvatarItem; px: number }) {
+  if (item.image) {
+    return (
+      <Image
+        src={item.image}
+        alt={item.nameVi}
+        width={px}
+        height={px}
+        style={{ width: px, height: px, objectFit: 'contain' }}
+        unoptimized
+      />
+    );
+  }
+  return (
+    <span style={{ fontSize: px * 0.7, lineHeight: 1 }} aria-hidden="true">
+      {item.emoji}
+    </span>
+  );
+}
 
 export default function ShopPage() {
   const totalStars = useAppStore((state) => state.progress.totalStars);
@@ -40,44 +61,39 @@ export default function ShopPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gradient-to-b from-fuchsia-50 via-pink-50 to-sky-50 pb-24">
+      <main className="min-h-screen bg-gradient-to-b from-fuchsia-100 via-pink-50 to-sky-100 pb-24">
         <div className="mx-auto max-w-5xl px-4 py-8">
-          <div className="mb-6 flex flex-col items-center gap-2 text-center">
-            <h1
-              className="font-black leading-tight"
-              style={{
-                fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
-                background: 'linear-gradient(135deg, #d946ef 0%, #ec4899 50%, #f97316 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                letterSpacing: '-0.025em',
-              }}
-            >
-              Cửa Hàng Phần Thưởng
-            </h1>
-            <p className="text-sm font-bold text-fuchsia-700/80">
-              Dùng sao để mở khóa nhân vật và phụ kiện đáng yêu!
-            </p>
-            <div className="kid-chip mt-1 flex items-center gap-2 px-4 py-2 text-base font-black text-amber-600">
-              <UiIcon name="star" size={22} />
-              <span>{totalStars} sao</span>
+          {/* Hero: big avatar preview + balance */}
+          <section className="relative mb-8 overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-violet-600 via-fuchsia-600 to-orange-500 p-6 text-white shadow-2xl sm:p-8">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
+            <div className="pointer-events-none absolute -bottom-12 left-10 h-32 w-32 rounded-full bg-white/10" />
+            <div className="relative flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-center sm:text-left">
+                <h1 className="text-3xl font-black drop-shadow sm:text-4xl">Cửa Hàng Phần Thưởng</h1>
+                <p className="mt-1 max-w-md text-sm font-semibold text-white/90">
+                  Học chăm để có sao, rồi mở khóa nhân vật và phụ kiện thật xịn cho bé!
+                </p>
+                <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-base font-black text-amber-600 shadow-lg">
+                  <UiIcon name="star" size={22} />
+                  <span>{totalStars} sao</span>
+                </div>
+              </div>
+              <div className="rounded-[2rem] bg-white/15 p-4 backdrop-blur">
+                <AvatarDisplay size="lg" />
+                <p className="mt-2 text-center text-sm font-black text-white/95">Bé của bạn</p>
+              </div>
             </div>
-          </div>
-
-          <section className="soft-feature mb-6 flex flex-col items-center gap-3 rounded-[2rem] p-6 text-white">
-            <AvatarDisplay size="lg" />
-            <p className="text-sm font-black text-white/90">Hình đại diện của bạn</p>
           </section>
 
-          <section className="soft-panel mb-6 flex flex-wrap justify-center gap-2 rounded-[1.75rem] p-2">
+          {/* Category tabs */}
+          <section className="mb-6 flex flex-wrap justify-center gap-2 rounded-[1.75rem] bg-white/70 p-2 shadow-sm backdrop-blur">
             {AVATAR_CATEGORIES.map((category) => {
               const active = activeCategory === category;
               return (
                 <button
                   key={category}
                   onClick={() => setActiveCategory(category)}
-                  className={`rounded-2xl px-4 py-3 text-sm font-black transition-all ${
+                  className={`rounded-2xl px-5 py-3 text-sm font-black transition-all ${
                     active
                       ? 'bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white shadow-lg'
                       : 'bg-white text-fuchsia-700 shadow'
@@ -89,49 +105,54 @@ export default function ShopPage() {
             })}
           </section>
 
+          {/* Item grid */}
           <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {items.map((item) => {
               const owned = isAvatarItemOwned(item.id);
               const equipped = equippedAvatar[item.category] === item.id;
               const unlocked = isUnlocked(item, totalStars);
+              const locked = !owned && !equipped && !unlocked;
 
               return (
                 <div
                   key={item.id}
-                  className={`toy-panel flex flex-col items-center gap-3 p-4 text-center ${
-                    equipped ? 'ring-2 ring-fuchsia-400' : ''
+                  className={`flex flex-col items-center gap-3 rounded-[1.75rem] bg-white p-4 text-center shadow-md transition-transform hover:-translate-y-1 ${
+                    equipped ? 'ring-4 ring-fuchsia-400' : 'ring-1 ring-slate-100'
                   }`}
                 >
                   <div
-                    className="toy-surface flex h-20 w-20 items-center justify-center rounded-full text-4xl"
-                    style={{ background: `radial-gradient(circle at 30% 25%, #ffffff 0%, ${item.tint} 80%)` }}
+                    className={`flex h-24 w-24 items-center justify-center rounded-3xl ${locked ? 'grayscale' : ''}`}
+                    style={{
+                      background: `radial-gradient(circle at 30% 25%, #ffffff 0%, ${item.tint} 85%)`,
+                      opacity: locked ? 0.55 : 1,
+                    }}
                   >
-                    <span aria-hidden="true">{item.emoji}</span>
+                    <ItemArt item={item} px={64} />
                   </div>
+
                   <h3 className="text-sm font-black text-slate-900">{item.nameVi}</h3>
 
                   {equipped ? (
-                    <span className="kid-chip px-3 py-2 text-xs font-black text-emerald-700">
-                      Đang dùng
+                    <span className="flex w-full items-center justify-center gap-1 rounded-2xl bg-emerald-100 px-3 py-2 text-xs font-black text-emerald-700">
+                      ✓ Đang dùng
                     </span>
                   ) : owned ? (
                     <button
                       onClick={() => equipAvatarItem(item.category, item.id)}
-                      className="action-btn w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-3 py-2 text-xs font-black text-white shadow-lg"
+                      className="w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-3 py-2 text-xs font-black text-white shadow-md transition-transform hover:scale-105"
                     >
                       Trang bị
                     </button>
                   ) : unlocked ? (
                     <button
                       onClick={() => handleUnlockAndEquip(item)}
-                      className="action-btn flex w-full items-center justify-center gap-1 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-black text-white shadow-lg"
+                      className="flex w-full items-center justify-center gap-1 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2 text-xs font-black text-white shadow-md transition-transform hover:scale-105"
                     >
-                      <Star size={13} fill="currentColor" aria-hidden="true" />
-                      Mở khóa ({item.requiredStars}⭐)
+                      <UiIcon name="star" size={14} /> Mở khóa
                     </button>
                   ) : (
                     <span className="flex w-full items-center justify-center gap-1 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-400">
-                      Cần {item.requiredStars}⭐
+                      <UiIcon name="star" size={14} /> Cần {item.requiredStars}
                     </span>
                   )}
                 </div>
