@@ -4,6 +4,7 @@ import {
   applyDecay,
   applyAction,
   clampStat,
+  coinRewardForCombo,
   expForLevel,
   levelFromExp,
   petWellbeing,
@@ -62,10 +63,10 @@ describe('applyDecay', () => {
 });
 
 describe('applyAction', () => {
-  it('feeding raises hunger and grants exp + reports cost', () => {
+  it('feeding raises hunger and grants exp + reports coin reward', () => {
     const base = { ...createPet('char-fox', 'Cáo', 0), hunger: 40 };
-    const { pet, cost } = applyAction(base, 'feed', 0);
-    expect(cost).toBe(PET_ACTIONS.feed.coinCost);
+    const { pet, coinReward } = applyAction(base, 'feed', 0);
+    expect(coinReward).toBe(PET_ACTIONS.feed.coinReward);
     expect(pet.hunger).toBe(clampStat(40 + 35));
     expect(pet.exp).toBe(PET_ACTIONS.feed.exp);
   });
@@ -76,12 +77,11 @@ describe('applyAction', () => {
     expect(pet.hunger).toBe(MAX_STAT);
   });
 
-  it('play reduces energy and hunger', () => {
-    const base = { ...createPet('char-fox', 'Cáo', 0), happiness: 10, energy: 50, hunger: 50 };
+  it('play raises happiness and reduces energy', () => {
+    const base = { ...createPet('char-fox', 'Cáo', 0), happiness: 10, energy: 50 };
     const { pet } = applyAction(base, 'play', 0);
     expect(pet.happiness).toBe(clampStat(10 + 35));
-    expect(pet.energy).toBe(clampStat(50 - 12));
-    expect(pet.hunger).toBe(clampStat(50 - 6));
+    expect(pet.energy).toBe(clampStat(50 - 8));
   });
 
   it('applies decay before the action effect', () => {
@@ -90,6 +90,18 @@ describe('applyAction', () => {
     expect(pet.clean).toBe(100);
     // hunger decayed 16 with no action effect
     expect(pet.hunger).toBe(100 - 16);
+  });
+});
+
+describe('coinRewardForCombo', () => {
+  it('adds the combo as a bonus, capped at +5', () => {
+    expect(coinRewardForCombo('feed', 0)).toBe(PET_ACTIONS.feed.coinReward);
+    expect(coinRewardForCombo('feed', 3)).toBe(PET_ACTIONS.feed.coinReward + 3);
+    expect(coinRewardForCombo('feed', 99)).toBe(PET_ACTIONS.feed.coinReward + 5);
+  });
+
+  it('treats negative combo as zero bonus', () => {
+    expect(coinRewardForCombo('play', -4)).toBe(PET_ACTIONS.play.coinReward);
   });
 });
 

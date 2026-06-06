@@ -1,17 +1,19 @@
 'use client';
 
 /**
- * "Thú Cưng Thần Thoại" — raise a baby creature into a legendary beast.
+ * "Thú Cưng Thần Thoại" — raise a baby creature into a legendary beast by
+ * LEARNING ENGLISH. Every care action (feed/play/bath/sleep) is gated behind a
+ * quick vocabulary quiz drawn from the shared word bank. Correct answers grant
+ * EXP + coins (with a combo bonus); enough EXP levels up and EVOLVES the
+ * creature through dramatic glowing stages.
  *
- * The child adopts one of four mythical chains (Thủy Long / Phượng Hoàng /
- * Kỳ Lân / Long Bạo Chúa) starting from an egg, then keeps its needs up with
- * care actions that cost coins and grant EXP. Leveling up EVOLVES the creature
- * through dramatic stages with a glowing burst celebration. Pure React + CSS +
- * Icons8 art (no game engine). State lives in the app store (persisted); needs
- * decay over real time.
+ * The creature is "alive": layered idle animations (float + sway + breathe),
+ * reacts happily when fed and shakes its head on a wrong answer, and jumps when
+ * tapped. Pure React + CSS + Icons8 art (no game engine). State is persisted;
+ * needs decay over real time.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
@@ -34,6 +36,8 @@ import {
   nextStage,
   isFinalStage,
 } from '@/lib/pet-species';
+import { buildPetQuiz, PetQuiz } from '@/lib/pet-quiz';
+import { loadWordBank, DEFAULT_WORD_BANK, WordPair } from '@/lib/word-bank';
 
 const STAT_META: Record<PetStatKey, { labelVi: string; emoji: string; bar: string }> = {
   hunger: { labelVi: 'No bụng', emoji: '🍎', bar: 'from-orange-400 to-amber-500' },
@@ -44,34 +48,37 @@ const STAT_META: Record<PetStatKey, { labelVi: string; emoji: string; bar: strin
 
 const ACTION_ORDER: PetActionKey[] = ['feed', 'play', 'bath', 'sleep'];
 const MOOD_FACE: Record<'happy' | 'ok' | 'sad', string> = { happy: '😄', ok: '🙂', sad: '😢' };
+type PetAnim = 'idle' | 'happy' | 'sad';
 
 /** Tiny WebAudio rising arpeggio for the evolution moment. */
-function playEvolveChime() {
+function playTones(notes: number[], gap = 0.1) {
   try {
     if (typeof window === 'undefined') return;
     const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
-    const notes = [523, 659, 784, 1047, 1319]; // C5 E5 G5 C6 E6
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.value = freq;
-      const start = ctx.currentTime + i * 0.1;
+      const start = ctx.currentTime + i * gap;
       gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.2, start + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+      gain.gain.exponentialRampToValueAtTime(0.2, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + gap + 0.15);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(start);
-      osc.stop(start + 0.34);
+      osc.stop(start + gap + 0.18);
     });
-    setTimeout(() => ctx.close().catch(() => {}), 1200);
+    setTimeout(() => ctx.close().catch(() => {}), (notes.length * gap + 0.5) * 1000);
   } catch {
     /* ignore */
   }
 }
+const playEvolveChime = () => playTones([523, 659, 784, 1047, 1319], 0.1);
+const playDing = () => playTones([880, 1175], 0.08);
+const playBuzz = () => playTones([200, 150], 0.1);
 
 export default function PetGamePage() {
   const pet = useAppStore((state) => state.pet);
@@ -81,16 +88,34 @@ export default function PetGamePage() {
   const carePet = useAppStore((state) => state.carePet);
   const syncPetDecay = useAppStore((state) => state.syncPetDecay);
 
+  const [bank, setBank] = useState<WordPair[]>(DEFAULT_WORD_BANK);
   const [hearts, setHearts] = useState<number[]>([]);
-  const [bounceKey, setBounceKey] = useState(0);
   const [evolveKey, setEvolveKey] = useState(0);
   const [evolving, setEvolving] = useState(false);
+  const [anim, setAnim] = useState<PetAnim>('idle');
+  const [combo, setCombo] = useState(0);
+  const [floats, setFloats] = useState<Array<{ id: number; text: string }>>([]);
+
+  // Quiz modal state
+  const [quizAction, setQuizAction] = useState<PetActionKey | null>(null);
+  const [quiz, setQuiz] = useState<PetQuiz | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
+
   const heartId = useRef(0);
+  const floatId = useRef(0);
+  const prevStageRef = useRef<number | null>(null);
 
   const lvl = pet ? levelFromExp(pet.exp) : null;
   const species = pet ? getSpecies(pet.species) : undefined;
   const stageIdx = species && lvl ? stageIndexForLevel(species, lvl.level) : 0;
-  const prevStageRef = useRef<number | null>(null);
+
+  // Load the shared word bank once.
+  useEffect(() => {
+    let alive = true;
+    loadWordBank().then((b) => { if (alive && b.length >= 4) setBank(b); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   // Decay on mount + every 60s so the bars stay live.
   useEffect(() => {
@@ -102,10 +127,7 @@ export default function PetGamePage() {
   // Detect evolution: when the resolved stage index increases, celebrate.
   useEffect(() => {
     if (!species) return;
-    if (prevStageRef.current === null) {
-      prevStageRef.current = stageIdx;
-      return;
-    }
+    if (prevStageRef.current === null) { prevStageRef.current = stageIdx; return; }
     if (stageIdx > prevStageRef.current) {
       setEvolving(true);
       setEvolveKey((k) => k + 1);
@@ -116,6 +138,62 @@ export default function PetGamePage() {
     }
     prevStageRef.current = stageIdx;
   }, [stageIdx, species]);
+
+  const pushFloat = useCallback((text: string) => {
+    const id = floatId.current++;
+    setFloats((f) => [...f, { id, text }]);
+    setTimeout(() => setFloats((f) => f.filter((x) => x.id !== id)), 1300);
+  }, []);
+
+  const pokeHappy = useCallback(() => {
+    setAnim('happy');
+    setTimeout(() => setAnim('idle'), 650);
+  }, []);
+
+  const openQuiz = (action: PetActionKey) => {
+    setQuizAction(action);
+    setQuiz(buildPetQuiz(bank, PET_ACTIONS[action].quizDirection));
+    setPicked(null);
+    setResult(null);
+  };
+
+  const closeQuiz = () => {
+    setQuizAction(null);
+    setQuiz(null);
+    setPicked(null);
+    setResult(null);
+  };
+
+  const choose = (option: string) => {
+    if (!quiz || !quizAction || result) return;
+    setPicked(option);
+    if (option === quiz.answer) {
+      const def = PET_ACTIONS[quizAction];
+      const reward = carePet(quizAction, combo);
+      setResult('correct');
+      setCombo((c) => c + 1);
+      playDing();
+      pokeHappy();
+      // flying hearts
+      const id = heartId.current++;
+      setHearts((h) => [...h, id]);
+      setTimeout(() => setHearts((h) => h.filter((x) => x !== id)), 1200);
+      pushFloat(`+${def.exp} EXP · +${reward} 🪙`);
+      setTimeout(closeQuiz, 1050);
+    } else {
+      setResult('wrong');
+      setCombo(0);
+      playBuzz();
+      setAnim('sad');
+      setTimeout(() => setAnim('idle'), 600);
+      // give a fresh question for the same action so they can try again
+      setTimeout(() => {
+        setQuiz(buildPetQuiz(bank, PET_ACTIONS[quizAction].quizDirection));
+        setPicked(null);
+        setResult(null);
+      }, 1200);
+    }
+  };
 
   if (!hydrated) {
     return (
@@ -130,20 +208,12 @@ export default function PetGamePage() {
     return <AdoptScreen onAdopt={adoptPet} hasBadPet={!!pet && !species} />;
   }
 
-  const doAction = (action: PetActionKey) => {
-    const ok = carePet(action);
-    if (!ok) return;
-    setBounceKey((k) => k + 1);
-    const id = heartId.current++;
-    setHearts((h) => [...h, id]);
-    setTimeout(() => setHearts((h) => h.filter((x) => x !== id)), 1200);
-  };
-
   const stage = currentStage(species, lvl.level);
   const next = nextStage(species, lvl.level);
   const final = isFinalStage(species, lvl.level);
   const mood = petMood(pet);
   const art = `/avatars/${stage.art}.png`;
+  const reactClass = evolving ? 'pet-evolve' : anim === 'happy' ? 'pet-happy' : anim === 'sad' ? 'pet-sad' : '';
 
   return (
     <>
@@ -153,24 +223,22 @@ export default function PetGamePage() {
         <div className="mx-auto max-w-2xl px-4 py-6">
           <div className="mb-4 flex items-center justify-between">
             <Link href="/games" className="rounded-full bg-white/90 px-4 py-2 text-sm font-bold text-violet-700 shadow">← Game</Link>
-            <span className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-black text-amber-600 shadow">
-              <UiIcon name="coins" size={20} /> {coins} xu
-            </span>
+            <div className="flex items-center gap-2">
+              {combo >= 2 && (
+                <span className="rounded-full bg-white/90 px-3 py-2 text-xs font-black text-fuchsia-600 shadow">🔥 Combo x{combo}</span>
+              )}
+              <span className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-black text-amber-600 shadow">
+                <UiIcon name="coins" size={20} /> {coins} xu
+              </span>
+            </div>
           </div>
 
           {/* Creature stage */}
           <section className="relative overflow-hidden rounded-[2.5rem] border-4 border-white/70 p-6 shadow-2xl">
-            {/* Themed glow backdrop */}
-            <div
-              className="pointer-events-none absolute inset-0"
-              style={{ background: `radial-gradient(circle at 50% 42%, ${species.glow} 0%, transparent 62%)` }}
-            />
-            {/* Floating sparkles */}
+            <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(circle at 50% 42%, ${species.glow} 0%, transparent 62%)` }} />
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
               {SPARKLES.map((s, i) => (
-                <span key={i} className="pet-spark absolute text-lg" style={{ left: s.left, top: s.top, animationDelay: s.delay }}>
-                  {s.char}
-                </span>
+                <span key={i} className="pet-spark absolute text-lg" style={{ left: s.left, top: s.top, animationDelay: s.delay }}>{s.char}</span>
               ))}
             </div>
 
@@ -182,19 +250,24 @@ export default function PetGamePage() {
                 {MOOD_FACE[mood]} {stage.nameVi}
               </div>
 
-              {/* Creature */}
-              <div className="relative mt-3 flex h-56 w-56 items-end justify-center">
-                {/* aura ring */}
+              {/* Creature — layered animations for an "alive" feel */}
+              <div className="relative mt-3 flex h-60 w-60 items-end justify-center">
                 <div className="pet-aura absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full"
                      style={{ background: `radial-gradient(circle, ${species.glow} 0%, transparent 70%)` }} />
-                {hearts.map((id) => (
-                  <span key={id} className="pet-heart pointer-events-none absolute text-2xl">❤️</span>
-                ))}
-                <div key={bounceKey} className={`relative ${evolving ? 'pet-evolve' : 'pet-bounce'}`}>
-                  <Image src={art} alt={stage.nameVi} width={180} height={180} unoptimized priority style={{ objectFit: 'contain', filter: 'drop-shadow(0 12px 18px rgba(0,0,0,0.35))' }} />
-                </div>
+                {hearts.map((id) => (<span key={id} className="pet-heart pointer-events-none absolute text-2xl">❤️</span>))}
+                {floats.map((f) => (<span key={f.id} className="pet-float-msg pointer-events-none absolute z-20 whitespace-nowrap rounded-full bg-white/95 px-3 py-1 text-xs font-black text-emerald-600 shadow">{f.text}</span>))}
+
+                <button type="button" onClick={pokeHappy} aria-label="Chạm vào thú cưng" className="pet-bob relative outline-none">
+                  <span className="pet-sway block">
+                    <span className={`block ${reactClass}`}>
+                      <span className="pet-breathe block">
+                        <Image src={art} alt={stage.nameVi} width={190} height={190} unoptimized priority style={{ objectFit: 'contain', filter: 'drop-shadow(0 12px 18px rgba(0,0,0,0.35))' }} />
+                      </span>
+                    </span>
+                  </span>
+                </button>
                 {evolving && <div key={`flash-${evolveKey}`} className="pet-flash pointer-events-none absolute inset-0 rounded-full bg-white" />}
-                <div className="absolute bottom-1 h-4 w-32 rounded-full bg-black/25 blur-md" />
+                <div className="pet-shadow absolute bottom-1 h-4 w-32 rounded-full bg-black/25 blur-md" />
               </div>
 
               {/* Level / EXP bar */}
@@ -232,56 +305,77 @@ export default function PetGamePage() {
             })}
           </section>
 
-          {/* Actions */}
+          {/* Actions — each opens an English quiz */}
           <section className="mt-4 grid grid-cols-4 gap-3">
             {ACTION_ORDER.map((key) => {
               const def = PET_ACTIONS[key];
-              const tooPoor = coins < def.coinCost;
               return (
                 <button
                   key={key}
-                  onClick={() => doAction(key)}
-                  disabled={tooPoor}
-                  className="flex flex-col items-center gap-1 rounded-2xl bg-white/95 p-3 shadow-md transition-transform hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => openQuiz(key)}
+                  className="flex flex-col items-center gap-1 rounded-2xl bg-white/95 p-3 shadow-md transition-transform hover:-translate-y-1"
                 >
                   <Image src={`/games/pet/${def.asset}.png`} alt={def.labelVi} width={48} height={48} unoptimized />
                   <span className="text-xs font-black text-slate-700">{def.labelVi}</span>
-                  <span className="text-[10px] font-bold text-amber-600">
-                    {def.coinCost > 0 ? `${def.coinCost} xu` : 'Miễn phí'}
-                  </span>
+                  <span className="text-[10px] font-bold text-emerald-600">Trả lời đúng</span>
                 </button>
               );
             })}
           </section>
 
           <p className="mt-4 text-center text-xs font-semibold text-white/90 drop-shadow">
-            Học bài để kiếm xu, chăm sóc để lên cấp và tiến hóa thú cưng thần thoại của bé!
+            Trả lời đúng từ tiếng Anh để chăm sóc, lên cấp và tiến hóa thú cưng thần thoại của bé!
           </p>
         </div>
       </main>
 
-      <style jsx global>{`
-        @keyframes pet-idle { 0%,100% { transform: translateY(0) rotate(-1deg) } 50% { transform: translateY(-10px) rotate(1deg) } }
-        .pet-bounce { animation: pet-idle 2.4s ease-in-out infinite; }
-        @keyframes pet-evolve-anim {
-          0% { transform: scale(1) rotate(0); }
-          25% { transform: scale(0.7) rotate(-8deg); filter: brightness(2); }
-          55% { transform: scale(1.35) rotate(8deg); filter: brightness(2.2); }
-          100% { transform: scale(1) rotate(0); }
-        }
-        .pet-evolve { animation: pet-evolve-anim 1.6s cubic-bezier(0.34,1.56,0.64,1) both; }
-        @keyframes pet-flash-anim { 0% { opacity: 0; transform: scale(0.4); } 40% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1.8); } }
-        .pet-flash { animation: pet-flash-anim 1.2s ease-out forwards; }
-        @keyframes pet-aura-anim { 0%,100% { opacity: 0.55; transform: translate(-50%,-50%) scale(1); } 50% { opacity: 0.85; transform: translate(-50%,-50%) scale(1.12); } }
-        .pet-aura { animation: pet-aura-anim 3s ease-in-out infinite; }
-        @keyframes pet-spark-anim { 0%,100% { opacity: 0.2; transform: translateY(0) scale(0.8); } 50% { opacity: 1; transform: translateY(-10px) scale(1.1); } }
-        .pet-spark { animation: pet-spark-anim 2.8s ease-in-out infinite; }
-        @keyframes pet-heart-float { 0% { transform: translateY(0) scale(0.6); opacity: 0 } 30% { opacity: 1 } 100% { transform: translateY(-100px) scale(1.2); opacity: 0 } }
-        .pet-heart { bottom: 70px; animation: pet-heart-float 1.2s ease-out forwards; }
-        @media (prefers-reduced-motion: reduce) {
-          .pet-bounce, .pet-heart, .pet-aura, .pet-spark, .pet-evolve, .pet-flash { animation-duration: 0.5s; animation-iteration-count: 1; }
-        }
-      `}</style>
+      {/* Quiz modal */}
+      {quiz && quizAction && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4" onClick={closeQuiz}>
+          <div className="quiz-pop w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm font-black text-slate-700">
+                <Image src={`/games/pet/${PET_ACTIONS[quizAction].asset}.png`} alt="" width={28} height={28} unoptimized />
+                {PET_ACTIONS[quizAction].labelVi}
+              </span>
+              <button onClick={closeQuiz} aria-label="Đóng" className="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-black text-slate-500">✕</button>
+            </div>
+
+            <p className="mt-3 text-center text-xs font-bold text-slate-500">{PET_ACTIONS[quizAction].promptLabelVi}</p>
+            <div className="mt-1 rounded-2xl bg-gradient-to-r from-violet-100 to-sky-100 py-4 text-center">
+              <span className="text-2xl font-black text-violet-700">{quiz.prompt}</span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {quiz.options.map((opt) => {
+                const isAnswer = opt === quiz.answer;
+                const isPicked = picked === opt;
+                let cls = 'bg-slate-50 text-slate-700 hover:bg-slate-100';
+                if (result && isAnswer) cls = 'bg-emerald-500 text-white';
+                else if (result === 'wrong' && isPicked) cls = 'bg-rose-500 text-white';
+                else if (result) cls = 'bg-slate-50 text-slate-400';
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => choose(opt)}
+                    disabled={!!result}
+                    className={`rounded-2xl px-3 py-4 text-base font-black shadow-sm transition-all ${cls} ${result === 'wrong' && isPicked ? 'quiz-shake' : ''}`}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="mt-3 h-5 text-center text-sm font-black">
+              {result === 'correct' && <span className="text-emerald-600">Chính xác! 🎉</span>}
+              {result === 'wrong' && <span className="text-rose-500">Thử lại nhé! 💪</span>}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <PetStyles />
     </>
   );
 }
@@ -293,6 +387,51 @@ const SPARKLES = [
   { char: '💫', left: '78%', top: '66%', delay: '1.7s' },
   { char: '✨', left: '50%', top: '10%', delay: '0.9s' },
 ];
+
+function PetStyles() {
+  return (
+    <style jsx global>{`
+      /* Layered idle motion — different periods so it never looks robotic */
+      @keyframes pet-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+      .pet-bob { animation: pet-bob 3s ease-in-out infinite; }
+      @keyframes pet-sway { 0%,100% { transform: rotate(-3deg) translateX(-3px); } 50% { transform: rotate(3deg) translateX(3px); } }
+      .pet-sway { animation: pet-sway 4.3s ease-in-out infinite; transform-origin: 50% 90%; }
+      @keyframes pet-breathe { 0%,100% { transform: scale(1,1); } 50% { transform: scale(1.045,0.965); } }
+      .pet-breathe { animation: pet-breathe 2.1s ease-in-out infinite; transform-origin: 50% 100%; }
+
+      @keyframes pet-happy-anim { 0% { transform: scale(1) rotate(0); } 30% { transform: scale(1.18) rotate(-6deg); } 60% { transform: scale(1.1) rotate(6deg); } 100% { transform: scale(1) rotate(0); } }
+      .pet-happy { animation: pet-happy-anim 0.65s ease-in-out; }
+      @keyframes pet-sad-anim { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-9deg); } 40% { transform: rotate(8deg); } 60% { transform: rotate(-6deg); } 80% { transform: rotate(4deg); } }
+      .pet-sad { animation: pet-sad-anim 0.55s ease-in-out; }
+
+      @keyframes pet-evolve-anim { 0% { transform: scale(1) rotate(0); } 25% { transform: scale(0.7) rotate(-8deg); filter: brightness(2); } 55% { transform: scale(1.35) rotate(8deg); filter: brightness(2.2); } 100% { transform: scale(1) rotate(0); } }
+      .pet-evolve { animation: pet-evolve-anim 1.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+      @keyframes pet-flash-anim { 0% { opacity: 0; transform: scale(0.4); } 40% { opacity: 0.9; } 100% { opacity: 0; transform: scale(1.8); } }
+      .pet-flash { animation: pet-flash-anim 1.2s ease-out forwards; }
+
+      @keyframes pet-aura-anim { 0%,100% { opacity: 0.55; transform: translate(-50%,-50%) scale(1); } 50% { opacity: 0.85; transform: translate(-50%,-50%) scale(1.12); } }
+      .pet-aura { animation: pet-aura-anim 3s ease-in-out infinite; }
+      @keyframes pet-shadow-anim { 0%,100% { transform: scaleX(1); opacity: 0.25; } 50% { transform: scaleX(0.8); opacity: 0.18; } }
+      .pet-shadow { animation: pet-shadow-anim 3s ease-in-out infinite; }
+      @keyframes pet-spark-anim { 0%,100% { opacity: 0.2; transform: translateY(0) scale(0.8); } 50% { opacity: 1; transform: translateY(-10px) scale(1.1); } }
+      .pet-spark { animation: pet-spark-anim 2.8s ease-in-out infinite; }
+      @keyframes pet-heart-float { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-110px) scale(1.2); opacity: 0; } }
+      .pet-heart { bottom: 80px; animation: pet-heart-float 1.2s ease-out forwards; }
+      @keyframes pet-float-msg-anim { 0% { transform: translateY(0) scale(0.8); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-70px) scale(1.05); opacity: 0; } }
+      .pet-float-msg { top: 20px; animation: pet-float-msg-anim 1.3s ease-out forwards; }
+
+      @keyframes quiz-pop-in { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+      .quiz-pop { animation: quiz-pop-in 0.25s cubic-bezier(0.34,1.56,0.64,1) both; }
+      @keyframes quiz-shake-anim { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+      .quiz-shake { animation: quiz-shake-anim 0.3s ease-in-out 2; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .pet-bob, .pet-sway, .pet-breathe, .pet-aura, .pet-shadow, .pet-spark { animation: none; }
+        .pet-happy, .pet-sad, .pet-evolve, .pet-flash, .pet-heart, .pet-float-msg, .quiz-pop, .quiz-shake { animation-duration: 0.4s; animation-iteration-count: 1; }
+      }
+    `}</style>
+  );
+}
 
 /* ----------------------------- Adoption ----------------------------- */
 
@@ -311,20 +450,19 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
           <p className="mt-1 text-center text-sm font-semibold text-white/90 drop-shadow">
             {hasBadPet
               ? 'Hãy chọn lại một quả trứng để bắt đầu hành trình tiến hóa nhé!'
-              : 'Nuôi từ quả trứng nhỏ, lên cấp để tiến hóa thành sinh vật huyền thoại!'}
+              : 'Nuôi từ quả trứng nhỏ, trả lời đúng tiếng Anh để tiến hóa thành sinh vật huyền thoại!'}
           </p>
 
           <div className="mt-5 flex flex-col items-center gap-3">
             <div className="relative flex h-44 w-44 items-center justify-center rounded-[2rem] border-4 border-white/70 shadow-xl"
                  style={{ background: `radial-gradient(circle at 50% 45%, ${selected.glow} 0%, transparent 65%)` }}>
-              <Image src={eggArt} alt={selected.nameVi} width={120} height={120} unoptimized className="pet-bounce" style={{ filter: 'drop-shadow(0 8px 12px rgba(0,0,0,0.3))' }} />
+              <Image src={eggArt} alt={selected.nameVi} width={120} height={120} unoptimized className="adopt-bob" style={{ filter: 'drop-shadow(0 8px 12px rgba(0,0,0,0.3))' }} />
             </div>
             <div className="text-center">
               <div className="text-xl font-black text-white drop-shadow">{selected.emoji} {selected.nameVi}</div>
               <div className="text-xs font-semibold text-white/90 drop-shadow">{selected.tagline}</div>
             </div>
 
-            {/* Evolution preview */}
             <div className="flex items-center gap-1.5 rounded-2xl bg-white/85 px-3 py-2 shadow">
               {selected.stages.map((st, i) => (
                 <div key={st.art} className="flex items-center gap-1.5">
@@ -351,7 +489,6 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
             </button>
           </div>
 
-          {/* Species picker */}
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {PET_SPECIES.map((s) => (
               <button
@@ -371,9 +508,9 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
       </main>
 
       <style jsx global>{`
-        @keyframes pet-idle { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
-        .pet-bounce { animation: pet-idle 2.4s ease-in-out infinite; }
-        @media (prefers-reduced-motion: reduce) { .pet-bounce { animation-duration: 0.5s; } }
+        @keyframes adopt-bob { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(2deg); } }
+        .adopt-bob { animation: adopt-bob 2.2s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .adopt-bob { animation: none; } }
       `}</style>
     </>
   );

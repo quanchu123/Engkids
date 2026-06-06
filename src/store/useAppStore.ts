@@ -24,7 +24,7 @@ import { trackEvent } from '@/lib/analytics';
 import { syncSavedWordToSRS } from '@/services/vocabulary';
 import { AvatarCategory, EquippedAvatar, getDefaultEquipped, getItem } from '@/lib/avatar';
 import { canSpin, rollSpin } from '@/lib/daily-spin';
-import { PetState, PetActionKey, createPet, applyDecay, applyAction, PET_ACTIONS } from '@/lib/pet';
+import { PetState, PetActionKey, createPet, applyDecay, applyAction, coinRewardForCombo } from '@/lib/pet';
 
 const MAX_WORD_INTERACTIONS = 2000;
 const STREAK_FREEZE_COST = 50;
@@ -57,7 +57,7 @@ interface AppState {
   buyStreakFreeze: () => boolean;
   spinDailyWheel: () => { kind: 'coins' | 'freeze'; amount: number; index: number } | null;
   adoptPet: (species: string, name: string) => void;
-  carePet: (action: PetActionKey) => boolean;
+  carePet: (action: PetActionKey, combo?: number) => number;
   syncPetDecay: () => void;
   triggerReward: (stars: number, coins: number) => void;
   clearReward: () => void;
@@ -140,16 +140,16 @@ export const useAppStore = create<AppState>()(
         set({ pet: createPet(species, name.trim().slice(0, 20) || 'Bạn nhỏ') });
       },
 
-      // Apply a care action: requires an adopted pet and enough coins. Returns
-      // false (no-op) otherwise. Coins are deducted by the action's cost.
-      carePet: (action) => {
+      // Apply a successful care action (called only after the child answers the
+      // English question correctly). Raises the action's stat + EXP and EARNS
+      // coins (base + combo bonus). Returns the coins earned (0 if no pet).
+      carePet: (action, combo = 0) => {
         const state = get();
-        if (!state.pet) return false;
-        const def = PET_ACTIONS[action];
-        if (state.coins < def.coinCost) return false;
-        const { pet, cost } = applyAction(state.pet, action, Date.now());
-        set({ pet, coins: state.coins - cost });
-        return true;
+        if (!state.pet) return 0;
+        const { pet } = applyAction(state.pet, action, Date.now());
+        const reward = coinRewardForCombo(action, combo);
+        set({ pet, coins: state.coins + reward });
+        return reward;
       },
 
       // Apply time-based decay (call on mount / when the room opens).

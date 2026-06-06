@@ -24,13 +24,21 @@ export interface PetState {
 
 export type PetActionKey = 'feed' | 'play' | 'bath' | 'sleep';
 
+/** Quiz direction each action uses (the child must answer to succeed). */
+export type PetQuizDirection = 'vi-to-en' | 'en-to-vi';
+
 export interface PetAction {
   key: PetActionKey;
   labelVi: string;
   asset: string; // /games/pet/{asset}.png
-  coinCost: number;
+  /** Coins EARNED for answering this action's question correctly. */
+  coinReward: number;
   exp: number;
-  /** Stat changes applied (then clamped to 0..100). */
+  /** Translation direction for this action's vocabulary question. */
+  quizDirection: PetQuizDirection;
+  /** Instruction shown above the answer choices. */
+  promptLabelVi: string;
+  /** Stat changes applied on a correct answer (then clamped to 0..100). */
   effects: Partial<Record<PetStatKey, number>>;
 }
 
@@ -46,10 +54,10 @@ export const DECAY_PER_HOUR: Record<PetStatKey, number> = {
 };
 
 export const PET_ACTIONS: Record<PetActionKey, PetAction> = {
-  feed: { key: 'feed', labelVi: 'Cho ăn', asset: 'food', coinCost: 5, exp: 6, effects: { hunger: 35, energy: 5 } },
-  play: { key: 'play', labelVi: 'Chơi', asset: 'ball', coinCost: 0, exp: 8, effects: { happiness: 35, energy: -12, hunger: -6 } },
-  bath: { key: 'bath', labelVi: 'Tắm', asset: 'bath', coinCost: 3, exp: 5, effects: { clean: 45 } },
-  sleep: { key: 'sleep', labelVi: 'Ngủ', asset: 'bed', coinCost: 0, exp: 4, effects: { energy: 50, happiness: 4 } },
+  feed: { key: 'feed', labelVi: 'Cho ăn', asset: 'food', coinReward: 3, exp: 12, quizDirection: 'vi-to-en', promptLabelVi: 'Chọn từ tiếng Anh để cho ăn:', effects: { hunger: 35, energy: 5 } },
+  play: { key: 'play', labelVi: 'Chơi', asset: 'ball', coinReward: 3, exp: 12, quizDirection: 'en-to-vi', promptLabelVi: 'Chọn nghĩa tiếng Việt để cùng chơi:', effects: { happiness: 35, energy: -8 } },
+  bath: { key: 'bath', labelVi: 'Tắm', asset: 'bath', coinReward: 3, exp: 12, quizDirection: 'vi-to-en', promptLabelVi: 'Chọn từ tiếng Anh để tắm mát:', effects: { clean: 45 } },
+  sleep: { key: 'sleep', labelVi: 'Ngủ', asset: 'bed', coinReward: 3, exp: 12, quizDirection: 'en-to-vi', promptLabelVi: 'Chọn nghĩa tiếng Việt để ru ngủ:', effects: { energy: 50, happiness: 4 } },
 };
 
 export function clampStat(v: number): number {
@@ -90,14 +98,20 @@ export function applyDecay(pet: PetState, now: number = Date.now()): PetState {
  * Apply a care action AFTER decay. Returns the updated pet plus the coin cost
  * (the caller is responsible for checking/deducting coins). Stats are clamped.
  */
-export function applyAction(pet: PetState, action: PetActionKey, now: number = Date.now()): { pet: PetState; cost: number } {
+export function applyAction(pet: PetState, action: PetActionKey, now: number = Date.now()): { pet: PetState; coinReward: number } {
   const def = PET_ACTIONS[action];
   const base = applyDecay(pet, now);
   const next: PetState = { ...base, exp: base.exp + def.exp };
   (Object.entries(def.effects) as Array<[PetStatKey, number]>).forEach(([k, delta]) => {
     next[k] = clampStat(base[k] + delta);
   });
-  return { pet: next, cost: def.coinCost };
+  return { pet: next, coinReward: def.coinReward };
+}
+
+/** Coins earned for a correct answer, with a small combo bonus (capped). */
+export function coinRewardForCombo(action: PetActionKey, combo: number): number {
+  const base = PET_ACTIONS[action].coinReward;
+  return base + Math.min(Math.max(combo, 0), 5);
 }
 
 /** EXP needed to advance FROM the given level (1-based). */
