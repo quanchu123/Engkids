@@ -330,10 +330,10 @@ export default function PetGamePage() {
         </div>
       )}
 
-      <main className={`min-h-[calc(100svh-68px)] overflow-hidden bg-gradient-to-b ${species.bg} py-3`}>
-        <div className="mx-auto flex h-[calc(100svh-92px)] max-w-6xl flex-col px-4">
-          <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
-            <Link href="/games" className="rounded-full bg-white/90 px-4 py-2 text-sm font-black text-violet-700 shadow-md backdrop-blur hover:bg-white">
+      <main className={`h-[calc(100svh-64px)] overflow-hidden bg-gradient-to-b ${species.bg} py-3`}>
+        <div className="relative mx-auto flex h-[calc(100svh-88px)] w-full flex-col px-3">
+          <div className="pointer-events-none absolute inset-x-3 top-3 z-30 flex items-center justify-between">
+            <Link href="/games" className="pointer-events-auto rounded-full bg-white/92 px-4 py-2 text-sm font-black text-violet-700 shadow-md backdrop-blur hover:bg-white">
               ← Game
             </Link>
             <div className="flex flex-wrap items-center justify-end gap-2">
@@ -346,17 +346,17 @@ export default function PetGamePage() {
             </div>
           </div>
 
-          <section className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_348px]">
+          <section className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_372px]">
             <div className="pet-room relative min-h-0 overflow-hidden rounded-[2rem] border border-white/70 bg-sky-100 shadow-2xl">
               <div className="pet-sky absolute inset-0" />
-              <div className="pet-hills absolute inset-x-0 bottom-28 h-40" />
-              <div className="pet-floor absolute inset-x-0 bottom-0 h-40" />
-              <div className="absolute left-5 top-5 rounded-2xl bg-white/85 px-4 py-3 shadow-lg backdrop-blur">
+              <div className="pet-hills absolute inset-x-0 bottom-[30%] h-[24%]" />
+              <div className="pet-floor absolute inset-x-0 bottom-0 h-[32%]" />
+              <div className="absolute left-5 top-16 rounded-2xl bg-white/85 px-4 py-3 shadow-lg backdrop-blur">
                 <p className="text-xs font-black uppercase tracking-wide text-violet-500">Thú cưng thần thoại</p>
                 <h1 className="mt-1 text-2xl font-black text-slate-950">{species.emoji} {pet.name}</h1>
                 <p className="text-sm font-bold text-slate-500">Cấp {lvl.level} · {stage.nameVi}</p>
               </div>
-              <div className="absolute right-5 top-5 rounded-2xl bg-white/85 px-4 py-3 text-right shadow-lg backdrop-blur">
+              <div className="absolute right-5 top-16 rounded-2xl bg-white/85 px-4 py-3 text-right shadow-lg backdrop-blur">
                 <p className="text-xs font-black uppercase tracking-wide text-emerald-500">Tâm trạng</p>
                 <p className="mt-1 text-xl font-black text-slate-950">{MOOD_FACE[mood]} {wellbeing}%</p>
               </div>
@@ -367,10 +367,10 @@ export default function PetGamePage() {
                 ))}
               </div>
 
-              <div className="relative z-10 flex h-full min-h-0 flex-col items-center justify-end px-5 pb-7 pt-28">
-                <div className="relative flex h-[min(44svh,250px)] min-h-[210px] w-full max-w-sm items-end justify-center">
+              <div className="relative z-10 flex h-full min-h-0 flex-col items-center justify-center px-5 pb-24 pt-28">
+                <div className="relative flex h-[min(56svh,380px)] min-h-[285px] w-full max-w-xl items-center justify-center">
                   <div
-                    className="pet-aura absolute left-1/2 top-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    className="pet-aura absolute left-1/2 top-1/2 h-[min(48svh,360px)] w-[min(48svh,360px)] -translate-x-1/2 -translate-y-1/2 rounded-full"
                     style={{ background: `radial-gradient(circle, ${species.glow} 0%, transparent 70%)` }}
                   />
                   {hearts.map((id) => (<span key={id} className="pet-heart pointer-events-none absolute text-2xl">💗</span>))}
@@ -390,18 +390,18 @@ export default function PetGamePage() {
                             height={216}
                             unoptimized
                             priority
-                            className="h-[min(34svh,216px)] w-[min(34svh,216px)] min-h-[170px] min-w-[170px] object-contain"
-                            style={{ filter: 'drop-shadow(0 18px 24px rgba(15,23,42,0.32))' }}
+                            className="h-[min(50svh,340px)] w-[min(50svh,340px)] min-h-[245px] min-w-[245px] object-contain"
+                            style={{ filter: 'drop-shadow(0 24px 30px rgba(15,23,42,0.34))' }}
                           />
                         </span>
                       </span>
                     </span>
                   </button>
                   {evolving && <div key={`flash-${evolveKey}`} className="pet-flash pointer-events-none absolute inset-0 rounded-full bg-white" />}
-                  <div className="pet-shadow absolute bottom-4 h-5 w-44 rounded-full bg-black/25 blur-md" />
+                  <div className="pet-shadow absolute bottom-7 h-6 w-56 rounded-full bg-black/25 blur-md" />
                 </div>
 
-                <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/88 p-3 shadow-xl backdrop-blur">
+                <div className="absolute bottom-5 left-1/2 w-[min(86%,520px)] -translate-x-1/2 rounded-3xl border border-white/70 bg-white/88 p-3 shadow-xl backdrop-blur">
                   <div className="mb-2 flex justify-between text-xs font-black text-slate-600">
                     <span>Kinh nghiệm</span>
                     <span>{lvl.intoLevel}/{lvl.needed}</span>
@@ -453,8 +453,8 @@ export default function PetGamePage() {
                       onClick={() => openQuiz(key)}
                       className={`group rounded-[1.25rem] bg-gradient-to-br ${ACTION_STYLE[key]} p-0.5 shadow-lg transition-transform hover:-translate-y-1`}
                     >
-                      <span className="flex h-[82px] flex-col items-center justify-center gap-1 rounded-[1.1rem] bg-white/92 p-2">
-                        <Image src={`/games/pet/${def.asset}.png`} alt={def.labelVi} width={34} height={34} unoptimized className="h-[34px] w-[34px] transition-transform group-hover:scale-110" />
+                      <span className="flex h-[92px] flex-col items-center justify-center gap-1.5 rounded-[1.1rem] bg-white/92 p-2">
+                        <Image src={`/games/pet/${def.asset}.png`} alt={def.labelVi} width={40} height={40} unoptimized className="h-10 w-10 transition-transform group-hover:scale-110" />
                         <span className="text-sm font-black text-slate-800">{def.labelVi}</span>
                         <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-600">+{def.exp} EXP</span>
                       </span>
@@ -681,7 +681,7 @@ function PetStyles() {
         100% { opacity: 1; transform: translateY(0) scale(1); }
       }
       .evolve-title { animation: evolve-title-pop 0.45s ease-out both; }
-      @media (max-height: 760px) {
+      @media (max-height: 680px) {
         .pet-helper-note { display: none; }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -701,8 +701,8 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
   return (
     <>
       <Header />
-      <main className={`min-h-[calc(100svh-68px)] overflow-hidden bg-gradient-to-b ${selected.bg} py-3 transition-colors duration-500`}>
-        <div className="mx-auto grid h-[calc(100svh-92px)] max-w-6xl gap-4 px-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-stretch">
+      <main className={`h-[calc(100svh-64px)] overflow-hidden bg-gradient-to-b ${selected.bg} py-3 transition-colors duration-500`}>
+        <div className="mx-auto grid h-[calc(100svh-92px)] w-full gap-4 px-3 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-stretch">
           <section className="relative min-h-0 overflow-hidden rounded-[2rem] border border-white/70 bg-sky-100 shadow-2xl">
             <div className="pet-sky absolute inset-0" />
             <div className="pet-hills absolute inset-x-0 bottom-28 h-40" />

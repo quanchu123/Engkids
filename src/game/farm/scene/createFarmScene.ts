@@ -123,8 +123,10 @@ const SCENE_KEY = 'FarmScene'
  * top-down ground tiles. Missing files degrade to an emoji via `loaderror`.
  */
 const CROP_IDS = ['carrot', 'tomato', 'corn', 'pumpkin', 'strawberry', 'potato'] as const
+const DREAMINA_FARM_COMPANION = 'dreamina-2026-06-08-8213'
 const DIRECT_TEXTURES: string[] = [
   'tile-grass', 'tile-soil', 'tile-wet',
+  DREAMINA_FARM_COMPANION,
   ...CROP_IDS.flatMap((id) => [`${id}-1`, `${id}-2`, `${id}-3`]),
 ]
 
@@ -885,6 +887,21 @@ export function createFarmScene(
         .setDepth(chickY)
       this.decorObjects.push(chicken)
       this.addWander(chicken, t * 0.9)
+
+      // Optional Dreamina companion dropped into assets/dreamina-2026-06-08-8213.png.
+      // Missing art falls back to a small pet emoji so the farm still renders.
+      const companionY = r.bottom + t * 1.05
+      const companion = this.makeSprite(
+        DREAMINA_FARM_COMPANION,
+        r.cx,
+        companionY,
+        t * 1.25,
+        '🐾',
+        0.5,
+        1,
+      ).setDepth(companionY + 2)
+      this.decorObjects.push(companion)
+      this.addWander(companion, t * 0.55)
     }
 
     /** Gentle back-and-forth wander for an animal sprite (flips with direction). */

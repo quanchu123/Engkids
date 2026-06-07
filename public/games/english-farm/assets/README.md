@@ -24,6 +24,7 @@ Mặt đất / ô (nếu pack có — rất quý):
 Nhân vật + động vật:
 - `farmer.png` (đứng) — nếu có spritesheet đi 4 hướng thì đặt `farmer-walk.png` + cho mình biết số frame.
 - `cow.png`, `chicken.png`
+- `dreamina-2026-06-08-8213.png` (pet companion mới cho farm) — đặt file này vào đây thì farm tự hiển thị cạnh ruộng.
 
 Nhà / cảnh vật:
 - `barn.png`, `tree.png`, `fence.png`, `well.png` (nếu có)
@@ -54,6 +55,37 @@ Game tự ráp asset theo `spriteKey` của mỗi cây trong `src/game/farm/data
 - **Cutscene video:** `cutscenes/<id>.mp4` với `id ∈ { big-harvest, level-up, season-change }` → đặt vào `public/games/english-farm/cutscenes/`.
 
 Thiếu file nào → game tự fallback (Icons8 ở `../iso/` → emoji → CSS particle), không crash.
+
+## Dreamina pack mới: `dreamina-2026-06-08-8213`
+
+File farm cần đặt đúng tên:
+
+- `public/games/english-farm/assets/dreamina-2026-06-08-8213.png`
+
+Prompt tạo companion cho farm:
+
+```
+A cute magical farm companion pet for a children's English learning farming game,
+top-down three-quarter view, full body, friendly big eyes, soft rounded shape,
+bright cheerful colors, clean thick outline, premium 2D/3D cartoon game asset,
+matching a sunny vegetable farm, centered, isolated on a fully transparent
+background, no shadow, no text, no watermark. The pet should look helpful and
+small enough to stand beside crop tiles, not scary, suitable for children aged
+5-10. Export as dreamina-2026-06-08-8213.png.
+```
+
+Prompt tạo animation idle nếu Dreamina hỗ trợ video/spritesheet:
+
+```
+Animate the cute magical farm companion pet in a short idle loop for a children's
+farming game: gentle breathing, tiny hop, happy blink, small sparkle particles,
+subtle tail/ear motion, no movement across the screen, transparent or simple
+green farm background, no text, no watermark, seamless loop, 2-3 seconds.
+```
+
+Nếu xuất spritesheet, đặt tên `dreamina-2026-06-08-8213-idle.png` và báo số frame
+để mình nối animation frame-by-frame. Nếu xuất video, đặt vào
+`public/games/english-farm/cutscenes/dreamina-2026-06-08-8213-idle.mp4`.
 
 ## Prompt template Dreamina (asset rau củ 2D top-down, nền trong suốt)
 
