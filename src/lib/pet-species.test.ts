@@ -61,9 +61,9 @@ describe('stageIndexForLevel', () => {
 describe('currentStage / nextStage / isFinalStage', () => {
   const sp = getSpecies('ky-lan')!;
   it('returns the matching stage art', () => {
-    expect(currentStage(sp, 1).art).toBe('char-dino-egg');
-    expect(currentStage(sp, 6).art).toBe('char-pegasus');
-    expect(currentStage(sp, 10).art).toBe('char-unicorn');
+    expect(currentStage(sp, 1).art).toBe('/games/pet/stages/ky-lan-egg.png');
+    expect(currentStage(sp, 6).art).toBe('/games/pet/stages/ky-lan-2.png');
+    expect(currentStage(sp, 10).art).toBe('/games/pet/stages/ky-lan-3.png');
   });
 
   it('nextStage teases the upcoming form, null when maxed', () => {
@@ -79,8 +79,8 @@ describe('currentStage / nextStage / isFinalStage', () => {
 
 describe('resolvePetArt', () => {
   it('resolves chain stage art', () => {
-    expect(resolvePetArt('thuy-long', 1)).toBe('/avatars/char-dino-egg.png');
-    expect(resolvePetArt('thuy-long', 10)).toBe('/avatars/char-dragon-eu.png');
+    expect(resolvePetArt('thuy-long', 1)).toBe('/games/pet/stages/thuy-long-egg.png');
+    expect(resolvePetArt('thuy-long', 10)).toBe('/games/pet/stages/thuy-long-3.png');
   });
 
   it('falls back to legacy avatar id', () => {

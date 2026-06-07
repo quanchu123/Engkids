@@ -257,7 +257,7 @@ export default function PetGamePage() {
   const next = nextStage(species, lvl.level);
   const final = isFinalStage(species, lvl.level);
   const mood = petMood(pet);
-  const art = `/avatars/${stage.art}.png`;
+  const art = stage.art;
   const reactClass = evolving ? 'pet-evolve' : anim === 'happy' ? 'pet-happy' : anim === 'sad' ? 'pet-sad' : '';
 
   return (
@@ -496,7 +496,7 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
   const [selectedId, setSelectedId] = useState(PET_SPECIES[0].id);
   const [name, setName] = useState('');
   const selected = useMemo<PetSpecies>(() => getSpecies(selectedId) ?? PET_SPECIES[0], [selectedId]);
-  const eggArt = `/avatars/${selected.stages[0].art}.png`;
+  const eggArt = selected.stages[0].art;
 
   return (
     <>
@@ -525,7 +525,7 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
                 <div key={st.art} className="flex items-center gap-1.5">
                   {i > 0 && <span className="text-slate-400">→</span>}
                   <div className="flex flex-col items-center" title={`${st.nameVi} (Cấp ${st.minLevel})`}>
-                    <Image src={`/avatars/${st.art}.png`} alt={st.nameVi} width={34} height={34} unoptimized />
+                    <Image src={st.art} alt={st.nameVi} width={34} height={34} unoptimized />
                   </div>
                 </div>
               ))}
@@ -556,7 +556,7 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
                 }`}
                 title={s.nameVi}
               >
-                <Image src={`/avatars/${s.stages[s.stages.length - 1].art}.png`} alt={s.nameVi} width={52} height={52} unoptimized />
+                <Image src={s.stages[s.stages.length - 1].art} alt={s.nameVi} width={52} height={52} unoptimized />
                 <span className="text-xs font-black text-slate-700">{s.emoji} {s.nameVi}</span>
               </button>
             ))}
