@@ -37,7 +37,6 @@ import {
 import {
   describePlot,
   isInventoryFullReason,
-  shadeColor,
   isoToScreen,
   screenToIso,
   isoGridLayout,
@@ -118,6 +117,17 @@ const TEXTURE_NAMES = [
 
 const SCENE_KEY = 'FarmScene'
 
+/**
+ * Dreamina art loaded directly from `assets/<name>.png` (these names are NOT in
+ * the iso manifest): per-crop growth-stage sprites (`<crop>-1/-2/-3`) and the
+ * top-down ground tiles. Missing files degrade to an emoji via `loaderror`.
+ */
+const CROP_IDS = ['carrot', 'tomato', 'corn', 'pumpkin', 'strawberry', 'potato'] as const
+const DIRECT_TEXTURES: string[] = [
+  'tile-grass', 'tile-soil', 'tile-wet',
+  ...CROP_IDS.flatMap((id) => [`${id}-1`, `${id}-2`, `${id}-3`]),
+]
+
 /** Runtime key for the generated white-circle particle texture (no asset). */
 const PARTICLE_DOT = 'farm-particle-dot'
 
@@ -167,6 +177,7 @@ export function createFarmScene(
     /** Soft contact shadow ellipse under each crop. */
     private cropShadows: Array<Phaser.GameObjects.Graphics | null> = []
     private cropObjects: Array<Sprite | null> = []
+    private soilImages: Array<Sprite | null> = []
     private labels: Array<Phaser.GameObjects.Text | null> = []
     private wetIcons: Array<Sprite | null> = []
     private cropTweens: Array<Phaser.Tweens.Tween | null> = []
@@ -229,6 +240,11 @@ export function createFarmScene(
         } else if (fallback) {
           this.load.image(name, fallback)
         }
+      }
+
+      // Dreamina staged crops + ground tiles (direct from assets/; emoji on miss).
+      for (const name of DIRECT_TEXTURES) {
+        this.load.image(name, `/games/english-farm/assets/${name}.png`)
       }
     }
 
@@ -311,6 +327,7 @@ export function createFarmScene(
       this.beds = []
       this.cropShadows = []
       this.cropObjects = []
+      this.soilImages = []
       this.labels = []
       this.wetIcons = []
       this.cropTweens = []
@@ -385,6 +402,7 @@ export function createFarmScene(
         this.beds[plot.id] = bed
         this.cropShadows[plot.id] = shadow
         this.cropObjects[plot.id] = null
+        this.soilImages[plot.id] = null
         this.labels[plot.id] = null
         this.wetIcons[plot.id] = null
         this.cropTweens[plot.id] = null
@@ -509,6 +527,8 @@ export function createFarmScene(
       this.sparkleTimers[plotId] = null
       this.cropObjects[plotId]?.destroy()
       this.cropObjects[plotId] = null
+      this.soilImages[plotId]?.destroy()
+      this.soilImages[plotId] = null
       this.labels[plotId]?.destroy()
       this.labels[plotId] = null
       this.wetIcons[plotId]?.destroy()
@@ -534,6 +554,14 @@ export function createFarmScene(
       // Reset previous crop overlay / label / wet indicator before redrawing.
       this.clearTile(plotId)
 
+      // Dreamina soil bed for tilled/planted plots (replaces the brown diamond).
+      if (visual.furrows || visual.crop) {
+        const soilTex = visual.wet ? 'tile-wet' : 'tile-soil'
+        const soil = this.makeSprite(soilTex, c.x, c.y, this.layout.tileW * 0.98, '🟫', 0.5, 0.5)
+        soil.setDepth(tileDepth(col, row) + 0.5)
+        this.soilImages[plotId] = soil
+      }
+
       // Wet soil gets a little water sheen sprite near the tile.
       if (visual.wet) {
         const dropSize = Math.max(12, this.layout.tileW * 0.22)
@@ -552,8 +580,12 @@ export function createFarmScene(
 
       const target = this.layout.tileW * (0.7 + visual.crop.scale * 0.85)
       const feetY = c.y + this.layout.tileH * 0.12
+      // Use the Dreamina per-stage crop art (<crop>-1/-2/-3); emoji on miss.
+      const stage = plot.crop?.stage ?? 3
+      const bucket = stage <= 1 ? 1 : stage === 2 ? 2 : 3
+      const cropTex = cropType ? `${cropType.id}-${bucket}` : this.isoCropTexture(visual.crop.textureName)
       const crop = this.makeSprite(
-        this.isoCropTexture(visual.crop.textureName),
+        cropTex,
         c.x,
         feetY,
         target,
@@ -693,38 +725,8 @@ export function createFarmScene(
       bed.lineBetween(left.x, left.y, top.x, top.y)
       bed.lineBetween(top.x, top.y, right.x, right.y)
 
-      if (!visual.furrows && !visual.crop) return
-
-      // Inset soil diamond for tilled/planted beds.
-      const inset = 0.84
-      const sTop = this.lerp(top, { x: cx, y: cy }, 1 - inset)
-      const sRight = this.lerp(right, { x: cx, y: cy }, 1 - inset)
-      const sBottom = this.lerp(bottom, { x: cx, y: cy }, 1 - inset)
-      const sLeft = this.lerp(left, { x: cx, y: cy }, 1 - inset)
-
-      bed.fillStyle(visual.bgColor, 1)
-      bed.fillPoints([sTop, sRight, sBottom, sLeft], true)
-      // Lighter highlight on the upper-back half of the soil.
-      bed.fillStyle(shadeColor(visual.bgColor, 0.28), 0.9)
-      bed.fillPoints([sTop, sRight, { x: cx, y: cy }, sLeft], true)
-
-      // Furrow lines parallel to the NE soil edge.
-      if (visual.furrows) {
-        const furrow = shadeColor(visual.bgColor, -0.28)
-        bed.lineStyle(Math.max(1, Math.round(h * 0.05)), furrow, 0.85)
-        for (let i = 1; i <= 3; i += 1) {
-          const t = i / 4
-          const a = this.lerp(sTop, sLeft, t)
-          const b = this.lerp(sRight, sBottom, t)
-          bed.lineBetween(a.x, a.y, b.x, b.y)
-        }
-      }
-
-      // Wet sheen: a soft light-blue highlight across the soil.
-      if (visual.wet) {
-        bed.fillStyle(0x86c5ff, 0.22)
-        bed.fillPoints([sTop, sRight, sBottom, sLeft], true)
-      }
+      // The soil bed + crop are drawn as Dreamina image sprites in renderPlot,
+      // so the procedural brown soil diamond is intentionally omitted here.
     }
 
     // --- decor (depth-sorted by feet-Y so it occludes correctly) -------------
@@ -1072,15 +1074,6 @@ export function createFarmScene(
         this.layout.tileW,
         this.layout.tileH,
       )
-    }
-
-    /** Linear interpolation between two screen points. */
-    private lerp(
-      a: { x: number; y: number },
-      b: { x: number; y: number },
-      t: number,
-    ): { x: number; y: number } {
-      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
     }
 
     /** Map a growth-stage texture name onto the iso art set. */
