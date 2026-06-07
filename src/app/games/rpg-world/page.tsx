@@ -288,14 +288,32 @@ export default function RpgWorldPage() {
               this.inBattle = false;
               this.battleCooldownUntil = this.time.now + 2500; // 2.5s cooldown after each battle
               if (won && monster.active) {
+                // ── Hit feedback: slash spark, damage text, red flash, shake ──
+                this.player.play('player-attack', true);
+                this.time.delayedCall(380, () => {
+                  if (this.player?.active) this.player.play('player-idle-down', true);
+                });
+                const spark = this.add.circle(monster.x, monster.y, 6, 0xffffff)
+                  .setDepth(25).setBlendMode(Phaser.BlendModes.ADD);
+                this.tweens.add({ targets: spark, scale: 3, alpha: 0, duration: 320, onComplete: () => spark.destroy() });
+                const dmg = this.add.text(monster.x, monster.y - 18, '-1', {
+                  fontFamily: 'Arial', fontStyle: 'bold', fontSize: '16px', color: '#ff5555',
+                  stroke: '#000000', strokeThickness: 3,
+                }).setOrigin(0.5).setDepth(26);
+                this.tweens.add({ targets: dmg, y: monster.y - 46, alpha: 0, duration: 700, onComplete: () => dmg.destroy() });
+                monster.setTint(0xff6666);
+                this.time.delayedCall(220, () => { if (monster.active) monster.clearTint(); });
+                this.cameras.main.shake(140, 0.006);
+
                 monster.hp--;
                 if (monster.hp <= 0) {
+                  if (monster._hpBar) { monster._hpBar.destroy(); monster._hpBar = null; }
                   monster.setVelocity(0, 0);
                   monster.play('enemy-death');
                   monster.once('animationcomplete-enemy-death', () => {
                     monster.destroy();
                     this.killed++;
-                    if (this.killed >= 5) cbRef.current.win();
+                    if (this.killed >= 8) cbRef.current.win();
                   });
                 }
               }
@@ -398,6 +416,19 @@ export default function RpgWorldPage() {
                 m.play(m.monsterType === 'treant' ? 'treant-idle' : 'mole-idle', true);
               }
             }
+
+            // ── Floating HP bar above the monster ──
+            if (!m._hpBar) m._hpBar = this.add.graphics().setDepth(20);
+            const bar = m._hpBar as Phaser.GameObjects.Graphics;
+            bar.clear();
+            const bw = 28, bh = 5;
+            const bx = m.x - bw / 2;
+            const by = m.y - m.displayHeight / 2 - 8;
+            bar.fillStyle(0x000000, 0.55); bar.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
+            bar.fillStyle(0x2b2b2b, 1); bar.fillRect(bx, by, bw, bh);
+            const pct = Math.max(0, m.hp) / m._maxHp;
+            const col = pct > 0.5 ? 0x22c55e : pct > 0.25 ? 0xeab308 : 0xef4444;
+            bar.fillStyle(col, 1); bar.fillRect(bx, by, bw * pct, bh);
           });
         }
 
