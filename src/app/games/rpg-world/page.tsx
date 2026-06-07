@@ -273,7 +273,7 @@ export default function RpgWorldPage() {
 
           // ── Player-Monster overlap → trigger battle ──
           this.physics.add.overlap(this.player, this.monsters, (_p, monster: any) => {
-            if (this.inBattle || !monster.active || this.time.now < this.battleCooldownUntil) return;
+            if (this.inBattle || !monster.active || monster._dying || this.time.now < this.battleCooldownUntil) return;
             this.inBattle = true;
 
             // Push player far back so they don't immediately re-trigger
@@ -307,14 +307,20 @@ export default function RpgWorldPage() {
 
                 monster.hp--;
                 if (monster.hp <= 0) {
+                  monster._dying = true;
+                  if (monster.body) monster.body.enable = false;
                   if (monster._hpBar) { monster._hpBar.destroy(); monster._hpBar = null; }
                   monster.setVelocity(0, 0);
-                  monster.play('enemy-death');
-                  monster.once('animationcomplete-enemy-death', () => {
+                  const finish = () => {
+                    if (monster._dead) return;
+                    monster._dead = true;
                     monster.destroy();
                     this.killed++;
                     if (this.killed >= 8) cbRef.current.win();
-                  });
+                  };
+                  monster.play('enemy-death');
+                  monster.once('animationcomplete-enemy-death', finish);
+                  this.time.delayedCall(1000, finish); // safety net if the anim event misses
                 }
               }
             };
@@ -394,7 +400,7 @@ export default function RpgWorldPage() {
 
           // ── Monster AI (per-frame smooth chase/patrol) ──
           this.monsters.getChildren().forEach((m: any) => {
-            if (!m.active) return;
+            if (!m.active || m._dying) return;
             const dx = this.player.x - m.x;
             const dy = this.player.y - m.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
