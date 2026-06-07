@@ -40,6 +40,8 @@ export default function RpgWorldPage() {
   const battleRef = useRef<BattleState | null>(null);
   const scoreRef = useRef(0);
   const hpRef = useRef(3);
+  // On-screen D-pad state, read every frame by the Phaser update loop.
+  const moveRef = useRef({ up: false, down: false, left: false, right: false });
 
   // Load the shared word bank into the battle question pool.
   useEffect(() => {
@@ -85,6 +87,11 @@ export default function RpgWorldPage() {
   }, []);
 
   useEffect(() => { battleRef.current = battle; }, [battle]);
+
+  // Clear held D-pad direction when a battle starts or the game ends.
+  useEffect(() => {
+    if (battle || gameOver) moveRef.current = { up: false, down: false, left: false, right: false };
+  }, [battle, gameOver]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -332,25 +339,30 @@ export default function RpgWorldPage() {
             return;
           }
 
-          // ── Player movement ──
-          const { left, right, up, down } = this.cursors;
+          // ── Player movement (keyboard arrows + on-screen D-pad) ──
+          const c = this.cursors;
+          const m = moveRef.current;
+          const left = c.left.isDown || m.left;
+          const right = c.right.isDown || m.right;
+          const up = c.up.isDown || m.up;
+          const down = c.down.isDown || m.down;
           const spd = 110;
 
-          if (left.isDown) {
+          if (left) {
             this.player.setVelocity(-spd, 0);
             this.player.setFlipX(true);
             this.player.play('player-move-left', true);
             this.direction = 'left';
-          } else if (right.isDown) {
+          } else if (right) {
             this.player.setVelocity(spd, 0);
             this.player.setFlipX(false);
             this.player.play('player-move-right', true);
             this.direction = 'right';
-          } else if (up.isDown) {
+          } else if (up) {
             this.player.setVelocity(0, -spd);
             this.player.play('player-move-up', true);
             this.direction = 'up';
-          } else if (down.isDown) {
+          } else if (down) {
             this.player.setVelocity(0, spd);
             this.player.play('player-move-down', true);
             this.direction = 'down';
@@ -468,7 +480,44 @@ export default function RpgWorldPage() {
       {/* ── Controls hint (bottom) ── */}
       {!gameOver && !battle && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 text-white/35 text-xs pointer-events-none select-none">
-          ←↑↓→ di chuyển &nbsp;·&nbsp; Chạm quái → chiến đấu &nbsp;·&nbsp; Diệt 5 quái để thắng!
+          Dùng phím mũi tên hoặc nút điều hướng &nbsp;·&nbsp; Chạm quái → chiến đấu &nbsp;·&nbsp; Diệt 5 quái để thắng!
+        </div>
+      )}
+
+      {/* ── On-screen D-pad (touch controls for mobile) ── */}
+      {!gameOver && !battle && (
+        <div
+          className="absolute bottom-5 right-5 z-20 select-none"
+          style={{ width: 168, height: 168, touchAction: 'none' }}
+        >
+          {([
+            { dir: 'up', label: '▲', style: 'left-1/2 top-0 -translate-x-1/2' },
+            { dir: 'left', label: '◀', style: 'left-0 top-1/2 -translate-y-1/2' },
+            { dir: 'right', label: '▶', style: 'right-0 top-1/2 -translate-y-1/2' },
+            { dir: 'down', label: '▼', style: 'left-1/2 bottom-0 -translate-x-1/2' },
+          ] as const).map((b) => {
+            const press = (on: boolean) => () => { moveRef.current[b.dir] = on; };
+            return (
+              <button
+                key={b.dir}
+                aria-label={b.dir}
+                onPointerDown={(e) => { e.preventDefault(); moveRef.current[b.dir] = true; }}
+                onPointerUp={press(false)}
+                onPointerLeave={press(false)}
+                onPointerCancel={press(false)}
+                onContextMenu={(e) => e.preventDefault()}
+                className={`absolute ${b.style} flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-black text-white active:scale-90`}
+                style={{
+                  background: 'rgba(124,58,237,0.45)',
+                  border: '2px solid rgba(167,139,250,0.7)',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+                  touchAction: 'none',
+                }}
+              >
+                {b.label}
+              </button>
+            );
+          })}
         </div>
       )}
 
