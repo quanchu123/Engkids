@@ -330,9 +330,9 @@ export default function PetGamePage() {
         </div>
       )}
 
-      <main className={`min-h-screen bg-gradient-to-b ${species.bg} pb-28 pt-3`}>
-        <div className="mx-auto max-w-6xl px-4 py-5">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <main className={`min-h-[calc(100svh-68px)] overflow-hidden bg-gradient-to-b ${species.bg} py-3`}>
+        <div className="mx-auto flex h-[calc(100svh-92px)] max-w-6xl flex-col px-4">
+          <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
             <Link href="/games" className="rounded-full bg-white/90 px-4 py-2 text-sm font-black text-violet-700 shadow-md backdrop-blur hover:bg-white">
               ← Game
             </Link>
@@ -346,17 +346,17 @@ export default function PetGamePage() {
             </div>
           </div>
 
-          <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="pet-room relative min-h-[560px] overflow-hidden rounded-[2rem] border border-white/70 bg-sky-100 shadow-2xl">
+          <section className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_348px]">
+            <div className="pet-room relative min-h-0 overflow-hidden rounded-[2rem] border border-white/70 bg-sky-100 shadow-2xl">
               <div className="pet-sky absolute inset-0" />
               <div className="pet-hills absolute inset-x-0 bottom-28 h-40" />
               <div className="pet-floor absolute inset-x-0 bottom-0 h-40" />
-              <div className="absolute left-6 top-6 rounded-2xl bg-white/85 px-4 py-3 shadow-lg backdrop-blur">
+              <div className="absolute left-5 top-5 rounded-2xl bg-white/85 px-4 py-3 shadow-lg backdrop-blur">
                 <p className="text-xs font-black uppercase tracking-wide text-violet-500">Thú cưng thần thoại</p>
                 <h1 className="mt-1 text-2xl font-black text-slate-950">{species.emoji} {pet.name}</h1>
                 <p className="text-sm font-bold text-slate-500">Cấp {lvl.level} · {stage.nameVi}</p>
               </div>
-              <div className="absolute right-6 top-6 rounded-2xl bg-white/85 px-4 py-3 text-right shadow-lg backdrop-blur">
+              <div className="absolute right-5 top-5 rounded-2xl bg-white/85 px-4 py-3 text-right shadow-lg backdrop-blur">
                 <p className="text-xs font-black uppercase tracking-wide text-emerald-500">Tâm trạng</p>
                 <p className="mt-1 text-xl font-black text-slate-950">{MOOD_FACE[mood]} {wellbeing}%</p>
               </div>
@@ -367,8 +367,8 @@ export default function PetGamePage() {
                 ))}
               </div>
 
-              <div className="relative z-10 flex min-h-[560px] flex-col items-center justify-end px-5 pb-14 pt-32">
-                <div className="relative flex h-72 w-full max-w-sm items-end justify-center">
+              <div className="relative z-10 flex h-full min-h-0 flex-col items-center justify-end px-5 pb-7 pt-28">
+                <div className="relative flex h-[min(44svh,250px)] min-h-[210px] w-full max-w-sm items-end justify-center">
                   <div
                     className="pet-aura absolute left-1/2 top-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full"
                     style={{ background: `radial-gradient(circle, ${species.glow} 0%, transparent 70%)` }}
@@ -386,11 +386,11 @@ export default function PetGamePage() {
                           <Image
                             src={stage.art}
                             alt={stage.nameVi}
-                            width={230}
-                            height={230}
+                            width={216}
+                            height={216}
                             unoptimized
                             priority
-                            className="h-[230px] w-[230px] object-contain"
+                            className="h-[min(34svh,216px)] w-[min(34svh,216px)] min-h-[170px] min-w-[170px] object-contain"
                             style={{ filter: 'drop-shadow(0 18px 24px rgba(15,23,42,0.32))' }}
                           />
                         </span>
@@ -401,7 +401,7 @@ export default function PetGamePage() {
                   <div className="pet-shadow absolute bottom-4 h-5 w-44 rounded-full bg-black/25 blur-md" />
                 </div>
 
-                <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/88 p-4 shadow-xl backdrop-blur">
+                <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/88 p-3 shadow-xl backdrop-blur">
                   <div className="mb-2 flex justify-between text-xs font-black text-slate-600">
                     <span>Kinh nghiệm</span>
                     <span>{lvl.intoLevel}/{lvl.needed}</span>
@@ -416,26 +416,26 @@ export default function PetGamePage() {
               </div>
             </div>
 
-            <aside className="space-y-4">
-              <div className="rounded-[1.75rem] border border-white/70 bg-white/88 p-4 shadow-xl backdrop-blur">
-                <div className="mb-3 flex items-center justify-between">
+            <aside className="flex min-h-0 flex-col gap-3">
+              <div className="rounded-[1.75rem] border border-white/70 bg-white/88 p-3 shadow-xl backdrop-blur">
+                <div className="mb-2 flex items-center justify-between">
                   <div>
                     <p className="text-xs font-black uppercase tracking-wide text-violet-500">Chăm sóc</p>
                     <h2 className="text-xl font-black text-slate-950">Trạng thái</h2>
                   </div>
                   <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-black text-emerald-600">{wellbeing}%</span>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {(Object.keys(STAT_META) as PetStatKey[]).map((key) => {
                     const meta = STAT_META[key];
                     const val = pet[key];
                     return (
-                      <div key={key} className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
-                        <div className="mb-2 flex items-center justify-between">
+                      <div key={key} className="rounded-2xl bg-white px-3 py-1.5 shadow-sm ring-1 ring-slate-100">
+                        <div className="mb-1 flex items-center justify-between">
                           <span className={`rounded-full px-2.5 py-1 text-xs font-black ${meta.soft}`}>{meta.emoji} {meta.labelVi}</span>
                           <span className={val < 25 ? 'text-sm font-black text-rose-500' : 'text-sm font-black text-slate-500'}>{val}%</span>
                         </div>
-                        <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
                           <div className={`h-full rounded-full bg-gradient-to-r ${meta.bar} transition-all`} style={{ width: `${Math.max(val, 2)}%` }} />
                         </div>
                       </div>
@@ -451,10 +451,10 @@ export default function PetGamePage() {
                     <button
                       key={key}
                       onClick={() => openQuiz(key)}
-                      className={`group rounded-[1.4rem] bg-gradient-to-br ${ACTION_STYLE[key]} p-0.5 shadow-lg transition-transform hover:-translate-y-1`}
+                      className={`group rounded-[1.25rem] bg-gradient-to-br ${ACTION_STYLE[key]} p-0.5 shadow-lg transition-transform hover:-translate-y-1`}
                     >
-                      <span className="flex min-h-[126px] flex-col items-center justify-center gap-2 rounded-[1.25rem] bg-white/92 p-3">
-                        <Image src={`/games/pet/${def.asset}.png`} alt={def.labelVi} width={54} height={54} unoptimized className="transition-transform group-hover:scale-110" />
+                      <span className="flex h-[82px] flex-col items-center justify-center gap-1 rounded-[1.1rem] bg-white/92 p-2">
+                        <Image src={`/games/pet/${def.asset}.png`} alt={def.labelVi} width={34} height={34} unoptimized className="h-[34px] w-[34px] transition-transform group-hover:scale-110" />
                         <span className="text-sm font-black text-slate-800">{def.labelVi}</span>
                         <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-600">+{def.exp} EXP</span>
                       </span>
@@ -463,7 +463,7 @@ export default function PetGamePage() {
                 })}
               </div>
 
-              <div className="rounded-[1.5rem] border border-white/70 bg-white/80 p-4 text-center shadow-lg backdrop-blur">
+              <div className="pet-helper-note rounded-[1.5rem] border border-white/70 bg-white/80 p-3 text-center shadow-lg backdrop-blur">
                 <p className="text-sm font-black text-slate-800">Trả lời đúng từ tiếng Anh để chăm sóc thú cưng.</p>
                 <p className="mt-1 text-xs font-bold text-slate-500">
                   Đã ôn {learnedWords.size} từ hôm nay{combo >= 2 ? ` · Combo x${combo}` : ''}
@@ -681,6 +681,9 @@ function PetStyles() {
         100% { opacity: 1; transform: translateY(0) scale(1); }
       }
       .evolve-title { animation: evolve-title-pop 0.45s ease-out both; }
+      @media (max-height: 760px) {
+        .pet-helper-note { display: none; }
+      }
       @media (prefers-reduced-motion: reduce) {
         .pet-bob, .pet-sway, .pet-breathe, .pet-aura, .pet-shadow, .pet-spark, .evolve-ring, .evolve-beam, .evolve-creature, .evolve-particle { animation: none; }
         .pet-happy, .pet-sad, .pet-evolve, .pet-flash, .pet-heart, .pet-float-msg, .quiz-pop, .quiz-shake, .evolve-title { animation-duration: 0.4s; animation-iteration-count: 1; }
@@ -698,24 +701,24 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
   return (
     <>
       <Header />
-      <main className={`min-h-screen bg-gradient-to-b ${selected.bg} pb-24 pt-4 transition-colors duration-500`}>
-        <div className="mx-auto grid max-w-6xl gap-5 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start">
-          <section className="relative min-h-[560px] overflow-hidden rounded-[2rem] border border-white/70 bg-sky-100 shadow-2xl">
+      <main className={`min-h-[calc(100svh-68px)] overflow-hidden bg-gradient-to-b ${selected.bg} py-3 transition-colors duration-500`}>
+        <div className="mx-auto grid h-[calc(100svh-92px)] max-w-6xl gap-4 px-4 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-stretch">
+          <section className="relative min-h-0 overflow-hidden rounded-[2rem] border border-white/70 bg-sky-100 shadow-2xl">
             <div className="pet-sky absolute inset-0" />
             <div className="pet-hills absolute inset-x-0 bottom-28 h-40" />
             <div className="pet-floor absolute inset-x-0 bottom-0 h-40" />
-            <div className="relative z-10 flex min-h-[560px] flex-col items-center justify-center px-5 py-10 text-center">
+            <div className="relative z-10 flex h-full min-h-0 flex-col items-center justify-center px-5 py-6 text-center">
               <p className="rounded-full bg-white/82 px-4 py-1.5 text-xs font-black uppercase tracking-wide text-violet-600 shadow">Bắt đầu hành trình</p>
-              <h1 className="mt-4 max-w-xl text-4xl font-black leading-tight text-white drop-shadow-lg sm:text-5xl">Chọn trứng thần thoại</h1>
+              <h1 className="mt-3 max-w-xl text-4xl font-black leading-tight text-white drop-shadow-lg sm:text-5xl">Chọn trứng thần thoại</h1>
               <p className="mt-3 max-w-lg text-sm font-bold text-white/92 drop-shadow">
                 {hasBadPet
                   ? 'Hãy chọn lại một quả trứng để bắt đầu hành trình tiến hóa.'
                   : 'Nuôi từ trứng nhỏ, trả lời đúng tiếng Anh để tiến hóa thành sinh vật huyền thoại.'}
               </p>
 
-              <div className="relative mt-7 flex h-64 w-64 items-center justify-center">
-                <div className="pet-aura absolute left-1/2 top-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: `radial-gradient(circle, ${selected.glow} 0%, transparent 70%)` }} />
-                <Image src={eggArt} alt={selected.nameVi} width={170} height={170} unoptimized className="adopt-bob relative z-10 object-contain" style={{ filter: 'drop-shadow(0 16px 22px rgba(15,23,42,0.32))' }} />
+              <div className="relative mt-5 flex h-[min(36svh,230px)] min-h-[185px] w-64 items-center justify-center">
+                <div className="pet-aura absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: `radial-gradient(circle, ${selected.glow} 0%, transparent 70%)` }} />
+                <Image src={eggArt} alt={selected.nameVi} width={158} height={158} unoptimized className="adopt-bob relative z-10 h-[min(25svh,158px)] w-[min(25svh,158px)] object-contain" style={{ filter: 'drop-shadow(0 16px 22px rgba(15,23,42,0.32))' }} />
                 <div className="pet-shadow absolute bottom-8 h-5 w-40 rounded-full bg-black/25 blur-md" />
               </div>
 
@@ -726,7 +729,7 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
             </div>
           </section>
 
-          <aside className="space-y-4 rounded-[2rem] border border-white/70 bg-white/88 p-4 shadow-2xl backdrop-blur">
+          <aside className="flex min-h-0 flex-col gap-3 rounded-[2rem] border border-white/70 bg-white/88 p-4 shadow-2xl backdrop-blur">
             <div>
               <p className="text-xs font-black uppercase tracking-wide text-violet-500">Chọn giống</p>
               <h2 className="text-2xl font-black text-slate-950">Bạn muốn nuôi con nào?</h2>
@@ -737,12 +740,12 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
                 <button
                   key={species.id}
                   onClick={() => setSelectedId(species.id)}
-                  className={`rounded-[1.4rem] bg-white p-3 text-left shadow-sm ring-1 transition-all hover:-translate-y-1 hover:shadow-lg ${
+                  className={`rounded-[1.25rem] bg-white p-2.5 text-left shadow-sm ring-1 transition-all hover:-translate-y-1 hover:shadow-lg ${
                     selectedId === species.id ? 'ring-4 ring-violet-300' : 'ring-slate-100'
                   }`}
                   title={species.nameVi}
                 >
-                  <Image src={species.stages[species.stages.length - 1].art} alt={species.nameVi} width={76} height={76} unoptimized className="mx-auto h-[76px] w-[76px] object-contain" />
+                  <Image src={species.stages[species.stages.length - 1].art} alt={species.nameVi} width={66} height={66} unoptimized className="mx-auto h-16 w-16 object-contain" />
                   <span className="mt-2 block text-center text-xs font-black text-slate-800">{species.emoji} {species.nameVi}</span>
                 </button>
               ))}

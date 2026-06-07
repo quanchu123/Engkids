@@ -71,6 +71,12 @@ Original prompt: tiếp tục đi
   - `npm run type-check`
   - `npm run build`
   - local Playwright screenshot smoke test for `/games/pet` adoption and seeded main pet screen
+- Pet game viewport fit pass:
+  - compressed `/games/pet` adoption and main play layouts to fit a 1366x720 viewport without page scrolling
+  - changed the main game view to a fixed-height dashboard under the header, compacted stat bars and care buttons
+  - hides the nonessential helper note on short screens so all four care actions remain visible
+  - Playwright metrics confirmed `scrollHeight=720` for both adoption and seeded main pet screen at 1366x720
+  - validation: `npm run lint`, `npm run type-check`, `npm run build`
 
 TODOs / next suggestions:
 - When Gemini/Veo quota or billing is available, run `npm run veo:evolve` and commit generated files under `public/games/pet/evolve/`.
