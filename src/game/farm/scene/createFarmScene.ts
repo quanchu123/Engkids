@@ -1005,7 +1005,38 @@ export function createFarmScene(
         this.emitDust(c.x, c.y, this.particleCount(14))
       } else if (particle === 'water') {
         this.emitWater(c.x, c.y, this.layout.tileSize)
+        // Care reaction: the watered crop perks up (happy bounce + sparkle).
+        this.reactCrop(plotId)
       }
+    }
+
+    /**
+     * A short, tween-safe "happy" reaction for a cared-for crop: a green sparkle
+     * above it plus a quick squash-and-stretch hop. Runs on top of the idle
+     * tween by briefly overriding scale, then restoring the idle motion.
+     */
+    private reactCrop(plotId: number): void {
+      const crop = this.cropObjects[plotId]
+      if (!crop || !crop.active) return
+      this.emitSparkle(crop.x, crop.y - this.layout.tileSize * 0.45, this.particleCount(6))
+      const baseScale = crop.scaleX
+      this.cropTweens[plotId]?.remove()
+      this.cropTweens[plotId] = this.tweens.add({
+        targets: crop,
+        scaleX: baseScale * 1.18,
+        scaleY: baseScale * 1.18,
+        duration: 160,
+        yoyo: true,
+        ease: 'Quad.easeOut',
+        onComplete: () => {
+          crop.setScale(baseScale)
+          // Resume the gentle idle motion after the reaction.
+          const state = this.safeGetState()
+          const plot = state.grid.plots.find((p) => p.id === plotId)
+          const mature = (plot?.crop?.stage ?? 0) >= 3
+          this.startCropIdle(plotId, baseScale, mature)
+        },
+      })
     }
 
     /** Brown dust puff (tilling / planting). */

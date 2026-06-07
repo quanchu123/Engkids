@@ -312,6 +312,8 @@ export default function EnglishFarmPage() {
       if (!quiz) return;
       const result = gradeQuiz(quiz, choice);
       setQuizResult(result);
+      // Visual feedback on the farm canvas (green flash/sparkle vs red shake).
+      sceneRef.current?.flashQuizFeedback(null, result.correct);
 
       const word = activeQuizWordRef.current;
       let s = farmStateRef.current;
