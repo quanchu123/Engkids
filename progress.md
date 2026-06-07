@@ -55,7 +55,25 @@ Original prompt: tiếp tục đi
   - `npm run lint`
   - `npm run test:features`
 
+- Pet game polish + Gemini/Veo asset pipeline:
+  - rebuilt `/games/pet` into a richer adoption/play UI with stage art, care actions, stats, and final evolution presentation
+  - fixed persisted-store hydration when no local snapshot exists, so the pet page no longer stays blank for fresh browsers
+  - replaced `scripts/gen-veo-evolve.mjs` with the official `@google/genai` SDK flow
+  - script now reads `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `gemini_key1`, `gemini_key2`, `GEMINI_KEY1`, and `GEMINI_KEY2` without printing secret values
+  - script uses existing final-stage PNG art as image-to-video input and saves clips to `public/games/pet/evolve/<pet-id>.mp4`
+  - added `npm run veo:evolve` as the safe generation command with `--skip-existing`
+  - Veo request shape was tested and unsupported Gemini Developer API params were removed
+  - current keys reached Gemini/Veo quota limit (`RESOURCE_EXHAUSTED` / HTTP 429), so no MP4 clips were generated in this pass
+  - added in-game fallback cinematic using the pet stage image, glow beams, and particles when the MP4 is missing or fails to load
+- Pet game validation:
+  - `node --check scripts/gen-veo-evolve.mjs`
+  - `npm run lint`
+  - `npm run type-check`
+  - `npm run build`
+  - local Playwright screenshot smoke test for `/games/pet` adoption and seeded main pet screen
+
 TODOs / next suggestions:
+- When Gemini/Veo quota or billing is available, run `npm run veo:evolve` and commit generated files under `public/games/pet/evolve/`.
 - Next high-value step: add real browser E2E for login, stories, videos, and admin CRUD now that auth/progress flow is less fragmented.
 - For deeper confidence, run real browser E2E outside this sandbox, especially on Phaser-based game pages and Bunny/Supabase flows.
-- `next build` worker execution is still blocked in this sandbox by `spawn EPERM`, so final production build verification must happen outside this environment.
+- `next build` completed successfully in the latest pet-game pass.

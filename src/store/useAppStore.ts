@@ -654,7 +654,7 @@ export const useAppStore = create<AppState>()(
         pet: state.pet,
       }),
       merge: (persistedState: unknown, currentState) => {
-        const persisted = persistedState as Partial<AppState & { wordInteractions: [string, WordInteraction][] }>;
+        const persisted = (persistedState ?? {}) as Partial<AppState & { wordInteractions: [string, WordInteraction][] }>;
         const snapshot = normalizeProgressSnapshot({
           progress: persisted.progress,
           settings: persisted.settings,

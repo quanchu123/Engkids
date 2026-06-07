@@ -18,7 +18,8 @@
     "setup:db": "node setup-database.js",
     "migrate:spaces": "node scripts/migrate-bunny-to-spaces.js",
     "iconscout:download": "node scripts/download-iconscout-assets.js",
-    "thumbnails:backfill": "node scripts/backfill-video-thumbnails.js"
+    "thumbnails:backfill": "node scripts/backfill-video-thumbnails.js",
+    "veo:evolve": "node scripts/gen-veo-evolve.mjs --skip-existing"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
@@ -40,6 +41,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@google/genai": "^2.8.0",
     "@playwright/test": "^1.58.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
