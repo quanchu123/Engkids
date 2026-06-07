@@ -108,6 +108,7 @@ export default function PetGamePage() {
   const [hearts, setHearts] = useState<number[]>([]);
   const [evolveKey, setEvolveKey] = useState(0);
   const [evolving, setEvolving] = useState(false);
+  const [evolveVideo, setEvolveVideo] = useState<string | null>(null);
   const [anim, setAnim] = useState<PetAnim>('idle');
   const [combo, setCombo] = useState(0);
   const [floats, setFloats] = useState<Array<{ id: number; text: string }>>([]);
@@ -159,6 +160,10 @@ export default function PetGamePage() {
       setEvolving(true);
       setEvolveKey((k) => k + 1);
       playEvolveChime();
+      // Final-form reveal: play a Veo cinematic if one exists, else just the burst.
+      if (stageIdx === species.stages.length - 1) {
+        setEvolveVideo(`/games/pet/evolve/${species.id}.mp4`);
+      }
       const t = setTimeout(() => setEvolving(false), 2200);
       prevStageRef.current = stageIdx;
       return () => clearTimeout(t);
@@ -264,6 +269,25 @@ export default function PetGamePage() {
     <>
       <Header />
       <Fireworks trigger={evolveKey} duration={2000} />
+      {evolveVideo && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black">
+          <video
+            src={evolveVideo}
+            autoPlay
+            muted
+            playsInline
+            className="max-h-full max-w-full"
+            onEnded={() => setEvolveVideo(null)}
+            onError={() => setEvolveVideo(null)}
+          />
+          <button
+            onClick={() => setEvolveVideo(null)}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-6 py-2.5 text-sm font-black text-violet-700 shadow-lg"
+          >
+            Bỏ qua ⏭
+          </button>
+        </div>
+      )}
       <main className={`min-h-screen bg-gradient-to-b ${species.bg} pb-28`}>
         <div className="mx-auto max-w-2xl px-4 py-6">
           <div className="mb-4 flex items-center justify-between">
