@@ -129,6 +129,7 @@ export default function PetGamePage() {
   const [quiz, setQuiz] = useState<PetQuiz | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
+  const [lastReward, setLastReward] = useState<{ exp: number; coins: number }>({ exp: 0, coins: 0 });
 
   const heartId = useRef(0);
   const floatId = useRef(0);
@@ -199,49 +200,51 @@ export default function PetGamePage() {
     setResult(null);
   };
 
+  const nextQuestion = () => {
+    if (!quizAction) return;
+    const q = buildPetQuiz(bank, PET_ACTIONS[quizAction].quizDirection, Math.random, preferredWords);
+    setQuiz(q);
+    setPicked(null);
+    setResult(null);
+    setTimeout(() => speakEnglish(q.word.en), 200);
+  };
+
   const choose = (option: string) => {
     if (!quiz || !quizAction || result) return;
     setPicked(option);
     if (option === quiz.answer) {
       const def = PET_ACTIONS[quizAction];
-      const reward = carePet(quizAction, combo);
+      const coinReward = carePet(quizAction, combo);
+      setLastReward({ exp: def.exp, coins: coinReward });
       setResult('correct');
       setCombo((c) => c + 1);
       playDing();
       speakEnglish(quiz.word.en);
       pokeHappy();
-      // Track distinct words reviewed this session.
       setLearnedWords((prev) => {
         const next = new Set(prev);
         next.add(quiz.word.en.toLowerCase());
         return next;
       });
-      // Count toward the daily "play a game" quest once per visit.
       if (!questDoneRef.current) {
         questDoneRef.current = true;
         try { completeQuestStep('game'); } catch { /* ignore */ }
       }
-      // flying hearts
+      // Hearts + float fire on the pet (visible right after the modal closes).
       const id = heartId.current++;
       setHearts((h) => [...h, id]);
-      setTimeout(() => setHearts((h) => h.filter((x) => x !== id)), 1200);
-      pushFloat(`+${def.exp} EXP · +${reward} 🪙`);
-      setTimeout(closeQuiz, 1050);
+      setTimeout(() => setHearts((h) => h.filter((x) => x !== id)), 1400);
+      pushFloat(`+${def.exp} EXP · +${coinReward} 🪙`);
+      // Show the success panel, then close so the pet's happy reaction is seen.
+      setTimeout(closeQuiz, 1400);
     } else {
       setResult('wrong');
       setCombo(0);
       playBuzz();
+      speakEnglish(quiz.word.en); // hear the correct word
       setAnim('sad');
-      speakEnglish(quiz.word.en); // hear the correct English word
       setTimeout(() => setAnim('idle'), 600);
-      // give a fresh question for the same action so they can try again
-      setTimeout(() => {
-        const q = buildPetQuiz(bank, PET_ACTIONS[quizAction].quizDirection, Math.random, preferredWords);
-        setQuiz(q);
-        setPicked(null);
-        setResult(null);
-        setTimeout(() => speakEnglish(q.word.en), 200);
-      }, 1300);
+      // Stay open and reveal the answer; child taps "Câu khác" to continue.
     }
   };
 
@@ -386,7 +389,7 @@ export default function PetGamePage() {
                 >
                   <Image src={`/games/pet/${def.asset}.png`} alt={def.labelVi} width={48} height={48} unoptimized />
                   <span className="text-xs font-black text-slate-700">{def.labelVi}</span>
-                  <span className="text-[10px] font-bold text-emerald-600">Trả lời đúng</span>
+                  <span className="text-[10px] font-bold text-emerald-600">+{def.exp} EXP</span>
                 </button>
               );
             })}
@@ -405,53 +408,85 @@ export default function PetGamePage() {
 
       {/* Quiz modal */}
       {quiz && quizAction && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4" onClick={closeQuiz}>
-          <div className="quiz-pop w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={closeQuiz}>
+          <div className="quiz-pop w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
               <span className="flex items-center gap-2 text-sm font-black text-slate-700">
-                <Image src={`/games/pet/${PET_ACTIONS[quizAction].asset}.png`} alt="" width={28} height={28} unoptimized />
+                <Image src={`/games/pet/${PET_ACTIONS[quizAction].asset}.png`} alt="" width={26} height={26} unoptimized />
                 {PET_ACTIONS[quizAction].labelVi}
               </span>
-              <button onClick={closeQuiz} aria-label="Đóng" className="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-black text-slate-500">✕</button>
+              <button onClick={closeQuiz} aria-label="Đóng" className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-sm font-black text-slate-500 hover:bg-slate-200">✕</button>
             </div>
 
-            <p className="mt-3 text-center text-xs font-bold text-slate-500">{PET_ACTIONS[quizAction].promptLabelVi}</p>
-            <div className="mt-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-100 to-sky-100 py-4 text-center">
-              <span className="text-2xl font-black text-violet-700">{quiz.prompt}</span>
-              <button
-                onClick={() => speakEnglish(quiz.word.en)}
-                aria-label="Nghe phát âm"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg shadow transition-transform hover:scale-110"
-              >
-                🔊
-              </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {quiz.options.map((opt) => {
-                const isAnswer = opt === quiz.answer;
-                const isPicked = picked === opt;
-                let cls = 'bg-slate-50 text-slate-700 hover:bg-slate-100';
-                if (result && isAnswer) cls = 'bg-emerald-500 text-white';
-                else if (result === 'wrong' && isPicked) cls = 'bg-rose-500 text-white';
-                else if (result) cls = 'bg-slate-50 text-slate-400';
-                return (
-                  <button
-                    key={opt}
-                    onClick={() => choose(opt)}
-                    disabled={!!result}
-                    className={`rounded-2xl px-3 py-4 text-base font-black shadow-sm transition-all ${cls} ${result === 'wrong' && isPicked ? 'quiz-shake' : ''}`}
-                  >
-                    {opt}
+            <div className="p-5">
+              {/* SUCCESS panel */}
+              {result === 'correct' ? (
+                <div className="quiz-pop flex flex-col items-center py-2 text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-4xl shadow-inner">✅</div>
+                  <div className="mt-2 text-xl font-black text-emerald-600">Chính xác!</div>
+                  <button onClick={() => speakEnglish(quiz.word.en)} className="mt-2 flex items-center gap-2 rounded-full bg-violet-50 px-4 py-1.5 text-base font-black text-violet-700">
+                    🔊 {quiz.word.en} <span className="text-sm font-bold text-slate-400">= {quiz.word.vi}</span>
                   </button>
-                );
-              })}
-            </div>
+                  <div className="mt-3 flex items-center gap-3 text-base font-black">
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-600">+{lastReward.exp} EXP</span>
+                    <span className="rounded-full bg-orange-100 px-3 py-1 text-orange-600">+{lastReward.coins} 🪙</span>
+                    {combo >= 2 && <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-fuchsia-600">🔥 x{combo}</span>}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Prompt */}
+                  <p className="text-center text-xs font-bold text-slate-500">{PET_ACTIONS[quizAction].promptLabelVi}</p>
+                  <div className="mt-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-100 to-sky-100 py-4">
+                    <span className="text-2xl font-black text-violet-700">{quiz.prompt}</span>
+                    <button onClick={() => speakEnglish(quiz.word.en)} aria-label="Nghe phát âm" className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg shadow transition-transform hover:scale-110">🔊</button>
+                  </div>
 
-            <p className="mt-3 h-5 text-center text-sm font-black">
-              {result === 'correct' && <span className="text-emerald-600">Chính xác! 🎉</span>}
-              {result === 'wrong' && <span className="text-rose-500">Thử lại nhé! 💪</span>}
-            </p>
+                  {/* Choices */}
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    {quiz.options.map((opt) => {
+                      const isAnswer = opt === quiz.answer;
+                      const isPicked = picked === opt;
+                      let cls = 'bg-slate-50 text-slate-700 hover:bg-violet-50 ring-1 ring-slate-200';
+                      if (result === 'wrong' && isAnswer) cls = 'bg-emerald-500 text-white ring-2 ring-emerald-500';
+                      else if (result === 'wrong' && isPicked) cls = 'bg-rose-500 text-white ring-2 ring-rose-500';
+                      else if (result === 'wrong') cls = 'bg-slate-50 text-slate-300 ring-1 ring-slate-100';
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => choose(opt)}
+                          disabled={!!result}
+                          className={`rounded-2xl px-3 py-4 text-base font-black shadow-sm transition-all ${cls} ${result === 'wrong' && isPicked ? 'quiz-shake' : ''}`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Wrong: reveal answer + continue */}
+                  {result === 'wrong' && (
+                    <div className="mt-4 text-center">
+                      <div className="text-sm font-black text-rose-500">Chưa đúng rồi 💪</div>
+                      <button onClick={() => speakEnglish(quiz.word.en)} className="mt-1 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-base font-black text-emerald-700">
+                        🔊 {quiz.word.en} <span className="text-sm font-bold text-slate-400">= {quiz.word.vi}</span>
+                      </button>
+                      <button
+                        onClick={nextQuestion}
+                        className="mt-3 w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 py-3 text-sm font-black text-white shadow-md transition-transform hover:scale-105"
+                      >
+                        Thử câu khác →
+                      </button>
+                    </div>
+                  )}
+
+                  {!result && (
+                    <p className="mt-3 text-center text-[11px] font-semibold text-slate-400">Chọn đáp án đúng để chăm sóc thú cưng</p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
