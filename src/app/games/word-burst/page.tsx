@@ -132,23 +132,29 @@ export default function WordBurstPage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Build layout randomised on each round
+  // Build layout randomised on each round (responsive to viewport size).
   useEffect(() =>{
     const W = window.innerWidth;
     const H = window.innerHeight;
+    const isMobile = W < 640;
+    const marginX = isMobile ? 12 : 80;
+    const topSafe = isMobile ? Math.round(H * 0.34) : 140; // keep below the question header
+    const bottomSafe = isMobile ? 72 : 120;
     const positions: { x:number; y:number }[] = [];
-    const minDist = 130;
     const layout = roundData.choices.map((_, idx) =>{
       const grade = ORB_GRADIENTS[idx % ORB_GRADIENTS.length];
-      const size  = 110 + Math.floor(Math.random() * 30);
+      const size  = isMobile ? 74 + Math.floor(Math.random() * 16) : 110 + Math.floor(Math.random() * 30);
+      const minDist = isMobile ? size * 0.9 : 130;
+      const spanX = Math.max(40, W - size - marginX * 2);
+      const spanY = Math.max(60, H - size - bottomSafe - topSafe);
       // Try to not overlap
       let x = 0, y = 0, attempts = 0;
       do {
-        x = size / 2 + 80 + Math.random() * (W - size - 160);
-        y = 120 + Math.random() * (H - size - 220);
+        x = size / 2 + marginX + Math.random() * spanX;
+        y = topSafe + Math.random() * spanY;
         attempts++;
       } while (
-        attempts< 40 &&
+        attempts< 60 &&
         positions.some(p =>Math.hypot(p.x - x, p.y - y)< minDist)
       );
       positions.push({ x, y });
