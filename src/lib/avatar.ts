@@ -87,6 +87,12 @@ const CHARACTER_DEFS: Array<[string, string]> = [
   ['char-pumpkin', 'Bí ngô ma'],
   ['char-gremlin', 'Yêu tinh'],
   ['char-monster', 'Quái vật'],
+  ['char-orc', 'Orc'],
+  ['char-goblin', 'Goblin'],
+  ['char-leprechaun', 'Yêu tinh Leprechaun'],
+  ['char-elf', 'Tiên Elf'],
+  ['char-zombie', 'Zombie'],
+  ['char-hydra', 'Mãng xà Hydra'],
   // Legendary mythical creatures
   ['char-narwhal', 'Kỳ lân biển'],
   ['char-jackalope', 'Thỏ thần'],
@@ -98,6 +104,7 @@ const CHARACTER_DEFS: Array<[string, string]> = [
   ['char-genie', 'Thần đèn'],
   ['char-pegasus', 'Thiên mã'],
   ['char-unicorn', 'Kỳ lân'],
+  ['char-dragon-cn', 'Rồng Á Đông'],
   ['char-phoenix', 'Phượng hoàng'],
   ['char-dragon-eu', 'Rồng thần'],
 ];
