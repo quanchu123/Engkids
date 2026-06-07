@@ -135,18 +135,28 @@ export default function ShopPage() {
               return (
                 <div
                   key={item.id}
-                  className={`flex flex-col items-center gap-3 rounded-[1.75rem] bg-white p-4 text-center shadow-md transition-transform hover:-translate-y-1 ${
+                  className={`group relative flex flex-col items-center gap-3 overflow-hidden rounded-[1.75rem] bg-white p-4 text-center shadow-md transition-all hover:-translate-y-1 hover:shadow-xl ${
                     equipped ? 'ring-4 ring-fuchsia-400' : 'ring-1 ring-slate-100'
                   }`}
                 >
+                  {equipped && (
+                    <span className="absolute right-2 top-2 rounded-full bg-fuchsia-500 px-2 py-0.5 text-[9px] font-black text-white shadow">★</span>
+                  )}
                   <div
-                    className={`flex h-24 w-24 items-center justify-center rounded-3xl ${locked ? 'grayscale' : ''}`}
+                    className="relative flex h-28 w-28 items-center justify-center rounded-3xl shadow-inner"
                     style={{
-                      background: `radial-gradient(circle at 30% 25%, #ffffff 0%, ${item.tint} 85%)`,
-                      opacity: locked ? 0.55 : 1,
+                      background: `radial-gradient(circle at 32% 24%, #ffffff 0%, ${item.tint} 88%)`,
+                      opacity: locked ? 0.7 : 1,
                     }}
                   >
-                    <ItemArt item={item} px={64} />
+                    {/* glossy highlight */}
+                    <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.7),transparent_45%)]" />
+                    <div className={locked ? 'grayscale' : 'transition-transform group-hover:scale-110'}>
+                      <ItemArt item={item} px={72} />
+                    </div>
+                    {locked && (
+                      <span className="absolute bottom-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-slate-700/80 text-sm text-white shadow">🔒</span>
+                    )}
                   </div>
 
                   <h3 className="text-sm font-black text-slate-900">{item.nameVi}</h3>

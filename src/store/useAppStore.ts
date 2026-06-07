@@ -82,6 +82,14 @@ interface AppState {
   toggleAutoPlayAudio: () => void;
   replaceProgress: (progress: UserProgress) => void;
   replaceSettings: (settings: UserSettings) => void;
+  replaceEconomy: (economy: {
+    coins?: number;
+    streakFreezes?: number;
+    lastSpinDate?: string | null;
+    ownedAvatarItems?: string[];
+    equippedAvatar?: EquippedAvatar | null;
+    pet?: PetState | null;
+  }) => void;
   setHydrated: (hydrated: boolean) => void;
   isWordSaved: (word: string) => boolean;
   getStoryProgress: (storyId: string) => StoryProgress | null;
@@ -605,6 +613,17 @@ export const useAppStore = create<AppState>()(
 
       replaceSettings: (settings) => {
         set({ settings: { ...DEFAULT_SETTINGS, ...settings } });
+      },
+
+      replaceEconomy: (economy) => {
+        const patch: Partial<AppState> = {};
+        if (typeof economy.coins === 'number') patch.coins = Math.max(0, Math.round(economy.coins));
+        if (typeof economy.streakFreezes === 'number') patch.streakFreezes = Math.max(0, Math.round(economy.streakFreezes));
+        if (economy.lastSpinDate !== undefined) patch.lastSpinDate = economy.lastSpinDate;
+        if (Array.isArray(economy.ownedAvatarItems)) patch.ownedAvatarItems = economy.ownedAvatarItems;
+        if (economy.equippedAvatar) patch.equippedAvatar = economy.equippedAvatar;
+        if (economy.pet !== undefined) patch.pet = economy.pet;
+        set(patch);
       },
 
       setHydrated: (hydrated) => {

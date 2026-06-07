@@ -3,6 +3,33 @@
 import { getSupabaseClient } from '@/lib/auth-client';
 import { ProgressSnapshot, SavedWord, StoryProgress, GameScore, UserSettings, DailyQuestState, BadgeProgress } from '@/types';
 import { DEFAULT_SETTINGS, getTodayDate, normalizeProgressSnapshot } from '@/lib/progress';
+import type { EquippedAvatar } from '@/lib/avatar';
+import type { PetState } from '@/lib/pet';
+
+/** Per-account economy / shop / pet state synced alongside progress. */
+export interface EconomyState {
+  coins: number;
+  streakFreezes: number;
+  lastSpinDate: string | null;
+  ownedAvatarItems: string[];
+  equippedAvatar: EquippedAvatar | null;
+  pet: PetState | null;
+}
+
+export type RemoteSnapshot = ProgressSnapshot & { economy: EconomyState };
+
+/** True when remote economy has no meaningful data yet (fresh column). */
+export function isEmptyEconomy(e: EconomyState | null | undefined): boolean {
+  if (!e) return true;
+  return (
+    (e.coins || 0) <= 0 &&
+    (e.streakFreezes || 0) <= 0 &&
+    !e.lastSpinDate &&
+    (!e.ownedAvatarItems || e.ownedAvatarItems.length === 0) &&
+    !e.equippedAvatar &&
+    !e.pet
+  );
+}
 
 interface UserProfileRow {
   id: string;
@@ -20,6 +47,12 @@ interface UserProgressRow {
   settings: UserSettings | null;
   daily_quest_state: DailyQuestState | null;
   badges: BadgeProgress[] | null;
+  coins: number | null;
+  streak_freezes: number | null;
+  last_spin_date: string | null;
+  owned_avatar_items: string[] | null;
+  equipped_avatar: EquippedAvatar | null;
+  pet: PetState | null;
 }
 
 interface VocabularyRow {
@@ -141,7 +174,7 @@ function mapVocabularyRows(rows: VocabularyRow[]): SavedWord[] {
   }));
 }
 
-export async function loadRemoteProgressSnapshot(): Promise<ProgressSnapshot | null> {
+export async function loadRemoteProgressSnapshot(): Promise<RemoteSnapshot | null> {
   const supabase = getSupabaseClient();
   const db = supabase as any;
   const profileId = await getOrCreateAuthProfileId();
@@ -154,7 +187,7 @@ export async function loadRemoteProgressSnapshot(): Promise<ProgressSnapshot | n
 
   const { data: progressRow, error: progressError } = await db
     .from('user_progress')
-    .select('user_profile_id, total_stars, current_streak, last_activity_date, stories_progress, game_scores, settings, daily_quest_state, badges')
+    .select('user_profile_id, total_stars, current_streak, last_activity_date, stories_progress, game_scores, settings, daily_quest_state, badges, coins, streak_freezes, last_spin_date, owned_avatar_items, equipped_avatar, pet')
     .eq('user_profile_id', profileId)
     .single() as { data: UserProgressRow | null; error: { message: string } | null };
 
@@ -188,16 +221,26 @@ if (progressRow?.daily_quest_state) {
   remoteProgress.dailyQuestState = progressRow.daily_quest_state;
 }
 
-return normalizeProgressSnapshot({
-  progress: remoteProgress,
-  settings: {
-    ...DEFAULT_SETTINGS,
-    ...(progressRow?.settings || {}),
+return {
+  ...normalizeProgressSnapshot({
+    progress: remoteProgress,
+    settings: {
+      ...DEFAULT_SETTINGS,
+      ...(progressRow?.settings || {}),
+    },
+  }),
+  economy: {
+    coins: progressRow?.coins ?? 0,
+    streakFreezes: progressRow?.streak_freezes ?? 0,
+    lastSpinDate: progressRow?.last_spin_date ?? null,
+    ownedAvatarItems: Array.isArray(progressRow?.owned_avatar_items) ? progressRow!.owned_avatar_items! : [],
+    equippedAvatar: progressRow?.equipped_avatar ?? null,
+    pet: progressRow?.pet ?? null,
   },
-});
+};
 }
 
-export async function saveRemoteProgressSnapshot(snapshot: ProgressSnapshot): Promise<void> {
+export async function saveRemoteProgressSnapshot(snapshot: ProgressSnapshot, economy?: EconomyState): Promise<void> {
   const supabase = getSupabaseClient();
   const db = supabase as any;
   const profileId = await getOrCreateAuthProfileId();
@@ -210,7 +253,7 @@ export async function saveRemoteProgressSnapshot(snapshot: ProgressSnapshot): Pr
 
   const normalized = normalizeProgressSnapshot(snapshot);
 
-  const progressPayload = {
+  const progressPayload: Record<string, unknown> = {
     user_profile_id: profileId,
     total_stars: normalized.progress.totalStars,
     current_streak: normalized.progress.currentStreak,
@@ -222,6 +265,15 @@ export async function saveRemoteProgressSnapshot(snapshot: ProgressSnapshot): Pr
     badges: normalized.progress.badges,
     saved_words: normalized.progress.savedWords.map((word) => word.word),
   };
+
+  if (economy) {
+    progressPayload.coins = Math.max(0, Math.round(economy.coins || 0));
+    progressPayload.streak_freezes = Math.max(0, Math.round(economy.streakFreezes || 0));
+    progressPayload.last_spin_date = economy.lastSpinDate || null;
+    progressPayload.owned_avatar_items = economy.ownedAvatarItems || [];
+    progressPayload.equipped_avatar = economy.equippedAvatar || null;
+    progressPayload.pet = economy.pet || null;
+  }
 
   const { error: progressError } = await db
     .from('user_progress')
