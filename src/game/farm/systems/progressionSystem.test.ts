@@ -14,6 +14,8 @@ function makeState(overrides: Partial<FarmState> = {}): FarmState {
     grid: { cols: 6, rows: 4, plots: [] },
     inventory: { slotLimit: 20, items: [] },
     collectedWords: [],
+    unlockedCropIds: [],
+    dailyQuest: { goal: 'harvest', target: 3, progress: 0, rewardCoins: 15, claimed: false, issuedDay: 1 },
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
   }

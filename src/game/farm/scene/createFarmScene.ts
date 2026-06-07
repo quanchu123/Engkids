@@ -22,7 +22,12 @@
 
 import type Phaser from 'phaser'
 import type { FarmState, VocabLevel } from '../types'
-import { GRID_COLS, GRID_ROWS } from '../constants'
+import {
+  GRID_COLS,
+  GRID_ROWS,
+  MAX_CONCURRENT_PARTICLES,
+  MAX_CONCURRENT_PARTICLES_MOBILE,
+} from '../constants'
 import { getCropById } from '../data/crops'
 import { isoIconSrc, isoFallbackSrc } from '../data/isoIcons'
 import {
@@ -36,6 +41,7 @@ import {
   describePlot,
   isInventoryFullReason,
   computeGridLayout,
+  resolveParticleKind,
   type GridLayout,
 } from './farmSceneView'
 
@@ -75,6 +81,15 @@ export interface FarmBridge {
 export interface FarmSceneInstance extends Phaser.Scene {
   /** Re-read `bridge.getState()` and redraw every plot (e.g. after Next Day). */
   refresh: () => void
+  /**
+   * Visual feedback for a quiz answer (called by the React page): a green flash
+   * + sparkle when `correct`, or a red flash + shake when wrong. `target` can be
+   * a plot id, an explicit screen point, or `null` to flash at screen center.
+   */
+  flashQuizFeedback: (
+    target: number | { x: number; y: number } | null,
+    correct: boolean,
+  ) => void
 }
 
 /**
@@ -159,6 +174,8 @@ export function createFarmScene(
     private wetIcons: Array<Sprite | null> = []
     private cropTweens: Array<Phaser.Tweens.Tween | null> = []
     private sparkleTimers: Array<Phaser.Time.TimerEvent | null> = []
+    /** Last rendered growth stage per plot, so a stage increase can grow smoothly. */
+    private prevStage: Array<number | null> = []
 
     // --- background + scenery -------------------------------------------------
     private backgroundGfx: Phaser.GameObjects.Graphics | null = null
@@ -176,6 +193,8 @@ export function createFarmScene(
     // --- effects --------------------------------------------------------------
     private activeEmitters = new Set<Phaser.GameObjects.Particles.ParticleEmitter>()
     private flashOverlays = new Set<Phaser.GameObjects.Graphics>()
+    /** Live count of particles in flight, capped to keep mobile/desktop smooth. */
+    private activeParticleCount = 0
 
     private layout: GridLayout = { tileSize: 64, gap: 8, originX: 0, originY: 0 }
     /** Texture keys that actually loaded (missing ones fall back to emoji). */
@@ -252,6 +271,42 @@ export function createFarmScene(
       this.renderAllPlots()
     }
 
+    /**
+     * Public: visual feedback for a quiz answer. Green flash + sparkle on a
+     * correct answer; red flash + shake on a wrong one. `target` may be a plot
+     * id, an explicit screen point, or null (flash at screen center). Never
+     * throws — bad targets degrade to a center-screen flash.
+     */
+    flashQuizFeedback(
+      target: number | { x: number; y: number } | null,
+      correct: boolean,
+    ): void {
+      const center = this.feedbackCenter(target)
+      if (correct) {
+        this.flashAt(center.x, center.y, 0x22c55e, 0.45)
+        this.emitSparkle(center.x, center.y, this.particleCount(12))
+      } else {
+        this.flashAt(center.x, center.y, 0xef4444, 0.5)
+        if (typeof target === 'number') this.shakeCrop(target)
+        else this.cameras.main.shake(180, 0.008)
+      }
+    }
+
+    /** Resolve a quiz-feedback `target` to a screen point. Never throws. */
+    private feedbackCenter(
+      target: number | { x: number; y: number } | null,
+    ): { x: number; y: number } {
+      if (typeof target === 'number') {
+        const cols = this.safeGetState().grid.cols || GRID_COLS
+        const { col, row } = this.cellOf(target, cols)
+        return this.cellCenter(col, row)
+      }
+      if (target && typeof target === 'object') {
+        return { x: target.x, y: target.y }
+      }
+      return { x: this.scale.width / 2, y: this.scale.height / 2 }
+    }
+
     // --- generated particle texture -----------------------------------------
 
     /** Make a tiny white circle texture at runtime so emitters need no asset. */
@@ -291,6 +346,7 @@ export function createFarmScene(
 
       this.activeEmitters.forEach((e) => e.destroy())
       this.activeEmitters.clear()
+      this.activeParticleCount = 0
       this.flashOverlays.forEach((o) => o.destroy())
       this.flashOverlays.clear()
     }
@@ -308,6 +364,7 @@ export function createFarmScene(
       this.wetIcons = []
       this.cropTweens = []
       this.sparkleTimers = []
+      this.prevStage = []
     }
 
     /** Build background, field, decor + farmer from the current screen size. */
@@ -426,6 +483,7 @@ export function createFarmScene(
         this.wetIcons[plot.id] = null
         this.cropTweens[plot.id] = null
         this.sparkleTimers[plot.id] = null
+        this.prevStage[plot.id] = null
       }
       void cols
       void rows
@@ -612,6 +670,8 @@ export function createFarmScene(
       const target = this.layout.tileSize * (0.66 + visual.crop.scale * 0.55)
       const feetY = c.y + this.layout.tileSize * 0.34
       const stage = plot.crop?.stage ?? 3
+      const prevStage = this.prevStage[plotId]
+      this.prevStage[plotId] = stage
       const bucket = stage <= 1 ? 1 : stage === 2 ? 2 : 3
       const cropTex = cropType ? `${cropType.id}-${bucket}` : visual.crop.textureName
       const crop = this.makeSprite(
@@ -644,6 +704,20 @@ export function createFarmScene(
           scaleX: baseScale,
           scaleY: baseScale,
           duration: 320,
+          ease: 'Back.easeOut',
+          onComplete: () =>
+            this.startCropIdle(plotId, baseScale, visual.crop?.mature ?? false),
+        })
+      } else if (prevStage != null && stage > prevStage) {
+        // Stage advanced (e.g. after watering + Next Day): grow smoothly from a
+        // smaller scale to the new target with a springy ease instead of a
+        // sudden size jump.
+        crop.setScale(baseScale * 0.62)
+        this.cropTweens[plotId] = this.tweens.add({
+          targets: crop,
+          scaleX: baseScale,
+          scaleY: baseScale,
+          duration: 380,
           ease: 'Back.easeOut',
           onComplete: () =>
             this.startCropIdle(plotId, baseScale, visual.crop?.mature ?? false),
@@ -698,10 +772,13 @@ export function createFarmScene(
           },
         })
       } else {
+        // Younger crops: a subtle "breathing" scale pulse PLUS a gentle wind
+        // sway (small angle yoyo) so every planted crop drifts in the breeze.
         this.cropTweens[plotId] = this.tweens.add({
           targets: crop,
           scaleX: baseScale * 1.05,
           scaleY: baseScale * 1.05,
+          angle: { from: -2, to: 2 },
           duration: 1500,
           yoyo: true,
           repeat: -1,
@@ -916,18 +993,18 @@ export function createFarmScene(
       const { col, row } = this.cellOf(plotId, cols)
       const c = this.cellCenter(col, row)
 
-      switch (kind) {
-        case 'till':
-          this.emitDust(c.x, c.y, 14)
-          break
-        case 'plant':
-          this.emitDust(c.x, c.y + this.layout.tileSize * 0.2, 6)
-          break
-        case 'water':
-          this.emitWater(c.x, c.y, this.layout.tileSize)
-          break
-        default:
-          break
+      if (kind === 'plant') {
+        this.emitDust(c.x, c.y + this.layout.tileSize * 0.2, this.particleCount(6))
+        return
+      }
+
+      // Soil vs water burst. resolveParticleKind centralizes the precedence
+      // rule (soil wins when both tilling AND watering happen at once).
+      const particle = resolveParticleKind(kind === 'till', kind === 'water')
+      if (particle === 'soil') {
+        this.emitDust(c.x, c.y, this.particleCount(14))
+      } else if (particle === 'water') {
+        this.emitWater(c.x, c.y, this.layout.tileSize)
       }
     }
 
@@ -1028,8 +1105,8 @@ export function createFarmScene(
 
       const x = crop?.x ?? 0
       const y = crop?.y ?? 0
-      this.emitCoins(x, y, 12)
-      this.emitSparkle(x, y, 14)
+      this.emitCoins(x, y, this.particleCount(12))
+      this.emitSparkle(x, y, this.particleCount(14))
 
       if (!crop) return
       this.tweens.killTweensOf(crop)
@@ -1095,13 +1172,92 @@ export function createFarmScene(
       config: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
     ): void {
       if (!this.textures.exists(texture)) return
+      // Enforce the concurrent-particle budget (lower on mobile) so the scene
+      // never spawns more particles at once than the device should handle.
+      const budget = this.maxParticles() - this.activeParticleCount
+      if (budget <= 0) return
+      const n = Math.max(0, Math.min(count, budget))
+      if (n <= 0) return
+
       const emitter = this.add.particles(x, y, texture, { ...config, emitting: false })
       emitter.setDepth(DEPTH.particles)
       this.activeEmitters.add(emitter)
-      emitter.explode(count, x, y)
+      this.activeParticleCount += n
+      emitter.explode(n, x, y)
       this.time.delayedCall(ttl + 250, () => {
+        this.activeParticleCount = Math.max(0, this.activeParticleCount - n)
         this.activeEmitters.delete(emitter)
         emitter.destroy()
+      })
+    }
+
+    /** True on small/touch screens — used to scale down particle work. */
+    private isMobile(): boolean {
+      return (
+        this.scale.width < 768 ||
+        (typeof window !== 'undefined' && 'ontouchstart' in window)
+      )
+    }
+
+    /** Concurrent-particle cap for the current device. */
+    private maxParticles(): number {
+      return this.isMobile()
+        ? MAX_CONCURRENT_PARTICLES_MOBILE
+        : MAX_CONCURRENT_PARTICLES
+    }
+
+    /** Reduce a requested particle count on mobile (cheaper bursts). */
+    private particleCount(n: number): number {
+      return this.isMobile() ? Math.max(1, Math.round(n * 0.5)) : n
+    }
+
+    /**
+     * Generic colored flash square centered on (x, y). Used for quiz feedback
+     * (green correct / red wrong). `size` defaults to one tile. Self-cleans.
+     */
+    private flashAt(
+      x: number,
+      y: number,
+      color: number,
+      alpha: number,
+      size = this.layout.tileSize,
+    ): void {
+      const half = size / 2
+      const radius = Math.max(4, Math.round(size * 0.16))
+      const overlay = this.add.graphics().setDepth(DEPTH.flash)
+      overlay.fillStyle(color, alpha)
+      overlay.fillRoundedRect(x - half, y - half, size, size, radius)
+      this.flashOverlays.add(overlay)
+      this.tweens.add({
+        targets: overlay,
+        alpha: 0,
+        duration: 320,
+        ease: 'Quad.easeOut',
+        onComplete: () => {
+          this.flashOverlays.delete(overlay)
+          overlay.destroy()
+        },
+      })
+    }
+
+    /** Quick horizontal shake of a plot's crop sprite (wrong-answer feedback). */
+    private shakeCrop(plotId: number): void {
+      const crop = this.cropObjects[plotId]
+      if (!crop || !crop.active) {
+        this.cameras.main.shake(180, 0.008)
+        return
+      }
+      const baseX = crop.x
+      this.tweens.add({
+        targets: crop,
+        x: baseX - Math.max(4, this.layout.tileSize * 0.1),
+        duration: 55,
+        yoyo: true,
+        repeat: 3,
+        ease: 'Sine.easeInOut',
+        onComplete: () => {
+          if (crop.active) crop.x = baseX
+        },
       })
     }
 

@@ -133,3 +133,87 @@ export function scorePronunciation(target: string, heard: string): Pronunciation
     matched: false,
   };
 }
+
+/* -------------------------------------------------------------------------- *
+ * Text-to-Speech (Web Speech API) — impure, SSR-safe, KHÔNG BAO GIỜ ném lỗi.
+ *
+ * Bọc Web Speech API để phát âm tiếng Anh trong game English Farm. Mọi hàm đều
+ * an toàn khi chạy phía server (SSR) vì luôn kiểm tra `typeof window` trước, và
+ * không bao giờ ném lỗi — khi không hỗ trợ hoặc gặp sự cố sẽ trả về giá trị
+ * fallback (`false`/`null`) để UI có thể disable nút loa và giữ nguyên chữ.
+ * (Req 1.2, 1.4, 1.5)
+ * -------------------------------------------------------------------------- */
+
+/**
+ * Kiểm tra trình duyệt hiện tại có hỗ trợ Web Speech API (TTS) hay không.
+ *
+ * An toàn với SSR: trả `false` ngay khi `window` chưa tồn tại. Dùng để disable
+ * nút loa trên UI khi không hỗ trợ. (Req 1.4)
+ *
+ * @returns `true` nếu có `window.speechSynthesis` và `SpeechSynthesisUtterance`.
+ */
+export function isSpeechSupported(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    'speechSynthesis' in window &&
+    typeof window.SpeechSynthesisUtterance !== 'undefined'
+  );
+}
+
+/**
+ * Chọn một giọng đọc tiếng Anh từ danh sách giọng của trình duyệt.
+ *
+ * Ưu tiên giọng đầu tiên có `lang` bắt đầu bằng `'en'` (en-US, en-GB...); nếu
+ * không có giọng tiếng Anh thì trả giọng đầu tiên bất kỳ; nếu danh sách rỗng
+ * hoặc xảy ra lỗi thì trả `null`. KHÔNG BAO GIỜ ném lỗi. (Req 1.5)
+ *
+ * Lưu ý: `getVoices()` có thể trả mảng rỗng ở lần gọi đầu (trước sự kiện
+ * `voiceschanged`); khi đó hàm trả `null` và phần phát âm vẫn dùng giọng
+ * mặc định theo `lang`.
+ *
+ * @returns Giọng đọc phù hợp hoặc `null`.
+ */
+export function pickEnglishVoice(): SpeechSynthesisVoice | null {
+  try {
+    const voices = window.speechSynthesis.getVoices();
+    return (
+      voices.find((v) => v.lang.toLowerCase().startsWith('en')) ??
+      voices[0] ??
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Phát âm `text` bằng giọng tiếng Anh nếu trình duyệt hỗ trợ.
+ *
+ * - Trả `false` ngay khi không hỗ trợ TTS (no-op) để UI giữ chữ + disable nút.
+ * - Huỷ phát âm đang chạy trước đó (`cancel`) để tránh chồng tiếng.
+ * - Mặc định `lang = 'en-US'` và `rate = 0.95` (chậm hơn một chút cho trẻ em).
+ * - Bọc toàn bộ trong try/catch: mọi lỗi đều nuốt và trả `false`.
+ *   KHÔNG BAO GIỜ ném lỗi. (Req 1.2, 1.5)
+ *
+ * @param text Nội dung cần phát âm.
+ * @param opts Tuỳ chọn: `rate` (tốc độ đọc), `lang` (mã ngôn ngữ).
+ * @returns `true` nếu đã gửi yêu cầu phát âm thành công, ngược lại `false`.
+ */
+export function speak(
+  text: string,
+  opts?: { rate?: number; lang?: string }
+): boolean {
+  if (!isSpeechSupported()) return false;
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new window.SpeechSynthesisUtterance(text);
+    utterance.lang = opts?.lang ?? 'en-US';
+    utterance.rate = opts?.rate ?? 0.95;
+    const voice = pickEnglishVoice();
+    if (voice) utterance.voice = voice;
+    window.speechSynthesis.speak(utterance);
+    return true;
+  } catch {
+    return false;
+  }
+}

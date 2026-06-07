@@ -584,3 +584,20 @@ export function isoGridLayout(
 
   return { tileW, tileH, originX, originY }
 }
+
+// --- particle kind resolution (pure) ----------------------------------------
+//
+// When the scene plays a feedback animation after an action, it spawns a burst
+// of particles whose look depends on what just happened: brown soil specks for
+// tilling, blue droplets for watering. `resolveParticleKind` centralizes the
+// precedence rule so the scene and tests share one source of truth.
+
+/** The visual flavor of the action-feedback particle burst. */
+export type ParticleKind = 'soil' | 'water'
+
+/** Khi cả cày và tưới xảy ra, ưu tiên 'soil'. */
+export function resolveParticleKind(tilled: boolean, watered: boolean): ParticleKind | null {
+  if (tilled) return 'soil'
+  if (watered) return 'water'
+  return null
+}

@@ -52,6 +52,8 @@ describe('collectWord — dedupe & no mutation (Property 5)', () => {
         timesSeen: 1,
         mastery: 2,
         firstCollectedAt: '2024-01-01T00:00:00.000Z',
+        timesCorrect: 0,
+        nextReviewDay: 0,
       },
     ]
     const snapshot = JSON.parse(JSON.stringify(original))
@@ -79,6 +81,8 @@ describe('bumpMastery — clamp to [0,5] (Property 5)', () => {
       timesSeen: 1,
       mastery: 4,
       firstCollectedAt: '2024-01-01T00:00:00.000Z',
+      timesCorrect: 0,
+      nextReviewDay: 0,
     },
   ]
 
@@ -120,6 +124,8 @@ describe('bumpMastery — clamp to [0,5] (Property 5)', () => {
         timesSeen: 1,
         mastery: 0,
         firstCollectedAt: '2024-01-01T00:00:00.000Z',
+        timesCorrect: 0,
+        nextReviewDay: 0,
       },
     ]
     // Apply many positive then negative bumps; mastery must never leave [0,5].

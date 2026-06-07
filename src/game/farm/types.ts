@@ -13,6 +13,17 @@ export type PlotState = 'empty' | 'tilled' | 'planted'
 /** Vocabulary difficulty level (mirrors the platform's GameDifficulty). */
 export type VocabLevel = 'beginner' | 'intermediate' | 'advanced'
 
+/** Mùa/chủ đề của cây — dùng để gom nhóm và trigger cutscene đổi mùa. */
+export type CropTheme = 'spring' | 'summer' | 'autumn' | 'winter'
+
+/** Điều kiện mở khóa một loại cây (mọi field optional = luôn mở). */
+export interface UnlockCondition {
+  /** Cấp người chơi tối thiểu để mở khóa. */
+  minLevel?: number
+  /** Số xu tối thiểu để mua mở khóa (nếu cần). */
+  minCoins?: number
+}
+
 /** Static definition of a crop type, bridging gameplay and vocabulary. */
 export interface CropType {
   /** Stable id, e.g. 'carrot'. */
@@ -30,6 +41,12 @@ export interface CropType {
   seedKey: string
   /** Asset key for the crop sprite (per growth stage). */
   spriteKey: string
+  /** Giá mua 1 hạt ở shop (>= 0). */
+  seedCost?: number
+  /** Điều kiện mở khóa; vắng mặt = mở sẵn từ đầu. */
+  unlock?: UnlockCondition
+  /** Mùa/chủ đề để gom nhóm + trigger cutscene đổi mùa. */
+  theme?: CropTheme
 }
 
 /** A growing crop instance placed on a plot. */
@@ -67,6 +84,32 @@ export interface CollectedWord {
   mastery: number
   /** ISO timestamp of first collection. */
   firstCollectedAt: string
+  /** Số lần người chơi trả lời đúng từ này (lịch ôn cục bộ). */
+  timesCorrect: number
+  /** Ngày game (FarmState.day) cho lần ôn kế tiếp. */
+  nextReviewDay: number
+}
+
+/** Dạng quiz: theo nghĩa, nghe phát âm, hoặc đánh vần. */
+export type QuizMode = 'meaning' | 'listen' | 'spelling'
+
+/** Mục tiêu của nhiệm vụ ngày. */
+export type QuestGoal = 'harvest' | 'review' | 'sell'
+
+/** Nhiệm vụ ngày — reset theo ngày game, thưởng xu khi hoàn thành. */
+export interface DailyQuest {
+  /** Loại mục tiêu cần đạt. */
+  goal: QuestGoal
+  /** Số lượng cần đạt (ví dụ thu hoạch 3 cây). */
+  target: number
+  /** Tiến độ hiện tại, clamp tại target. */
+  progress: number
+  /** Số xu thưởng khi hoàn thành. */
+  rewardCoins: number
+  /** Đã nhận thưởng hay chưa. */
+  claimed: boolean
+  /** Ngày game khi quest được phát (để reset theo ngày). */
+  issuedDay: number
 }
 
 /** Single source of truth for the whole game — plain JSON, serializable. */
@@ -79,6 +122,10 @@ export interface FarmState {
   grid: { cols: number; rows: number; plots: Plot[] }
   inventory: { slotLimit: number; items: InventoryItem[] }
   collectedWords: CollectedWord[]
+  /** Danh sách id loại cây đã mở khóa. */
+  unlockedCropIds: string[]
+  /** Nhiệm vụ ngày hiện tại. */
+  dailyQuest: DailyQuest
   /** ISO timestamp of the last update. */
   updatedAt: string
 }

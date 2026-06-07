@@ -41,3 +41,50 @@ UI / hiệu ứng:
 - Game render bằng **Phaser (web)**, nhẹ, chạy mobile tốt, nối thẳng vào vocab/quiz/SRS/save.
 - Mình đang dựng engine isometric trước bằng bộ Icons8 (`public/games/english-farm/iso/`) để có cái chơi ngay; art của bạn sẽ thay vào sau, không phải làm lại.
 - Nhớ ghi credit tác giả pack (nếu license yêu cầu).
+
+---
+
+## Quy ước đặt tên (đợt nâng cấp)
+
+Game tự ráp asset theo `spriteKey` của mỗi cây trong `src/game/farm/data/crops.ts`. Đặt tên đúng theo quy ước dưới đây (PNG nền trong suốt, trừ tile đất giữ vuông):
+
+- **Sprite chính của cây:** `<cropId>.png` — ví dụ `carrot.png`, `eggplant.png`, `watermelon.png`.
+- **Frame lớn dần (tùy chọn):** `<cropId>-1.png`, `<cropId>-2.png`, `<cropId>-3.png`, `<cropId>-4.png` — mầm nhỏ → cây non → cây trưởng thành → chín sẵn sàng thu hoạch. Scene map stage → bucket `-1/-2/-3`.
+- **Tile đất:** `tile-grass.png` (ô cỏ), `tile-soil.png` (ô đất cày), `tile-wet.png` (ô đất ướt). KHÔNG cắt padding — giữ hình vuông.
+- **Cutscene video:** `cutscenes/<id>.mp4` với `id ∈ { big-harvest, level-up, season-change }` → đặt vào `public/games/english-farm/cutscenes/`.
+
+Thiếu file nào → game tự fallback (Icons8 ở `../iso/` → emoji → CSS particle), không crash.
+
+## Prompt template Dreamina (asset rau củ 2D top-down, nền trong suốt)
+
+Thay `<ENGLISH_NAME>` bằng tên tiếng Anh của cây và `<cropId>` bằng id (ví dụ `eggplant`):
+
+```
+A cute 2D cartoon <ENGLISH_NAME> for a children's farming game, top-down front view,
+soft rounded shapes, bright cheerful colors, thick clean outline, flat shading,
+centered, isolated on a fully transparent background, no shadow, no text,
+game asset sprite, high detail. Variants for growth: small sprout -> medium plant
+-> mature <ENGLISH_NAME> ready to harvest (export as <cropId>-1.png .. <cropId>-4.png).
+```
+
+## Prompt template Veo 3 (cutscene cột mốc — tạo offline)
+
+Dùng để tạo 3 video cutscene ngắn (English, no text/no watermark). Với `season-change`, thay `<PREV_THEME>`/`<NEXT_THEME>` bằng cặp mùa mong muốn (mặc định spring → summer):
+
+```
+big-harvest:    "Animate a joyful kids farming game reward: a cute cartoon farmer lifts a giant
+                 basket overflowing with colorful vegetables, golden sparkles burst, confetti,
+                 gentle camera push in, bright sunny 2D cartoon, no text, no watermark."
+level-up:       "Animate a cheerful level-up celebration on a cartoon farm: glowing stars and
+                 a big golden badge rise, light rays, happy sparkles, gentle zoom, no text, no watermark."
+season-change:  "Animate a smooth season transition over a cartoon vegetable field: from <PREV_THEME>
+                 to <NEXT_THEME>, soft cross-fade of colors and weather, gentle camera pan, no text, no watermark."
+```
+
+## Chạy script sau khi thêm asset
+
+- **Sau khi thêm PNG cây:** chạy `node scripts/trim-farm-assets.mjs` để cắt padding trong suốt (tile đất đã được loại trừ, giữ vuông).
+- **Tạo cutscene offline:** chạy `node scripts/gen-veo-farm.mjs` để sinh `cutscenes/<id>.mp4` + `cutscenes/manifest.json` bằng Veo 3.
+  - Cần `GEMINI_API_KEY` (hoặc `GOOGLE_API_KEY`, `gemini_key1`, `gemini_key2`) trong env hoặc `.env.local`.
+  - Tạo lại từng cái: `node scripts/gen-veo-farm.mjs big-harvest` (hoặc `--only level-up,season-change`).
+  - Script **chỉ chạy offline thủ công** — game KHÔNG gọi Veo/Gemini lúc chạy; runtime chỉ phát file `.mp4` cục bộ, thiếu video thì fallback CSS/particle.

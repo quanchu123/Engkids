@@ -7,6 +7,7 @@
 // (extension point). All functions are deterministic and side-effect free.
 
 import type { FarmState } from '../types'
+import { CROPS, isCropUnlocked } from '../data/crops'
 
 /**
  * XP threshold required to advance FROM `level` TO the next level.
@@ -61,4 +62,25 @@ export function addXp(
   }
 
   return { state: nextState, leveledUp: level > startLevel }
+}
+
+/**
+ * Crops that become newly available when the player advances from `prevLevel`
+ * to `nextLevel` (at the given `coins`).
+ *
+ * Returns the `id` of every crop that is unlocked at `nextLevel` but was NOT
+ * unlocked at `prevLevel` — i.e. the crops the player just earned access to by
+ * leveling up. `coins` is held constant for both checks so the result reflects
+ * the level change alone. Order follows the `CROPS` catalog.
+ */
+export function newlyUnlockedCrops(
+  prevLevel: number,
+  nextLevel: number,
+  coins: number,
+): string[] {
+  return CROPS.filter(
+    (crop) =>
+      isCropUnlocked(crop, nextLevel, coins) &&
+      !isCropUnlocked(crop, prevLevel, coins),
+  ).map((crop) => crop.id)
 }

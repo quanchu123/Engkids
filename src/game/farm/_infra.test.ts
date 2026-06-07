@@ -21,7 +21,7 @@ describe('farm infrastructure sanity', () => {
     expect(GROWTH_STAGE_MAX).toBe(3)
     expect(XP_PER_CORRECT).toBe(10)
     expect(XP_PER_HARVEST).toBe(5)
-    expect(SCHEMA_VERSION).toBe(1)
+    expect(SCHEMA_VERSION).toBe(2)
     expect(STARTING_COINS).toBe(50)
   })
 

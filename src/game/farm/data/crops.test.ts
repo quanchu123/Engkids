@@ -6,8 +6,8 @@ import type { VocabLevel } from '../types'
 const VALID_LEVELS: VocabLevel[] = ['beginner', 'intermediate', 'advanced']
 
 describe('crops data', () => {
-  it('defines exactly 6 crops', () => {
-    expect(CROPS).toHaveLength(6)
+  it('defines the full crop catalog (>6 crops after upgrade)', () => {
+    expect(CROPS.length).toBeGreaterThan(6)
   })
 
   it('has unique ids across all crops', () => {

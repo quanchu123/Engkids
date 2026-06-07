@@ -48,6 +48,8 @@ function makeMutatedState(): FarmState {
     timesSeen: 2,
     mastery: 3,
     firstCollectedAt: new Date(0).toISOString(),
+    timesCorrect: 1,
+    nextReviewDay: 5,
   })
 
   s.day = 5

@@ -167,6 +167,10 @@ export function water(state: FarmState, plotId: number): Result {
  * - every planted crop watered today grows by 1 stage, clamped at maturity.
  * - wateredToday is reset to false for ALL crops afterwards.
  * Crops that were NOT watered keep their current stage.
+ *
+ * Task 9.1 / design Property 2: operates on a clone (no input mutation) and
+ * keeps the stage within 0..GROWTH_STAGE_MAX. Behaviour verified compatible
+ * with the existing test suite; no changes required.
  */
 export function advanceDay(state: FarmState): FarmState {
   const next = cloneState(state)

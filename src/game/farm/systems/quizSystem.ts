@@ -1,24 +1,34 @@
-// Quiz system for the English Farming Game (MVP) — R6.
+// Quiz system for the English Farming Game — R6 / Quiz_System upgrade.
 //
-// Pure TypeScript only — NO Phaser, NO React imports. Builds a short
-// multiple-choice quiz for a harvested word and grades the player's answer.
-// Reuses the shared word bank (`buildDistractors`, `DEFAULT_WORD_BANK`) so the
-// quiz content stays consistent with the other vocabulary games and never
-// shows an empty quiz (Property 6 / Req 6.5).
+// Pure TypeScript only — NO Phaser, NO React imports. Builds a short quiz for a
+// harvested word and grades the player's answer. Supports multiple quiz modes
+// (`meaning`, `listen`, `spelling`). Reuses the shared word bank
+// (`buildDistractors`, `DEFAULT_WORD_BANK`) so the quiz content stays consistent
+// with the other vocabulary games and never shows an empty quiz
+// (Property 3 / Req 2.8).
 
 import { buildDistractors, DEFAULT_WORD_BANK, type WordPair } from '@/lib/word-bank'
+import type { QuizMode } from '../types'
+
+export type { QuizMode }
 
 /** Number of answer choices presented to the player (1 correct + 3 distractors). */
 const CHOICE_COUNT = 4
 const DISTRACTOR_COUNT = CHOICE_COUNT - 1
 
-/** A multiple-choice quiz: prompt is the Vietnamese meaning, answer is English. */
+/** A quiz for a collected word. Prompt is the Vietnamese meaning, answer is English. */
 export interface FarmQuiz {
+  /** Quiz mode: `meaning` (choose meaning), `listen` (hear & choose), `spelling` (type). */
+  mode: QuizMode
   /** Vietnamese prompt shown to the player. */
   vi: string
   /** The correct English answer. */
   en: string
-  /** Shuffled list of choices; always includes `en`, always unique. */
+  /**
+   * For `meaning`/`listen`: exactly 4 unique choices (case-insensitive),
+   * always including `en`.
+   * For `spelling`: empty (the player types/assembles the word).
+   */
   choices: string[]
 }
 
@@ -33,17 +43,27 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 /**
- * Build a quiz for the given answer word.
+ * Build a quiz for the given answer word and mode.
  *
- * Produces exactly `CHOICE_COUNT` unique choices: the correct answer plus
- * distractors drawn from `bank`. If `bank` is empty/null or cannot supply
- * enough distinct distractors, the choices are topped up from
- * `DEFAULT_WORD_BANK` so the quiz is always valid and non-empty.
+ * - `meaning`/`listen`: produces exactly `CHOICE_COUNT` unique choices
+ *   (case-insensitive) — the correct answer plus distractors drawn from `bank`.
+ *   If `bank` is empty/null or cannot supply enough distinct distractors, the
+ *   choices are topped up from `DEFAULT_WORD_BANK` so the quiz is always valid
+ *   and non-empty.
+ * - `spelling`: `choices` is empty; the player types/assembles the word.
+ *
+ * The returned quiz always carries the requested `mode`.
  */
 export function buildQuizForWord(
   bank: WordPair[] | null | undefined,
-  answer: { en: string; vi: string }
+  answer: { en: string; vi: string },
+  mode: QuizMode = 'meaning'
 ): FarmQuiz {
+  // Spelling mode has no multiple-choice options.
+  if (mode === 'spelling') {
+    return { mode, vi: answer.vi, en: answer.en, choices: [] }
+  }
+
   const safeBank = Array.isArray(bank) && bank.length > 0 ? bank : DEFAULT_WORD_BANK
 
   // Track choices case-insensitively to guarantee uniqueness (incl. the answer).
@@ -72,6 +92,7 @@ export function buildQuizForWord(
   }
 
   return {
+    mode,
     vi: answer.vi,
     en: answer.en,
     choices: shuffle([answer.en, ...distractors]),
@@ -79,13 +100,29 @@ export function buildQuizForWord(
 }
 
 /**
- * Grade a quiz answer. `correct` is true if and only if the chosen string
- * exactly matches the quiz's correct answer; `correctAnswer` always echoes the
- * correct answer so the UI can display it (e.g. on a wrong answer).
+ * Grade a quiz answer.
+ *
+ * - If `choice` is null/undefined/empty, the answer is graded as incorrect
+ *   (Req 2.6).
+ * - `spelling`: correct iff the choice matches `en` after trimming surrounding
+ *   whitespace and ignoring case (Req 2.4).
+ * - `meaning`/`listen`: correct iff the choice matches `en` (case-insensitive,
+ *   trimmed) (Req 2.5).
+ *
+ * `correctAnswer` always echoes `quiz.en` so the UI can display it.
  */
 export function gradeQuiz(
   quiz: FarmQuiz,
-  choice: string
+  choice: string | null | undefined
 ): { correct: boolean; correctAnswer: string } {
-  return { correct: choice === quiz.en, correctAnswer: quiz.en }
+  const correctAnswer = quiz.en
+
+  // Undetermined answer (null/undefined/empty) → incorrect (Req 2.6).
+  if (choice == null || choice.trim() === '') {
+    return { correct: false, correctAnswer }
+  }
+
+  const normalizedChoice = choice.trim().toLowerCase()
+  const correct = normalizedChoice === quiz.en.trim().toLowerCase()
+  return { correct, correctAnswer }
 }

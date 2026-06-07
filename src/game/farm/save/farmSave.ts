@@ -17,7 +17,7 @@
 // `createInitialFarmState()` rather than crashing the game.
 
 import { getSupabaseClient } from '@/lib/auth-client'
-import type { FarmState, Plot } from '../types'
+import type { CollectedWord, FarmState, Plot } from '../types'
 import {
   GRID_COLS,
   GRID_ROWS,
@@ -26,6 +26,11 @@ import {
   STARTING_COINS,
   STARTING_SEEDS,
 } from '../constants'
+import { getUnlockedCrops } from '../data/crops'
+import { rollDailyQuest } from '../systems/dailyQuest'
+
+/** Previous on-disk schema version, kept for backward-compatible migration. */
+const SCHEMA_VERSION_V1 = 1
 
 // --- storage / API config ---------------------------------------------------
 
@@ -81,6 +86,9 @@ export function createInitialFarmState(): FarmState {
       items: STARTING_SEEDS.map((item) => ({ ...item })),
     },
     collectedWords: [],
+    // v2: content unlocked at level 1 with starting coins, and the day-1 quest.
+    unlockedCropIds: getUnlockedCrops(1, STARTING_COINS).map((c) => c.id),
+    dailyQuest: rollDailyQuest(1),
     updatedAt: new Date().toISOString(),
   }
 }
@@ -91,18 +99,15 @@ export function serializeFarm(state: FarmState): string {
 }
 
 /**
- * Validate that an unknown value has the basic `FarmState` shape:
- * - matching `version`
+ * Validate the fields shared by every schema version (the v1 "core" shape):
  * - numeric `day`/`coins`/`xp`/`level`
  * - `grid.plots` array + numeric `grid.cols`/`grid.rows`
  * - `inventory.items` array + numeric `inventory.slotLimit`
  * - `collectedWords` array
+ *
+ * Does NOT check `version` — callers branch on that to pick v1 vs v2.
  */
-function isValidFarmState(value: unknown): value is FarmState {
-  if (!value || typeof value !== 'object') return false
-  const s = value as Record<string, unknown>
-
-  if (s.version !== SCHEMA_VERSION) return false
+function hasCoreFarmShape(s: Record<string, unknown>): boolean {
   if (typeof s.day !== 'number') return false
   if (typeof s.coins !== 'number') return false
   if (typeof s.xp !== 'number') return false
@@ -124,12 +129,79 @@ function isValidFarmState(value: unknown): value is FarmState {
 }
 
 /**
+ * Validate that an unknown value is a current (v2) `FarmState`:
+ * the shared core shape plus `version === SCHEMA_VERSION`, an
+ * `unlockedCropIds` array, and a `dailyQuest` object (v2 additions).
+ */
+function isValidFarmState(value: unknown): value is FarmState {
+  if (!value || typeof value !== 'object') return false
+  const s = value as Record<string, unknown>
+
+  if (s.version !== SCHEMA_VERSION) return false
+  if (!hasCoreFarmShape(s)) return false
+
+  if (!Array.isArray(s.unlockedCropIds)) return false
+  if (!s.dailyQuest || typeof s.dailyQuest !== 'object') return false
+
+  return true
+}
+
+/**
+ * Validate that an unknown value is a legacy (v1) save: the shared core shape
+ * plus `version === SCHEMA_VERSION_V1`. v1 lacks `unlockedCropIds`/`dailyQuest`
+ * and the per-word `timesCorrect`/`nextReviewDay`, which `migrateV1toV2` fills.
+ */
+function isValidFarmStateV1(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object') return false
+  const s = value as Record<string, unknown>
+
+  if (s.version !== SCHEMA_VERSION_V1) return false
+  return hasCoreFarmShape(s)
+}
+
+/**
+ * Migrate a validated v1 save up to v2 by filling the new fields with safe
+ * defaults while preserving every existing field:
+ * - bump `version` to `SCHEMA_VERSION` (2)
+ * - each collected word gains `timesCorrect = 0` and `nextReviewDay = day`
+ *   (existing fields win if somehow already present)
+ * - `unlockedCropIds` derived from the player's level/coins
+ * - `dailyQuest` rolled deterministically from the current day
+ */
+function migrateV1toV2(s: Record<string, unknown>): FarmState {
+  const day = typeof s.day === 'number' ? s.day : 1
+  const level = typeof s.level === 'number' ? s.level : 1
+  const coins = typeof s.coins === 'number' ? s.coins : 0
+  const words = Array.isArray(s.collectedWords) ? s.collectedWords : []
+
+  const collectedWords: CollectedWord[] = words.map((w) => ({
+    timesCorrect: 0,
+    nextReviewDay: day,
+    ...(w as Record<string, unknown>),
+  })) as CollectedWord[]
+
+  return {
+    ...(s as unknown as FarmState),
+    version: SCHEMA_VERSION,
+    collectedWords,
+    unlockedCropIds: getUnlockedCrops(level, coins).map((c) => c.id),
+    dailyQuest: rollDailyQuest(day),
+  }
+}
+
+/**
  * Parse + validate a saved farm payload back into a `FarmState`.
  *
  * Accepts a raw JSON string (e.g. from localStorage), an already-parsed object
- * (e.g. the API's `payload`), or `null`/`undefined`. On ANY problem — null,
- * malformed JSON, wrong version, missing fields — it returns a fresh
- * `createInitialFarmState()`. It NEVER throws.
+ * (e.g. the API's `payload`), or `null`/`undefined`.
+ *
+ * - empty / null               → fresh `createInitialFarmState()`
+ * - valid v2                    → returned as-is
+ * - valid v1 (legacy schema)    → `migrateV1toV2()` (backward compatible)
+ * - anything else (garbage /
+ *   wrong schema / bad JSON)    → fresh `createInitialFarmState()`
+ *
+ * It NEVER throws.
  */
 export function deserializeFarm(raw: string | null | unknown): FarmState {
   try {
@@ -145,6 +217,9 @@ export function deserializeFarm(raw: string | null | unknown): FarmState {
 
     if (isValidFarmState(parsed)) {
       return parsed
+    }
+    if (isValidFarmStateV1(parsed)) {
+      return migrateV1toV2(parsed)
     }
     return createInitialFarmState()
   } catch {

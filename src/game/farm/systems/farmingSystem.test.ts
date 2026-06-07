@@ -65,6 +65,8 @@ function makeState(
     grid: { cols: 2, rows: 2, plots },
     inventory: { slotLimit, items: seedItems },
     collectedWords: [],
+    unlockedCropIds: [],
+    dailyQuest: { goal: 'harvest', target: 3, progress: 0, rewardCoins: 15, claimed: false, issuedDay: 1 },
     updatedAt: new Date(0).toISOString(),
   }
 }

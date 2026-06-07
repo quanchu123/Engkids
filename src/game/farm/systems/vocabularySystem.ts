@@ -6,6 +6,7 @@
 // Validates: Requirements 5.1, 5.4 (Property 5: no duplicate words; mastery in [0,5]).
 
 import type { CollectedWord, VocabLevel } from '../types'
+import { MASTERED_THRESHOLD } from '../constants'
 
 /** Lowest mastery score a word can have. */
 const MASTERY_MIN = 0
@@ -30,14 +31,19 @@ function sameWord(a: string, b: string): boolean {
  * - If the word already exists: returns a NEW array where that entry's
  *   `timesSeen` is incremented by 1 (all other fields preserved).
  * - If the word is new: appends a new CollectedWord with `timesSeen: 1`,
- *   `mastery: 0`, and `firstCollectedAt: new Date().toISOString()`.
+ *   `mastery: 0`, `firstCollectedAt: new Date().toISOString()`, `timesCorrect: 0`,
+ *   and `nextReviewDay: currentDay` (lịch ôn cục bộ).
+ *
+ * `currentDay` (mặc định 0) là ngày game hiện tại dùng để khởi tạo lịch ôn;
+ * tham số optional nên caller cũ không cần thay đổi.
  *
  * Never mutates the input array (returns a fresh array, with a fresh object
  * for the changed/added entry).
  */
 export function collectWord(
   words: CollectedWord[],
-  w: { en: string; vi: string; level: VocabLevel }
+  w: { en: string; vi: string; level: VocabLevel },
+  currentDay = 0
 ): CollectedWord[] {
   const index = words.findIndex((entry) => sameWord(entry.en, w.en))
 
@@ -56,6 +62,8 @@ export function collectWord(
     timesSeen: 1,
     mastery: 0,
     firstCollectedAt: new Date().toISOString(),
+    timesCorrect: 0,
+    nextReviewDay: currentDay,
   }
   return [...words, fresh]
 }
@@ -79,6 +87,17 @@ export function bumpMastery(
     i === index
       ? { ...entry, mastery: clamp(entry.mastery + delta, MASTERY_MIN, MASTERY_MAX) }
       : entry
+  )
+}
+
+/**
+ * Đếm số từ đã thuộc — `mastery >= MASTERED_THRESHOLD`.
+ * Pure: không mutate input.
+ */
+export function countMastered(words: CollectedWord[]): number {
+  return words.reduce(
+    (count, entry) => (entry.mastery >= MASTERED_THRESHOLD ? count + 1 : count),
+    0
   )
 }
 
