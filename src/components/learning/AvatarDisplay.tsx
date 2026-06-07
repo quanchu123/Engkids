@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useAppStore } from '@/store/useAppStore';
-import { getItem, AvatarItem } from '@/lib/avatar';
+import { getItem, getDefaultEquipped, AvatarItem } from '@/lib/avatar';
 import { getTodayDate } from '@/lib/progress';
 
 type AvatarSize = 'sm' | 'md' | 'lg';
@@ -45,8 +45,8 @@ export default function AvatarDisplay({ size = 'md', showMood = false }: { size?
   const lastActiveDate = useAppStore((state) => state.progress.lastActiveDate);
   const dims = SIZE_MAP[size];
 
-  const character = getItem(equipped.character);
-  const frame = getItem(equipped.frame);
+  const character = getItem(equipped.character) ?? getItem(getDefaultEquipped().character);
+  const frame = getItem(equipped.frame) ?? getItem(getDefaultEquipped().frame);
   const hat = equipped.hat ? getItem(equipped.hat) : undefined;
   const pet = equipped.pet ? getItem(equipped.pet) : undefined;
 

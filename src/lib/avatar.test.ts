@@ -33,8 +33,8 @@ describe('avatar catalog', () => {
     });
   });
 
-  it('offers a large catalog (100-ish avatars)', () => {
-    expect(AVATAR_ITEMS.length).toBeGreaterThanOrEqual(80);
+  it('offers a curated catalog of strong/mythical characters', () => {
+    expect(AVATAR_ITEMS.length).toBeGreaterThanOrEqual(40);
   });
 
   it('has exactly two free (requiredStars:0) items: a character and a frame', () => {
