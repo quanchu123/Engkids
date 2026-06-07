@@ -38,7 +38,6 @@ import {
 } from '@/lib/pet-species';
 import { buildPetQuiz, PetQuiz } from '@/lib/pet-quiz';
 import { loadWordBank, DEFAULT_WORD_BANK, WordPair } from '@/lib/word-bank';
-
 const STAT_META: Record<PetStatKey, { labelVi: string; emoji: string; bar: string }> = {
   hunger: { labelVi: 'No bụng', emoji: '🍎', bar: 'from-orange-400 to-amber-500' },
   happiness: { labelVi: 'Vui vẻ', emoji: '❤️', bar: 'from-pink-400 to-rose-500' },
@@ -80,6 +79,21 @@ const playEvolveChime = () => playTones([523, 659, 784, 1047, 1319], 0.1);
 const playDing = () => playTones([880, 1175], 0.08);
 const playBuzz = () => playTones([200, 150], 0.1);
 
+/** Speak an English word aloud via the Web Speech API (no-op if unsupported). */
+function speakEnglish(text: string) {
+  try {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.85;
+    u.pitch = 1.05;
+    window.speechSynthesis.speak(u);
+  } catch {
+    /* ignore */
+  }
+}
+
 export default function PetGamePage() {
   const pet = useAppStore((state) => state.pet);
   const coins = useAppStore((state) => state.coins);
@@ -87,6 +101,8 @@ export default function PetGamePage() {
   const adoptPet = useAppStore((state) => state.adoptPet);
   const carePet = useAppStore((state) => state.carePet);
   const syncPetDecay = useAppStore((state) => state.syncPetDecay);
+  const savedWords = useAppStore((state) => state.progress.savedWords);
+  const completeQuestStep = useAppStore((state) => state.completeQuestStep);
 
   const [bank, setBank] = useState<WordPair[]>(DEFAULT_WORD_BANK);
   const [hearts, setHearts] = useState<number[]>([]);
@@ -95,6 +111,17 @@ export default function PetGamePage() {
   const [anim, setAnim] = useState<PetAnim>('idle');
   const [combo, setCombo] = useState(0);
   const [floats, setFloats] = useState<Array<{ id: number; text: string }>>([]);
+  const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
+  const questDoneRef = useRef(false);
+
+  // The child's saved vocabulary, as quiz word pairs (reviewed first).
+  const preferredWords = useMemo<WordPair[]>(
+    () =>
+      (savedWords || [])
+        .filter((w) => w.word && w.vi)
+        .map((w) => ({ en: w.word, vi: w.vi })),
+    [savedWords],
+  );
 
   // Quiz modal state
   const [quizAction, setQuizAction] = useState<PetActionKey | null>(null);
@@ -151,10 +178,13 @@ export default function PetGamePage() {
   }, []);
 
   const openQuiz = (action: PetActionKey) => {
+    const q = buildPetQuiz(bank, PET_ACTIONS[action].quizDirection, Math.random, preferredWords);
     setQuizAction(action);
-    setQuiz(buildPetQuiz(bank, PET_ACTIONS[action].quizDirection));
+    setQuiz(q);
     setPicked(null);
     setResult(null);
+    // Hear the English word as soon as the question appears.
+    setTimeout(() => speakEnglish(q.word.en), 250);
   };
 
   const closeQuiz = () => {
@@ -173,7 +203,19 @@ export default function PetGamePage() {
       setResult('correct');
       setCombo((c) => c + 1);
       playDing();
+      speakEnglish(quiz.word.en);
       pokeHappy();
+      // Track distinct words reviewed this session.
+      setLearnedWords((prev) => {
+        const next = new Set(prev);
+        next.add(quiz.word.en.toLowerCase());
+        return next;
+      });
+      // Count toward the daily "play a game" quest once per visit.
+      if (!questDoneRef.current) {
+        questDoneRef.current = true;
+        try { completeQuestStep('game'); } catch { /* ignore */ }
+      }
       // flying hearts
       const id = heartId.current++;
       setHearts((h) => [...h, id]);
@@ -185,13 +227,16 @@ export default function PetGamePage() {
       setCombo(0);
       playBuzz();
       setAnim('sad');
+      speakEnglish(quiz.word.en); // hear the correct English word
       setTimeout(() => setAnim('idle'), 600);
       // give a fresh question for the same action so they can try again
       setTimeout(() => {
-        setQuiz(buildPetQuiz(bank, PET_ACTIONS[quizAction].quizDirection));
+        const q = buildPetQuiz(bank, PET_ACTIONS[quizAction].quizDirection, Math.random, preferredWords);
+        setQuiz(q);
         setPicked(null);
         setResult(null);
-      }, 1200);
+        setTimeout(() => speakEnglish(q.word.en), 200);
+      }, 1300);
     }
   };
 
@@ -326,6 +371,11 @@ export default function PetGamePage() {
           <p className="mt-4 text-center text-xs font-semibold text-white/90 drop-shadow">
             Trả lời đúng từ tiếng Anh để chăm sóc, lên cấp và tiến hóa thú cưng thần thoại của bé!
           </p>
+          {learnedWords.size > 0 && (
+            <p className="mt-1 text-center text-xs font-black text-white drop-shadow">
+              📚 Đã ôn {learnedWords.size} từ hôm nay{combo >= 2 ? ` · 🔥 Combo x${combo}` : ''}
+            </p>
+          )}
         </div>
       </main>
 
@@ -342,8 +392,15 @@ export default function PetGamePage() {
             </div>
 
             <p className="mt-3 text-center text-xs font-bold text-slate-500">{PET_ACTIONS[quizAction].promptLabelVi}</p>
-            <div className="mt-1 rounded-2xl bg-gradient-to-r from-violet-100 to-sky-100 py-4 text-center">
+            <div className="mt-1 flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-100 to-sky-100 py-4 text-center">
               <span className="text-2xl font-black text-violet-700">{quiz.prompt}</span>
+              <button
+                onClick={() => speakEnglish(quiz.word.en)}
+                aria-label="Nghe phát âm"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg shadow transition-transform hover:scale-110"
+              >
+                🔊
+              </button>
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3">

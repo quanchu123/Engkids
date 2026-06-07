@@ -59,15 +59,20 @@ export function pickDistractors(
 
 /**
  * Build a single quiz from the bank. Falls back to DEFAULT_WORD_BANK when the
- * provided bank is too small to make 4 distinct options.
+ * provided bank is too small to make 4 distinct options. When `preferred` words
+ * are supplied (e.g. the child's saved vocabulary), the question word is drawn
+ * from them so the game reviews real learned words; distractors still come from
+ * the full bank for good variety.
  */
 export function buildPetQuiz(
   bank: WordPair[],
   direction: QuizDirection,
   rng: () => number = Math.random,
+  preferred: WordPair[] = [],
 ): PetQuiz {
   const source = bank && bank.length >= 4 ? bank : DEFAULT_WORD_BANK;
-  const word = source[Math.floor(rng() * source.length)];
+  const pickFrom = preferred && preferred.length > 0 ? preferred : source;
+  const word = pickFrom[Math.floor(rng() * pickFrom.length)];
   const promptSide: 'en' | 'vi' = direction === 'vi-to-en' ? 'vi' : 'en';
   const answerSide: 'en' | 'vi' = direction === 'vi-to-en' ? 'en' : 'vi';
   const answer = word[answerSide];

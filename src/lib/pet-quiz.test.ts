@@ -66,4 +66,14 @@ describe('buildPetQuiz', () => {
     expect(q.options).toHaveLength(4);
     expect(q.options).toContain(q.answer);
   });
+
+  it('draws the question word from preferred words when provided', () => {
+    const preferred: WordPair[] = [{ en: 'Wizard', vi: 'Phù thủy' }];
+    const q = buildPetQuiz(BANK, 'vi-to-en', undefined, preferred);
+    expect(q.word.en).toBe('Wizard');
+    expect(q.prompt).toBe('Phù thủy');
+    expect(q.answer).toBe('Wizard');
+    expect(q.options).toHaveLength(4);
+    expect(q.options).toContain('Wizard');
+  });
 });
