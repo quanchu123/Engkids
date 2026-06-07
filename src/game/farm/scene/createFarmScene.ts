@@ -1,4 +1,4 @@
-// Phaser scene factory for the English Farming Game — ISOMETRIC CARTOON farm.
+// Phaser scene factory for the English Farming Game — TOP-DOWN CARTOON farm.
 //
 // IMPORTANT: This module must TYPE-CHECK and load on the server (SSR) WITHOUT
 // importing Phaser at runtime. We therefore:
@@ -11,16 +11,14 @@
 // every mutation is delegated to the pure systems (farmingSystem) operating on a
 // single `FarmState` owned by the React page via the `FarmBridge`. The scene
 // reads state through `bridge.getState()`, asks the pure view helpers
-// (farmSceneView) for the isometric geometry + per-plot appearance, and writes
+// (farmSceneView) for the square-grid geometry + per-plot appearance, and writes
 // back through `bridge.setState()`.
 //
-// VISUAL TARGET: a cute 2.5D cartoon farm (Hay Day / Khu Vườn Trên Mây) — a real
-// isometric DIAMOND field with depth, shadows and cohesive cartoon art. All the
-// geometry MATH lives in farmSceneView (pure + unit-tested); this file turns it
-// into Phaser game objects, tweens + particles and routes input. Every texture
-// is guarded by a `loaderror` fallback so a missing asset degrades to an emoji
-// and never breaks rendering. The primary art is the isometric icon set in
-// `public/games/english-farm/iso/` (resolved via `isoIconSrc`).
+// VISUAL TARGET: a cute top-down cartoon vegetable garden (Hay Day style). The
+// Dreamina art is square/front-view (NOT isometric), so the field is a real
+// SQUARE grid of soil plots framed by grass, fence and scenery. Every texture is
+// guarded by a `loaderror` fallback so a missing asset degrades to an emoji and
+// never breaks rendering. The art lives in `public/games/english-farm/assets/`.
 
 import type Phaser from 'phaser'
 import type { FarmState, VocabLevel } from '../types'
@@ -37,11 +35,8 @@ import {
 import {
   describePlot,
   isInventoryFullReason,
-  isoToScreen,
-  screenToIso,
-  isoGridLayout,
-  tileDepth,
-  type IsoLayout,
+  computeGridLayout,
+  type GridLayout,
 } from './farmSceneView'
 
 /** The currently selected tool (mirrors `FarmTool` in the React HUD). */
@@ -83,22 +78,12 @@ export interface FarmSceneInstance extends Phaser.Scene {
 }
 
 /**
- * Isometric art names to preload as textures (from `iso/manifest.json`). Missing
- * or broken files fall back to an emoji (see `loaderror` tracking) so the scene
- * always renders. Covers crops, growth stages, the farmer + animals, scenery and
- * the effect/particle sprites.
+ * Iso/legacy art names to preload as textures (from `iso/manifest.json` or a
+ * drop-in override at `assets/<name>.png`). Missing files fall back to an emoji
+ * (see `loaderror` tracking) so the scene always renders. Covers characters,
+ * scenery and the effect/particle sprites.
  */
 const TEXTURE_NAMES = [
-  // growth stages
-  'sprout',
-  'leaf',
-  // crops
-  'carrot',
-  'tomato',
-  'corn',
-  'pumpkin',
-  'strawberry',
-  'potato',
   // characters
   'farmer',
   'cow',
@@ -107,9 +92,9 @@ const TEXTURE_NAMES = [
   'barn',
   'tree',
   'fence',
+  'well',
   // tools / effects / ui
   'watering-can',
-  'shovel',
   'coins',
   'star',
   'water',
@@ -131,26 +116,18 @@ const DIRECT_TEXTURES: string[] = [
 /** Runtime key for the generated white-circle particle texture (no asset). */
 const PARTICLE_DOT = 'farm-particle-dot'
 
-/**
- * Static stacking order. Ground diamonds use small `tileDepth` values; every
- * TALL object (crop, farmer, decor) sorts by its feet screen-Y so nearer tiles
- * correctly overlap farther ones (always far above the flat ground tiles).
- */
+/** Static stacking order. Tall objects sort by feet screen-Y above the ground. */
 const DEPTH = {
   sky: -10_000,
   light: -9_500,
-  fieldShadow: -9_000,
-  // ground tiles: tileDepth(col,row) in [0 .. cols+rows-2]
+  fieldPanel: -8_000,
+  fieldShadow: -8_500,
+  ground: -5_000, // flat plot tiles (soil/grass)
+  groundDecal: -4_900, // furrows / wet sheen on a tile
   particles: 1_000_000,
   flash: 900_000,
   flyUp: 1_100_000,
 } as const
-
-/** Cartoon palette for the isometric ground block. */
-const GRASS_LIGHT = 0x9bd861
-const GRASS_DARK = 0x86c94e
-const GRASS_SIDE = 0x5f9437 // darker "extrude" face of the raised field
-const GRASS_TOP_EDGE = 0xb6e887
 
 /** A textured sprite OR its emoji text fallback (both share x/y/scale/flipX). */
 type Sprite = Phaser.GameObjects.Image | Phaser.GameObjects.Text
@@ -172,7 +149,7 @@ export function createFarmScene(
 ): new () => FarmSceneInstance {
   class FarmScene extends PhaserNS.Scene implements FarmSceneInstance {
     // --- per-plot rendered objects, indexed by plot id -----------------------
-    /** Ground diamond + raised side faces + soil bed graphics (re-drawn). */
+    /** Ground tile graphic/border (re-drawn). */
     private beds: Array<Phaser.GameObjects.Graphics | null> = []
     /** Soft contact shadow ellipse under each crop. */
     private cropShadows: Array<Phaser.GameObjects.Graphics | null> = []
@@ -185,7 +162,7 @@ export function createFarmScene(
 
     // --- background + scenery -------------------------------------------------
     private backgroundGfx: Phaser.GameObjects.Graphics | null = null
-    private fieldShadowGfx: Phaser.GameObjects.Graphics | null = null
+    private fieldPanelGfx: Phaser.GameObjects.Graphics | null = null
     private decorObjects: Sprite[] = []
     private decorTweens: Phaser.Tweens.Tween[] = []
 
@@ -200,7 +177,7 @@ export function createFarmScene(
     private activeEmitters = new Set<Phaser.GameObjects.Particles.ParticleEmitter>()
     private flashOverlays = new Set<Phaser.GameObjects.Graphics>()
 
-    private layout: IsoLayout = { tileW: 64, tileH: 32, originX: 0, originY: 0 }
+    private layout: GridLayout = { tileSize: 64, gap: 8, originX: 0, originY: 0 }
     /** Texture keys that actually loaded (missing ones fall back to emoji). */
     private loadedTextures = new Set<string>()
 
@@ -211,11 +188,9 @@ export function createFarmScene(
     preload(): void {
       // Robust loading: a missing/broken asset must never break the scene. Each
       // texture is loaded from its PREFERRED source first — a user drop-in
-      // override at `assets/<name>.png` (e.g. exported Unity art) — and on
-      // `loaderror` we transparently retry the bundled iso art under the same
-      // key. If that also fails the texture stays absent and render falls back to
-      // an emoji. Files queued during a `loaderror` are picked up by the loader
-      // while it is still running, so this chain resolves within preload.
+      // override at `assets/<name>.png` — and on `loaderror` we transparently
+      // retry the bundled iso art under the same key. If that also fails the
+      // texture stays absent and render falls back to an emoji.
       const pendingFallback = new Map<string, string>()
 
       this.load.on('loaderror', (file: Phaser.Loader.File) => {
@@ -239,6 +214,9 @@ export function createFarmScene(
           this.load.image(name, primary)
         } else if (fallback) {
           this.load.image(name, fallback)
+        } else {
+          // No manifest entry: still try the direct assets/ path.
+          this.load.image(name, `/games/english-farm/assets/${name}.png`)
         }
       }
 
@@ -253,9 +231,7 @@ export function createFarmScene(
       this.ensureParticleTexture()
       this.buildScene()
 
-      // A single scene-level pointer handler routes taps to the nearest tile via
-      // the inverse isometric projection (overlapping diamonds make per-tile hit
-      // boxes unreliable).
+      // A single scene-level pointer handler routes taps to the tapped tile.
       this.input.on('pointerdown', this.handlePointer, this)
 
       // Redraw on resize so the RESIZE scale mode keeps everything centered.
@@ -308,8 +284,8 @@ export function createFarmScene(
 
       this.backgroundGfx?.destroy()
       this.backgroundGfx = null
-      this.fieldShadowGfx?.destroy()
-      this.fieldShadowGfx = null
+      this.fieldPanelGfx?.destroy()
+      this.fieldPanelGfx = null
 
       this.clearGrid()
 
@@ -344,14 +320,34 @@ export function createFarmScene(
       const cols = state.grid.cols || GRID_COLS
       const rows = state.grid.rows || GRID_ROWS
 
-      this.layout = isoGridLayout(width, height, cols, rows, { topInset: 132 })
+      this.layout = computeGridLayout(width, height, cols, rows, {
+        topInset: 150,
+        padding: Math.max(28, Math.round(Math.min(width, height) * 0.06)),
+        gap: Math.max(6, Math.round(Math.min(width, height) * 0.012)),
+      })
 
       this.drawBackground(width, height)
-      this.drawFieldShadow(cols, rows)
+      this.drawFieldPanel(cols, rows)
       this.drawDecorBack(cols, rows)
       this.buildGrid(cols, rows)
       this.drawDecorFront(cols, rows)
       this.buildFarmer(cols, rows)
+    }
+
+    // --- geometry helpers ----------------------------------------------------
+
+    /** Distance between adjacent tile centers. */
+    private step(): number {
+      return this.layout.tileSize + this.layout.gap
+    }
+
+    /** Screen-space center of a (possibly fractional) square cell. */
+    private cellCenter(col: number, row: number): { x: number; y: number } {
+      const s = this.step()
+      return {
+        x: this.layout.originX + col * s + this.layout.tileSize / 2,
+        y: this.layout.originY + row * s + this.layout.tileSize / 2,
+      }
     }
 
     // --- background ----------------------------------------------------------
@@ -359,35 +355,60 @@ export function createFarmScene(
     private drawBackground(width: number, height: number): void {
       const g = this.add.graphics().setDepth(DEPTH.sky)
       // Soft sky -> meadow vertical gradient across the whole screen.
-      const horizon = Math.round(height * 0.42)
-      g.fillGradientStyle(0xbfe9ff, 0xbfe9ff, 0xdff6c9, 0xdff6c9, 1)
+      const horizon = Math.round(height * 0.4)
+      g.fillGradientStyle(0xbfe9ff, 0xbfe9ff, 0xe6f7d2, 0xe6f7d2, 1)
       g.fillRect(0, 0, width, horizon)
-      g.fillGradientStyle(0xdff6c9, 0xdff6c9, 0x9fd86a, 0x9fd86a, 1)
+      g.fillGradientStyle(0xa9e07a, 0xa9e07a, 0x7cc24f, 0x7cc24f, 1)
       g.fillRect(0, horizon, width, height - horizon)
       this.backgroundGfx = g
 
       // Big soft radial light from the upper area (gentle sunny glow).
       const light = this.add.graphics().setDepth(DEPTH.light)
       const cx = width * 0.5
-      const cy = height * 0.34
+      const cy = height * 0.3
       const maxR = Math.max(width, height) * 0.6
       for (let i = 6; i >= 1; i -= 1) {
         const r = (maxR / 6) * i
-        light.fillStyle(0xffffff, 0.05)
+        light.fillStyle(0xffffff, 0.045)
         light.fillCircle(cx, cy, r)
       }
       this.decorObjects.push(light as unknown as Sprite)
     }
 
-    /** A single soft shadow blob under the whole raised field. */
-    private drawFieldShadow(cols: number, rows: number): void {
-      const g = this.add.graphics().setDepth(DEPTH.fieldShadow)
-      const c = this.isoCenter((cols - 1) / 2, (rows - 1) / 2)
-      const w = (cols + rows) * this.layout.tileW * 0.5
-      const h = (cols + rows) * this.layout.tileH * 0.5
-      g.fillStyle(0x3f6b2a, 0.28)
-      g.fillEllipse(c.x, c.y + this.layout.tileH * 0.7, w * 0.92, h * 0.78)
-      this.fieldShadowGfx = g
+    /**
+     * A raised, rounded "garden bed" panel behind the whole plot grid: a soft
+     * drop shadow, a brown soil border (the bed's wooden frame look) and an
+     * inner lighter face, so the square plots read as one cohesive raised field.
+     */
+    private drawFieldPanel(cols: number, rows: number): void {
+      const s = this.step()
+      const pad = Math.round(this.layout.tileSize * 0.34)
+      const x = this.layout.originX - pad
+      const y = this.layout.originY - pad
+      const w = cols * s - this.layout.gap + pad * 2
+      const h = rows * s - this.layout.gap + pad * 2
+      const radius = Math.round(this.layout.tileSize * 0.4)
+
+      // Drop shadow under the raised bed.
+      const shadow = this.add.graphics().setDepth(DEPTH.fieldShadow)
+      shadow.fillStyle(0x2f5320, 0.28)
+      shadow.fillRoundedRect(x - 4, y + 10, w + 8, h + 10, radius)
+      this.decorObjects.push(shadow as unknown as Sprite)
+
+      const g = this.add.graphics().setDepth(DEPTH.fieldPanel)
+      // Wooden/earth frame.
+      g.fillStyle(0x7a4a25, 1)
+      g.fillRoundedRect(x, y, w, h, radius)
+      // Inner soil face.
+      g.fillStyle(0x9b6238, 1)
+      g.fillRoundedRect(
+        x + 6,
+        y + 6,
+        w - 12,
+        h - 12,
+        Math.max(4, radius - 4),
+      )
+      this.fieldPanelGfx = g
     }
 
     // --- grid ----------------------------------------------------------------
@@ -395,9 +416,7 @@ export function createFarmScene(
     private buildGrid(cols: number, rows: number): void {
       const state = this.safeGetState()
       for (const plot of state.grid.plots) {
-        const { col, row } = this.cellOf(plot.id, cols)
-        // Flat ground tiles sort by tileDepth so the raised field self-occludes.
-        const bed = this.add.graphics().setDepth(tileDepth(col, row))
+        const bed = this.add.graphics().setDepth(DEPTH.ground)
         const shadow = this.add.graphics()
         this.beds[plot.id] = bed
         this.cropShadows[plot.id] = shadow
@@ -408,6 +427,7 @@ export function createFarmScene(
         this.cropTweens[plot.id] = null
         this.sparkleTimers[plot.id] = null
       }
+      void cols
       void rows
       this.renderAllPlots()
     }
@@ -420,10 +440,11 @@ export function createFarmScene(
         col: Math.max(0, Math.min(this.farmerCell.col, cols - 1)),
         row: Math.max(0, Math.min(this.farmerCell.row, rows - 1)),
       }
-      this.farmerSize = Math.max(36, Math.round(this.layout.tileW * 1.5))
-      const c = this.isoCenter(this.farmerCell.col, this.farmerCell.row)
-      this.farmer = this.makeSprite('farmer', c.x, c.y, this.farmerSize, '🧑‍🌾', 0.5, 1)
-      this.farmer.setDepth(c.y + 2)
+      this.farmerSize = Math.max(40, Math.round(this.layout.tileSize * 1.35))
+      const c = this.cellCenter(this.farmerCell.col, this.farmerCell.row)
+      const feetY = c.y + this.layout.tileSize * 0.34
+      this.farmer = this.makeSprite('farmer', c.x, feetY, this.farmerSize, '🧑‍🌾', 0.5, 1)
+      this.farmer.setDepth(feetY + 5)
       this.startFarmerIdle()
     }
 
@@ -449,7 +470,7 @@ export function createFarmScene(
     }
 
     /**
-     * Walk the farmer tile-by-tile to `target` (tween through iso tile centers,
+     * Walk the farmer tile-by-tile to `target` (tween through tile centers,
      * flipX by direction), then run `onArrive`. Purely visual — the action
      * result still comes from the pure systems via the bridge.
      */
@@ -462,7 +483,8 @@ export function createFarmScene(
       this.farmerBusy = true
 
       const path = this.buildPath(this.farmerCell, target)
-      const stepDur = 170
+      const stepDur = 150
+      const footOffset = this.layout.tileSize * 0.34
 
       const stepTo = (index: number): void => {
         if (!this.farmer) return
@@ -473,18 +495,20 @@ export function createFarmScene(
           return
         }
         const cell = path[index]
-        const c = this.isoCenter(cell.col, cell.row)
-        if (c.x < this.farmer.x - 0.5) this.farmer.setFlipX(true)
-        else if (c.x > this.farmer.x + 0.5) this.farmer.setFlipX(false)
+        const c = this.cellCenter(cell.col, cell.row)
+        const fx = c.x
+        const fy = c.y + footOffset
+        if (fx < this.farmer.x - 0.5) this.farmer.setFlipX(true)
+        else if (fx > this.farmer.x + 0.5) this.farmer.setFlipX(false)
 
         this.tweens.add({
           targets: this.farmer,
-          x: c.x,
-          y: c.y,
+          x: fx,
+          y: fy,
           duration: stepDur,
           ease: 'Sine.easeInOut',
           onUpdate: () => {
-            if (this.farmer) this.farmer.setDepth(this.farmer.y + 2)
+            if (this.farmer) this.farmer.setDepth(this.farmer.y + 5)
           },
           onComplete: () => {
             this.farmerCell = cell
@@ -544,46 +568,52 @@ export function createFarmScene(
 
       const cols = state.grid.cols || GRID_COLS
       const { col, row } = this.cellOf(plotId, cols)
-      const c = this.isoCenter(col, row)
+      const c = this.cellCenter(col, row)
 
       const cropType = plot.crop ? getCropById(plot.crop.cropTypeId) : undefined
       const visual = describePlot(plot, cropType)
 
-      this.drawTile(bed, col, row, c.x, c.y, visual)
+      // Procedural fallback border drawn under the tile image.
+      this.drawTile(bed, c.x, c.y, visual)
 
       // Reset previous crop overlay / label / wet indicator before redrawing.
       this.clearTile(plotId)
 
-      // Dreamina soil bed for tilled/planted plots (replaces the brown diamond).
-      if (visual.furrows || visual.crop) {
-        const soilTex = visual.wet ? 'tile-wet' : 'tile-soil'
-        const soil = this.makeSprite(soilTex, c.x, c.y, this.layout.tileW * 0.98, '🟫', 0.5, 0.5)
-        soil.setDepth(tileDepth(col, row) + 0.5)
-        this.soilImages[plotId] = soil
+      // Square ground tile image: grass (empty), soil (tilled/planted) or wet.
+      const tileTex = !visual.furrows && !visual.crop
+        ? 'tile-grass'
+        : visual.wet
+          ? 'tile-wet'
+          : 'tile-soil'
+      const tile = this.makeTile(tileTex, c.x, c.y, this.layout.tileSize, '🟫')
+      if (tile) {
+        tile.setDepth(DEPTH.ground + 1)
+        this.soilImages[plotId] = tile
       }
 
       // Wet soil gets a little water sheen sprite near the tile.
       if (visual.wet) {
-        const dropSize = Math.max(12, this.layout.tileW * 0.22)
+        const dropSize = Math.max(12, this.layout.tileSize * 0.26)
         const drop = this.makeSprite(
           'water',
-          c.x + this.layout.tileW * 0.22,
-          c.y,
+          c.x + this.layout.tileSize * 0.3,
+          c.y - this.layout.tileSize * 0.28,
           dropSize,
           '💧',
         )
-        drop.setDepth(c.y - 0.5)
+        drop.setDepth(c.y)
         this.wetIcons[plotId] = drop
       }
 
       if (!visual.crop) return
 
-      const target = this.layout.tileW * (0.7 + visual.crop.scale * 0.85)
-      const feetY = c.y + this.layout.tileH * 0.12
-      // Use the Dreamina per-stage crop art (<crop>-1/-2/-3); emoji on miss.
+      // Crop sits on the soil: bottom-anchored just below tile center, scaled to
+      // the tile. Trimmed art means the plant base lands on the soil (no float).
+      const target = this.layout.tileSize * (0.66 + visual.crop.scale * 0.55)
+      const feetY = c.y + this.layout.tileSize * 0.34
       const stage = plot.crop?.stage ?? 3
       const bucket = stage <= 1 ? 1 : stage === 2 ? 2 : 3
-      const cropTex = cropType ? `${cropType.id}-${bucket}` : this.isoCropTexture(visual.crop.textureName)
+      const cropTex = cropType ? `${cropType.id}-${bucket}` : visual.crop.textureName
       const crop = this.makeSprite(
         cropTex,
         c.x,
@@ -602,7 +632,7 @@ export function createFarmScene(
         shadow.clear()
         shadow.setDepth(feetY - 1)
         shadow.fillStyle(0x2f5320, 0.26)
-        shadow.fillEllipse(c.x, feetY, this.layout.tileW * 0.52, this.layout.tileH * 0.42)
+        shadow.fillEllipse(c.x, feetY, this.layout.tileSize * 0.6, this.layout.tileSize * 0.2)
       }
 
       const baseScale = crop.scaleX
@@ -624,9 +654,9 @@ export function createFarmScene(
 
       if (visual.label) {
         const label = this.add
-          .text(c.x, c.y + this.layout.tileH * 0.55, visual.label, {
+          .text(c.x, c.y + this.layout.tileSize * 0.46, visual.label, {
             fontFamily: 'Arial',
-            fontSize: `${Math.max(10, Math.round(this.layout.tileW * 0.18))}px`,
+            fontSize: `${Math.max(10, Math.round(this.layout.tileSize * 0.18))}px`,
             color: '#ffffff',
             backgroundColor: '#00000055',
             padding: { x: 4, y: 1 },
@@ -651,7 +681,7 @@ export function createFarmScene(
         const baseY = crop.y
         this.cropTweens[plotId] = this.tweens.add({
           targets: crop,
-          y: baseY - Math.max(3, this.layout.tileH * 0.12),
+          y: baseY - Math.max(3, this.layout.tileSize * 0.06),
           angle: { from: -3, to: 3 },
           duration: 1200,
           yoyo: true,
@@ -664,7 +694,7 @@ export function createFarmScene(
           loop: true,
           callback: () => {
             const cr = this.cropObjects[plotId]
-            if (cr && cr.active) this.emitSparkle(cr.x, cr.y - this.layout.tileH * 0.4, 4)
+            if (cr && cr.active) this.emitSparkle(cr.x, cr.y - this.layout.tileSize * 0.5, 4)
           },
         })
       } else {
@@ -681,114 +711,103 @@ export function createFarmScene(
     }
 
     /**
-     * Paint one isometric tile into `bed`: a raised grass diamond (checkerboard
-     * of two greens) with darker south side faces (the 3D "extrude"), then — for
-     * tilled/planted plots — an inset soil diamond with a top highlight + furrow
-     * lines following the iso axes, and a wet sheen when freshly watered.
+     * Paint one square plot's procedural border into `bed` — a subtle inset
+     * outline so the tile reads as a discrete plot even before the soil image
+     * loads (and as a fallback if it never does). The soil/grass texture is
+     * drawn as an image sprite on top in renderPlot.
      */
     private drawTile(
       bed: Phaser.GameObjects.Graphics,
-      col: number,
-      row: number,
       cx: number,
       cy: number,
       visual: ReturnType<typeof describePlot>,
     ): void {
       bed.clear()
-      const w = this.layout.tileW
-      const h = this.layout.tileH
-      const ext = Math.max(4, Math.round(h * 0.5))
+      const t = this.layout.tileSize
+      const half = t / 2
+      const radius = Math.max(4, Math.round(t * 0.16))
 
-      const top = { x: cx, y: cy - h / 2 }
-      const right = { x: cx + w / 2, y: cy }
-      const bottom = { x: cx, y: cy + h / 2 }
-      const left = { x: cx - w / 2, y: cy }
+      // Base fallback fill (in case the tile image is missing): brown soil or
+      // green grass depending on whether the plot has been worked.
+      const worked = visual.furrows || !!visual.crop
+      bed.fillStyle(worked ? 0x8a5a30 : 0x7cb85c, 1)
+      bed.fillRoundedRect(cx - half, cy - half, t, t, radius)
 
-      // South-west + south-east side faces (the raised block). Front tiles draw
-      // their top diamond over these, so only the field's front edges show.
-      bed.fillStyle(GRASS_SIDE, 1)
-      bed.fillPoints(
-        [left, bottom, { x: bottom.x, y: bottom.y + ext }, { x: left.x, y: left.y + ext }],
-        true,
-      )
-      bed.fillPoints(
-        [bottom, right, { x: right.x, y: right.y + ext }, { x: bottom.x, y: bottom.y + ext }],
-        true,
-      )
-
-      // Grass top (checkerboard of two greens for a "tended garden" feel).
-      const grass = (col + row) % 2 === 0 ? GRASS_LIGHT : GRASS_DARK
-      bed.fillStyle(grass, 1)
-      bed.fillPoints([top, right, bottom, left], true)
-      // Thin lighter rim along the back edges for a soft top highlight.
-      bed.lineStyle(Math.max(1, Math.round(h * 0.06)), GRASS_TOP_EDGE, 0.7)
-      bed.lineBetween(left.x, left.y, top.x, top.y)
-      bed.lineBetween(top.x, top.y, right.x, right.y)
-
-      // The soil bed + crop are drawn as Dreamina image sprites in renderPlot,
-      // so the procedural brown soil diamond is intentionally omitted here.
+      // Thin inset rim for definition.
+      bed.lineStyle(Math.max(1, Math.round(t * 0.04)), worked ? 0x5c3d22 : 0x5f9437, 0.6)
+      bed.strokeRoundedRect(cx - half + 1, cy - half + 1, t - 2, t - 2, radius)
     }
 
     // --- decor (depth-sorted by feet-Y so it occludes correctly) -------------
 
-    /** Scenery that sits BEHIND the field (barn + back fence): low feet-Y. */
+    /** Field rectangle in screen space (origin + grid extent). */
+    private fieldRect(cols: number, rows: number): {
+      left: number; right: number; top: number; bottom: number; cx: number; cy: number
+    } {
+      const s = this.step()
+      const left = this.layout.originX
+      const top = this.layout.originY
+      const right = left + cols * s - this.layout.gap
+      const bottom = top + rows * s - this.layout.gap
+      return { left, right, top, bottom, cx: (left + right) / 2, cy: (top + bottom) / 2 }
+    }
+
+    /** Scenery that sits BEHIND the field (barn + back fence row): low feet-Y. */
     private drawDecorBack(cols: number, rows: number): void {
-      // Barn at the back corner (north / top of the diamond).
-      const barnCell = this.isoCenter(-0.9, -0.9)
+      const r = this.fieldRect(cols, rows)
+      const t = this.layout.tileSize
+
+      // Barn behind the top-left of the field.
+      const barnY = r.top - t * 0.2
       this.decorObjects.push(
-        this.makeSprite('barn', barnCell.x, barnCell.y, this.layout.tileW * 2.4, '🏠', 0.5, 1)
-          .setDepth(barnCell.y),
+        this.makeSprite('barn', r.left + t * 0.4, barnY, t * 2.2, '🏠', 0.5, 1).setDepth(barnY),
       )
 
-      // Back-edge fence posts framing the two north edges of the field.
-      const fenceSize = Math.max(20, this.layout.tileW * 0.5)
-      for (let col = 0; col < cols; col += 1) {
-        const p = this.isoCenter(col, -0.7)
+      // Well behind the top-right.
+      const wellY = r.top - t * 0.1
+      this.decorObjects.push(
+        this.makeSprite('well', r.right - t * 0.4, wellY, t * 1.2, '⛲', 0.5, 1).setDepth(wellY),
+      )
+
+      // Back fence row across the top edge of the field.
+      const s = this.step()
+      const fenceSize = Math.max(22, t * 0.62)
+      const fenceY = r.top - t * 0.06
+      for (let col = 0; col <= cols; col += 1) {
+        const x = r.left + col * s - this.layout.gap / 2
         this.decorObjects.push(
-          this.makeSprite('fence', p.x, p.y, fenceSize, '🪵', 0.5, 1).setDepth(p.y),
-        )
-      }
-      for (let row = 0; row < rows; row += 1) {
-        const p = this.isoCenter(-0.7, row)
-        this.decorObjects.push(
-          this.makeSprite('fence', p.x, p.y, fenceSize, '🪵', 0.5, 1).setDepth(p.y),
+          this.makeSprite('fence', x, fenceY, fenceSize, '🪵', 0.5, 1).setDepth(fenceY),
         )
       }
     }
 
     /** Scenery + animals around/in front of the field: feet-Y depth-sorted. */
     private drawDecorFront(cols: number, rows: number): void {
-      // Trees flanking the field.
-      const treeL = this.isoCenter(-1.4, rows - 1)
+      const r = this.fieldRect(cols, rows)
+      const t = this.layout.tileSize
+
+      // Trees flanking the field on the grass.
+      const treeLY = r.bottom + t * 0.1
       this.decorObjects.push(
-        this.makeSprite('tree', treeL.x, treeL.y, this.layout.tileW * 2.0, '🌳', 0.5, 1)
-          .setDepth(treeL.y),
+        this.makeSprite('tree', r.left - t * 1.1, treeLY, t * 2.0, '🌳', 0.5, 1).setDepth(treeLY),
       )
-      const treeR = this.isoCenter(cols - 1, -1.4)
+      const treeRY = r.top + t * 0.4
       this.decorObjects.push(
-        this.makeSprite('tree', treeR.x, treeR.y, this.layout.tileW * 1.8, '🌳', 0.5, 1)
-          .setDepth(treeR.y),
+        this.makeSprite('tree', r.right + t * 1.1, treeRY, t * 1.8, '🌳', 0.5, 1).setDepth(treeRY),
       )
 
       // A cow + a chicken wandering on the grass outside the plots.
-      const cowPos = this.isoCenter(-1.7, rows + 0.2)
-      const cow = this.makeSprite('cow', cowPos.x, cowPos.y, this.layout.tileW * 1.3, '🐄', 0.5, 1)
-        .setDepth(cowPos.y)
+      const cowY = r.bottom + t * 0.9
+      const cow = this.makeSprite('cow', r.left + t * 0.6, cowY, t * 1.4, '🐄', 0.5, 1)
+        .setDepth(cowY)
       this.decorObjects.push(cow)
-      this.addWander(cow, this.layout.tileW * 0.6)
+      this.addWander(cow, t * 0.7)
 
-      const chickPos = this.isoCenter(cols + 0.4, rows - 0.6)
-      const chicken = this.makeSprite(
-        'chicken',
-        chickPos.x,
-        chickPos.y,
-        this.layout.tileW * 0.8,
-        '🐔',
-        0.5,
-        1,
-      ).setDepth(chickPos.y)
+      const chickY = r.bottom + t * 0.7
+      const chicken = this.makeSprite('chicken', r.right - t * 0.5, chickY, t * 0.8, '🐔', 0.5, 1)
+        .setDepth(chickY)
       this.decorObjects.push(chicken)
-      this.addWander(chicken, this.layout.tileW * 0.8)
+      this.addWander(chicken, t * 0.9)
     }
 
     /** Gentle back-and-forth wander for an animal sprite (flips with direction). */
@@ -817,20 +836,26 @@ export function createFarmScene(
       const state = this.safeGetState()
       const cols = state.grid.cols || GRID_COLS
       const rows = state.grid.rows || GRID_ROWS
-      const { col, row } = screenToIso(
-        pointer.x,
-        pointer.y,
-        this.layout.originX,
-        this.layout.originY,
-        this.layout.tileW,
-        this.layout.tileH,
-      )
+      const cell = this.screenToCell(pointer.x, pointer.y)
+      if (!cell) return
+      const { col, row } = cell
       if (col < 0 || col >= cols || row < 0 || row >= rows) return
       if (this.farmerBusy) return
 
       const plotId = row * cols + col
       const tool = bridge.getSelectedTool()
       this.moveFarmerToCell({ col, row }, () => this.performToolAction(tool, plotId))
+    }
+
+    /** Map a screen point to the square grid cell it lands in (null if outside). */
+    private screenToCell(px: number, py: number): Cell | null {
+      const s = this.step()
+      const lx = px - this.layout.originX
+      const ly = py - this.layout.originY
+      if (lx < 0 || ly < 0) return null
+      const col = Math.floor(lx / s)
+      const row = Math.floor(ly / s)
+      return { col, row }
     }
 
     /** Route the selected tool to its pure system (no rule logic here). */
@@ -889,17 +914,17 @@ export function createFarmScene(
     private playActionEffect(kind: string, plotId: number): void {
       const cols = this.safeGetState().grid.cols || GRID_COLS
       const { col, row } = this.cellOf(plotId, cols)
-      const c = this.isoCenter(col, row)
+      const c = this.cellCenter(col, row)
 
       switch (kind) {
         case 'till':
           this.emitDust(c.x, c.y, 14)
           break
         case 'plant':
-          this.emitDust(c.x, c.y + this.layout.tileH * 0.2, 6)
+          this.emitDust(c.x, c.y + this.layout.tileSize * 0.2, 6)
           break
         case 'water':
-          this.emitWater(c.x, c.y, this.layout.tileW)
+          this.emitWater(c.x, c.y, this.layout.tileSize)
           break
         default:
           break
@@ -1023,25 +1048,18 @@ export function createFarmScene(
       })
     }
 
-    /** Gentle red diamond flash to signal an invalid action; never throws. */
+    /** Gentle red flash on the tapped plot to signal an invalid action. */
     private flashPlot(plotId: number): void {
       const cols = this.safeGetState().grid.cols || GRID_COLS
       const { col, row } = this.cellOf(plotId, cols)
-      const c = this.isoCenter(col, row)
-      const w = this.layout.tileW
-      const h = this.layout.tileH
+      const c = this.cellCenter(col, row)
+      const t = this.layout.tileSize
+      const half = t / 2
+      const radius = Math.max(4, Math.round(t * 0.16))
 
       const overlay = this.add.graphics().setDepth(DEPTH.flash)
       overlay.fillStyle(0xef4444, 0.5)
-      overlay.fillPoints(
-        [
-          { x: c.x, y: c.y - h / 2 },
-          { x: c.x + w / 2, y: c.y },
-          { x: c.x, y: c.y + h / 2 },
-          { x: c.x - w / 2, y: c.y },
-        ],
-        true,
-      )
+      overlay.fillRoundedRect(c.x - half, c.y - half, t, t, radius)
       this.flashOverlays.add(overlay)
 
       this.tweens.add({
@@ -1062,24 +1080,6 @@ export function createFarmScene(
     private cellOf(plotId: number, cols: number): Cell {
       const safeCols = Math.max(1, cols)
       return { col: plotId % safeCols, row: Math.floor(plotId / safeCols) }
-    }
-
-    /** Screen-space center of a (possibly fractional) iso cell. */
-    private isoCenter(col: number, row: number): { x: number; y: number } {
-      return isoToScreen(
-        col,
-        row,
-        this.layout.originX,
-        this.layout.originY,
-        this.layout.tileW,
-        this.layout.tileH,
-      )
-    }
-
-    /** Map a growth-stage texture name onto the iso art set. */
-    private isoCropTexture(name: string): string {
-      // describePlot uses 'bush' for the mid stage; the iso set ships 'leaf'.
-      return name === 'bush' ? 'leaf' : name
     }
 
     /**
@@ -1109,6 +1109,26 @@ export function createFarmScene(
     private firstTexture(...names: string[]): string | null {
       for (const name of names) {
         if (this.loadedTextures.has(name) && this.textures.exists(name)) return name
+      }
+      return null
+    }
+
+    /**
+     * Create a square ground TILE image stretched to exactly `size x size`, or
+     * null when the texture is missing (the procedural border in drawTile then
+     * stands in). Ground tiles are full-bleed squares so they tile edge-to-edge.
+     */
+    private makeTile(
+      textureName: string,
+      x: number,
+      y: number,
+      size: number,
+      _fallbackEmoji: string,
+    ): Phaser.GameObjects.Image | null {
+      if (this.loadedTextures.has(textureName) && this.textures.exists(textureName)) {
+        const img = this.add.image(x, y, textureName).setOrigin(0.5, 0.5)
+        img.setDisplaySize(size, size)
+        return img
       }
       return null
     }
