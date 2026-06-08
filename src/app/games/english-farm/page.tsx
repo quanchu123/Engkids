@@ -232,7 +232,7 @@ export default function EnglishFarmPage() {
         sceneRef.current = sceneInstance;
 
         const game = new Phaser.Game({
-          type: Phaser.AUTO,
+          type: Phaser.CANVAS,
           parent: containerRef.current,
           backgroundColor: '#8fbc5a',
           scene: [sceneInstance],
@@ -466,7 +466,7 @@ export default function EnglishFarmPage() {
       />
 
       {/* Left column: back + shop + review + quest + mastered */}
-      <div className="absolute left-2 top-24 z-10 flex flex-col gap-2 sm:left-3 sm:top-28">
+      <div className="absolute left-2 top-44 z-10 flex flex-col gap-2 sm:left-3 sm:top-28">
         <Link
           href="/games"
           className="pointer-events-auto rounded-2xl border-2 border-emerald-300 bg-white/95 px-3 py-1.5 text-sm font-black text-emerald-600 shadow-md transition-transform hover:-translate-y-0.5 active:scale-95"

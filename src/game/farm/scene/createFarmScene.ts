@@ -126,7 +126,6 @@ const CROP_IDS = ['carrot', 'tomato', 'corn', 'pumpkin', 'strawberry', 'potato']
 const DREAMINA_FARM_COMPANION = 'dreamina-2026-06-08-8213'
 const DIRECT_TEXTURES: string[] = [
   'tile-grass', 'tile-soil', 'tile-wet',
-  DREAMINA_FARM_COMPANION,
   ...CROP_IDS.flatMap((id) => [`${id}-1`, `${id}-2`, `${id}-3`]),
 ]
 
@@ -849,15 +848,15 @@ export function createFarmScene(
       const t = this.layout.tileSize
 
       // Barn behind the top-left of the field.
-      const barnY = r.top - t * 0.2
+      const barnY = r.top + t * 0.05
       this.decorObjects.push(
-        this.makeSprite('barn', r.left + t * 0.4, barnY, t * 2.2, '🏠', 0.5, 1).setDepth(barnY),
+        this.makeSprite('barn', r.left + t * 0.45, barnY, t * 1.55, '🏠', 0.5, 1).setDepth(barnY),
       )
 
       // Well behind the top-right.
-      const wellY = r.top - t * 0.1
+      const wellY = r.top + t * 0.08
       this.decorObjects.push(
-        this.makeSprite('well', r.right - t * 0.4, wellY, t * 1.2, '⛲', 0.5, 1).setDepth(wellY),
+        this.makeSprite('well', r.right - t * 0.35, wellY, t * 0.95, '⛲', 0.5, 1).setDepth(wellY),
       )
 
       // Back fence row across the top edge of the field.
@@ -878,42 +877,44 @@ export function createFarmScene(
       const t = this.layout.tileSize
 
       // Trees flanking the field on the grass.
-      const treeLY = r.bottom + t * 0.1
+      const treeLY = r.bottom + t * 0.05
       this.decorObjects.push(
-        this.makeSprite('tree', r.left - t * 1.1, treeLY, t * 2.0, '🌳', 0.5, 1).setDepth(treeLY),
+        this.makeSprite('tree', r.left - t * 0.85, treeLY, t * 1.45, '🌳', 0.5, 1).setDepth(treeLY),
       )
-      const treeRY = r.top + t * 0.4
+      const treeRY = r.bottom + t * 0.08
       this.decorObjects.push(
-        this.makeSprite('tree', r.right + t * 1.1, treeRY, t * 1.8, '🌳', 0.5, 1).setDepth(treeRY),
+        this.makeSprite('tree', r.right + t * 0.65, treeRY, t * 1.25, '🌳', 0.5, 1).setDepth(treeRY),
       )
 
       // A cow + a chicken wandering on the grass outside the plots.
-      const cowY = r.bottom + t * 0.9
-      const cow = this.makeSprite('cow', r.left + t * 0.6, cowY, t * 1.4, '🐄', 0.5, 1)
+      const cowY = r.bottom + t * 0.55
+      const cow = this.makeSprite('cow', r.left + t * 0.55, cowY, t * 1.0, '🐄', 0.5, 1)
         .setDepth(cowY)
       this.decorObjects.push(cow)
       this.addWander(cow, t * 0.7)
 
-      const chickY = r.bottom + t * 0.7
-      const chicken = this.makeSprite('chicken', r.right - t * 0.5, chickY, t * 0.8, '🐔', 0.5, 1)
+      const chickY = r.bottom + t * 0.5
+      const chicken = this.makeSprite('chicken', r.right - t * 0.55, chickY, t * 0.58, '🐔', 0.5, 1)
         .setDepth(chickY)
       this.decorObjects.push(chicken)
       this.addWander(chicken, t * 0.9)
 
-      // Optional Dreamina companion dropped into assets/dreamina-2026-06-08-8213.png.
-      // Missing art falls back to a small pet emoji so the farm still renders.
-      const companionY = r.bottom + t * 1.05
-      const companion = this.makeSprite(
-        DREAMINA_FARM_COMPANION,
-        r.cx,
-        companionY,
-        t * 1.25,
-        '🐾',
-        0.5,
-        1,
-      ).setDepth(companionY + 2)
-      this.decorObjects.push(companion)
-      this.addWander(companion, t * 0.55)
+      // Optional Dreamina companion. If the generated asset is absent, skip it
+      // instead of drawing an emoji in the center-bottom instruction area.
+      if (this.firstTexture(DREAMINA_FARM_COMPANION)) {
+        const companionY = r.bottom + t * 0.56
+        const companion = this.makeSprite(
+          DREAMINA_FARM_COMPANION,
+          r.cx + t * 1.6,
+          companionY,
+          t * 0.82,
+          '',
+          0.5,
+          1,
+        ).setDepth(companionY + 2)
+        this.decorObjects.push(companion)
+        this.addWander(companion, t * 0.45)
+      }
     }
 
     /** Gentle back-and-forth wander for an animal sprite (flips with direction). */
