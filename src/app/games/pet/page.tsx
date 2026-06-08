@@ -27,6 +27,13 @@ import {
   isFinalStage,
 } from '@/lib/pet-species';
 import { buildPetQuiz, PetQuiz } from '@/lib/pet-quiz';
+import {
+  PET_BATTLE_MOVES,
+  PetBattleMoveKey,
+  PetBattleState,
+  applyPetBattleMove,
+  createPetBattle,
+} from '@/lib/pet-battle';
 import { loadWordBank, DEFAULT_WORD_BANK, WordPair } from '@/lib/word-bank';
 
 const STAT_META: Record<PetStatKey, { labelVi: string; emoji: string; bar: string; soft: string }> = {
@@ -37,6 +44,7 @@ const STAT_META: Record<PetStatKey, { labelVi: string; emoji: string; bar: strin
 };
 
 const ACTION_ORDER: PetActionKey[] = ['feed', 'play', 'bath', 'sleep'];
+const BATTLE_MOVE_ORDER: PetBattleMoveKey[] = ['spark', 'guard', 'mend'];
 const MOOD_FACE: Record<'happy' | 'ok' | 'sad', string> = { happy: '😄', ok: '🙂', sad: '😢' };
 const ACTION_STYLE: Record<PetActionKey, string> = {
   feed: 'from-orange-400 to-amber-500 shadow-orange-200',
@@ -129,6 +137,12 @@ export default function PetGamePage() {
   const [quiz, setQuiz] = useState<PetQuiz | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
+  const [battleOpen, setBattleOpen] = useState(false);
+  const [battle, setBattle] = useState<PetBattleState | null>(null);
+  const [battleMove, setBattleMove] = useState<PetBattleMoveKey | null>(null);
+  const [battleQuiz, setBattleQuiz] = useState<PetQuiz | null>(null);
+  const [battlePicked, setBattlePicked] = useState<string | null>(null);
+  const [battleResult, setBattleResult] = useState<'correct' | 'wrong' | null>(null);
   const [lastReward, setLastReward] = useState<{ exp: number; coins: number; quality: PetActionQuality; rhythmBonus: number }>({
     exp: 0,
     coins: 0,
@@ -273,6 +287,77 @@ export default function PetGamePage() {
     speakEnglish(quiz.word.en);
     setAnim('sad');
     setTimeout(() => setAnim('idle'), 600);
+  };
+
+  const startBattle = () => {
+    if (!lvl) return;
+    setBattle(createPetBattle(lvl.level));
+    setBattleOpen(true);
+    setBattleMove(null);
+    setBattleQuiz(null);
+    setBattlePicked(null);
+    setBattleResult(null);
+  };
+
+  const closeBattle = () => {
+    setBattleOpen(false);
+    setBattleMove(null);
+    setBattleQuiz(null);
+    setBattlePicked(null);
+    setBattleResult(null);
+  };
+
+  const startBattleMove = (move: PetBattleMoveKey) => {
+    if (!battle || battle.finished) return;
+    const nextQuiz = buildPetQuiz(bank, 'en-to-vi', Math.random, preferredWords);
+    setBattleMove(move);
+    setBattleQuiz(nextQuiz);
+    setBattlePicked(null);
+    setBattleResult(null);
+    setTimeout(() => speakEnglish(nextQuiz.word.en), 180);
+  };
+
+  const chooseBattleOption = (option: string) => {
+    if (!battle || !battleMove || !battleQuiz || battleResult || !lvl) return;
+    const correct = option === battleQuiz.answer;
+    setBattlePicked(option);
+    setBattleResult(correct ? 'correct' : 'wrong');
+    const nextBattle = applyPetBattleMove(battle, battleMove, correct, lvl.level);
+    setBattle(nextBattle);
+    speakEnglish(battleQuiz.word.en);
+
+    if (correct) {
+      playDing();
+      pokeHappy();
+    } else {
+      setCombo(0);
+      playBuzz();
+      setAnim('sad');
+      setTimeout(() => setAnim('idle'), 600);
+    }
+
+    if (nextBattle.finished === 'win') {
+      const reward = carePet('play', combo + nextBattle.streak);
+      setLastReward(reward);
+      setCombo((current) => current + 1);
+      triggerCareBurst('play');
+      pushFloat(`+${reward.exp} EXP · +${reward.coins} xu`);
+      if (!questDoneRef.current) {
+        questDoneRef.current = true;
+        try {
+          completeQuestStep('game');
+        } catch {
+          // Daily quest is optional.
+        }
+      }
+    }
+
+    setTimeout(() => {
+      setBattleMove(null);
+      setBattleQuiz(null);
+      setBattlePicked(null);
+      setBattleResult(null);
+    }, nextBattle.finished ? 1300 : 900);
   };
 
   if (!hydrated) {
@@ -495,6 +580,21 @@ export default function PetGamePage() {
                 })}
               </div>
 
+              <button
+                type="button"
+                onClick={startBattle}
+                className="rounded-[1.35rem] border border-indigo-200 bg-gradient-to-r from-indigo-500 to-emerald-500 p-0.5 shadow-xl transition-transform hover:-translate-y-1 active:scale-95"
+              >
+                <span className="flex min-h-[76px] items-center justify-between gap-3 rounded-[1.2rem] bg-white/94 px-4 py-3 text-left">
+                  <span>
+                    <span className="block text-xs font-black uppercase tracking-wide text-indigo-500">Mini game</span>
+                    <span className="block text-lg font-black text-slate-950">PokiWar luyện từ</span>
+                    <span className="block text-xs font-bold text-slate-500">Đấu 3 kỹ năng, trả lời đúng để ra đòn.</span>
+                  </span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-2xl shadow-inner">⚔️</span>
+                </span>
+              </button>
+
               <div className="pet-helper-note rounded-[1.5rem] border border-white/70 bg-white/80 p-3 text-center shadow-lg backdrop-blur">
                 <p className="text-sm font-black text-slate-800">Trả lời đúng từ tiếng Anh để chăm sóc thú cưng.</p>
                 <p className="mt-1 text-xs font-bold text-slate-500">
@@ -517,6 +617,20 @@ export default function PetGamePage() {
           onClose={closeQuiz}
           onChoose={choose}
           onNext={nextQuestion}
+        />
+      )}
+
+      {battleOpen && battle && (
+        <BattleModal
+          battle={battle}
+          quiz={battleQuiz}
+          move={battleMove}
+          picked={battlePicked}
+          result={battleResult}
+          onClose={closeBattle}
+          onRestart={startBattle}
+          onMove={startBattleMove}
+          onChoose={chooseBattleOption}
         />
       )}
 
@@ -669,6 +783,145 @@ function QuizModal({
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function BattleModal({
+  battle,
+  quiz,
+  move,
+  picked,
+  result,
+  onClose,
+  onRestart,
+  onMove,
+  onChoose,
+}: {
+  battle: PetBattleState;
+  quiz: PetQuiz | null;
+  move: PetBattleMoveKey | null;
+  picked: string | null;
+  result: 'correct' | 'wrong' | null;
+  onClose: () => void;
+  onRestart: () => void;
+  onMove: (move: PetBattleMoveKey) => void;
+  onChoose: (option: string) => void;
+}) {
+  const playerPct = Math.max(0, Math.round((battle.playerHp / battle.playerMaxHp) * 100));
+  const rivalPct = Math.max(0, Math.round((battle.rivalHp / battle.rivalMaxHp) * 100));
+  const activeMove = move ? PET_BATTLE_MOVES[move] : null;
+
+  return (
+    <div className="fixed inset-0 z-[82] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="quiz-pop w-full max-w-2xl overflow-hidden rounded-[2rem] bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div className="bg-gradient-to-r from-indigo-600 via-sky-500 to-emerald-500 px-5 py-4 text-white">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-white/75">PokiWar luyện từ</p>
+              <h2 className="text-2xl font-black">Pet vs {battle.rivalName}</h2>
+            </div>
+            <button onClick={onClose} aria-label="Đóng" className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-sm font-black hover:bg-white/30">×</button>
+          </div>
+        </div>
+
+        <div className="grid gap-4 p-5 md:grid-cols-[1fr_1.05fr]">
+          <div className="space-y-3">
+            <BattleHp label="Pet" value={battle.playerHp} max={battle.playerMaxHp} pct={playerPct} tone="from-emerald-400 to-lime-500" />
+            <BattleHp label={battle.rivalName} value={battle.rivalHp} max={battle.rivalMaxHp} pct={rivalPct} tone="from-rose-400 to-orange-500" />
+
+            <div className="rounded-2xl bg-slate-50 p-3 text-sm font-bold text-slate-600 ring-1 ring-slate-100">
+              <div className="flex items-center justify-between text-xs font-black uppercase tracking-wide text-indigo-500">
+                <span>Lượt {battle.round}</span>
+                <span>Chuỗi đúng x{battle.streak}</span>
+              </div>
+              <p className="mt-2 text-base font-black text-slate-800">{battle.log}</p>
+            </div>
+
+            {battle.finished ? (
+              <button
+                type="button"
+                onClick={onRestart}
+                className="w-full rounded-2xl bg-gradient-to-r from-indigo-500 to-emerald-500 py-3 text-sm font-black text-white shadow-md transition-transform hover:scale-[1.02]"
+              >
+                Chơi trận mới
+              </button>
+            ) : (
+              <div className="grid gap-2">
+                {BATTLE_MOVE_ORDER.map((key) => {
+                  const def = PET_BATTLE_MOVES[key];
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      disabled={!!quiz}
+                      onClick={() => onMove(key)}
+                      className="rounded-2xl border border-indigo-100 bg-white px-3 py-2 text-left shadow-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+                    >
+                      <span className="block text-sm font-black text-slate-900">{def.labelVi}</span>
+                      <span className="text-xs font-bold text-slate-500">{def.promptVi}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-[1.5rem] bg-gradient-to-br from-indigo-50 to-emerald-50 p-4 ring-1 ring-indigo-100">
+            {quiz && activeMove ? (
+              <>
+                <p className="text-xs font-black uppercase tracking-wide text-indigo-500">{activeMove.labelVi}</p>
+                <div className="mt-2 flex items-center justify-center gap-2 rounded-2xl bg-white py-4 shadow-sm">
+                  <span className="text-3xl font-black text-indigo-700">{quiz.prompt}</span>
+                  <button onClick={() => speakEnglish(quiz.word.en)} aria-label="Nghe phát âm" className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-lg shadow">🔊</button>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {quiz.options.map((option) => {
+                    const isAnswer = option === quiz.answer;
+                    const isPicked = option === picked;
+                    let cls = 'bg-white text-slate-700 hover:bg-indigo-50 ring-1 ring-slate-200';
+                    if (result === 'correct' && isPicked) cls = 'bg-emerald-500 text-white ring-2 ring-emerald-500';
+                    else if (result === 'wrong' && isAnswer) cls = 'bg-emerald-500 text-white ring-2 ring-emerald-500';
+                    else if (result === 'wrong' && isPicked) cls = 'bg-rose-500 text-white ring-2 ring-rose-500';
+                    else if (result) cls = 'bg-white text-slate-300 ring-1 ring-slate-100';
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        disabled={!!result}
+                        onClick={() => onChoose(option)}
+                        className={`rounded-2xl px-3 py-4 text-base font-black shadow-sm transition-all ${cls}`}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="flex h-full min-h-[260px] flex-col items-center justify-center text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white text-4xl shadow-inner">⚔️</div>
+                <h3 className="mt-3 text-xl font-black text-slate-950">Chọn kỹ năng</h3>
+                <p className="mt-1 max-w-xs text-sm font-bold text-slate-500">Mỗi kỹ năng mở một câu hỏi. Đúng thì pet ra đòn, sai thì đối thủ phản công nhẹ.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BattleHp({ label, value, max, pct, tone }: { label: string; value: number; max: number; pct: number; tone: string }) {
+  return (
+    <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-100">
+      <div className="mb-1 flex items-center justify-between text-sm font-black text-slate-700">
+        <span>{label}</span>
+        <span>{value}/{max}</span>
+      </div>
+      <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+        <div className={`h-full rounded-full bg-gradient-to-r ${tone} transition-all`} style={{ width: `${Math.max(pct, 2)}%` }} />
       </div>
     </div>
   );

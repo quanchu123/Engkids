@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
+import { DEFAULT_WORD_BANK, loadWordBank, toRpgQuestions } from '@/lib/word-bank';
 
 // ─────────────────────────────────────────────
 //  VOCABULARY QUESTION DATA  (module-level)
@@ -67,6 +68,17 @@ const WAVES = [
 // ─────────────────────────────────────────────
 export default function RpgBattlePage() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const questionsRef = useRef<Question[]>(toRpgQuestions(DEFAULT_WORD_BANK));
+
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (active) questionsRef.current = toRpgQuestions(bank);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -147,7 +159,8 @@ export default function RpgBattlePage() {
           (this as any).wave       = 0;
           (this as any).busy       = false;  // blocks input during animations
           // Shuffle questions
-          (this as any).qs = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
+          const sourceQuestions = questionsRef.current.length >= 4 ? questionsRef.current : ALL_QUESTIONS;
+          (this as any).qs = [...sourceQuestions].sort(() => Math.random() - 0.5);
           (this as any).qi = 0;
 
           this._buildUI();
@@ -329,7 +342,8 @@ export default function RpgBattlePage() {
         _showQuestion() {
           const self = this as any;
           if (self.qi >= self.qs.length) {
-            self.qs = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
+            const sourceQuestions = questionsRef.current.length >= 4 ? questionsRef.current : ALL_QUESTIONS;
+            self.qs = [...sourceQuestions].sort(() => Math.random() - 0.5);
             self.qi = 0;
           }
           const q = self.qs[self.qi++];

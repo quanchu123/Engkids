@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
+import { DEFAULT_WORD_BANK, loadWordBank, toCoinQuestions } from '@/lib/word-bank';
 
 // â”€â”€â”€ Adapted from: digitsensitive/phaser3-typescript (coin-runner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Background + coin sprites from real GitHub repo (768x576 landscape scene)
@@ -49,6 +50,17 @@ const ALL_QUESTIONS: Question[] = [
 
 export default function WordCollectorPage() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const questionsRef = useRef<Question[]>(toCoinQuestions(DEFAULT_WORD_BANK, 30));
+
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (active) questionsRef.current = toCoinQuestions(bank, 30);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -102,7 +114,8 @@ export default function WordCollectorPage() {
         create() {
           // â”€â”€ Init state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           const self = this as any;
-          self.qs       = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5);
+          const sourceQuestions = questionsRef.current.length >= COIN_COUNT ? questionsRef.current : ALL_QUESTIONS;
+          self.qs       = [...sourceQuestions].sort(() => Math.random() - 0.5);
           self.qi       = 0;
           self.score    = 0;
           self.hp       = 3;
@@ -344,7 +357,7 @@ export default function WordCollectorPage() {
       //  LAUNCH
       // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       game = new Phaser.Game({
-        type: Phaser.AUTO,
+        type: Phaser.CANVAS,
         backgroundColor: '#3A99D9',
         parent: containerRef.current!,
         render: { pixelArt: false, antialias: true },
@@ -369,7 +382,9 @@ export default function WordCollectorPage() {
       <Header />
       <main className="min-h-screen bg-[#1a2744] flex flex-col items-center pb-8">
         <div className="w-full max-w-3xl px-4 pt-4">
-          <Link href="/games" className="text-yellow-400 hover:text-yellow-300 font-bold text-sm transition-colors">`r`n            Quay lại`r`n          </Link>
+          <Link href="/games" className="text-yellow-400 hover:text-yellow-300 font-bold text-sm transition-colors">
+            Quay lại
+          </Link>
         </div>
 
         <div className="text-center my-4">
@@ -390,6 +405,3 @@ export default function WordCollectorPage() {
     </>
   );
 }
-
-
-

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { loadWordBank } from '@/lib/word-bank';
 
 const WORD_PAIRS = [
   { vi: 'Con mèo',   en: 'Cat'    },
@@ -26,6 +27,7 @@ const BASE = '/games/mario-word';
 export default function MarioWordPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<any>(null);
+  const wordPairsRef = useRef(WORD_PAIRS);
   const [score, setScore]       = useState(0);
   const [hp, setHp]             = useState(3);
   const [gameOver, setGameOver] = useState<'win' | 'lose' | null>(null);
@@ -45,6 +47,18 @@ export default function MarioWordPage() {
   });
 
   useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (!active) return;
+      const pairs = bank.map((word) => ({ vi: word.vi, en: word.en })).filter((word) => word.vi && word.en);
+      if (pairs.length > 0) wordPairsRef.current = pairs;
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!containerRef.current) return;
     let destroyed = false;
 
@@ -53,14 +67,15 @@ export default function MarioWordPage() {
 
       // ─── VARIABLES accessible across scenes ───────────────────────
       let usedWords = new Set<number>();
-      let currentTarget = WORD_PAIRS[0];
+      let currentTarget = wordPairsRef.current[0] ?? WORD_PAIRS[0];
 
       function pickNextTarget() {
-        if (usedWords.size >= WORD_PAIRS.length) usedWords.clear();
+        const pool = wordPairsRef.current.length ? wordPairsRef.current : WORD_PAIRS;
+        if (usedWords.size >= pool.length) usedWords.clear();
         let idx: number;
-        do { idx = Phaser.Math.Between(0, WORD_PAIRS.length - 1); } while (usedWords.has(idx));
+        do { idx = Phaser.Math.Between(0, pool.length - 1); } while (usedWords.has(idx));
         usedWords.add(idx);
-        currentTarget = WORD_PAIRS[idx];
+        currentTarget = pool[idx];
         cbRef.current.setTarget(currentTarget.vi);
         return currentTarget;
       }
@@ -149,7 +164,8 @@ export default function MarioWordPage() {
           const goombaObjs = objLayer.objects.filter((o: any) => o.type === 'goomba');
 
           // Assign words round-robin (reuse pool if fewer words than goombas)
-          const wordsToUse = [...WORD_PAIRS].sort(() => Math.random() - 0.5);
+          const wordPool = wordPairsRef.current.length ? wordPairsRef.current : WORD_PAIRS;
+          const wordsToUse = [...wordPool].sort(() => Math.random() - 0.5);
           goombaObjs.forEach((obj: any, i: number) => {
             const word = wordsToUse[i % wordsToUse.length];
             const g = this.physics.add

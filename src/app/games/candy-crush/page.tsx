@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import Image from 'next/image';
+import { DEFAULT_WORD_BANK, loadWordBank } from '@/lib/word-bank';
 
 // ─── Vocabulary mapping: candy type → { en, vi } ───────────────────────────
 const CANDY_VOCAB: Record<string, { en: string; vi: string }> = {
@@ -22,6 +23,15 @@ const CANDY_VOCAB: Record<string, { en: string; vi: string }> = {
 };
 
 const CANDY_TYPES = Object.keys(CANDY_VOCAB);
+
+function buildCandyVocab(bank: Array<{ en: string; vi: string }>): Record<string, { en: string; vi: string }> {
+  const source = bank.length > 0 ? bank : DEFAULT_WORD_BANK;
+  return CANDY_TYPES.reduce((acc, key, index) => {
+    const word = source[index % source.length];
+    acc[key] = { en: word.en, vi: word.vi };
+    return acc;
+  }, {} as Record<string, { en: string; vi: string }>);
+}
 
 // Grid constants (matching original repo)
 const COLS = 8;
@@ -43,6 +53,7 @@ export default function CandyCrushPage() {
   const [moves, setMoves] = useState(MOVES_MAX);
   const [status, setStatus] = useState<'playing' | 'win' | 'lose'>('playing');
   const [targetWord, setTargetWord] = useState<{ key: string; en: string; vi: string } | null>(null);
+  const [candyVocab, setCandyVocab] = useState(CANDY_VOCAB);
   const [toast, setToast] = useState<string | null>(null);
   // expose score/moves/status to Phaser via ref
   const scoreRef = useRef(0);
@@ -53,12 +64,27 @@ export default function CandyCrushPage() {
   const setMovesRef = useRef(setMoves);
   const setStatusRef = useRef(setStatus);
   const setTargetRef = useRef(setTargetWord);
+  const candyVocabRef = useRef(CANDY_VOCAB);
+  const getCandyVocab = (key: string) => candyVocabRef.current[key] ?? CANDY_VOCAB[key];
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 1500);
   };
   const toastRef = useRef(showToast);
   toastRef.current = showToast;
+
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (!active) return;
+      const next = buildCandyVocab(bank);
+      candyVocabRef.current = next;
+      setCandyVocab(next);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -163,7 +189,7 @@ export default function CandyCrushPage() {
           const key = CANDY_TYPES[Phaser.Math.RND.between(0, CANDY_TYPES.length - 1)];
           this.currentTarget = key;
           targetRef.current = key;
-          const vocab = CANDY_VOCAB[key];
+          const vocab = getCandyVocab(key);
           setTargetRef.current({ key, en: vocab.en, vi: vocab.vi });
           this.targetText.setText(`Match: "${vocab.en}" = ${vocab.vi}`);
         }
@@ -282,7 +308,7 @@ export default function CandyCrushPage() {
           this.scoreText.setText(`${newScore}`);
 
           if (targetMatched) {
-            toastRef.current(`+${pts} điểm! "${CANDY_VOCAB[this.currentTarget].en}" đúng rồi!`);
+            toastRef.current(`+${pts} điểm! "${getCandyVocab(this.currentTarget).en}" đúng rồi!`);
             this._pickTarget();
           }
 
@@ -529,8 +555,8 @@ export default function CandyCrushPage() {
               >
                 <Image src={`/games/candy-crush/${key}.png`} alt={key} width={28} height={28} className="w-7 h-7 object-contain" />
                 <div>
-                  <div className="text-white text-[10px] font-bold leading-tight">{CANDY_VOCAB[key].en}</div>
-                  <div className="text-purple-400 text-[9px] leading-tight">{CANDY_VOCAB[key].vi}</div>
+                  <div className="text-white text-[10px] font-bold leading-tight">{candyVocab[key].en}</div>
+                  <div className="text-purple-400 text-[9px] leading-tight">{candyVocab[key].vi}</div>
                 </div>
               </div>
             ))}

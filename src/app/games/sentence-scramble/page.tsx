@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef } from'react';
+import { useState, useEffect } from'react';
 import Link from'next/link';
 import Header from'@/components/layout/Header';
+import { DEFAULT_WORD_BANK, filterWordBank, loadWordBank, toSentenceScrambles } from '@/lib/word-bank';
+import { stageForDifficulty } from '@/lib/curriculum';
 
 interface Sentence {
   id: number;
@@ -96,20 +98,21 @@ const DIFFICULTY_LABELS: Record<string, string>= {
 };
 
 function shuffleWords(text: string): string[] {
-  const words = text.split('');
+  const words = text.trim().split(/\s+/);
   const shuffled = [...words];
   for (let i = shuffled.length - 1; i >0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   // Ensure not in original order
-  if (shuffled.join('') === text && words.length >1) {
+  if (shuffled.join(' ') === text && words.length >1) {
     [shuffled[0], shuffled[1]] = [shuffled[1], shuffled[0]];
   }
   return shuffled;
 }
 
 export default function SentenceScramblePage() {
+  const [wordBank, setWordBank] = useState(DEFAULT_WORD_BANK);
   const [difficulty, setDifficulty] = useState<string>('beginner');
   const [questions, setQuestions] = useState<Sentence[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -122,8 +125,20 @@ export default function SentenceScramblePage() {
   const [gameStarted, setGameStarted] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (active) setWordBank(bank);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const startGame = (level: string) =>{
-    const pool = SENTENCES_BY_DIFFICULTY[level] || SENTENCES_BY_DIFFICULTY.beginner;
+    const stageBank = filterWordBank(wordBank, { level: stageForDifficulty(level), min: 10 });
+    const sharedSentences = toSentenceScrambles(stageBank, 10);
+    const pool = sharedSentences.length >= 10 ? sharedSentences : (SENTENCES_BY_DIFFICULTY[level] || SENTENCES_BY_DIFFICULTY.beginner);
     const shuffled = [...pool].sort(() =>Math.random() - 0.5).slice(0, 10);
     setQuestions(shuffled);
     setDifficulty(level);
@@ -173,7 +188,7 @@ export default function SentenceScramblePage() {
 
   const handleCheck = () =>{
     if (selected.length === 0) return;
-    const answer = selected.join('');
+    const answer = selected.join(' ');
     const correct = questions[currentIdx].text;
     if (answer === correct) {
       setFeedback('correct');

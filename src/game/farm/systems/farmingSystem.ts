@@ -29,8 +29,8 @@ import type {
 } from '../types'
 import { GROWTH_STAGE_MAX } from '../constants'
 
-/** Resolves a CropType from its id. Supplied by the caller to stay decoupled. */
-export type CropTypeResolver = (id: string) => CropType | undefined
+/** Resolves the vocabulary attached to a crop id. Supplied by the caller to stay decoupled. */
+export type CropTypeResolver = (id: string) => Pick<CropType, 'en' | 'vi' | 'level'> | undefined
 
 export interface AdvanceDayForecast {
   weather: FarmWeather

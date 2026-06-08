@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from'react';
 import Link from'next/link';
 import Header from'@/components/layout/Header';
+import { DEFAULT_WORD_BANK, loadWordBank, toMatchingPairs } from '@/lib/word-bank';
 
 interface WordPair {
   id: number;
@@ -119,6 +120,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export default function MatchingPairsPage() {
+  const [wordBank, setWordBank] = useState(DEFAULT_WORD_BANK);
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [selected, setSelected] = useState<number[]>([]); // card ids
@@ -129,10 +131,21 @@ export default function MatchingPairsPage() {
   const [gameOver, setGameOver] = useState(false);
   const [won, setWon] = useState(false);
 
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (active) setWordBank(bank);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const startGame = useCallback((diff: Difficulty) =>{
     const config = DIFFICULTY_CONFIG[diff];
-    const pool = WORD_BANK.filter(w =>w.level === diff);
-    const picked = shuffle(pool).slice(0, config.pairs);
+    const sharedPairs = toMatchingPairs(wordBank, diff, config.pairs);
+    const fallbackPairs = shuffle(WORD_BANK.filter(w =>w.level === diff)).slice(0, config.pairs);
+    const picked = sharedPairs.length >= config.pairs ? sharedPairs : fallbackPairs;
 
     const newCards: Card[] = [];
     picked.forEach(pair =>{
@@ -149,7 +162,7 @@ export default function MatchingPairsPage() {
     setTimeLeft(config.time);
     setGameOver(false);
     setWon(false);
-  }, []);
+  }, [wordBank]);
 
   // Timer
   useEffect(() =>{

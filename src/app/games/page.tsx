@@ -90,6 +90,7 @@ const GAMES = [
 ];
 
 const EXPLORE = [
+  { href: '/roadmap', icon: 'sparkles', label: 'Lộ trình học', sub: 'Theo chuẩn CEFR', bg: '#e0e7ff', border: '#818cf8' },
   { href: '/stories', icon: 'story', label: 'Truyện tranh', sub: 'Học qua truyện', bg: '#f3e8ff', border: '#c084fc' },
   { href: '/videos', icon: 'video', label: 'Video học', sub: 'Video sinh động', bg: '#dbeafe', border: '#60a5fa' },
   { href: '/progress', icon: 'progress', label: 'Thành tích', sub: 'Xem điểm số', bg: '#fef9c3', border: '#facc15' },
@@ -189,7 +190,7 @@ export default function GamesPage() {
                 Khám phá thêm
               </span>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {EXPLORE.map((item) => (
                 <Link
                   key={item.href}

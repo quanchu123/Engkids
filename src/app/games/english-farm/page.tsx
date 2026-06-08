@@ -21,6 +21,7 @@ import {
 } from '@/game/farm/scene/createFarmScene';
 import type { FarmState, QuizMode } from '@/game/farm/types';
 import { advanceDayWithWeather, getFarmWeather } from '@/game/farm/systems/farmingSystem';
+import { applyFarmCoachAction, getFarmCoachSuggestion } from '@/game/farm/systems/farmCoach';
 import { addXp } from '@/game/farm/systems/progressionSystem';
 import { collectWord, bumpMastery, countMastered } from '@/game/farm/systems/vocabularySystem';
 import { pickDueWords, reviewWord } from '@/game/farm/systems/srsScheduler';
@@ -43,7 +44,7 @@ import {
   debounce,
 } from '@/game/farm/save/farmSave';
 import { loadWordBank, type WordPair } from '@/lib/word-bank';
-import { getCropById } from '@/game/farm/data/crops';
+import { CROPS, getCropById } from '@/game/farm/data/crops';
 import { speak } from '@/lib/pronunciation';
 import { syncSavedWordToSRS } from '@/services/vocabulary';
 import { getSupabaseClient } from '@/lib/auth-client';
@@ -97,6 +98,7 @@ export default function EnglishFarmPage() {
   const [cutscene, setCutscene] = useState<CutsceneId | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [wordBankCount, setWordBankCount] = useState(0);
 
   // Review session: a queue of due words played one-by-one through the quiz.
   const reviewQueueRef = useRef<HarvestWord[]>([]);
@@ -138,7 +140,10 @@ export default function EnglishFarmPage() {
   useEffect(() => {
     let active = true;
     loadWordBank().then((bank) => {
-      if (active) wordBankRef.current = bank;
+      if (active) {
+        wordBankRef.current = bank;
+        setWordBankCount(bank.length);
+      }
     });
     return () => {
       active = false;
@@ -220,6 +225,16 @@ export default function EnglishFarmPage() {
       onInventoryFull: () => {
         showToast('Kho đã đầy! Hãy dọn bớt vật phẩm trước khi thu hoạch.');
       },
+      resolveHarvestWord: (cropTypeId) => {
+        const crop = getCropById(cropTypeId);
+        if (!crop) return undefined;
+        const bank = wordBankRef.current;
+        if (!bank.length) return crop;
+        const cropIndex = Math.max(0, CROPS.findIndex((item) => item.id === cropTypeId));
+        const picked = bank[cropIndex % bank.length];
+        if (!picked?.en || !picked?.vi) return crop;
+        return { en: picked.en, vi: picked.vi, level: crop.level };
+      },
     };
 
     import('phaser')
@@ -287,6 +302,41 @@ export default function EnglishFarmPage() {
     const crop = getCropById(seedId);
     if (crop) speak(crop.en);
   }, []);
+
+  const handleCoachStep = useCallback(() => {
+    const suggestion = getFarmCoachSuggestion(farmStateRef.current);
+    if (suggestion.action === 'harvest') {
+      selectedToolRef.current = 'harvest';
+      setSelectedTool('harvest');
+      showToast(suggestion.messageVi);
+      return;
+    }
+    if (suggestion.action === 'plant' && !suggestion.seedId) {
+      setShopOpen(true);
+      showToast(suggestion.messageVi);
+      return;
+    }
+
+    const applied = applyFarmCoachAction(farmStateRef.current, suggestion);
+    if ('ok' in applied) {
+      if (!applied.ok) {
+        showToast(applied.reason ?? suggestion.messageVi);
+        return;
+      }
+      commit(applied.state);
+    } else {
+      commit(applied);
+    }
+
+    if (suggestion.action === 'plant' && suggestion.seedId) {
+      selectedSeedRef.current = suggestion.seedId;
+      setSelectedSeed(suggestion.seedId);
+      const crop = getCropById(suggestion.seedId);
+      if (crop) speak(crop.en);
+    }
+    sceneRef.current?.refresh();
+    showToast(suggestion.messageVi);
+  }, [commit, showToast]);
 
   // Advance the review session (or end it) after a graded review answer.
   const advanceReview = useCallback(() => {
@@ -465,30 +515,58 @@ export default function EnglishFarmPage() {
         onOpenVocab={() => setVocabOpen(true)}
       />
 
-      {/* Left column: back + shop + review + quest + mastered */}
-      <div className="absolute left-2 top-44 z-10 flex flex-col gap-2 sm:left-3 sm:top-28">
-        <Link
-          href="/games"
-          className="pointer-events-auto rounded-2xl border-2 border-emerald-300 bg-white/95 px-3 py-1.5 text-sm font-black text-emerald-600 shadow-md transition-transform hover:-translate-y-0.5 active:scale-95"
-        >
-          ← Quay lại
-        </Link>
-        <button
-          type="button"
-          onClick={() => setShopOpen(true)}
-          className="pointer-events-auto rounded-2xl border-2 border-amber-300 bg-white/95 px-3 py-1.5 text-sm font-black text-amber-600 shadow-md transition-transform hover:-translate-y-0.5 active:scale-95"
-        >
-          🛒 Cửa hàng
-        </button>
-        <button
-          type="button"
-          onClick={handleStartReview}
-          className="pointer-events-auto rounded-2xl border-2 border-sky-300 bg-white/95 px-3 py-1.5 text-sm font-black text-sky-600 shadow-md transition-transform hover:-translate-y-0.5 active:scale-95"
-        >
-          📚 Ôn từ
-        </button>
-        <div className="pointer-events-none rounded-2xl border-2 border-emerald-200 bg-white/90 px-3 py-1.5 text-xs font-black text-emerald-700 shadow-md">
-          🧠 Đã thuộc: {mastered}
+      {/* Play guide + quick actions */}
+      <div className="absolute left-2 top-44 z-10 w-[min(260px,calc(100vw-1rem))] sm:left-3 sm:top-32">
+        <div className="rounded-3xl border-2 border-white/80 bg-white/92 p-3 shadow-xl backdrop-blur">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <Link
+              href="/games"
+              className="pointer-events-auto rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 transition-transform hover:-translate-y-0.5 active:scale-95"
+            >
+              ← Game
+            </Link>
+            <span className="rounded-2xl bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700">
+              Thuộc {mastered}
+            </span>
+          </div>
+
+          <div className="rounded-2xl bg-emerald-50 p-2.5">
+            <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Cách chơi</p>
+            <ol className="mt-1 space-y-1 text-xs font-bold text-slate-700">
+              <li>1. Cày ô đất trống.</li>
+              <li>2. Gieo hạt rồi tưới nước.</li>
+              <li>3. Bấm Ngày mới để cây lớn.</li>
+              <li>4. Thu hoạch để trả lời từ tiếng Anh.</li>
+            </ol>
+          </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={handleCoachStep}
+              className="pointer-events-auto rounded-2xl border border-emerald-200 bg-emerald-100 px-3 py-2 text-xs font-black text-emerald-700 shadow-sm transition-transform hover:-translate-y-0.5 active:scale-95"
+            >
+              Bước tiếp
+            </button>
+            <button
+              type="button"
+              onClick={() => setShopOpen(true)}
+              className="pointer-events-auto rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 shadow-sm transition-transform hover:-translate-y-0.5 active:scale-95"
+            >
+              Cửa hàng
+            </button>
+            <button
+              type="button"
+              onClick={handleStartReview}
+              className="pointer-events-auto col-span-2 rounded-2xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-black text-sky-700 shadow-sm transition-transform hover:-translate-y-0.5 active:scale-95"
+            >
+              Ôn từ
+            </button>
+          </div>
+
+          <p className="mt-2 rounded-2xl bg-slate-50 px-3 py-2 text-[11px] font-bold leading-snug text-slate-500">
+            Nguồn từ: {wordBankCount > 0 ? `${wordBankCount} từ trong word_bank` : 'đang tải word_bank'}.
+          </p>
         </div>
       </div>
 
@@ -553,8 +631,8 @@ export default function EnglishFarmPage() {
         </div>
       )}
 
-      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 select-none text-center text-xs font-semibold text-white/70">
-        Chọn công cụ rồi chạm vào ô đất · Cày → Gieo → Tưới → Ngày mới → Thu hoạch
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 max-w-[92vw] -translate-x-1/2 select-none rounded-full bg-slate-950/28 px-4 py-1.5 text-center text-xs font-bold text-white/90 backdrop-blur">
+        Chọn công cụ ở trên rồi chạm vào ô đất. Thu hoạch sẽ mở quiz từ word_bank.
       </div>
 
       {toast && (

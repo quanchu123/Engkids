@@ -8,6 +8,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { getAllStories } from '@/data/stories';
 import { getVocabularyStats } from '@/services/vocabulary';
 import { buildLessonPath, getLessonSummary, LessonStep } from '@/lib/learning-path';
+import { getLearnerStageProgress, stageForStoryLevel } from '@/lib/curriculum';
 import { Story } from '@/types';
 
 const CARD_TINTS: Record<LessonStep['kind'], string> = {
@@ -21,6 +22,7 @@ export default function TodayLearnPage() {
   const { progress } = useAppStore();
   const [stories, setStories] = useState<Story[]>([]);
   const [dueWords, setDueWords] = useState(0);
+  const learner = useMemo(() => getLearnerStageProgress(progress), [progress]);
 
   useEffect(() => {
     let active = true;
@@ -50,10 +52,10 @@ export default function TodayLearnPage() {
     };
   }, []);
 
-  const nextStory = useMemo(
-    () => stories.find((story) => !progress.storiesProgress[story.id]?.completed),
-    [stories, progress.storiesProgress],
-  );
+  const nextStory = useMemo(() => {
+    const unread = stories.filter((story) => !progress.storiesProgress[story.id]?.completed);
+    return unread.find((story) => stageForStoryLevel(story.level) === learner.stage.id) ?? unread[0];
+  }, [stories, progress.storiesProgress, learner.stage.id]);
 
   const steps = useMemo(
     () =>
@@ -92,6 +94,21 @@ export default function TodayLearnPage() {
               Làm theo các bước dưới đây để học mỗi ngày một chút nhé!
             </p>
           </header>
+
+          <section className="toy-panel mb-6 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-violet-500">Chặng học hiện tại</p>
+                <h2 className="mt-1 text-xl font-black text-slate-900">{learner.stage.cefr}: {learner.stage.titleVi}</h2>
+                <p className="mt-1 text-sm font-semibold text-slate-500">
+                  Ưu tiên từ, truyện và game phù hợp chặng này trước khi lên bài khó hơn.
+                </p>
+              </div>
+              <Link href="/roadmap" className="kid-chip flex-shrink-0 px-4 py-2 text-sm font-black text-violet-700">
+                {learner.percent}% lộ trình
+              </Link>
+            </div>
+          </section>
 
           {/* Summary progress bar */}
           <section className="toy-panel mb-6 p-5">

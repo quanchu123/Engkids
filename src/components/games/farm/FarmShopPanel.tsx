@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { CROPS, getCropById, isCropUnlocked } from '@/game/farm/data/crops';
 import type { FarmState } from '@/game/farm/types';
 import { FarmIcon } from './FarmIcon';
@@ -18,9 +19,13 @@ interface FarmShopPanelProps {
  * hiển thị mờ kèm điều kiện.
  */
 export function FarmShopPanel({ open, state, onBuy, onSell, onClose }: FarmShopPanelProps) {
+  const [tab, setTab] = useState<'buy' | 'sell'>('buy');
+
   if (!open) return null;
 
   const crops = state.inventory.items.filter((i) => i.kind === 'crop' && i.qty > 0);
+  const availableSeeds = CROPS.filter((crop) => isCropUnlocked(crop, state.level, state.coins));
+  const lockedSeeds = CROPS.filter((crop) => !isCropUnlocked(crop, state.level, state.coins));
 
   return (
     <div
@@ -30,30 +35,58 @@ export function FarmShopPanel({ open, state, onBuy, onSell, onClose }: FarmShopP
       aria-modal="true"
       aria-label="Cửa hàng"
     >
-      <div className="flex max-h-[80vh] w-full max-w-md flex-col overflow-hidden rounded-3xl border-4 border-white bg-gradient-to-br from-amber-50 to-emerald-50 shadow-2xl">
+      <div className="flex max-h-[84vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border-4 border-white bg-gradient-to-br from-amber-50 to-emerald-50 shadow-2xl">
         <div className="flex items-center justify-between bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-3">
-          <h2 className="text-lg font-black text-white drop-shadow">🛒 Cửa hàng</h2>
+          <div>
+            <h2 className="text-lg font-black text-white drop-shadow">Cửa hàng nông trại</h2>
+            <p className="text-xs font-bold text-white/85">Mua hạt để trồng, bán nông sản để lấy xu.</p>
+          </div>
           <div className="flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-sm font-black text-amber-600">
-            <FarmIcon name="coins" emoji="🪙" className="h-4 w-4" /> {state.coins}
+            {state.coins} xu
+          </div>
+        </div>
+
+        <div className="border-b border-white/80 bg-white/65 p-2">
+          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+            <button
+              type="button"
+              onClick={() => setTab('buy')}
+              className={`rounded-xl px-3 py-2 text-sm font-black transition ${
+                tab === 'buy' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              Mua hạt
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('sell')}
+              className={`rounded-xl px-3 py-2 text-sm font-black transition ${
+                tab === 'sell' ? 'bg-white text-orange-700 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              Bán nông sản
+            </button>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
-          {/* Mua hạt */}
-          <h3 className="mb-2 text-sm font-black uppercase tracking-wide text-emerald-700">Mua hạt</h3>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {CROPS.map((crop) => {
-              const unlocked = isCropUnlocked(crop, state.level, state.coins);
+          {tab === 'buy' ? (
+            <>
+              <div className="mb-3 rounded-2xl bg-white/75 px-3 py-2 text-xs font-bold text-slate-500">
+                Gợi ý: mua 2-3 hạt, gieo vào ô đã cày, rồi tưới trước khi sang ngày mới.
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {availableSeeds.map((crop) => {
               const cost = crop.seedCost ?? 5;
               const canAfford = state.coins >= cost;
               return (
                 <button
                   key={crop.id}
                   type="button"
-                  disabled={!unlocked || !canAfford}
+                  disabled={!canAfford}
                   onClick={() => onBuy(crop.id)}
                   className={`flex items-center justify-between rounded-2xl border-2 px-3 py-2 text-left text-sm font-black transition-all ${
-                    unlocked && canAfford
+                    canAfford
                       ? 'border-emerald-300 bg-white text-emerald-700 hover:-translate-y-0.5 hover:shadow-md active:scale-95'
                       : 'border-slate-200 bg-slate-100 text-slate-400'
                   }`}
@@ -67,41 +100,51 @@ export function FarmShopPanel({ open, state, onBuy, onSell, onClose }: FarmShopP
                     </span>
                   </span>
                   <span className="whitespace-nowrap">
-                    {unlocked ? `🪙${cost}` : `🔒 Lv.${crop.unlock?.minLevel ?? ''}`}
+                    {cost} xu
                   </span>
                 </button>
               );
             })}
-          </div>
-
-          {/* Bán nông sản */}
-          <h3 className="mb-2 mt-5 text-sm font-black uppercase tracking-wide text-orange-700">Bán nông sản</h3>
-          {crops.length === 0 ? (
-            <p className="rounded-2xl bg-white/70 px-3 py-3 text-center text-sm font-semibold text-slate-400">
-              Kho chưa có nông sản. Hãy thu hoạch trước nhé!
-            </p>
+              </div>
+              {lockedSeeds.length > 0 && (
+                <div className="mt-3 rounded-2xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-500">
+                  Chưa mở: {lockedSeeds.map((crop) => `${crop.en} Lv.${crop.unlock?.minLevel ?? 1}`).join(', ')}
+                </div>
+              )}
+            </>
           ) : (
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {crops.map((item) => {
-                const crop = getCropById(item.refId);
-                return (
-                  <button
-                    key={item.itemId}
-                    type="button"
-                    onClick={() => onSell(item.refId)}
-                    className="flex items-center justify-between rounded-2xl border-2 border-orange-300 bg-white px-3 py-2 text-left text-sm font-black text-orange-700 transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-95"
-                    aria-label={`Bán ${crop?.en ?? item.refId} được ${crop?.sellValue ?? 0} xu`}
-                  >
-                    <span className="flex items-center gap-1.5">
-                      <FarmIcon name={item.refId} emoji="🥕" className="h-5 w-5" />
-                      <span>{crop?.en ?? item.refId}</span>
-                      <span className="text-xs font-bold opacity-70">×{item.qty}</span>
-                    </span>
-                    <span className="whitespace-nowrap">+🪙{crop?.sellValue ?? 0}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <>
+              <div className="mb-3 rounded-2xl bg-white/75 px-3 py-2 text-xs font-bold text-slate-500">
+                Bán cây đã thu hoạch để lấy xu mua thêm hạt. Từ vựng đã học vẫn nằm trong bộ sưu tập.
+              </div>
+              {crops.length === 0 ? (
+                <p className="rounded-2xl bg-white/70 px-3 py-5 text-center text-sm font-semibold text-slate-400">
+                  Kho chưa có nông sản. Hãy thu hoạch trước nhé!
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {crops.map((item) => {
+                    const crop = getCropById(item.refId);
+                    return (
+                      <button
+                        key={item.itemId}
+                        type="button"
+                        onClick={() => onSell(item.refId)}
+                        className="flex items-center justify-between rounded-2xl border-2 border-orange-300 bg-white px-3 py-2 text-left text-sm font-black text-orange-700 transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-95"
+                        aria-label={`Bán ${crop?.en ?? item.refId} được ${crop?.sellValue ?? 0} xu`}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <FarmIcon name={item.refId} emoji="🥕" className="h-5 w-5" />
+                          <span>{crop?.en ?? item.refId}</span>
+                          <span className="text-xs font-bold opacity-70">×{item.qty}</span>
+                        </span>
+                        <span className="whitespace-nowrap">+{crop?.sellValue ?? 0} xu</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
 

@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useCallback } from'react';
+import { useState, useEffect, useCallback } from'react';
 import Link from'next/link';
 import Header from'@/components/layout/Header';
+import { DEFAULT_WORD_BANK, filterWordBank, loadWordBank, toFillBlankQuestions } from '@/lib/word-bank';
+import { stageForDifficulty } from '@/lib/curriculum';
 
 interface Question {
   sentence: string;
@@ -110,6 +112,7 @@ const DIFFICULTY_COLORS: Record<Difficulty, string>= {
 };
 
 export default function FillBlanksPage() {
+  const [wordBank, setWordBank] = useState(DEFAULT_WORD_BANK);
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -120,6 +123,16 @@ export default function FillBlanksPage() {
   const [finished, setFinished] = useState(false);
 
   const TOTAL = 10;
+
+  useEffect(() => {
+    let active = true;
+    loadWordBank().then((bank) => {
+      if (active) setWordBank(bank);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const shuffleArray = useCallback(<T,>(arr: T[]): T[] =>{
     const a = [...arr];
@@ -133,7 +146,9 @@ export default function FillBlanksPage() {
   const startGame = useCallback((diff: Difficulty) =>{
     setDifficulty(diff);
     const pool = QUESTIONS_BY_DIFFICULTY[diff];
-    const picked = shuffleArray(pool).slice(0, TOTAL);
+    const stageBank = filterWordBank(wordBank, { level: stageForDifficulty(diff), min: TOTAL });
+    const sharedQuestions = toFillBlankQuestions(stageBank, TOTAL);
+    const picked = sharedQuestions.length >= TOTAL ? sharedQuestions : shuffleArray(pool).slice(0, TOTAL);
     setQuestions(picked);
     setCurrentIndex(0);
     setSelected(null);
@@ -141,7 +156,7 @@ export default function FillBlanksPage() {
     setScore(0);
     setShowHint(false);
     setFinished(false);
-  }, [shuffleArray]);
+  }, [shuffleArray, wordBank]);
 
   const handleSelect = (option: string) =>{
     if (selected) return;

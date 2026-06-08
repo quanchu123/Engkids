@@ -9,6 +9,7 @@ import { getAllStories } from '@/data/stories';
 import { pronounceWord } from '@/services/dictionary';
 import { getSupabaseClient } from '@/lib/auth-client';
 import { getVocabularyStats } from '@/services/vocabulary';
+import { getLearnerStageProgress } from '@/lib/curriculum';
 import { Story } from '@/types';
 import DailyQuestCard from '@/components/learning/DailyQuestCard';
 import StreakCard from '@/components/learning/StreakCard';
@@ -49,6 +50,7 @@ export default function ProgressPage() {
     accuracy: number;
     byMastery: Record<number, number>;
   } | null>(null);
+  const learner = useMemo(() => getLearnerStageProgress(progress), [progress]);
 
   useEffect(() => {
     getAllStories().then(setStories);
@@ -250,8 +252,41 @@ export default function ProgressPage() {
                 <StreakCard />
               </div>
 
+              <div className="toy-panel p-6">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-black uppercase tracking-wide text-violet-500">Lộ trình chuẩn quốc tế</p>
+                    <h2 className="mt-1 text-2xl font-black text-slate-900">{learner.stage.cefr}: {learner.stage.titleVi}</h2>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      Mục tiêu gần nhất: {learner.missing[0] ?? 'sẵn sàng chuyển sang chặng kế tiếp'}.
+                    </p>
+                  </div>
+                  <Link href="/roadmap" className="kid-chip flex-shrink-0 px-4 py-2 text-sm font-black text-violet-700">
+                    Xem roadmap
+                  </Link>
+                </div>
+                <div className="mt-5 h-4 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-pink-500" style={{ width: `${Math.max(learner.percent, 3)}%` }} />
+                </div>
+                <div className="mt-4 grid gap-3 text-center sm:grid-cols-3">
+                  {[
+                    ['Từ nhớ tốt', learner.stats.masteredWords],
+                    ['Truyện xong', learner.stats.completedStories],
+                    ['Game 70%+', learner.stats.strongGameScores],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-2xl bg-slate-50 p-3">
+                      <div className="text-2xl font-black text-slate-900">{value}</div>
+                      <div className="mt-1 text-xs font-bold uppercase tracking-wide text-slate-400">{label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="toy-panel p-4">
                 <div className="flex flex-wrap gap-2">
+                  <Link href="/roadmap" className="kid-chip flex items-center gap-2 px-4 py-2 text-sm font-black text-violet-700">
+                    <UiIcon name="goal" size={20} /> Lộ trình học
+                  </Link>
                   <Link href="/learn/today" className="kid-chip flex items-center gap-2 px-4 py-2 text-sm font-black text-violet-700">
                     <UiIcon name="calendar" size={20} /> Hôm nay học gì
                   </Link>

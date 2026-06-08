@@ -68,6 +68,13 @@ export async function PUT(
     revalidatePath('/games/word-puzzle');
     revalidatePath('/games/memory-match');
     revalidatePath('/games/rpg-world');
+    revalidatePath('/games/matching-pairs');
+    revalidatePath('/games/word-collector');
+    revalidatePath('/games/rpg-battle');
+    revalidatePath('/games/fill-blanks');
+    revalidatePath('/games/sentence-scramble');
+    revalidatePath('/games/mario-word');
+    revalidatePath('/games/candy-crush');
     return NextResponse.json(
       { data },
       { headers: { 'Cache-Control': 'no-store, max-age=0' } },

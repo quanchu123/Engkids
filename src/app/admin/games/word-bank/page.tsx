@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
 import { useToast } from '@/hooks/useToast';
 import type { WordPair } from '@/lib/word-bank';
+import { CURRICULUM_STAGES, type CurriculumStageId } from '@/lib/curriculum';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 export default function WordBankEditorPage() {
@@ -42,7 +43,13 @@ export default function WordBankEditorPage() {
     setSaving(true);
     try {
       const cleaned = words
-        .map((w) => ({ en: w.en.trim(), vi: w.vi.trim() }))
+        .map((w) => ({
+          en: w.en.trim(),
+          vi: w.vi.trim(),
+          level: w.level,
+          topic: w.topic?.trim().toLowerCase() || undefined,
+          example: w.example?.trim() || undefined,
+        }))
         .filter((w) => w.en && w.vi);
       if (cleaned.length === 0) {
         toast.error('Cần ít nhất 1 từ có cả tiếng Anh và tiếng Việt.');
@@ -68,7 +75,7 @@ export default function WordBankEditorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-3xl mx-auto px-4">
+      <div className="max-w-5xl mx-auto px-4">
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Kho từ vựng</h1>
@@ -91,7 +98,7 @@ export default function WordBankEditorPage() {
 
         <div className="space-y-2">
           {words.map((w, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white p-2">
+            <div key={i} className="grid gap-2 rounded-lg border border-gray-200 bg-white p-2 md:grid-cols-[32px_1fr_1fr_150px_120px_40px]">
               <span className="w-8 text-center text-sm font-bold text-gray-400">{i + 1}</span>
               <input
                 type="text"
@@ -107,6 +114,23 @@ export default function WordBankEditorPage() {
                 placeholder="Tiếng Việt (vd: Quả táo)"
                 className="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <select
+                value={w.level ?? 'pre-a1-starters'}
+                onChange={(e) => update(i, { level: e.target.value as CurriculumStageId })}
+                className="rounded border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                title="Cấp độ"
+              >
+                {CURRICULUM_STAGES.map((stage) => (
+                  <option key={stage.id} value={stage.id}>{stage.cefr}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={w.topic ?? ''}
+                onChange={(e) => update(i, { topic: e.target.value })}
+                placeholder="topic"
+                className="rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
               <button
                 onClick={() => setWords((prev) => prev.filter((_, idx) => idx !== i))}
                 className="h-8 w-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
@@ -114,14 +138,21 @@ export default function WordBankEditorPage() {
               >
                 ✕
               </button>
+              <input
+                type="text"
+                value={w.example ?? ''}
+                onChange={(e) => update(i, { example: e.target.value })}
+                placeholder="Example sentence (vd: I can see an apple.)"
+                className="rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 md:col-span-5 md:col-start-2"
+              />
             </div>
           ))}
         </div>
 
         <div className="sticky bottom-0 mt-6 -mx-4 border-t border-gray-200 bg-white/95 px-4 py-4 backdrop-blur">
-          <div className="flex justify-between items-center max-w-3xl mx-auto">
+          <div className="flex justify-between items-center max-w-5xl mx-auto">
             <button
-              onClick={() => setWords((prev) => [...prev, { en: '', vi: '' }])}
+              onClick={() => setWords((prev) => [...prev, { en: '', vi: '', level: 'pre-a1-starters', topic: '', example: '' }])}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold"
             >
               + Thêm từ

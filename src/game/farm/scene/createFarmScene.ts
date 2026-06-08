@@ -71,6 +71,12 @@ export interface FarmBridge {
   getSelectedSeed: () => string
   /** Called after a successful harvest with the crop's vocabulary word. */
   onHarvest: (word: HarvestWord | undefined) => void
+  /** Optional resolver so the page can map fixed crop art to admin word_bank words. */
+  resolveHarvestWord?: (cropTypeId: string) => {
+    en: string
+    vi: string
+    level: VocabLevel
+  } | undefined
   /** Called when a harvest is blocked because the inventory is full. */
   onInventoryFull: () => void
   /** Optional hook for sfx / feedback; `kind` describes what happened. */
@@ -1003,7 +1009,11 @@ export function createFarmScene(
     }
 
     private handleHarvest(state: FarmState, plotId: number): void {
-      const result = harvest(state, plotId, getCropById)
+      const result = harvest(
+        state,
+        plotId,
+        bridge.resolveHarvestWord ?? getCropById,
+      )
       if (result.ok) {
         bridge.setState(result.state)
         this.popHarvestCrop(plotId)

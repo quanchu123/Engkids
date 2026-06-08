@@ -191,7 +191,16 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
       <section className="px-4 py-6">
           <div className="section-shell section-shell-amber max-w-6xl mx-auto rounded-[24px] p-5 md:p-6">
           <SectionHeader icon="sparkles" title="Bắt đầu học nhé!" />
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+            <FeatureCard
+              href="/roadmap"
+              icon="sparkles"
+              title="Lộ trình"
+              count={5}
+              unit="chặng"
+              gradient="from-indigo-500 to-sky-500"
+              bg="bg-indigo-50"
+            />
             <FeatureCard
               href="/games"
               icon="game"

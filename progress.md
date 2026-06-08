@@ -83,6 +83,13 @@ Original prompt: tiếp tục đi
   - changed store care rewards to use dynamic EXP/coin outcomes from the pure pet logic
   - added action readiness labels on care buttons and quality feedback in the quiz success modal
   - validation: `npm run test:run -- src/lib/pet.test.ts`, `npm run type-check`, `npm run lint`, `npm run build`
+- English Farm usability pass:
+  - clarified the play loop in-game: till -> seed -> water -> next day -> harvest quiz
+  - changed the tool HUD from icon-only buttons to labeled tool buttons with a current-action hint
+  - reorganized the side controls into a compact guide/action panel
+  - simplified the farm shop into Buy/Sell tabs with clearer copy and no font-dependent coin emoji labels
+  - harvest vocabulary now maps fixed crop art to the admin `word_bank` list; crop visuals/economy stay stable, but quiz/collection words come from `word_bank` when loaded
+  - validation: `npm run type-check`, `npm run lint`, `npm run build`, Playwright screenshot smoke test for `/games/english-farm` main + shop
 - Farm + pet game logic pass:
   - added predictable farm weather: clear days behave normally, rain days grow all planted crops, sunny days make watered crops grow 2 stages
   - added an in-game weather badge and toast on special farm days so players can plan when to water/advance
@@ -129,3 +136,32 @@ TODOs / next suggestions:
 - Next high-value step: add real browser E2E for login, stories, videos, and admin CRUD now that auth/progress flow is less fragmented.
 - For deeper confidence, run real browser E2E outside this sandbox, especially on Phaser-based game pages and Bunny/Supabase flows.
 - `next build` completed successfully in the latest pet-game pass.
+
+- Curriculum + wordbank integration pass:
+  - added shared curriculum stages in `src/lib/curriculum.ts` with CEFR/Cambridge-style stages and progress derivation from mastered words, completed stories, and 70%+ game scores
+  - added `/roadmap` and connected roadmap links through header/home/games/progress earlier; updated roadmap/today/progress to show the learner's current stage from real progress
+  - expanded `src/lib/word-bank.ts` with metadata (`level`, `topic`, `example`), filters, and adapters for matching pairs, coin questions, RPG questions, fill blanks, and sentence scrambles
+  - admin word-bank editor now preserves/edits level/topic/example instead of stripping metadata on save
+  - migrated major hardcoded vocab games to shared wordbank with fallback: matching-pairs, word-collector, rpg-battle, fill-blanks, sentence-scramble, mario-word, candy-crush; existing wordbank games remain connected
+  - fixed sentence-scramble to shuffle words instead of characters, making it much easier to play
+  - fixed word-collector back-link text and forced Phaser Canvas renderer to avoid black WebGL captures/headless framebuffer failures
+- Curriculum/wordbank validation:
+  - `npm run test:run -- src/lib/curriculum.test.ts src/lib/word-bank.test.ts src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run build`
+  - standalone smoke on `http://localhost:3003`: `/roadmap`, `/learn/today`, `/progress`, `/games/matching-pairs`, `/games/word-collector`; no app console errors
+  - develop-web-game client screenshots: `output/web-game/matching-pairs-3003-final/shot-0.png`, `output/web-game/word-collector-3003-after-canvas/shot-0.png`
+- Local standalone note:
+  - because Next is configured with `output: 'standalone'`, local standalone smoke requires copying `.next/static` and `public` into `.next/standalone` before running `node server.js`; this was done for the running test server on port 3003
+- Header/admin compactness pass:
+  - removed Progress and Shop from the main desktop/mobile nav list because progress already has the star pill
+  - added a compact Shop button beside the star/progress control on desktop and in the mobile menu action grid
+  - added collapsible admin sidebar state in the admin layout, with icon-only rail mode and matching content margin
+  - validation:
+    - `npm run type-check`
+    - `npm run lint`
+    - `npm run test:run -- src/lib/curriculum.test.ts src/lib/word-bank.test.ts src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`
+    - `npm run build`
+    - Playwright smoke on `http://127.0.0.1:3003` for desktop shop, mobile shop, and mocked admin sidebar collapse (`output/playwright/nav-admin-smoke/`)
+

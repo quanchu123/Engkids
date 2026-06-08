@@ -22,6 +22,13 @@ const TOOLS: ToolDef[] = [
   { id: 'harvest', icon: 'basket', emoji: '🧺', label: 'Thu hoạch' },
 ];
 
+const TOOL_HINT: Record<FarmTool, string> = {
+  hoe: 'Chạm ô trống để xới đất.',
+  seed: 'Chọn hạt rồi chạm ô đã cày.',
+  water: 'Chạm cây đã gieo để tưới.',
+  harvest: 'Chạm cây chín để thu từ vựng.',
+};
+
 interface FarmHudProps {
   coins: number;
   xp: number;
@@ -53,6 +60,8 @@ export function FarmHud({
   onOpenInventory,
   onOpenVocab,
 }: FarmHudProps) {
+  const activeTool = TOOLS.find((tool) => tool.id === selectedTool) ?? TOOLS[0];
+
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-2 sm:p-3">
       {/* ── Stats + actions row ── */}
@@ -116,7 +125,7 @@ export function FarmHud({
       </div>
 
       {/* ── Tool selector ── */}
-      <div className="pointer-events-auto flex items-center gap-2 self-start rounded-3xl border-2 border-white/70 bg-white/90 p-1.5 shadow-md">
+      <div className="pointer-events-auto flex max-w-[calc(100vw-1rem)] flex-wrap items-center gap-2 self-start rounded-3xl border-2 border-white/70 bg-white/90 p-1.5 shadow-md">
         {TOOLS.map((tool) => {
           const active = tool.id === selectedTool;
           return (
@@ -127,16 +136,22 @@ export function FarmHud({
               aria-label={tool.label}
               aria-pressed={active}
               title={tool.label}
-              className={`flex h-11 w-11 items-center justify-center rounded-2xl border-2 transition-all sm:h-12 sm:w-12 ${
+              className={`flex min-h-12 min-w-[72px] flex-col items-center justify-center gap-0.5 rounded-2xl border-2 px-2 py-1 transition-all sm:min-w-[86px] ${
                 active
                   ? 'scale-105 border-emerald-400 bg-gradient-to-br from-emerald-300 to-teal-400 shadow-lg'
                   : 'border-transparent bg-slate-100 hover:bg-slate-200 active:scale-95'
               }`}
             >
-              <FarmIcon name={tool.icon} emoji={tool.emoji} className="h-7 w-7" />
+              <FarmIcon name={tool.icon} emoji={tool.emoji} className="h-6 w-6" />
+              <span className={`text-[10px] font-black leading-none ${active ? 'text-white' : 'text-slate-600'}`}>
+                {tool.label}
+              </span>
             </button>
           );
         })}
+        <div className="hidden max-w-[240px] rounded-2xl bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 shadow-inner md:block">
+          <span className="font-black">{activeTool.label}:</span> {TOOL_HINT[activeTool.id]}
+        </div>
       </div>
     </div>
   );
