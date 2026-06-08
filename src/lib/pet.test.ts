@@ -106,6 +106,20 @@ describe('applyAction', () => {
   });
 });
 
+describe('pet care rhythm', () => {
+  it('rewards varied care with a small rhythm bonus', () => {
+    const base = { ...createPet('char-fox', 'Cao', 0), hunger: 45, happiness: 45, clean: 45, energy: 45 };
+    const feed = applyAction(base, 'feed', 0);
+    const play = applyAction(feed.pet, 'play', 3 * 60_000);
+    const bath = applyAction(play.pet, 'bath', 6 * 60_000);
+
+    expect(feed.rhythmBonus).toBe(0);
+    expect(play.rhythmBonus).toBe(0.05);
+    expect(bath.rhythmBonus).toBe(0.1);
+    expect(bath.pet.careRhythm?.chain).toBe(3);
+  });
+});
+
 describe('coinRewardForCombo', () => {
   it('adds the combo as a bonus, capped at +5', () => {
     expect(coinRewardForCombo('feed', 0)).toBe(PET_ACTIONS.feed.coinReward);

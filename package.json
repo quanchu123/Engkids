@@ -19,7 +19,9 @@
     "migrate:spaces": "node scripts/migrate-bunny-to-spaces.js",
     "iconscout:download": "node scripts/download-iconscout-assets.js",
     "thumbnails:backfill": "node scripts/backfill-video-thumbnails.js",
-    "veo:evolve": "node scripts/gen-veo-evolve.mjs --skip-existing"
+    "veo:evolve": "node scripts/gen-veo-evolve.mjs --skip-existing",
+    "veo:farm": "node scripts/gen-veo-farm.mjs --skip-existing",
+    "veo:all": "npm run veo:farm && npm run veo:evolve"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",

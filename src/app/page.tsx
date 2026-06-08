@@ -1,5 +1,5 @@
 import HomePageClient from '@/components/pages/HomePageClient';
-import { listStories } from '@/services/story';
+import { listStorySummaries } from '@/services/story';
 import { getAllVideos } from '@/services/video';
 
 // Always render from the live database (no static caching), so newly added or
@@ -10,7 +10,7 @@ export const fetchCache = 'force-no-store';
 
 export default async function HomePage() {
   const [stories, allVideos] = await Promise.all([
-    listStories().catch(() => []),
+    listStorySummaries().catch(() => []),
     getAllVideos().catch(() => []),
   ]);
 

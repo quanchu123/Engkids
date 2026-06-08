@@ -121,6 +121,7 @@ export default function PetGamePage() {
   const [anim, setAnim] = useState<'idle' | 'happy' | 'sad'>('idle');
   const [combo, setCombo] = useState(0);
   const [floats, setFloats] = useState<Array<{ id: number; text: string }>>([]);
+  const [careBursts, setCareBursts] = useState<Array<{ id: number; action: PetActionKey }>>([]);
   const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
   const questDoneRef = useRef(false);
 
@@ -128,14 +129,16 @@ export default function PetGamePage() {
   const [quiz, setQuiz] = useState<PetQuiz | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
-  const [lastReward, setLastReward] = useState<{ exp: number; coins: number; quality: PetActionQuality }>({
+  const [lastReward, setLastReward] = useState<{ exp: number; coins: number; quality: PetActionQuality; rhythmBonus: number }>({
     exp: 0,
     coins: 0,
     quality: 'steady',
+    rhythmBonus: 0,
   });
 
   const heartId = useRef(0);
   const floatId = useRef(0);
+  const burstId = useRef(0);
   const prevStageRef = useRef<number | null>(null);
 
   const preferredWords = useMemo<WordPair[]>(
@@ -200,6 +203,12 @@ export default function PetGamePage() {
     setTimeout(() => setAnim('idle'), 650);
   }, []);
 
+  const triggerCareBurst = useCallback((action: PetActionKey) => {
+    const id = burstId.current++;
+    setCareBursts((items) => [...items, { id, action }]);
+    setTimeout(() => setCareBursts((items) => items.filter((item) => item.id !== id)), 1700);
+  }, []);
+
   const openQuiz = (action: PetActionKey) => {
     const nextQuiz = buildPetQuiz(bank, PET_ACTIONS[action].quizDirection, Math.random, preferredWords);
     setQuizAction(action);
@@ -236,6 +245,7 @@ export default function PetGamePage() {
       playDing();
       speakEnglish(quiz.word.en);
       pokeHappy();
+      setTimeout(() => triggerCareBurst(quizAction), 1250);
       setLearnedWords((prev) => {
         const next = new Set(prev);
         next.add(quiz.word.en.toLowerCase());
@@ -392,6 +402,7 @@ export default function PetGamePage() {
                     style={{ background: `radial-gradient(circle, ${species.glow} 0%, transparent 70%)` }}
                   />
                   {hearts.map((id) => (<span key={id} className="pet-heart pointer-events-none absolute text-2xl">💗</span>))}
+                  {careBursts.map((burst) => (<CareActionBurst key={burst.id} action={burst.action} />))}
                   {floats.map((float) => (
                     <span key={float.id} className="pet-float-msg pointer-events-none absolute z-20 whitespace-nowrap rounded-full bg-white/95 px-3 py-1 text-xs font-black text-emerald-600 shadow">
                       {float.text}
@@ -514,6 +525,50 @@ export default function PetGamePage() {
   );
 }
 
+const CARE_BURST_ITEMS = Array.from({ length: 9 }, (_, index) => index);
+
+function CareActionBurst({ action }: { action: PetActionKey }) {
+  const asset = PET_ACTIONS[action].asset;
+  const kind = action === 'feed' ? 'snack' : action === 'play' ? 'toy' : action === 'bath' ? 'bubble' : 'dream';
+
+  return (
+    <div className={`pet-care-burst pet-care-${kind} pointer-events-none absolute inset-0 z-20`} aria-hidden="true">
+      {CARE_BURST_ITEMS.map((index) => {
+        const x = (index - 4) * 34;
+        const y = 104 - Math.abs(index - 4) * 9;
+        const drift = (index % 2 === 0 ? -1 : 1) * (42 + index * 3);
+        const style = {
+          ['--x' as string]: `${x}px`,
+          ['--y' as string]: `${y}px`,
+          ['--xm' as string]: `${x * 0.55}px`,
+          ['--xs' as string]: `${x * 0.15}px`,
+          ['--xt' as string]: `${x * -0.25}px`,
+          ['--yu' as string]: `${y * -0.35}px`,
+          ['--yn' as string]: `${y * -0.14}px`,
+          ['--drift' as string]: `${drift}px`,
+          ['--delay' as string]: `${index * 48}ms`,
+          ['--size' as string]: `${18 + (index % 4) * 5}px`,
+        };
+        if (kind === 'bubble' || kind === 'dream') {
+          return <span key={index} className="pet-care-particle" style={style} />;
+        }
+        return (
+          <Image
+            key={index}
+            src={`/games/pet/${asset}.png`}
+            alt=""
+            width={42}
+            height={42}
+            unoptimized
+            className="pet-care-particle h-9 w-9 object-contain"
+            style={style}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 function QuizModal({
   quiz,
   action,
@@ -529,7 +584,7 @@ function QuizModal({
   action: PetActionKey;
   picked: string | null;
   result: 'correct' | 'wrong' | null;
-  lastReward: { exp: number; coins: number; quality: PetActionQuality };
+  lastReward: { exp: number; coins: number; quality: PetActionQuality; rhythmBonus: number };
   combo: number;
   onClose: () => void;
   onChoose: (option: string) => void;
@@ -563,6 +618,7 @@ function QuizModal({
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-600">+{lastReward.exp} EXP</span>
                 <span className="rounded-full bg-orange-100 px-3 py-1 text-orange-600">+{lastReward.coins} xu</span>
                 <span className="rounded-full bg-sky-100 px-3 py-1 text-sky-600">{QUALITY_MESSAGE[lastReward.quality]}</span>
+                {lastReward.rhythmBonus > 0 && <span className="rounded-full bg-lime-100 px-3 py-1 text-lime-700">Care rhythm +{Math.round(lastReward.rhythmBonus * 100)}%</span>}
                 {combo >= 2 && <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-fuchsia-600">Combo x{combo}</span>}
               </div>
             </div>
@@ -669,6 +725,56 @@ function PetStyles() {
       .pet-heart { bottom: 80px; animation: pet-heart-float 1.2s ease-out forwards; }
       @keyframes pet-float-msg-anim { 0% { transform: translateY(0) scale(0.8); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-70px) scale(1.05); opacity: 0; } }
       .pet-float-msg { top: 20px; animation: pet-float-msg-anim 1.3s ease-out forwards; }
+      .pet-care-burst { filter: drop-shadow(0 10px 14px rgba(15,23,42,0.16)); }
+      .pet-care-particle { position: absolute; left: 50%; top: 50%; opacity: 0; }
+      .pet-care-snack .pet-care-particle {
+        animation: pet-care-snack 1.35s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        animation-delay: var(--delay);
+      }
+      .pet-care-toy .pet-care-particle {
+        animation: pet-care-toy 1.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        animation-delay: var(--delay);
+      }
+      .pet-care-bubble .pet-care-particle {
+        width: var(--size);
+        height: var(--size);
+        border: 2px solid rgba(14,165,233,0.7);
+        border-radius: 999px;
+        background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), rgba(125,211,252,0.42) 48%, rgba(14,165,233,0.12));
+        animation: pet-care-bubble 1.55s ease-out forwards;
+        animation-delay: var(--delay);
+      }
+      .pet-care-dream .pet-care-particle {
+        width: var(--size);
+        height: var(--size);
+        border-radius: 35% 65% 55% 45%;
+        background: radial-gradient(circle, rgba(255,255,255,0.98), rgba(196,181,253,0.78) 48%, rgba(129,140,248,0.26));
+        box-shadow: 0 0 20px rgba(167,139,250,0.65);
+        animation: pet-care-dream 1.65s ease-out forwards;
+        animation-delay: var(--delay);
+      }
+      @keyframes pet-care-snack {
+        0% { opacity: 0; transform: translate(calc(var(--x) - 90px), var(--y)) scale(0.25) rotate(-22deg); }
+        35% { opacity: 1; transform: translate(var(--xm), var(--yu)) scale(1.05) rotate(8deg); }
+        72% { opacity: 1; transform: translate(var(--xs), var(--yn)) scale(0.82) rotate(18deg); }
+        100% { opacity: 0; transform: translate(0, 8px) scale(0.28) rotate(34deg); }
+      }
+      @keyframes pet-care-toy {
+        0% { opacity: 0; transform: translate(calc(var(--x) - 120px), 78px) scale(0.38) rotate(0deg); }
+        28% { opacity: 1; transform: translate(var(--xm), -68px) scale(1.12) rotate(140deg); }
+        58% { opacity: 1; transform: translate(var(--xt), 28px) scale(0.92) rotate(280deg); }
+        100% { opacity: 0; transform: translate(calc(var(--x) + var(--drift)), -28px) scale(0.45) rotate(420deg); }
+      }
+      @keyframes pet-care-bubble {
+        0% { opacity: 0; transform: translate(var(--x), 82px) scale(0.35); }
+        24% { opacity: 0.95; }
+        100% { opacity: 0; transform: translate(calc(var(--x) + var(--drift)), -120px) scale(1.45); }
+      }
+      @keyframes pet-care-dream {
+        0% { opacity: 0; transform: translate(var(--x), 70px) scale(0.3) rotate(0deg); }
+        28% { opacity: 1; }
+        100% { opacity: 0; transform: translate(calc(var(--x) + var(--drift)), -126px) scale(1.15) rotate(70deg); }
+      }
       @keyframes quiz-pop-in { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
       .quiz-pop { animation: quiz-pop-in 0.25s cubic-bezier(0.34,1.56,0.64,1) both; }
       @keyframes quiz-shake-anim { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
@@ -708,7 +814,7 @@ function PetStyles() {
       }
       @media (prefers-reduced-motion: reduce) {
         .pet-bob, .pet-sway, .pet-breathe, .pet-aura, .pet-shadow, .pet-spark, .evolve-ring, .evolve-beam, .evolve-creature, .evolve-particle { animation: none; }
-        .pet-happy, .pet-sad, .pet-evolve, .pet-flash, .pet-heart, .pet-float-msg, .quiz-pop, .quiz-shake, .evolve-title { animation-duration: 0.4s; animation-iteration-count: 1; }
+        .pet-happy, .pet-sad, .pet-evolve, .pet-flash, .pet-heart, .pet-float-msg, .pet-care-particle, .quiz-pop, .quiz-shake, .evolve-title { animation-duration: 0.4s; animation-iteration-count: 1; }
       }
     `}</style>
   );

@@ -9,6 +9,8 @@ type ArtTone = {
   icon: string;
 };
 
+type StoryArtworkData = Pick<Story, 'title_en' | 'level' | 'topics'>;
+
 const DEFAULT_TONE: ArtTone = {
   gradient: 'from-violet-500 via-fuchsia-400 to-orange-300',
   accent: 'bg-white/20',
@@ -67,7 +69,7 @@ function ArtworkMark({ name }: { name: string }) {
   );
 }
 
-export function StoryFallbackArtwork({ story }: { story: Story }) {
+export function StoryFallbackArtwork({ story }: { story: StoryArtworkData }) {
   const tone = pickTone(story.topics);
   const assetKey = pickArtKey(story.topics) || 'story';
   const topic = story.topics?.[0] || story.level;

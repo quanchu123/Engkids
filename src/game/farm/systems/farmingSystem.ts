@@ -20,6 +20,7 @@
 import type {
   Crop,
   CropType,
+  FarmWeather,
   FarmState,
   GrowthStage,
   HarvestResult,
@@ -30,6 +31,12 @@ import { GROWTH_STAGE_MAX } from '../constants'
 
 /** Resolves a CropType from its id. Supplied by the caller to stay decoupled. */
 export type CropTypeResolver = (id: string) => CropType | undefined
+
+export interface AdvanceDayForecast {
+  weather: FarmWeather
+  labelVi: string
+  descriptionVi: string
+}
 
 // --- internal helpers -------------------------------------------------------
 
@@ -188,6 +195,55 @@ export function advanceDay(state: FarmState): FarmState {
   }
   next.updatedAt = new Date().toISOString()
   return next
+}
+
+export function getFarmWeather(day: number): AdvanceDayForecast {
+  if (day > 0 && day % 7 === 0) {
+    return {
+      weather: 'sunny',
+      labelVi: 'Nắng vàng',
+      descriptionVi: 'Cây đã tưới lớn thêm 2 nấc.',
+    }
+  }
+  if (day > 0 && day % 4 === 0) {
+    return {
+      weather: 'rain',
+      labelVi: 'Mưa nhẹ',
+      descriptionVi: 'Mọi cây được tưới miễn phí.',
+    }
+  }
+  return {
+    weather: 'clear',
+    labelVi: 'Trời đẹp',
+    descriptionVi: 'Cây đã tưới lớn như bình thường.',
+  }
+}
+
+/**
+ * Advance with the daily weather bonus used by the live game.
+ * - rain: planted crops count as watered even if the player skipped watering
+ * - sunny: watered crops gain 2 stages instead of 1
+ * - clear: same growth rule as advanceDay
+ */
+export function advanceDayWithWeather(state: FarmState): { state: FarmState; forecast: AdvanceDayForecast } {
+  const forecast = getFarmWeather(state.day)
+  const next = cloneState(state)
+  next.day += 1
+  for (const plot of next.grid.plots) {
+    if (plot.state === 'planted' && plot.crop) {
+      const growsToday = plot.crop.wateredToday || forecast.weather === 'rain'
+      if (growsToday) {
+        const growth = forecast.weather === 'sunny' && plot.crop.wateredToday ? 2 : 1
+        plot.crop.stage = Math.min(
+          plot.crop.stage + growth,
+          GROWTH_STAGE_MAX,
+        ) as GrowthStage
+      }
+      plot.crop.wateredToday = false
+    }
+  }
+  next.updatedAt = new Date().toISOString()
+  return { state: next, forecast }
 }
 
 /**

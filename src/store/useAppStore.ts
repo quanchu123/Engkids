@@ -65,7 +65,7 @@ interface AppState {
   buyStreakFreeze: () => boolean;
   spinDailyWheel: () => { kind: 'coins' | 'freeze'; amount: number; index: number } | null;
   adoptPet: (species: string, name: string) => void;
-  carePet: (action: PetActionKey, combo?: number) => { coins: number; exp: number; quality: PetActionQuality };
+  carePet: (action: PetActionKey, combo?: number) => { coins: number; exp: number; quality: PetActionQuality; rhythmBonus: number };
   syncPetDecay: () => void;
   triggerReward: (stars: number, coins: number) => void;
   clearReward: () => void;
@@ -161,11 +161,11 @@ export const useAppStore = create<AppState>()(
       // coins (base + combo bonus). Returns the coins earned (0 if no pet).
       carePet: (action, combo = 0) => {
         const state = get();
-        if (!state.pet) return { coins: 0, exp: 0, quality: 'steady' };
-        const { pet, coinReward, expReward, quality } = applyAction(state.pet, action, Date.now());
+        if (!state.pet) return { coins: 0, exp: 0, quality: 'steady', rhythmBonus: 0 };
+        const { pet, coinReward, expReward, quality, rhythmBonus } = applyAction(state.pet, action, Date.now());
         const reward = coinRewardForCombo(action, combo, coinReward);
         set({ pet, coins: state.coins + reward });
-        return { coins: reward, exp: expReward, quality };
+        return { coins: reward, exp: expReward, quality, rhythmBonus };
       },
 
       // Apply time-based decay (call on mount / when the room opens).

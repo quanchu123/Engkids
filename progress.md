@@ -83,6 +83,37 @@ Original prompt: tiếp tục đi
   - changed store care rewards to use dynamic EXP/coin outcomes from the pure pet logic
   - added action readiness labels on care buttons and quality feedback in the quiz success modal
   - validation: `npm run test:run -- src/lib/pet.test.ts`, `npm run type-check`, `npm run lint`, `npm run build`
+- Farm + pet game logic pass:
+  - added predictable farm weather: clear days behave normally, rain days grow all planted crops, sunny days make watered crops grow 2 stages
+  - added an in-game weather badge and toast on special farm days so players can plan when to water/advance
+  - added pet care rhythm: alternating care actions builds a small effectiveness bonus, while repeated-action spam remains weak
+  - surfaced the rhythm bonus in the pet quiz success reward chips
+  - validation: `npm run test:run -- src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`, `npm run type-check`, `npm run lint`
+  - Playwright smoke: `/games/pet` loads adoption screen; `/games/english-farm` loads and renders canvas after first compile/wait (`output/web-game/pet/shot-1.png`, `output/web-game/farm/manual-wait.png`)
+- Gemini/Veo animation attempt:
+  - added npm commands `veo:farm` and `veo:all`; existing `veo:evolve` remains for pet final-evolution clips
+  - attempted farm cutscene generation with `.env.local` Gemini keys; `gemini_key1` returned quota exhausted (429), `gemini_key2` returned invalid auth (401)
+  - attempted one pet evolution clip (`thuy-long`) and hit the same key failures, so no MP4 assets were generated
+  - replaced the farm cutscene fallback with a smoother full-screen animated cinematic so milestones still feel polished while Gemini quota is blocked
+  - validation after fallback/script updates: `npm run test:run -- src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`, `npm run type-check`, `npm run lint`, `npm run build`
+- Pet runtime care animation pass:
+  - added action-specific care bursts after correct pet quiz answers: food arcs for feeding, toy bounces for play, bubbles for bath, and soft dream particles for sleep
+  - delayed the burst until the quiz modal closes so the animation is visible in the pet room
+  - scripted Playwright gameplay smoke captured `output/web-game/pet/care-burst.png` and confirmed `.pet-care-burst` renders with no console errors
+  - develop-web-game client smoke also ran on `/games/pet`
+  - validation: `npm run type-check`, `npm run lint`, `npm run test:run -- src/lib/pet.test.ts`
+- Gemini/Veo key expansion:
+  - updated farm/pet Veo scripts to read any `gemini_keyN` / `GEMINI_KEYN` entry and try higher-numbered keys first
+  - `.env.local` currently has `gemini_key5` through `gemini_key8`; a pet `thuy-long` test generation tried the new keys first
+  - `gemini_key8`, `gemini_key7`, `gemini_key6`, and `gemini_key5` all returned `429 RESOURCE_EXHAUSTED`, so no MP4 was generated
+  - validation: `node --check scripts/gen-veo-evolve.mjs`, `node --check scripts/gen-veo-farm.mjs`
+- Homepage lag investigation/fix:
+  - production home HTML measured at ~1.95 MB and 2.4s+ because the server payload included story `panels` and base64 `cover_image` values
+  - added lightweight `listStorySummaries()` for homepage/API summary use; it excludes panels/vocabulary/games and strips base64 covers so fallback artwork renders instead
+  - changed `/` to use summaries and changed homepage client refresh to call `/api/stories?summary=1`
+  - local dev after fix: `/api/stories?summary=1` dropped to 766 bytes, `/` dropped to ~94 KB
+  - droplet SSH on `168.144.128.38:22` still timed out, so remote SSD usage could not be measured from here
+  - validation: `npm run type-check`, `npm run lint`, `npm run build`
 
 TODOs / next suggestions:
 - When Gemini/Veo quota or billing is available, run `npm run veo:evolve` and commit generated files under `public/games/pet/evolve/`.

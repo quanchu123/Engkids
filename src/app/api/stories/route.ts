@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Story } from '@/types';
 import { checkAdminAuth } from '@/lib/api-auth';
-import { createStory, listStories, listStoriesAdmin } from '@/services/story';
+import { createStory, listStories, listStoriesAdmin, listStorySummaries } from '@/services/story';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -37,6 +37,7 @@ function normalizeStory(value: unknown): Story | null {
 export async function GET(request: NextRequest) {
   try {
     const includeDrafts = request.nextUrl.searchParams.get('all') === 'true';
+    const summaryOnly = request.nextUrl.searchParams.get('summary') === '1';
     if (includeDrafts) {
       const isAuthed = await checkAdminAuth(request);
       if (!isAuthed) {
@@ -44,7 +45,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const stories = includeDrafts ? await listStoriesAdmin() : await listStories();
+    const stories = summaryOnly && !includeDrafts
+      ? await listStorySummaries()
+      : includeDrafts
+        ? await listStoriesAdmin()
+        : await listStories();
     return NextResponse.json(
       { stories },
       { headers: { 'Cache-Control': 'no-store, max-age=0' } },

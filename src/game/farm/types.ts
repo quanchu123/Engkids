@@ -96,6 +96,9 @@ export type QuizMode = 'meaning' | 'listen' | 'spelling'
 /** Mục tiêu của nhiệm vụ ngày. */
 export type QuestGoal = 'harvest' | 'review' | 'sell'
 
+/** Daily farm weather. Used by the page-level day advance to make planning matter. */
+export type FarmWeather = 'clear' | 'rain' | 'sunny'
+
 /** Nhiệm vụ ngày — reset theo ngày game, thưởng xu khi hoàn thành. */
 export interface DailyQuest {
   /** Loại mục tiêu cần đạt. */

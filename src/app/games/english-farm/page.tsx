@@ -20,7 +20,7 @@ import {
   type HarvestWord,
 } from '@/game/farm/scene/createFarmScene';
 import type { FarmState, QuizMode } from '@/game/farm/types';
-import { advanceDay } from '@/game/farm/systems/farmingSystem';
+import { advanceDayWithWeather, getFarmWeather } from '@/game/farm/systems/farmingSystem';
 import { addXp } from '@/game/farm/systems/progressionSystem';
 import { collectWord, bumpMastery, countMastered } from '@/game/farm/systems/vocabularySystem';
 import { pickDueWords, reviewWord } from '@/game/farm/systems/srsScheduler';
@@ -261,14 +261,18 @@ export default function EnglishFarmPage() {
 
   // --- HUD / overlay handlers
   const handleNextDay = useCallback(() => {
-    let next = advanceDay(farmStateRef.current);
+    const advanced = advanceDayWithWeather(farmStateRef.current);
+    let next = advanced.state;
     // Roll a fresh daily quest when the day rolls over.
     if (next.dailyQuest.issuedDay !== next.day) {
       next = { ...next, dailyQuest: rollDailyQuest(next.day) };
     }
     commit(next);
     sceneRef.current?.refresh();
-  }, [commit]);
+    if (advanced.forecast.weather !== 'clear') {
+      showToast(`${advanced.forecast.labelVi}: ${advanced.forecast.descriptionVi}`);
+    }
+  }, [commit, showToast]);
 
   const handleSelectTool = useCallback((tool: string) => {
     const t = tool as FarmTool;
@@ -412,6 +416,7 @@ export default function EnglishFarmPage() {
   const seedItems = farmState.inventory.items.filter((i) => i.kind === 'seed');
   const mastered = countMastered(farmState.collectedWords);
   const quest = farmState.dailyQuest;
+  const forecast = getFarmWeather(farmState.day);
   const questLabel =
     quest.goal === 'harvest' ? 'Thu hoạch' : quest.goal === 'review' ? 'Ôn từ' : 'Bán nông sản';
   const questDone = quest.progress >= quest.target;
@@ -489,6 +494,19 @@ export default function EnglishFarmPage() {
 
       {/* Daily quest badge (top-right under HUD) */}
       <div className="absolute right-2 top-24 z-10 sm:right-3 sm:top-28">
+        <div className="flex flex-col items-end gap-2">
+          <div
+            className={`pointer-events-none rounded-2xl border-2 px-3 py-1.5 text-right text-xs font-black shadow-md ${
+              forecast.weather === 'sunny'
+                ? 'border-amber-300 bg-amber-100 text-amber-700'
+                : forecast.weather === 'rain'
+                  ? 'border-sky-300 bg-sky-100 text-sky-700'
+                  : 'border-emerald-200 bg-white/90 text-emerald-700'
+            }`}
+          >
+            <span>{forecast.labelVi}</span>
+            <span className="block text-[10px] font-bold opacity-80">{forecast.descriptionVi}</span>
+          </div>
         <button
           type="button"
           onClick={handleClaimQuest}
@@ -505,6 +523,7 @@ export default function EnglishFarmPage() {
             {quest.claimed ? 'Đã nhận thưởng' : questDone ? `Bấm nhận 🪙${quest.rewardCoins}` : `Thưởng 🪙${quest.rewardCoins}`}
           </span>
         </button>
+        </div>
       </div>
 
       {selectedTool === 'seed' && seedItems.length > 0 && (

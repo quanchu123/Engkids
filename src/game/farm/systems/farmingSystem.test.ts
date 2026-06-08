@@ -4,6 +4,8 @@ import {
   plant,
   water,
   advanceDay,
+  advanceDayWithWeather,
+  getFarmWeather,
   harvest,
   canPlant,
   isMature,
@@ -224,6 +226,27 @@ describe('Property 2: growth depends on watering', () => {
     const grown = growToMature(planted.state, 0)
     expect(grown.grid.plots[0].crop!.stage).toBe(GROWTH_STAGE_MAX)
     expect(isMature(grown.grid.plots[0].crop!, CARROT)).toBe(true)
+  })
+
+  it('rain day grows planted crops even when not watered', () => {
+    const planted = plant(till({ ...makeState(), day: 4 }, 0).state, 0, 'carrot')
+    const { state, forecast } = advanceDayWithWeather(planted.state)
+    expect(forecast.weather).toBe('rain')
+    expect(state.grid.plots[0].crop!.stage).toBe(1)
+  })
+
+  it('sunny day gives watered crops an extra growth stage', () => {
+    const planted = plant(till({ ...makeState(), day: 7 }, 0).state, 0, 'carrot')
+    const watered = water(planted.state, 0)
+    const { state, forecast } = advanceDayWithWeather(watered.state)
+    expect(forecast.weather).toBe('sunny')
+    expect(state.grid.plots[0].crop!.stage).toBe(2)
+  })
+
+  it('weather follows a predictable planning cycle', () => {
+    expect(getFarmWeather(1).weather).toBe('clear')
+    expect(getFarmWeather(4).weather).toBe('rain')
+    expect(getFarmWeather(7).weather).toBe('sunny')
   })
 })
 

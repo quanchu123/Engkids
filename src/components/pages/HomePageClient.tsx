@@ -18,8 +18,10 @@ const GAMES = [
   { id: 'memory-match', title: 'Memory Match', icon: 'story', color: 'from-pink-500 to-rose-500', href: '/games/memory-match' },
 ];
 
+type HomeStory = Pick<Story, 'id' | 'title_en' | 'title_vi' | 'level' | 'topics' | 'cover_image' | 'estimated_minutes' | 'published'>;
+
 interface HomePageClientProps {
-  stories: Story[];
+  stories: HomeStory[];
   videos: Video[];
   musicVideos: Video[];
 }
@@ -37,9 +39,9 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
 
   useEffect(() => {
     let cancelled = false;
-    const loadStories = () => fetch(`/api/stories?_=${Date.now()}`, { cache: 'no-store' })
+    const loadStories = () => fetch(`/api/stories?summary=1&_=${Date.now()}`, { cache: 'no-store' })
       .then((response) => (response.ok ? response.json() : null))
-      .then((data: { stories?: Story[] } | null) => {
+      .then((data: { stories?: HomeStory[] } | null) => {
         if (!cancelled && Array.isArray(data?.stories)) {
           setLiveStories(data.stories);
         }
@@ -423,7 +425,7 @@ function FeatureCard({
   );
 }
 
-function StoryCard({ story }: { story: Story }) {
+function StoryCard({ story }: { story: HomeStory }) {
   const levelColors = {
     Beginner: 'bg-green-100 text-green-700',
     Elementary: 'bg-blue-100 text-blue-700',

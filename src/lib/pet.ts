@@ -20,6 +20,8 @@ export interface PetState {
   exp: number;
   /** Last successful care action timestamps, used to reduce action spam. */
   lastCareAt?: Partial<Record<PetActionKey, number>>;
+  /** Rewards varied care: different actions in a row build a short rhythm. */
+  careRhythm?: { lastAction: PetActionKey; chain: number };
   /** Epoch ms of the last time decay was applied. */
   lastTick: number;
 }
@@ -78,6 +80,7 @@ export interface PetActionOutcome {
   expReward: number;
   quality: PetActionQuality;
   effectiveness: number;
+  rhythmBonus: number;
 }
 
 export interface PetActionReadiness {
@@ -126,6 +129,7 @@ export function applyDecay(pet: PetState, now: number = Date.now()): PetState {
 function actionEffectiveness(base: PetState, action: PetActionKey, now: number): {
   effectiveness: number;
   quality: PetActionQuality;
+  rhythmBonus: number;
 } {
   const primary = ACTION_PRIMARY_STAT[action];
   const current = base[primary];
@@ -158,7 +162,16 @@ function actionEffectiveness(base: PetState, action: PetActionKey, now: number):
     quality = quality === 'tired' ? 'tired' : 'wasted';
   }
 
-  return { effectiveness, quality };
+  const prevRhythm = base.careRhythm;
+  const nextChain = prevRhythm && prevRhythm.lastAction !== action ? Math.min(prevRhythm.chain + 1, 4) : 1;
+  let rhythmBonus = nextChain >= 4 ? 0.16 : nextChain >= 3 ? 0.1 : nextChain >= 2 ? 0.05 : 0;
+  if (quality !== 'wasted' && quality !== 'tired') {
+    effectiveness += rhythmBonus;
+  } else {
+    rhythmBonus = 0;
+  }
+
+  return { effectiveness, quality, rhythmBonus };
 }
 
 /**
@@ -168,18 +181,22 @@ function actionEffectiveness(base: PetState, action: PetActionKey, now: number):
 export function applyAction(pet: PetState, action: PetActionKey, now: number = Date.now()): PetActionOutcome {
   const def = PET_ACTIONS[action];
   const base = applyDecay(pet, now);
-  const { effectiveness, quality } = actionEffectiveness(base, action, now);
+  const { effectiveness, quality, rhythmBonus } = actionEffectiveness(base, action, now);
   const expReward = Math.max(2, Math.round(def.exp * effectiveness));
   const coinReward = Math.max(1, Math.round(def.coinReward * effectiveness));
   const next: PetState = {
     ...base,
     exp: base.exp + expReward,
     lastCareAt: { ...(base.lastCareAt ?? {}), [action]: now },
+    careRhythm: {
+      lastAction: action,
+      chain: base.careRhythm && base.careRhythm.lastAction !== action ? Math.min(base.careRhythm.chain + 1, 4) : 1,
+    },
   };
   (Object.entries(def.effects) as Array<[PetStatKey, number]>).forEach(([k, delta]) => {
     next[k] = clampStat(base[k] + delta * effectiveness);
   });
-  return { pet: next, coinReward, expReward, quality, effectiveness };
+  return { pet: next, coinReward, expReward, quality, effectiveness, rhythmBonus };
 }
 
 /** Coins earned for a correct answer, with a small combo bonus (capped). */

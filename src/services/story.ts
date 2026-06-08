@@ -36,6 +36,13 @@ function getSupabasePublicReader() {
   }
 }
 
+export type StorySummary = Pick<
+  Story,
+  'id' | 'title_en' | 'title_vi' | 'level' | 'topics' | 'cover_image' | 'estimated_minutes' | 'published'
+>;
+
+const STORY_SUMMARY_COLUMNS = 'id,title_en,title_vi,level,topics,cover_image,estimated_minutes,published';
+
 export async function listStories(): Promise<Story[]> {
   noStore();
   const supabase = getSupabasePublicReader();
@@ -50,6 +57,25 @@ export async function listStories(): Promise<Story[]> {
   }
 
   return (data || []) as Story[];
+}
+
+export async function listStorySummaries(): Promise<StorySummary[]> {
+  noStore();
+  const supabase = getSupabasePublicReader();
+  const { data, error } = await supabase
+    .from('stories')
+    .select(STORY_SUMMARY_COLUMNS)
+    .eq('published', true)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to list story summaries: ${error.message}`);
+  }
+
+  return ((data || []) as StorySummary[]).map((story) => ({
+    ...story,
+    cover_image: story.cover_image?.startsWith('data:image/') ? '' : story.cover_image,
+  }));
 }
 
 export async function listStoriesAdmin(): Promise<Story[]> {

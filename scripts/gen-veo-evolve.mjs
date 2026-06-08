@@ -3,8 +3,8 @@
 // when a creature reaches its final form.
 //
 // Reads keys from environment or .env.local:
-// GEMINI_API_KEY, GOOGLE_API_KEY, gemini_key1, gemini_key2, GEMINI_KEY1,
-// GEMINI_KEY2. Values are never printed.
+// GEMINI_API_KEY, GOOGLE_API_KEY, and any gemini_keyN / GEMINI_KEYN entries.
+// Values are never printed.
 //
 // Examples:
 //   node scripts/gen-veo-evolve.mjs
@@ -85,7 +85,11 @@ function parseEnvFile(text) {
 }
 
 async function loadKeys() {
-  const names = ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'gemini_key1', 'gemini_key2', 'GEMINI_KEY1', 'GEMINI_KEY2'];
+  const baseNames = [
+    'GEMINI_API_KEY',
+    'GOOGLE_API_KEY',
+  ];
+  const names = new Set(baseNames);
   const found = [];
   for (const name of names) {
     if (process.env[name]) found.push({ name, value: process.env[name] });
@@ -93,6 +97,10 @@ async function loadKeys() {
 
   try {
     const env = parseEnvFile(await readFile(join(ROOT, '.env.local'), 'utf8'));
+    Object.keys(env)
+      .filter((name) => /^gemini_key\d+$/i.test(name))
+      .sort((a, b) => Number(b.match(/\d+$/)?.[0] || 0) - Number(a.match(/\d+$/)?.[0] || 0))
+      .forEach((name) => names.add(name));
     for (const name of names) {
       if (env[name]) found.push({ name, value: env[name] });
     }
@@ -210,7 +218,7 @@ async function main() {
   const opts = parseArgs();
   const keys = await loadKeys();
   if (!keys.length) {
-    console.error('No Gemini key found. Add GEMINI_API_KEY, GOOGLE_API_KEY, gemini_key1, or gemini_key2.');
+    console.error('No Gemini key found. Add GEMINI_API_KEY, GOOGLE_API_KEY, or gemini_keyN.');
     process.exit(1);
   }
 

@@ -5,8 +5,8 @@
 //
 // This script runs OFFLINE / manually only. It is NOT used by the game at
 // runtime (Req 7.2, 7.5). Reads keys from environment or .env.local:
-// GEMINI_API_KEY, GOOGLE_API_KEY, gemini_key1, gemini_key2, GEMINI_KEY1,
-// GEMINI_KEY2. Key values are never printed.
+// GEMINI_API_KEY, GOOGLE_API_KEY, and any gemini_keyN / GEMINI_KEYN entries.
+// Key values are never printed.
 //
 // Examples:
 //   node scripts/gen-veo-farm.mjs                 # generate all 3 cutscenes
@@ -93,7 +93,11 @@ function parseEnvFile(text) {
 }
 
 async function loadKeys() {
-  const names = ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'gemini_key1', 'gemini_key2', 'GEMINI_KEY1', 'GEMINI_KEY2'];
+  const baseNames = [
+    'GEMINI_API_KEY',
+    'GOOGLE_API_KEY',
+  ];
+  const names = new Set(baseNames);
   const found = [];
   for (const name of names) {
     if (process.env[name]) found.push({ name, value: process.env[name] });
@@ -101,6 +105,10 @@ async function loadKeys() {
 
   try {
     const env = parseEnvFile(await readFile(join(ROOT, '.env.local'), 'utf8'));
+    Object.keys(env)
+      .filter((name) => /^gemini_key\d+$/i.test(name))
+      .sort((a, b) => Number(b.match(/\d+$/)?.[0] || 0) - Number(a.match(/\d+$/)?.[0] || 0))
+      .forEach((name) => names.add(name));
     for (const name of names) {
       if (env[name]) found.push({ name, value: env[name] });
     }
@@ -207,7 +215,7 @@ async function main() {
   const keys = await loadKeys();
   if (!keys.length) {
     console.error(
-      'No Gemini key found. Add GEMINI_API_KEY (or GOOGLE_API_KEY, gemini_key1, gemini_key2) ' +
+      'No Gemini key found. Add GEMINI_API_KEY, GOOGLE_API_KEY, or gemini_keyN ' +
         'to your environment or .env.local, then re-run:',
     );
     console.error('  node scripts/gen-veo-farm.mjs');
