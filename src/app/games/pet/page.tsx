@@ -10,8 +10,10 @@ import { useAppStore } from '@/store/useAppStore';
 import {
   PET_ACTIONS,
   PetActionKey,
+  PetActionQuality,
   PetStatKey,
   levelFromExp,
+  petActionReadiness,
   petMood,
   petWellbeing,
 } from '@/lib/pet';
@@ -41,6 +43,19 @@ const ACTION_STYLE: Record<PetActionKey, string> = {
   play: 'from-pink-400 to-fuchsia-500 shadow-pink-200',
   bath: 'from-sky-400 to-cyan-500 shadow-sky-200',
   sleep: 'from-violet-400 to-indigo-500 shadow-violet-200',
+};
+const READINESS_STYLE: Record<ReturnType<typeof petActionReadiness>['tone'], string> = {
+  urgent: 'bg-rose-50 text-rose-600',
+  good: 'bg-emerald-50 text-emerald-600',
+  quiet: 'bg-slate-100 text-slate-500',
+  tired: 'bg-amber-50 text-amber-600',
+};
+const QUALITY_MESSAGE: Record<PetActionQuality, string> = {
+  urgent: 'Chăm đúng lúc',
+  helpful: 'Rất có ích',
+  steady: 'Ổn định',
+  wasted: 'Ít tác dụng',
+  tired: 'Pet đang mệt',
 };
 
 function playTones(notes: number[], gap = 0.1) {
@@ -113,7 +128,11 @@ export default function PetGamePage() {
   const [quiz, setQuiz] = useState<PetQuiz | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
-  const [lastReward, setLastReward] = useState<{ exp: number; coins: number }>({ exp: 0, coins: 0 });
+  const [lastReward, setLastReward] = useState<{ exp: number; coins: number; quality: PetActionQuality }>({
+    exp: 0,
+    coins: 0,
+    quality: 'steady',
+  });
 
   const heartId = useRef(0);
   const floatId = useRef(0);
@@ -210,9 +229,8 @@ export default function PetGamePage() {
     if (!quiz || !quizAction || result) return;
     setPicked(option);
     if (option === quiz.answer) {
-      const def = PET_ACTIONS[quizAction];
-      const coinReward = carePet(quizAction, combo);
-      setLastReward({ exp: def.exp, coins: coinReward });
+      const reward = carePet(quizAction, combo);
+      setLastReward(reward);
       setResult('correct');
       setCombo((current) => current + 1);
       playDing();
@@ -234,7 +252,7 @@ export default function PetGamePage() {
       const id = heartId.current++;
       setHearts((items) => [...items, id]);
       setTimeout(() => setHearts((items) => items.filter((item) => item !== id)), 1400);
-      pushFloat(`+${def.exp} EXP · +${coinReward} xu`);
+      pushFloat(`+${reward.exp} EXP · +${reward.coins} xu`);
       setTimeout(closeQuiz, 1400);
       return;
     }
@@ -447,6 +465,7 @@ export default function PetGamePage() {
               <div className="grid grid-cols-2 gap-3">
                 {ACTION_ORDER.map((key) => {
                   const def = PET_ACTIONS[key];
+                  const readiness = petActionReadiness(pet, key);
                   return (
                     <button
                       key={key}
@@ -456,7 +475,9 @@ export default function PetGamePage() {
                       <span className="flex h-[92px] flex-col items-center justify-center gap-1.5 rounded-[1.1rem] bg-white/92 p-2">
                         <Image src={`/games/pet/${def.asset}.png`} alt={def.labelVi} width={40} height={40} unoptimized className="h-10 w-10 transition-transform group-hover:scale-110" />
                         <span className="text-sm font-black text-slate-800">{def.labelVi}</span>
-                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-600">+{def.exp} EXP</span>
+                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${READINESS_STYLE[readiness.tone]}`}>
+                          {readiness.labelVi}
+                        </span>
                       </span>
                     </button>
                   );
@@ -508,7 +529,7 @@ function QuizModal({
   action: PetActionKey;
   picked: string | null;
   result: 'correct' | 'wrong' | null;
-  lastReward: { exp: number; coins: number };
+  lastReward: { exp: number; coins: number; quality: PetActionQuality };
   combo: number;
   onClose: () => void;
   onChoose: (option: string) => void;
@@ -541,6 +562,7 @@ function QuizModal({
               <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm font-black">
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-600">+{lastReward.exp} EXP</span>
                 <span className="rounded-full bg-orange-100 px-3 py-1 text-orange-600">+{lastReward.coins} xu</span>
+                <span className="rounded-full bg-sky-100 px-3 py-1 text-sky-600">{QUALITY_MESSAGE[lastReward.quality]}</span>
                 {combo >= 2 && <span className="rounded-full bg-fuchsia-100 px-3 py-1 text-fuchsia-600">Combo x{combo}</span>}
               </div>
             </div>

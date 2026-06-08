@@ -77,6 +77,12 @@ Original prompt: tiếp tục đi
   - hides the nonessential helper note on short screens so all four care actions remain visible
   - Playwright metrics confirmed `scrollHeight=720` for both adoption and seeded main pet screen at 1366x720
   - validation: `npm run lint`, `npm run type-check`, `npm run build`
+- Pet game logic upgrade:
+  - added dynamic care effectiveness based on current need level, exhaustion, and repeated-action spam
+  - capped offline decay to avoid pets being fully wiped after long absences while still preserving real-time decay
+  - changed store care rewards to use dynamic EXP/coin outcomes from the pure pet logic
+  - added action readiness labels on care buttons and quality feedback in the quiz success modal
+  - validation: `npm run test:run -- src/lib/pet.test.ts`, `npm run type-check`, `npm run lint`, `npm run build`
 
 TODOs / next suggestions:
 - When Gemini/Veo quota or billing is available, run `npm run veo:evolve` and commit generated files under `public/games/pet/evolve/`.

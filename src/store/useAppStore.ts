@@ -24,7 +24,15 @@ import { trackEvent } from '@/lib/analytics';
 import { syncSavedWordToSRS } from '@/services/vocabulary';
 import { AvatarCategory, EquippedAvatar, getDefaultEquipped, getItem } from '@/lib/avatar';
 import { canSpin, rollSpin } from '@/lib/daily-spin';
-import { PetState, PetActionKey, createPet, applyDecay, applyAction, coinRewardForCombo } from '@/lib/pet';
+import {
+  PetState,
+  PetActionKey,
+  PetActionQuality,
+  createPet,
+  applyDecay,
+  applyAction,
+  coinRewardForCombo,
+} from '@/lib/pet';
 
 const MAX_WORD_INTERACTIONS = 2000;
 const STREAK_FREEZE_COST = 50;
@@ -57,7 +65,7 @@ interface AppState {
   buyStreakFreeze: () => boolean;
   spinDailyWheel: () => { kind: 'coins' | 'freeze'; amount: number; index: number } | null;
   adoptPet: (species: string, name: string) => void;
-  carePet: (action: PetActionKey, combo?: number) => number;
+  carePet: (action: PetActionKey, combo?: number) => { coins: number; exp: number; quality: PetActionQuality };
   syncPetDecay: () => void;
   triggerReward: (stars: number, coins: number) => void;
   clearReward: () => void;
@@ -153,11 +161,11 @@ export const useAppStore = create<AppState>()(
       // coins (base + combo bonus). Returns the coins earned (0 if no pet).
       carePet: (action, combo = 0) => {
         const state = get();
-        if (!state.pet) return 0;
-        const { pet } = applyAction(state.pet, action, Date.now());
-        const reward = coinRewardForCombo(action, combo);
+        if (!state.pet) return { coins: 0, exp: 0, quality: 'steady' };
+        const { pet, coinReward, expReward, quality } = applyAction(state.pet, action, Date.now());
+        const reward = coinRewardForCombo(action, combo, coinReward);
         set({ pet, coins: state.coins + reward });
-        return reward;
+        return { coins: reward, exp: expReward, quality };
       },
 
       // Apply time-based decay (call on mount / when the room opens).

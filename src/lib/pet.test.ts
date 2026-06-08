@@ -7,6 +7,7 @@ import {
   coinRewardForCombo,
   expForLevel,
   levelFromExp,
+  petActionReadiness,
   petWellbeing,
   petMood,
   PET_ACTIONS,
@@ -45,12 +46,12 @@ describe('applyDecay', () => {
     expect(after.lastTick).toBe(1 * HOUR);
   });
 
-  it('never goes below 0 over a long absence', () => {
+  it('caps long offline decay and never goes below 0', () => {
     const p = createPet('char-fox', 'Cáo', 0);
     const after = applyDecay(p, 100 * HOUR);
     expect(after.hunger).toBe(0);
     expect(after.happiness).toBe(0);
-    expect(after.clean).toBe(0);
+    expect(after.clean).toBe(10);
     expect(after.energy).toBe(0);
   });
 
@@ -65,23 +66,28 @@ describe('applyDecay', () => {
 describe('applyAction', () => {
   it('feeding raises hunger and grants exp + reports coin reward', () => {
     const base = { ...createPet('char-fox', 'Cáo', 0), hunger: 40 };
-    const { pet, coinReward } = applyAction(base, 'feed', 0);
+    const { pet, coinReward, expReward, quality } = applyAction(base, 'feed', 0);
     expect(coinReward).toBe(PET_ACTIONS.feed.coinReward);
-    expect(pet.hunger).toBe(clampStat(40 + 35));
-    expect(pet.exp).toBe(PET_ACTIONS.feed.exp);
+    expect(expReward).toBe(13);
+    expect(quality).toBe('helpful');
+    expect(pet.hunger).toBe(clampStat(40 + 35 * 1.08));
+    expect(pet.exp).toBe(expReward);
   });
 
-  it('never exceeds the max stat', () => {
+  it('never exceeds the max stat and reduces reward when care is wasted', () => {
     const base = createPet('char-fox', 'Cáo', 0); // all 100
-    const { pet } = applyAction(base, 'feed', 0);
+    const { pet, coinReward, expReward, quality } = applyAction(base, 'feed', 0);
     expect(pet.hunger).toBe(MAX_STAT);
+    expect(coinReward).toBe(1);
+    expect(expReward).toBe(4);
+    expect(quality).toBe('wasted');
   });
 
   it('play raises happiness and reduces energy', () => {
     const base = { ...createPet('char-fox', 'Cáo', 0), happiness: 10, energy: 50 };
     const { pet } = applyAction(base, 'play', 0);
-    expect(pet.happiness).toBe(clampStat(10 + 35));
-    expect(pet.energy).toBe(clampStat(50 - 8));
+    expect(pet.happiness).toBe(clampStat(10 + 35 * 1.2));
+    expect(pet.energy).toBe(clampStat(50 - 8 * 1.2));
   });
 
   it('applies decay before the action effect', () => {
@@ -90,6 +96,13 @@ describe('applyAction', () => {
     expect(pet.clean).toBe(100);
     // hunger decayed 16 with no action effect
     expect(pet.hunger).toBe(100 - 16);
+  });
+
+  it('reduces repeated care when the same action is spammed too soon', () => {
+    const first = applyAction({ ...createPet('char-fox', 'CÃ¡o', 0), hunger: 70 }, 'feed', 0);
+    const second = applyAction(first.pet, 'feed', 60_000);
+    expect(second.quality).toBe('wasted');
+    expect(second.expReward).toBeLessThan(first.expReward);
   });
 });
 
@@ -134,5 +147,17 @@ describe('mood', () => {
     expect(petMood({ ...createPet('x', 'x', 0) })).toBe('happy'); // all 100
     expect(petMood({ ...createPet('x', 'x', 0), hunger: 40, happiness: 40, clean: 40, energy: 40 })).toBe('ok');
     expect(petMood({ ...createPet('x', 'x', 0), hunger: 10, happiness: 10, clean: 10, energy: 10 })).toBe('sad');
+  });
+});
+
+describe('petActionReadiness', () => {
+  it('marks urgent actions when the primary need is low', () => {
+    const p = { ...createPet('char-fox', 'CÃ¡o', 0), hunger: 18 };
+    expect(petActionReadiness(p, 'feed', 0).tone).toBe('urgent');
+  });
+
+  it('warns when playing while the pet is exhausted', () => {
+    const p = { ...createPet('char-fox', 'CÃ¡o', 0), happiness: 20, energy: 10 };
+    expect(petActionReadiness(p, 'play', 0).tone).toBe('tired');
   });
 });
