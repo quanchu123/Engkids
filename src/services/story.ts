@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { Story } from '@/types';
 import { unstable_noStore as noStore } from 'next/cache';
+import { storeStoryImages } from './story-images';
 
 function getSupabaseReadClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -72,10 +73,7 @@ export async function listStorySummaries(): Promise<StorySummary[]> {
     throw new Error(`Failed to list story summaries: ${error.message}`);
   }
 
-  return ((data || []) as StorySummary[]).map((story) => ({
-    ...story,
-    cover_image: story.cover_image?.startsWith('data:image/') ? '' : story.cover_image,
-  }));
+  return (data || []) as StorySummary[];
 }
 
 export async function listStoriesAdmin(): Promise<Story[]> {
@@ -116,9 +114,10 @@ export async function getStory(id: string, includeDraft = false): Promise<Story 
 
 export async function createStory(story: Story): Promise<Story> {
   const supabase = getSupabaseAdmin();
+  const storedStory = await storeStoryImages(story);
   const { data, error } = await supabase
     .from('stories')
-    .insert(story)
+    .insert(storedStory)
     .select()
     .single();
 
@@ -131,9 +130,10 @@ export async function createStory(story: Story): Promise<Story> {
 
 export async function updateStoryById(id: string, story: Story): Promise<Story> {
   const supabase = getSupabaseAdmin();
+  const storedStory = await storeStoryImages(story);
   const { data, error } = await supabase
     .from('stories')
-    .update(story)
+    .update(storedStory)
     .eq('id', id)
     .select()
     .single();

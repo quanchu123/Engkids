@@ -130,6 +130,10 @@ const DIRECT_TEXTURES: string[] = [
   ...CROP_IDS.flatMap((id) => [`${id}-1`, `${id}-2`, `${id}-3`]),
 ]
 
+function webpVariant(src: string | null | undefined): string | null {
+  return src?.endsWith('.png') ? src.replace(/\.png$/, '.webp') : null
+}
+
 /** Runtime key for the generated white-circle particle texture (no asset). */
 const PARTICLE_DOT = 'farm-particle-dot'
 
@@ -212,13 +216,21 @@ export function createFarmScene(
       // override at `assets/<name>.png` — and on `loaderror` we transparently
       // retry the bundled iso art under the same key. If that also fails the
       // texture stays absent and render falls back to an emoji.
-      const pendingFallback = new Map<string, string>()
+      const pendingFallback = new Map<string, string[]>()
+
+      const loadWithFallbacks = (key: string, primary: string, fallbacks: string[] = []): void => {
+        const uniqueFallbacks = fallbacks.filter((src, index, list) => src && src !== primary && list.indexOf(src) === index)
+        if (uniqueFallbacks.length > 0) pendingFallback.set(key, uniqueFallbacks)
+        this.load.image(key, primary)
+      }
 
       this.load.on('loaderror', (file: Phaser.Loader.File) => {
         this.loadedTextures.delete(file.key)
-        const fallback = pendingFallback.get(file.key)
+        const fallbacks = pendingFallback.get(file.key)
+        const fallback = fallbacks?.shift()
         if (fallback) {
-          pendingFallback.delete(file.key)
+          if (fallbacks && fallbacks.length > 0) pendingFallback.set(file.key, fallbacks)
+          else pendingFallback.delete(file.key)
           this.load.image(file.key, fallback)
         }
       })
@@ -230,20 +242,20 @@ export function createFarmScene(
       for (const name of TEXTURE_NAMES) {
         const primary = isoIconSrc(name) // user override at assets/<name>.png
         const fallback = isoFallbackSrc(name) // bundled iso art
+        const primaryWebp = webpVariant(primary)
         if (primary) {
-          if (fallback && fallback !== primary) pendingFallback.set(name, fallback)
-          this.load.image(name, primary)
+          loadWithFallbacks(name, primaryWebp || primary, [primary, fallback].filter((src): src is string => Boolean(src)))
         } else if (fallback) {
-          this.load.image(name, fallback)
+          loadWithFallbacks(name, webpVariant(fallback) || fallback, [fallback])
         } else {
           // No manifest entry: still try the direct assets/ path.
-          this.load.image(name, `/games/english-farm/assets/${name}.png`)
+          loadWithFallbacks(name, `/games/english-farm/assets/${name}.webp`, [`/games/english-farm/assets/${name}.png`])
         }
       }
 
       // Dreamina staged crops + ground tiles (direct from assets/; emoji on miss).
       for (const name of DIRECT_TEXTURES) {
-        this.load.image(name, `/games/english-farm/assets/${name}.png`)
+        loadWithFallbacks(name, `/games/english-farm/assets/${name}.webp`, [`/games/english-farm/assets/${name}.png`])
       }
     }
 

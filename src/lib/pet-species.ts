@@ -47,10 +47,10 @@ export const PET_SPECIES: PetSpecies[] = [
     glow: 'rgba(56,189,248,0.75)',
     accent: 'from-cyan-400 to-blue-500',
     stages: [
-      { minLevel: 1, nameVi: 'Trứng rồng cổ', art: '/games/pet/stages/ancient-dragon-egg.png' },
-      { minLevel: 3, nameVi: 'Rồng con', art: '/games/pet/stages/ancient-dragon-1.png' },
-      { minLevel: 6, nameVi: 'Rồng trẻ', art: '/games/pet/stages/ancient-dragon-2.png' },
-      { minLevel: 10, nameVi: 'Rồng Cổ', art: '/games/pet/stages/ancient-dragon-3.png' },
+      { minLevel: 1, nameVi: 'Trứng rồng cổ', art: '/games/pet/stages/ancient-dragon-egg.webp' },
+      { minLevel: 3, nameVi: 'Rồng con', art: '/games/pet/stages/ancient-dragon-1.webp' },
+      { minLevel: 6, nameVi: 'Rồng trẻ', art: '/games/pet/stages/ancient-dragon-2.webp' },
+      { minLevel: 10, nameVi: 'Rồng Cổ', art: '/games/pet/stages/ancient-dragon-3.webp' },
     ],
   },
   {
@@ -62,10 +62,10 @@ export const PET_SPECIES: PetSpecies[] = [
     glow: 'rgba(251,146,60,0.8)',
     accent: 'from-orange-400 to-rose-500',
     stages: [
-      { minLevel: 1, nameVi: 'Trứng lửa', art: '/games/pet/stages/fire-phoenix-egg.png' },
-      { minLevel: 3, nameVi: 'Chim lửa con', art: '/games/pet/stages/fire-phoenix-1.png' },
-      { minLevel: 6, nameVi: 'Phượng trẻ', art: '/games/pet/stages/fire-phoenix-2.png' },
-      { minLevel: 10, nameVi: 'Phượng Lửa', art: '/games/pet/stages/fire-phoenix-3.png' },
+      { minLevel: 1, nameVi: 'Trứng lửa', art: '/games/pet/stages/fire-phoenix-egg.webp' },
+      { minLevel: 3, nameVi: 'Chim lửa con', art: '/games/pet/stages/fire-phoenix-1.webp' },
+      { minLevel: 6, nameVi: 'Phượng trẻ', art: '/games/pet/stages/fire-phoenix-2.webp' },
+      { minLevel: 10, nameVi: 'Phượng Lửa', art: '/games/pet/stages/fire-phoenix-3.webp' },
     ],
   },
   {
@@ -77,10 +77,10 @@ export const PET_SPECIES: PetSpecies[] = [
     glow: 'rgba(148,163,184,0.7)',
     accent: 'from-slate-300 to-zinc-500',
     stages: [
-      { minLevel: 1, nameVi: 'Trứng hổ trắng', art: '/games/pet/stages/white-tiger-egg.png' },
-      { minLevel: 3, nameVi: 'Hổ con', art: '/games/pet/stages/white-tiger-1.png' },
-      { minLevel: 6, nameVi: 'Hổ trẻ', art: '/games/pet/stages/white-tiger-2.png' },
-      { minLevel: 10, nameVi: 'Bạch Hổ', art: '/games/pet/stages/white-tiger-3.png' },
+      { minLevel: 1, nameVi: 'Trứng hổ trắng', art: '/games/pet/stages/white-tiger-egg.webp' },
+      { minLevel: 3, nameVi: 'Hổ con', art: '/games/pet/stages/white-tiger-1.webp' },
+      { minLevel: 6, nameVi: 'Hổ trẻ', art: '/games/pet/stages/white-tiger-2.webp' },
+      { minLevel: 10, nameVi: 'Bạch Hổ', art: '/games/pet/stages/white-tiger-3.webp' },
     ],
   },
   {
@@ -92,10 +92,10 @@ export const PET_SPECIES: PetSpecies[] = [
     glow: 'rgba(217,70,239,0.72)',
     accent: 'from-fuchsia-400 to-purple-500',
     stages: [
-      { minLevel: 1, nameVi: 'Trứng ánh sáng', art: '/games/pet/stages/unicorn-egg.png' },
-      { minLevel: 3, nameVi: 'Ngựa con', art: '/games/pet/stages/unicorn-1.png' },
-      { minLevel: 6, nameVi: 'Ngựa thần', art: '/games/pet/stages/unicorn-2.png' },
-      { minLevel: 10, nameVi: 'Kỳ Lân Thiên', art: '/games/pet/stages/unicorn-3.png' },
+      { minLevel: 1, nameVi: 'Trứng ánh sáng', art: '/games/pet/stages/unicorn-egg.webp' },
+      { minLevel: 3, nameVi: 'Ngựa con', art: '/games/pet/stages/unicorn-1.webp' },
+      { minLevel: 6, nameVi: 'Ngựa thần', art: '/games/pet/stages/unicorn-2.webp' },
+      { minLevel: 10, nameVi: 'Kỳ Lân Thiên', art: '/games/pet/stages/unicorn-3.webp' },
     ],
   },
   {
@@ -107,10 +107,10 @@ export const PET_SPECIES: PetSpecies[] = [
     glow: 'rgba(56,189,248,0.75)',
     accent: 'from-cyan-400 to-blue-500',
     stages: [
-      { minLevel: 1, nameVi: 'Trứng rồng nước', art: '/games/pet/stages/thuy-long-egg.png' },
-      { minLevel: 3, nameVi: 'Cá chép con', art: '/games/pet/stages/thuy-long-1.png' },
-      { minLevel: 6, nameVi: 'Cá Koi thần', art: '/games/pet/stages/thuy-long-2.png' },
-      { minLevel: 10, nameVi: 'Thủy Long', art: '/games/pet/stages/thuy-long-3.png' },
+      { minLevel: 1, nameVi: 'Trứng rồng nước', art: '/games/pet/stages/thuy-long-egg.webp' },
+      { minLevel: 3, nameVi: 'Cá chép con', art: '/games/pet/stages/thuy-long-1.webp' },
+      { minLevel: 6, nameVi: 'Cá Koi thần', art: '/games/pet/stages/thuy-long-2.webp' },
+      { minLevel: 10, nameVi: 'Thủy Long', art: '/games/pet/stages/thuy-long-3.webp' },
     ],
   },
   {
@@ -122,10 +122,10 @@ export const PET_SPECIES: PetSpecies[] = [
     glow: 'rgba(251,146,60,0.8)',
     accent: 'from-orange-400 to-rose-500',
     stages: [
-      { minLevel: 1, nameVi: 'Trứng lửa', art: '/games/pet/stages/phuong-hoang-egg.png' },
-      { minLevel: 3, nameVi: 'Gà lửa con', art: '/games/pet/stages/phuong-hoang-1.png' },
-      { minLevel: 6, nameVi: 'Chim lửa', art: '/games/pet/stages/phuong-hoang-2.png' },
-      { minLevel: 10, nameVi: 'Phượng Hoàng', art: '/games/pet/stages/phuong-hoang-3.png' },
+      { minLevel: 1, nameVi: 'Trứng lửa', art: '/games/pet/stages/phuong-hoang-egg.webp' },
+      { minLevel: 3, nameVi: 'Gà lửa con', art: '/games/pet/stages/phuong-hoang-1.webp' },
+      { minLevel: 6, nameVi: 'Chim lửa', art: '/games/pet/stages/phuong-hoang-2.webp' },
+      { minLevel: 10, nameVi: 'Phượng Hoàng', art: '/games/pet/stages/phuong-hoang-3.webp' },
     ],
   },
   {
@@ -137,10 +137,10 @@ export const PET_SPECIES: PetSpecies[] = [
     glow: 'rgba(217,70,239,0.72)',
     accent: 'from-fuchsia-400 to-purple-500',
     stages: [
-      { minLevel: 1, nameVi: 'Trứng ánh sáng', art: '/games/pet/stages/ky-lan-egg.png' },
-      { minLevel: 3, nameVi: 'Ngựa con', art: '/games/pet/stages/ky-lan-1.png' },
-      { minLevel: 6, nameVi: 'Ngựa thần', art: '/games/pet/stages/ky-lan-2.png' },
-      { minLevel: 10, nameVi: 'Kỳ Lân', art: '/games/pet/stages/ky-lan-3.png' },
+      { minLevel: 1, nameVi: 'Trứng ánh sáng', art: '/games/pet/stages/ky-lan-egg.webp' },
+      { minLevel: 3, nameVi: 'Ngựa con', art: '/games/pet/stages/ky-lan-1.webp' },
+      { minLevel: 6, nameVi: 'Ngựa thần', art: '/games/pet/stages/ky-lan-2.webp' },
+      { minLevel: 10, nameVi: 'Kỳ Lân', art: '/games/pet/stages/ky-lan-3.webp' },
     ],
   },
   {
@@ -152,10 +152,10 @@ export const PET_SPECIES: PetSpecies[] = [
     glow: 'rgba(132,204,22,0.72)',
     accent: 'from-lime-400 to-emerald-500',
     stages: [
-      { minLevel: 1, nameVi: 'Trứng khủng long', art: '/games/pet/stages/bao-chua-egg.png' },
-      { minLevel: 3, nameVi: 'Khủng long nhí', art: '/games/pet/stages/bao-chua-1.png' },
-      { minLevel: 6, nameVi: 'Raptor', art: '/games/pet/stages/bao-chua-2.png' },
-      { minLevel: 10, nameVi: 'Long Bạo Chúa', art: '/games/pet/stages/bao-chua-3.png' },
+      { minLevel: 1, nameVi: 'Trứng khủng long', art: '/games/pet/stages/bao-chua-egg.webp' },
+      { minLevel: 3, nameVi: 'Khủng long nhí', art: '/games/pet/stages/bao-chua-1.webp' },
+      { minLevel: 6, nameVi: 'Raptor', art: '/games/pet/stages/bao-chua-2.webp' },
+      { minLevel: 10, nameVi: 'Long Bạo Chúa', art: '/games/pet/stages/bao-chua-3.webp' },
     ],
   },
 ];

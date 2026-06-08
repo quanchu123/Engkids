@@ -114,6 +114,15 @@ Original prompt: tiếp tục đi
   - local dev after fix: `/api/stories?summary=1` dropped to 766 bytes, `/` dropped to ~94 KB
   - droplet SSH on `168.144.128.38:22` still timed out, so remote SSD usage could not be measured from here
   - validation: `npm run type-check`, `npm run lint`, `npm run build`
+- Server/game storage and lag pass:
+  - added `npm run server:audit` to report droplet disk/inode/RAM/load/PM2 plus top project/uploads/log files
+  - added `npm run server:cleanup-uploads`; dry-run by default, `-- --delete` removes unreferenced upload files after checking Supabase videos, background music, and story image refs
+  - changed `postbuild` to skip ffmpeg thumbnail backfill by default; run `npm run thumbnails:backfill` manually or set `BACKFILL_THUMBNAILS_ON_BUILD=1` when needed
+  - added `games:audit-assets` and `games:optimize-assets`; generated WebP variants for pet/farm PNG assets
+  - pet now uses WebP stage/action art; farm Phaser loader tries WebP first and falls back to PNG/iso art
+  - runtime game asset estimate after WebP: `pet` ~2.4 MB, `english-farm` ~4.0 MB; largest runtime game asset is under 1 MB
+  - validation: `npm run games:audit-assets`, `npm run server:cleanup-uploads`, `npm run type-check`, `npm run lint`, `npm run build`
+  - visual smoke: local prod `/games/pet` and `/games/english-farm` screenshots saved as `output/pet-webp-check.png` and `output/english-farm-webp-check.png`; images render with WebP and no blocking console errors
 
 TODOs / next suggestions:
 - When Gemini/Veo quota or billing is available, run `npm run veo:evolve` and commit generated files under `public/games/pet/evolve/`.

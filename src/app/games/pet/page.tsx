@@ -484,7 +484,7 @@ export default function PetGamePage() {
                       className={`group rounded-[1.25rem] bg-gradient-to-br ${ACTION_STYLE[key]} p-0.5 shadow-lg transition-transform hover:-translate-y-1`}
                     >
                       <span className="flex h-[92px] flex-col items-center justify-center gap-1.5 rounded-[1.1rem] bg-white/92 p-2">
-                        <Image src={`/games/pet/${def.asset}.png`} alt={def.labelVi} width={40} height={40} unoptimized className="h-10 w-10 transition-transform group-hover:scale-110" />
+                        <Image src={`/games/pet/${def.asset}.webp`} alt={def.labelVi} width={40} height={40} unoptimized className="h-10 w-10 transition-transform group-hover:scale-110" />
                         <span className="text-sm font-black text-slate-800">{def.labelVi}</span>
                         <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${READINESS_STYLE[readiness.tone]}`}>
                           {readiness.labelVi}
@@ -555,7 +555,7 @@ function CareActionBurst({ action }: { action: PetActionKey }) {
         return (
           <Image
             key={index}
-            src={`/games/pet/${asset}.png`}
+            src={`/games/pet/${asset}.webp`}
             alt=""
             width={42}
             height={42}
@@ -598,7 +598,7 @@ function QuizModal({
         <div className={`bg-gradient-to-r ${ACTION_STYLE[action]} px-5 py-4 text-white`}>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-sm font-black">
-              <Image src={`/games/pet/${actionDef.asset}.png`} alt="" width={30} height={30} unoptimized />
+              <Image src={`/games/pet/${actionDef.asset}.webp`} alt="" width={30} height={30} unoptimized />
               {actionDef.labelVi}
             </span>
             <button onClick={onClose} aria-label="Đóng" className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-sm font-black hover:bg-white/30">×</button>

@@ -56,20 +56,19 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
       })
       .catch(() => {});
     const handleFocus = () => {
+      if (document.visibilityState !== 'visible') return;
       loadStories();
       loadVideos();
     };
-    loadStories();
-    loadVideos();
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleFocus);
 
-    // Polling fallback: refresh every 30s so background tabs pick up admin
-    // changes without needing a focus event.
+    // Polling fallback for long-open tabs; BroadcastChannel handles admin edits
+    // immediately, so this can stay relaxed.
     const interval = window.setInterval(() => {
       loadStories();
       loadVideos();
-    }, 30_000);
+    }, 300_000);
 
     // Cross-tab sync: when another tab (e.g. admin) dispatches a content
     // change event, refresh immediately.
