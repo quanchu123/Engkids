@@ -62,7 +62,7 @@ describe('getLearnerStageProgress', () => {
   });
 
   it('advances to A2 bridge when Flyers targets are met', () => {
-    const result = getLearnerStageProgress(makeProgress({ words: 700, stories: 24, games: 32 }));
+    const result = getLearnerStageProgress(makeProgress({ words: 720, stories: 24, games: 40 }));
     expect(result.stage.id).toBe('a2-bridge');
     expect(result.nextStage).toBeNull();
   });

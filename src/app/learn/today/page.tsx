@@ -7,22 +7,27 @@ import Header from '@/components/layout/Header';
 import { useAppStore } from '@/store/useAppStore';
 import { getAllStories } from '@/data/stories';
 import { getVocabularyStats } from '@/services/vocabulary';
-import { buildLessonPath, getLessonSummary, LessonStep } from '@/lib/learning-path';
-import { getLearnerStageProgress, stageForStoryLevel } from '@/lib/curriculum';
-import { Story } from '@/types';
+import { buildLessonPath, getLessonSummary, type LessonStep } from '@/lib/learning-path';
+import { getLearnerStageProgress, getStageById, stageForStoryLevel } from '@/lib/curriculum';
+import type { Story } from '@/types';
+import type { LearnerCurriculumState } from '@/services/curriculum-content';
 
 const CARD_TINTS: Record<LessonStep['kind'], string> = {
+  placement: 'from-fuchsia-500 to-violet-500',
   review: 'from-violet-400 to-fuchsia-500',
   story: 'from-sky-400 to-indigo-500',
   media: 'from-orange-400 to-amber-500',
   game: 'from-emerald-400 to-teal-500',
+  checkpoint: 'from-indigo-500 to-sky-500',
 };
 
 export default function TodayLearnPage() {
   const { progress } = useAppStore();
   const [stories, setStories] = useState<Story[]>([]);
   const [dueWords, setDueWords] = useState(0);
+  const [learnerState, setLearnerState] = useState<LearnerCurriculumState | null>(null);
   const learner = useMemo(() => getLearnerStageProgress(progress), [progress]);
+  const currentStage = learnerState?.currentStageId ? getStageById(learnerState.currentStageId) : learner.stage;
 
   useEffect(() => {
     let active = true;
@@ -35,17 +40,25 @@ export default function TodayLearnPage() {
         if (active) setStories([]);
       });
 
-    const loadDue = async () => {
-      try {
-        const stats = await getVocabularyStats();
+    getVocabularyStats()
+      .then((stats) => {
         if (active) setDueWords(stats.dueToday);
-      } catch {
-        // Guest or network error: no spaced-repetition words to review.
+      })
+      .catch(() => {
         if (active) setDueWords(0);
-      }
-    };
+      });
 
-    loadDue();
+    fetch('/api/curriculum', { credentials: 'include', cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json();
+      })
+      .then((data) => {
+        if (active && data) setLearnerState(data.learnerState || null);
+      })
+      .catch(() => {
+        if (active) setLearnerState(null);
+      });
 
     return () => {
       active = false;
@@ -54,8 +67,14 @@ export default function TodayLearnPage() {
 
   const nextStory = useMemo(() => {
     const unread = stories.filter((story) => !progress.storiesProgress[story.id]?.completed);
-    return unread.find((story) => stageForStoryLevel(story.level) === learner.stage.id) ?? unread[0];
-  }, [stories, progress.storiesProgress, learner.stage.id]);
+    return unread.find((story) => stageForStoryLevel(story.level) === currentStage.id) ?? unread[0];
+  }, [stories, progress.storiesProgress, currentStage.id]);
+
+  const checkpointDue = Boolean(
+    learnerState?.placementDone &&
+    learnerState?.nextCheckpointDueAt &&
+    learnerState.nextCheckpointDueAt <= new Date().toISOString().slice(0, 10),
+  );
 
   const steps = useMemo(
     () =>
@@ -64,12 +83,14 @@ export default function TodayLearnPage() {
         quest: progress.dailyQuestState,
         nextStoryId: nextStory?.id,
         nextStoryTitle: nextStory?.title_vi || nextStory?.title_en,
+        placementDone: learnerState?.placementDone ?? false,
+        checkpointDue,
       }),
-    [dueWords, progress.dailyQuestState, nextStory],
+    [dueWords, progress.dailyQuestState, nextStory, learnerState, checkpointDue],
   );
 
   const summary = useMemo(() => getLessonSummary(steps), [steps]);
-  const percent = Math.round((summary.done / summary.total) * 100);
+  const percent = summary.total > 0 ? Math.round((summary.done / summary.total) * 100) : 0;
 
   return (
     <>
@@ -85,13 +106,12 @@ export default function TodayLearnPage() {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
-                letterSpacing: '-0.02em',
               }}
             >
-              Hôm nay học gì? 📅
+              Hôm nay học gì?
             </h1>
             <p className="mt-1 text-sm font-bold" style={{ color: '#6b5b8f' }}>
-              Làm theo các bước dưới đây để học mỗi ngày một chút nhé!
+              Hệ thống giao bài theo DB: placement, review, nội dung, game và checkpoint.
             </p>
           </header>
 
@@ -99,18 +119,24 @@ export default function TodayLearnPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-black uppercase tracking-wide text-violet-500">Chặng học hiện tại</p>
-                <h2 className="mt-1 text-xl font-black text-slate-900">{learner.stage.cefr}: {learner.stage.titleVi}</h2>
+                <h2 className="mt-1 text-xl font-black text-slate-900">{currentStage.cefr}: {currentStage.titleVi}</h2>
                 <p className="mt-1 text-sm font-semibold text-slate-500">
-                  Ưu tiên từ, truyện và game phù hợp chặng này trước khi lên bài khó hơn.
+                  Topic ưu tiên: {currentStage.topics.slice(0, 4).join(', ')}.
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {currentStage.dailyLoop.slice(0, 3).map((item) => (
+                    <span key={item} className="rounded-full bg-violet-50 px-3 py-1 text-xs font-black text-violet-700">
+                      {item}
+                    </span>
+                  ))}
+                </div>
               </div>
               <Link href="/roadmap" className="kid-chip flex-shrink-0 px-4 py-2 text-sm font-black text-violet-700">
-                {learner.percent}% lộ trình
+                {learnerState?.placementDone ? `${learner.percent}% lộ trình` : 'Cần placement'}
               </Link>
             </div>
           </section>
 
-          {/* Summary progress bar */}
           <section className="toy-panel mb-6 p-5">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-black text-slate-700">Tiến độ hôm nay</span>
@@ -128,23 +154,17 @@ export default function TodayLearnPage() {
 
           {summary.allDone && (
             <section className="soft-feature mb-6 rounded-[2rem] p-6 text-center text-white">
-              <div className="mb-2 text-4xl">🎉🌟🎉</div>
               <h2 className="text-2xl font-black">Tuyệt vời! Bạn đã học xong hôm nay!</h2>
-              <p className="mt-1 text-white/90">
-                Bạn đã hoàn thành tất cả các bước. Hẹn gặp lại vào ngày mai nhé!
-              </p>
+              <p className="mt-1 text-white/90">Kết quả học và tiến độ được đồng bộ theo tài khoản.</p>
             </section>
           )}
 
-          {/* Vertical timeline / checklist */}
           <ol className="relative space-y-5">
             {steps.map((step, index) => (
               <li key={step.id} className="relative">
                 <div className={`toy-panel p-5 ${step.done ? 'opacity-90' : ''}`}>
                   <div className="flex items-center gap-4">
-                    <div
-                      className={`relative flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${CARD_TINTS[step.kind]} text-3xl shadow-lg`}
-                    >
+                    <div className={`relative flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${CARD_TINTS[step.kind]} text-3xl shadow-lg`}>
                       <span aria-hidden>{step.emoji}</span>
                       {step.done && (
                         <span className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500 text-sm font-black text-white shadow-md">
@@ -182,7 +202,7 @@ export default function TodayLearnPage() {
           {!summary.allDone && (
             <p className="mt-6 flex items-center justify-center gap-2 text-center text-sm font-bold text-slate-500">
               <Sparkles className="h-4 w-4 text-amber-500" />
-              Cố lên! Hoàn thành các bước để nhận sao mỗi ngày.
+              Cố lên! Làm theo từng bước để hệ thống cập nhật lộ trình cho bạn.
             </p>
           )}
         </div>

@@ -165,3 +165,30 @@ TODOs / next suggestions:
     - `npm run build`
     - Playwright smoke on `http://127.0.0.1:3003` for desktop shop, mobile shop, and mocked admin sidebar collapse (`output/playwright/nav-admin-smoke/`)
 
+- Curriculum + word_bank design pass:
+  - rebuilt `DEFAULT_WORD_BANK` into a CEFR/Cambridge Young Learners inspired Engkids seed with 225 words, 5 curriculum stages, 26 topics, examples for every word, and 45 five-letter words for Word Puzzle
+  - added word-bank helpers for stats, stage counts, topics, and stronger built-in metadata inference
+  - expanded `CURRICULUM_STAGES` with objectives, daily loop, weekly plan, monthly assessment, exit criteria, and Engkids activity mapping
+  - rewrote `/roadmap` to read directly from `CURRICULUM_STAGES` instead of a duplicate local ROADMAP array
+  - added current-stage daily loop/topic chips on `/learn/today`
+  - upgraded `/admin/games/word-bank` with seed reload, level/topic/search filters, stats by stage/topic, and visible row counts
+  - validation:
+    - `npm run test:run -- src/lib/word-bank.test.ts src/lib/curriculum.test.ts`
+    - `npm run type-check`
+    - `npm run lint`
+    - `npm run test:run -- src/lib/curriculum.test.ts src/lib/word-bank.test.ts src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`
+    - `npm run build`
+    - Playwright smoke on `http://127.0.0.1:3003` for `/roadmap`, `/learn/today`, `/admin/games/word-bank` level filter, and `/games/matching-pairs` (`output/playwright/curriculum-wordbank-smoke/`)
+
+- DB-backed curriculum/assessment engine pass:
+  - added migration `020_curriculum_assessment_engine.sql` for curriculum stages, skills, normalized `word_bank_items`, assessment blueprints/items, learner curriculum state, skill mastery, assessment attempts/responses, and daily tasks
+  - changed word bank reads to prefer `word_bank_items`, with legacy `game_content` compatibility and admin save syncing both stores
+  - added `/api/curriculum` and `/api/assessments/[kind]` so placement/checkpoint/daily/stage-exit assessments generate from the DB-backed word bank and save results for logged-in users
+  - added `/learn/placement` and `/learn/checkpoint`, then changed `/learn/today` and `/roadmap` from text roadmap screens into functional learner-flow screens with placement, checkpoint, stage unlock, mastery, and next action states
+  - validation:
+    - `npm run type-check`
+    - `npm run lint`
+    - `npm run test:run -- src/lib/learning-path.test.ts src/lib/curriculum.test.ts src/lib/word-bank.test.ts src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`
+    - `npm run build`
+    - Browser smoke on `http://127.0.0.1:3003` for `/roadmap`, `/learn/today`, `/learn/placement`
+    - Playwright submit smoke for placement with screenshots in `output/playwright/db-curriculum-smoke/`

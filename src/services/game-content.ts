@@ -10,6 +10,25 @@ import { DIFFICULTIES } from '@/types/games';
 import { DEFAULT_MULTIPLE_CHOICE, DEFAULT_TRUE_FALSE } from '@/data/game-defaults';
 import { DEFAULT_WORD_BANK, normalizeWordBank, type WordPair } from '@/lib/word-bank';
 
+interface WordBankItemRow {
+  en: string | null;
+  vi: string | null;
+  level: WordPair['level'] | null;
+  topic: string | null;
+  example: string | null;
+  sort_order: number | null;
+}
+
+function isMissingTableError(error: unknown, table: string): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const maybe = error as { code?: string; message?: string };
+  return maybe.code === 'PGRST205' || Boolean(maybe.message?.includes(table));
+}
+
+function hasSupabaseAdminCredentials(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 function getSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -198,8 +217,88 @@ export async function getTrueFalseForAdmin(): Promise<TFContent> {
 
 // ---- Word bank (shared by the 6 vocabulary games) ----
 
+function mapWordBankRows(rows: WordBankItemRow[] | null | undefined): WordPair[] | null {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return normalizeWordBank(rows.map((row) => ({
+    en: row.en || '',
+    vi: row.vi || '',
+    level: row.level || undefined,
+    topic: row.topic || undefined,
+    example: row.example || undefined,
+  })));
+}
+
+async function getWordBankFromItems(): Promise<WordPair[] | null> {
+  try {
+    const supabase = getSupabasePublicReader();
+    const { data, error } = await supabase
+      .from('word_bank_items')
+      .select('en, vi, level, topic, example, sort_order')
+      .eq('active', true)
+      .order('sort_order', { ascending: true })
+      .order('en', { ascending: true });
+
+    if (isMissingTableError(error, 'word_bank_items') || error) return null;
+    return mapWordBankRows(data as WordBankItemRow[] | null);
+  } catch {
+    return null;
+  }
+}
+
+function toPostgrestInList(values: string[]): string {
+  const escaped = values.map((value) => `"${value.replace(/"/g, '\\"')}"`);
+  return `(${escaped.join(',')})`;
+}
+
+async function syncWordBankItems(words: WordPair[], source = 'admin', replaceExisting = false): Promise<boolean> {
+  if (!hasSupabaseAdminCredentials()) return false;
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const rows = words.map((word, index) => ({
+      en: word.en,
+      vi: word.vi,
+      level: word.level || 'pre-a1-starters',
+      topic: word.topic || 'general',
+      example: word.example || `I can see ${word.en.toLowerCase()}.`,
+      source,
+      sort_order: index + 1,
+      active: true,
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabase
+      .from('word_bank_items')
+      .upsert(rows, { onConflict: 'en_lower' });
+
+    if (isMissingTableError(error, 'word_bank_items') || error) return false;
+
+    const current = words.map((word) => word.en.toLowerCase().trim()).filter(Boolean);
+    if (replaceExisting && current.length > 0) {
+      await supabase
+        .from('word_bank_items')
+        .update({ active: false, updated_at: new Date().toISOString() })
+        .not('en_lower', 'in', toPostgrestInList(current));
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function getWordBank(): Promise<WordPair[]> {
-  return normalizeWordBank(await fetchRaw('word-bank')) || DEFAULT_WORD_BANK;
+  const normalizedTable = await getWordBankFromItems();
+  if (normalizedTable) return normalizedTable;
+
+  const legacy = normalizeWordBank(await fetchRaw('word-bank'));
+  if (legacy) {
+    await syncWordBankItems(legacy, 'game_content-backfill');
+    return legacy;
+  }
+
+  await syncWordBankItems(DEFAULT_WORD_BANK, 'engkids-seed');
+  return DEFAULT_WORD_BANK;
 }
 
 export async function saveWordBank(raw: unknown): Promise<WordPair[]> {
@@ -207,6 +306,7 @@ export async function saveWordBank(raw: unknown): Promise<WordPair[]> {
   if (!normalized) {
     throw new Error('Nội dung không hợp lệ: cần ít nhất 1 từ có cả tiếng Anh và tiếng Việt.');
   }
+  await syncWordBankItems(normalized, 'admin', true);
   await upsert('word-bank', normalized);
   return normalized;
 }

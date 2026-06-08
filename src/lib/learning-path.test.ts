@@ -57,6 +57,18 @@ describe('buildLessonPath', () => {
     expect(noDue.find((s) => s.kind === 'review')!.done).toBe(true);
   });
 
+
+  it('adds placement first when the learner has no placement result', () => {
+    const steps = buildLessonPath({ dueWords: 0, quest: makeQuest(), placementDone: false });
+    expect(steps.map((s) => s.kind)).toEqual(['placement', 'review', 'story', 'media', 'game']);
+    expect(steps[0].href).toBe('/learn/placement');
+  });
+
+  it('adds checkpoint after the daily loop when a checkpoint is due', () => {
+    const steps = buildLessonPath({ dueWords: 0, quest: makeQuest(), checkpointDue: true });
+    expect(steps.map((s) => s.kind)).toEqual(['review', 'story', 'media', 'game', 'checkpoint']);
+    expect(steps.at(-1)?.href).toBe('/learn/checkpoint');
+  });
   it('derives story/media/game done flags from the quest state', () => {
     const quest = makeQuest({ story: true, game: true });
     const steps = buildLessonPath({ dueWords: 2, quest });

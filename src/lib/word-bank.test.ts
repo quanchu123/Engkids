@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_WORD_BANK,
   filterWordBank,
+  getStageWordCount,
+  getWordBankStats,
   normalizeWordBank,
   toCoinQuestions,
   toFillBlankQuestions,
@@ -17,6 +20,23 @@ const BANK: WordPair[] = [
   { en: 'Adventure', vi: 'Cuoc phieu luu', level: 'a2-flyers', topic: 'adventure', example: 'The adventure starts today.' },
   { en: 'Community', vi: 'Cong dong', level: 'a2-flyers', topic: 'community', example: 'Our community helps people.' },
 ];
+
+describe('DEFAULT_WORD_BANK curriculum seed', () => {
+  it('covers every curriculum stage with metadata and examples', () => {
+    const stats = getWordBankStats(DEFAULT_WORD_BANK);
+    expect(stats.total).toBeGreaterThan(150);
+    expect(stats.fiveLetterCount).toBeGreaterThanOrEqual(20);
+    expect(stats.exampleCount).toBe(stats.total);
+    expect(getStageWordCount('sound-play')).toBeGreaterThan(20);
+    expect(getStageWordCount('pre-a1-starters')).toBeGreaterThan(40);
+    expect(getStageWordCount('a1-movers')).toBeGreaterThan(40);
+    expect(getStageWordCount('a2-flyers')).toBeGreaterThan(35);
+    expect(getStageWordCount('a2-bridge')).toBeGreaterThan(20);
+  });
+  it('keeps each default word assigned to a level and topic', () => {
+    expect(DEFAULT_WORD_BANK.every((word) => word.level && word.topic && word.example)).toBe(true);
+  });
+});
 
 describe('normalizeWordBank', () => {
   it('keeps curriculum metadata and drops malformed rows', () => {
@@ -72,9 +92,11 @@ describe('word-bank game adapters', () => {
   });
 
   it('creates fill-blank questions from examples', () => {
-    const [question] = toFillBlankQuestions(BANK, 1);
-    expect(question.sentence).toContain('___');
-    expect(question.options).toContain(question.answer);
+    const questions = toFillBlankQuestions(BANK, BANK.length);
+
+    expect(questions.every((question) => question.sentence.includes('___'))).toBe(true);
+    expect(questions.every((question) => question.sentence !== 'I can see ___.')).toBe(true);
+    expect(questions.every((question) => question.options.includes(question.answer))).toBe(true);
   });
 
   it('creates sentence-scramble items from examples', () => {

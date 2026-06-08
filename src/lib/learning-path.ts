@@ -6,7 +6,7 @@ import { DailyQuestState } from '@/types';
  */
 export type LessonStep = {
   id: string;
-  kind: 'review' | 'story' | 'media' | 'game';
+  kind: 'placement' | 'review' | 'story' | 'media' | 'game' | 'checkpoint';
   titleVi: string;
   descVi: string;
   href: string;
@@ -19,17 +19,19 @@ export interface BuildLessonPathInput {
   quest: DailyQuestState;
   nextStoryId?: string;
   nextStoryTitle?: string;
+  placementDone?: boolean;
+  checkpointDue?: boolean;
 }
 
 /**
  * Build the ordered list of lesson steps for today.
  *
- * Order is fixed: review -> story -> media -> game. Each step's `done` flag is
- * derived from the daily quest state (and the number of due words for review).
- * Pure function: no React, no `window`, no side effects.
+ * Order is fixed: placement if needed -> review -> story -> media -> game ->
+ * checkpoint if due. Each step's `done` flag is derived from DB-backed learner
+ * state and the daily quest state.
  */
 export function buildLessonPath(input: BuildLessonPathInput): LessonStep[] {
-  const { dueWords, quest, nextStoryId, nextStoryTitle } = input;
+  const { dueWords, quest, nextStoryId, nextStoryTitle, placementDone = true, checkpointDue = false } = input;
 
   const reviewDesc =
     dueWords > 0
@@ -40,7 +42,21 @@ export function buildLessonPath(input: BuildLessonPathInput): LessonStep[] {
     ? `Đọc truyện "${nextStoryTitle}" và khám phá từ mới.`
     : 'Đọc một truyện thú vị và khám phá từ mới.';
 
-  return [
+  const steps: LessonStep[] = [];
+
+  if (!placementDone) {
+    steps.push({
+      id: 'placement',
+      kind: 'placement',
+      titleVi: 'Kiểm tra đầu vào',
+      descVi: 'Làm placement test để hệ thống xếp đúng chặng học và lưu kết quả vào DB.',
+      href: '/learn/placement',
+      emoji: '🎯',
+      done: false,
+    });
+  }
+
+  steps.push(
     {
       id: 'review',
       kind: 'review',
@@ -77,7 +93,21 @@ export function buildLessonPath(input: BuildLessonPathInput): LessonStep[] {
       emoji: '🎮',
       done: quest.steps.game.done,
     },
-  ];
+  );
+
+  if (checkpointDue) {
+    steps.push({
+      id: 'checkpoint',
+      kind: 'checkpoint',
+      titleVi: 'Checkpoint lộ trình',
+      descVi: 'Làm bài kiểm tra ngắn để cập nhật mastery và mở nhiệm vụ tiếp theo.',
+      href: '/learn/checkpoint',
+      emoji: '✅',
+      done: false,
+    });
+  }
+
+  return steps;
 }
 
 /**

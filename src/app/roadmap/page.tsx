@@ -1,115 +1,52 @@
-"use client";
+'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
-import {
-  ArrowRight,
-  BookOpen,
-  CheckCircle2,
-  Gamepad2,
-  GraduationCap,
-  Headphones,
-  Layers3,
-  Mic,
-  Route,
-  Sparkles,
-  Star,
-  Target,
-} from 'lucide-react';
+import { ArrowRight, CheckCircle2, ClipboardCheck, Lock, Play, Route, ShieldCheck, Target } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useAppStore } from '@/store/useAppStore';
-import { CURRICULUM_STAGES, getLearnerStageProgress } from '@/lib/curriculum';
+import { CURRICULUM_STAGES, getLearnerStageProgress, getStageById, type CurriculumStage, type CurriculumStageId } from '@/lib/curriculum';
+import { DEFAULT_WORD_BANK, getWordBankStats } from '@/lib/word-bank';
+import type { CurriculumCatalog, LearnerCurriculumState } from '@/services/curriculum-content';
 
-const ROADMAP = [
-  {
-    id: 'sound-play',
-    cefr: 'Pre-A1 readiness',
-    title: 'Làm quen âm thanh',
-    age: '4-6 tuổi hoặc mới bắt đầu',
-    weeks: '4-8 tuần',
-    color: 'from-sky-400 to-cyan-500',
-    focus: ['Nghe hiểu chỉ dẫn ngắn', 'Bắt chước âm và nhịp câu', 'Nhận diện 150-250 từ quen thuộc'],
-    canDo: ['Bé hiểu lời chào, màu sắc, số, đồ vật quen thuộc.', 'Bé nhắc lại từ đơn và cụm 2-3 từ.', 'Bé chọn đúng tranh/từ khi nghe tiếng Anh.'],
-    engkids: ['Bài hát và video ngắn', 'Memory Match', 'Pet: chăm sóc bằng câu hỏi 1 từ'],
-  },
-  {
-    id: 'starters',
-    cefr: 'Pre A1 Starters',
-    title: 'Nền tảng từ và câu ngắn',
-    age: '6-8 tuổi',
-    weeks: '3-5 tháng',
-    color: 'from-violet-500 to-fuchsia-500',
-    focus: ['Từ vựng gia đình, trường lớp, đồ ăn, động vật', 'Câu mẫu: I like..., This is..., Where is...?', 'Đọc từ/câu rất ngắn'],
-    canDo: ['Bé trả lời câu hỏi cá nhân rất đơn giản.', 'Bé ghép Anh-Việt và đọc được câu ngắn có tranh hỗ trợ.', 'Bé viết hoặc kéo thả được từ đơn đúng ngữ cảnh.'],
-    engkids: ['Truyện cấp dễ', 'Word Burst, Word Puzzle', 'Progress review để ôn từ đã lưu'],
-  },
-  {
-    id: 'movers',
-    cefr: 'A1 Movers',
-    title: 'Giao tiếp câu đơn',
-    age: '7-10 tuổi',
-    weeks: '5-8 tháng',
-    color: 'from-emerald-400 to-teal-500',
-    focus: ['Hỏi đáp về thói quen, sở thích, nơi chốn', 'Đọc truyện ngắn 80-150 từ', 'Viết cụm và câu đơn'],
-    canDo: ['Bé hiểu đoạn hội thoại ngắn có chủ đề quen thuộc.', 'Bé kể lại nội dung truyện bằng 2-4 câu đơn.', 'Bé dùng được thì hiện tại đơn và mệnh lệnh quen thuộc.'],
-    engkids: ['English Farm để học từ theo vòng lặp', 'RPG World, Tower Climb', 'Story games sau mỗi truyện'],
-  },
-  {
-    id: 'flyers',
-    cefr: 'A2 Flyers',
-    title: 'Đọc hiểu và kể chuyện',
-    age: '9-12 tuổi',
-    weeks: '8-12 tháng',
-    color: 'from-amber-400 to-orange-500',
-    focus: ['Đọc đoạn 150-300 từ', 'Nghe chi tiết chính trong video/truyện', 'Viết 4-6 câu có trình tự'],
-    canDo: ['Bé nắm ý chính và chi tiết trong truyện/video ngắn.', 'Bé mô tả tranh, nhân vật, sự kiện bằng câu nối tiếp.', 'Bé dùng được quá khứ đơn cơ bản và từ nối như because, then, first.'],
-    engkids: ['Fill Blanks, Sentence Scramble', 'Video quiz và Story vocab', 'SRS review theo ngày đến hạn'],
-  },
-  {
-    id: 'a2-key-bridge',
-    cefr: 'A2 bridge',
-    title: 'Tự học có hướng dẫn',
-    age: '10+ hoặc bé đã hoàn thành Flyers',
-    weeks: '3-6 tháng',
-    color: 'from-rose-400 to-pink-500',
-    focus: ['Đọc nhiều chủ đề hơn', 'Nói/viết ý kiến đơn giản', 'Tự theo dõi lỗi và mục tiêu tuần'],
-    canDo: ['Bé đọc được email, tin nhắn, truyện ngắn đời thường.', 'Bé nói về kế hoạch, trải nghiệm, sở thích bằng đoạn ngắn.', 'Bé biết ôn lại từ yếu và chọn hoạt động phù hợp.'],
-    engkids: ['Progress dashboard', 'Today plan', 'Game luyện phản xạ và từ vựng nâng cao'],
-  },
-];
+const STAGE_COLORS: Record<CurriculumStageId, string> = {
+  'sound-play': 'from-sky-400 to-cyan-500',
+  'pre-a1-starters': 'from-violet-500 to-fuchsia-500',
+  'a1-movers': 'from-emerald-400 to-teal-500',
+  'a2-flyers': 'from-amber-400 to-orange-500',
+  'a2-bridge': 'from-rose-400 to-pink-500',
+};
 
-const DAILY_LOOP = [
-  { icon: Headphones, title: 'Nghe 8-12 phút', desc: 'Video hoặc bài hát ngắn để lấy input tự nhiên.' },
-  { icon: BookOpen, title: 'Đọc 10 phút', desc: 'Một truyện vừa sức, ưu tiên hiểu ý chính trước.' },
-  { icon: Gamepad2, title: 'Chơi 10 phút', desc: 'Game dùng word bank để biến từ mới thành phản xạ.' },
-  { icon: Star, title: 'Ôn 5 phút', desc: 'SRS/progress review để từ cũ quay lại đúng lúc.' },
-];
-
-const PRINCIPLES = [
-  'Đi từ nghe-nói sang đọc-viết, không ép bé viết dài quá sớm.',
-  'Lặp xoắn ốc: một từ gặp lại trong truyện, video, game và ôn tập.',
-  'Đánh giá bằng can-do: bé làm được gì, không chỉ đúng bao nhiêu câu.',
-  'Mỗi buổi ngắn, vui, có phản hồi ngay và có lựa chọn cho bé.',
-];
-
-const SOURCES = [
-  {
-    label: 'Council of Europe - CEFR',
-    href: 'https://www.coe.int/en/web/common-european-framework-reference-languages',
-  },
-  {
-    label: 'Cambridge English - Young Learners',
-    href: 'https://www.cambridgeenglish.org/exams-and-tests/young-learners-english/',
-  },
-  {
-    label: 'Cambridge English Qualifications for schools',
-    href: 'https://www.cambridgeenglish.org/exams-and-tests/qualifications/schools/',
-  },
-];
+const seedStats = getWordBankStats(DEFAULT_WORD_BANK);
 
 export default function RoadmapPage() {
   const progress = useAppStore((state) => state.progress);
-  const learner = getLearnerStageProgress(progress);
+  const fallbackLearner = useMemo(() => getLearnerStageProgress(progress), [progress]);
+  const [catalog, setCatalog] = useState<CurriculumCatalog | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/curriculum', { credentials: 'include', cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json();
+      })
+      .then((data) => {
+        if (active && data) setCatalog(data);
+      })
+      .catch(() => {
+        if (active) setCatalog(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const stages = catalog?.stages?.length ? catalog.stages : CURRICULUM_STAGES;
+  const learnerState = catalog?.learnerState || null;
+  const currentStage = learnerState?.currentStageId ? getStageById(learnerState.currentStageId) : fallbackLearner.stage;
+  const unlocked = new Set(learnerState?.unlockedStageIds || stages.slice(0, Math.max(fallbackLearner.stageIndex + 1, 1)).map((stage) => stage.id));
+  const currentIndex = stages.findIndex((stage) => stage.id === currentStage.id);
 
   return (
     <>
@@ -117,93 +54,88 @@ export default function RoadmapPage() {
       <main className="min-h-screen bg-gradient-to-b from-sky-50 via-violet-50 to-amber-50 pb-20">
         <section className="mx-auto max-w-6xl px-4 pt-8">
           <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-indigo-600 via-sky-500 to-emerald-400 p-6 text-white shadow-2xl md:p-8">
-            <div className="grid gap-6 md:grid-cols-[1fr_300px] md:items-end">
+            <div className="grid gap-6 md:grid-cols-[1fr_320px] md:items-end">
               <div>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/18 px-3 py-1.5 text-xs font-black uppercase tracking-wide backdrop-blur">
-                  <Route className="h-4 w-4" />
-                  CEFR + Cambridge Young Learners
+                  <Route className="h-4 w-4" /> Curriculum Engine
                 </div>
                 <h1 className="max-w-3xl text-3xl font-black leading-tight drop-shadow md:text-5xl">
-                  Lộ trình học tiếng Anh quốc tế cho bé
+                  Lộ trình học có kiểm tra và mở khóa
                 </h1>
                 <p className="mt-4 max-w-2xl text-sm font-semibold leading-6 text-white/90 md:text-base">
-                  Engkids đi theo năng lực can-do của CEFR và các mốc Pre A1 Starters, A1 Movers, A2 Flyers. Bé học qua nghe, truyện, game, ôn tập, rồi tiến dần tới tự nói và tự đọc.
+                  User không đọc roadmap nữa: làm placement, nhận Today Plan, chơi game đúng chặng, làm checkpoint và hệ thống lưu mastery trên DB.
                 </p>
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <Link href="/learn/today" className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-indigo-700 shadow-lg transition-transform hover:-translate-y-0.5">
-                    Học hôm nay <ArrowRight className="h-4 w-4" />
+                  <Link href="/learn/placement" className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-indigo-700 shadow-lg transition-transform hover:-translate-y-0.5">
+                    Làm placement <ArrowRight className="h-4 w-4" />
                   </Link>
-                  <Link href="/progress" className="inline-flex items-center gap-2 rounded-2xl bg-indigo-950/25 px-4 py-3 text-sm font-black text-white ring-1 ring-white/30 transition-transform hover:-translate-y-0.5">
-                    Xem tiến trình
+                  <Link href="/learn/checkpoint" className="inline-flex items-center gap-2 rounded-2xl bg-indigo-950/25 px-4 py-3 text-sm font-black text-white ring-1 ring-white/30 transition-transform hover:-translate-y-0.5">
+                    Làm checkpoint
                   </Link>
                 </div>
               </div>
 
-              <div className="rounded-[1.5rem] bg-white/16 p-4 backdrop-blur">
-                <p className="text-xs font-black uppercase tracking-wide text-white/75">Chặng hiện tại</p>
-                <p className="mt-2 text-2xl font-black">{learner.stage.cefr}</p>
-                <p className="mt-1 text-sm font-black text-white/90">{learner.stage.titleVi}</p>
-                <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/20">
-                  <div className="h-full rounded-full bg-white" style={{ width: `${Math.max(learner.percent, 4)}%` }} />
-                </div>
-                <p className="mt-2 text-sm font-semibold leading-6 text-white/86">
-                  {learner.percent}% hoàn thành. {learner.missing[0] ?? 'Đã sẵn sàng chuyển sang chặng kế tiếp.'}
-                </p>
-              </div>
+              <StatusPanel stage={currentStage} learnerState={learnerState} percent={fallbackLearner.percent} />
             </div>
           </div>
         </section>
 
         <section className="mx-auto mt-6 grid max-w-6xl gap-4 px-4 md:grid-cols-4">
-          {DAILY_LOOP.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.title} className="rounded-[1.5rem] bg-white p-4 shadow-md ring-1 ring-slate-100">
-                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
-                  <Icon className="h-6 w-6" />
-                </div>
-                <h2 className="text-base font-black text-slate-900">{item.title}</h2>
-                <p className="mt-1 text-sm font-semibold leading-5 text-slate-500">{item.desc}</p>
-              </div>
-            );
-          })}
+          <MetricCard label="Word bank DB" value={seedStats.total} helper={`${seedStats.fiveLetterCount} từ 5 chữ`} />
+          <MetricCard label="Current stage" value={currentIndex + 1} helper={currentStage.cefr} />
+          <MetricCard label="Placement" value={learnerState?.placementDone ? 'Done' : 'Todo'} helper="Xếp trình độ" />
+          <MetricCard label="Checkpoint" value={learnerState?.recentAttempt ? Math.round(learnerState.recentAttempt.scorePercent) : '--'} helper="Điểm gần nhất" />
         </section>
 
         <section className="mx-auto mt-8 max-w-6xl px-4">
-          <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-wide text-violet-500">5 chặng học</p>
-              <h2 className="text-2xl font-black text-slate-950">Từ nghe-nhìn đến tự diễn đạt</h2>
+              <p className="text-xs font-black uppercase tracking-wide text-violet-500">Learning path</p>
+              <h2 className="text-2xl font-black text-slate-950">Chặng học và điều kiện mở khóa</h2>
             </div>
-            <GraduationCap className="hidden h-9 w-9 text-violet-500 sm:block" />
+            <Link href="/learn/today" className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-lg">
+              Today Plan <Play className="h-4 w-4" />
+            </Link>
           </div>
 
-          <div className="space-y-4">
-            {ROADMAP.map((visual, index) => {
-              const stage = CURRICULUM_STAGES[index] ?? learner.stage;
-              const isCurrent = stage.id === learner.stage.id;
-              const isDone = index < learner.stageIndex;
+          <div className="grid gap-4 lg:grid-cols-5">
+            {stages.map((stage, index) => {
+              const isCurrent = stage.id === currentStage.id;
+              const isUnlocked = unlocked.has(stage.id);
+              const isDone = index < currentIndex;
               return (
-              <article key={stage.id} className={`overflow-hidden rounded-[1.75rem] bg-white shadow-lg ${isCurrent ? 'ring-4 ring-violet-300' : 'ring-1 ring-slate-100'}`}>
-                <div className="grid md:grid-cols-[230px_1fr]">
-                  <div className={`bg-gradient-to-br ${visual.color} p-5 text-white`}>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 text-xl font-black ring-1 ring-white/30">
-                      {isDone ? <CheckCircle2 className="h-6 w-6" /> : index + 1}
+                <article key={stage.id} className={`overflow-hidden rounded-[1.5rem] bg-white shadow-lg ring-2 ${isCurrent ? 'ring-violet-300' : 'ring-slate-100'}`}>
+                  <div className={`bg-gradient-to-br ${STAGE_COLORS[stage.id]} p-4 text-white`}>
+                    <div className="flex items-center justify-between">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20 text-sm font-black ring-1 ring-white/30">
+                        {isDone ? <CheckCircle2 className="h-5 w-5" /> : isUnlocked ? index + 1 : <Lock className="h-5 w-5" />}
+                      </span>
+                      {isCurrent && <span className="rounded-full bg-white/20 px-2 py-1 text-xs font-black">Đang học</span>}
                     </div>
-                    <p className="mt-5 text-xs font-black uppercase tracking-wide text-white/76">{stage.cefr}</p>
-                    <h3 className="mt-1 text-2xl font-black leading-tight">{stage.titleVi}</h3>
-                    <p className="mt-3 text-sm font-bold text-white/85">{stage.ageVi}</p>
-                    <p className="mt-1 text-sm font-bold text-white/85">{stage.weeksVi}</p>
-                    {isCurrent && <p className="mt-3 rounded-xl bg-white/20 px-3 py-1 text-xs font-black">Đang học</p>}
+                    <p className="mt-4 text-xs font-black uppercase tracking-wide text-white/75">{stage.cefr}</p>
+                    <h3 className="mt-1 text-xl font-black leading-tight">{stage.titleVi}</h3>
                   </div>
-
-                  <div className="grid gap-4 p-5 lg:grid-cols-3">
-                    <RoadmapColumn title="Trọng tâm" icon={<Target className="h-5 w-5" />} items={stage.focus} />
-                    <RoadmapColumn title="Bé làm được" icon={<CheckCircle2 className="h-5 w-5" />} items={stage.canDo} />
-                    <RoadmapColumn title="Trên Engkids" icon={<Sparkles className="h-5 w-5" />} items={stage.engkids} />
+                  <div className="p-4">
+                    <div className="grid gap-2">
+                      <Requirement label="Từ" current={fallbackLearner.stats.masteredWords} target={stage.targetWords} active={isCurrent} />
+                      <Requirement label="Truyện" current={fallbackLearner.stats.completedStories} target={stage.targetStories} active={isCurrent} />
+                      <Requirement label="Game 70%+" current={fallbackLearner.stats.strongGameScores} target={stage.targetGames} active={isCurrent} />
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {stage.topics.slice(0, 4).map((topic) => (
+                        <span key={topic} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500">{topic}</span>
+                      ))}
+                    </div>
+                    <Link
+                      href={isUnlocked ? (isCurrent ? '/learn/today' : `/roadmap#${stage.id}`) : '/learn/checkpoint'}
+                      className={`mt-4 inline-flex w-full items-center justify-center rounded-2xl px-3 py-2 text-sm font-black ${
+                        isUnlocked ? 'bg-violet-50 text-violet-700' : 'bg-slate-100 text-slate-400'
+                      }`}
+                    >
+                      {isUnlocked ? 'Học chặng này' : 'Cần checkpoint'}
+                    </Link>
                   </div>
-                </div>
-              </article>
+                </article>
               );
             })}
           </div>
@@ -213,75 +145,104 @@ export default function RoadmapPage() {
           <div className="rounded-[1.75rem] bg-white p-5 shadow-lg ring-1 ring-slate-100">
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-                <Layers3 className="h-6 w-6" />
+                <Target className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-emerald-600">Nguyên tắc thiết kế</p>
-                <h2 className="text-xl font-black text-slate-950">Cách Engkids nên vận hành lộ trình</h2>
+                <p className="text-xs font-black uppercase tracking-wide text-emerald-600">Skill mastery</p>
+                <h2 className="text-xl font-black text-slate-950">Kỹ năng lưu theo learner_skill_mastery</h2>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {PRINCIPLES.map((item) => (
-                <div key={item} className="rounded-2xl bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-600">
-                  {item}
-                </div>
-              ))}
+            <div className="grid gap-3 sm:grid-cols-3">
+              {['vocabulary', 'listening', 'reading', 'grammar', 'writing', 'speaking'].map((skill) => {
+                const value = Math.round(learnerState?.skillMastery?.[skill] || 0);
+                return (
+                  <div key={skill} className="rounded-2xl bg-slate-50 p-4">
+                    <p className="text-xs font-black uppercase text-slate-400">{skill}</p>
+                    <p className="mt-1 text-2xl font-black text-slate-900">{value}%</p>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                      <div className="h-full rounded-full bg-emerald-400" style={{ width: `${Math.max(value, 4)}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           <aside className="rounded-[1.75rem] bg-slate-950 p-5 text-white shadow-lg">
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
-                <Mic className="h-6 w-6" />
+                <ClipboardCheck className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-wide text-white/55">Đánh giá tháng</p>
-                <h2 className="text-xl font-black">Can-do check</h2>
+                <p className="text-xs font-black uppercase tracking-wide text-white/55">Next action</p>
+                <h2 className="text-xl font-black">Bám sát lộ trình</h2>
               </div>
             </div>
-            <ul className="space-y-3 text-sm font-semibold leading-6 text-white/82">
-              <li>Nghe: bé hiểu được mệnh lệnh/câu hỏi quen thuộc chưa?</li>
-              <li>Nói: bé tự trả lời bằng từ/câu ngắn chưa?</li>
-              <li>Đọc: bé đọc được truyện đúng cấp không cần dịch từng từ chưa?</li>
-              <li>Viết: bé điền, kéo thả, hoặc viết câu ngắn đúng mẫu chưa?</li>
-            </ul>
-            <Link href="/progress" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950">
-              Theo dõi tiến trình <ArrowRight className="h-4 w-4" />
-            </Link>
-          </aside>
-        </section>
-
-        <section className="mx-auto mt-8 max-w-6xl px-4">
-          <div className="rounded-[1.75rem] bg-white/80 p-5 shadow ring-1 ring-white">
-            <p className="text-xs font-black uppercase tracking-wide text-slate-500">Nguồn chuẩn tham khảo</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {SOURCES.map((source) => (
-                <a key={source.href} href={source.href} target="_blank" rel="noreferrer" className="rounded-2xl bg-white px-4 py-2 text-sm font-black text-indigo-700 shadow-sm ring-1 ring-indigo-100 hover:bg-indigo-50">
-                  {source.label}
-                </a>
-              ))}
+            <div className="space-y-3">
+              <ActionLink href="/learn/placement" label="Placement test" done={learnerState?.placementDone || false} />
+              <ActionLink href="/learn/today" label="Today Plan" done={false} />
+              <ActionLink href="/learn/checkpoint" label="Checkpoint" done={learnerState?.recentAttempt?.passed || false} />
             </div>
-          </div>
+            {learnerState?.recentAttempt && (
+              <p className="mt-4 rounded-2xl bg-white/10 p-3 text-sm font-bold text-white/80">
+                Lần gần nhất: {Math.round(learnerState.recentAttempt.scorePercent)}% ({learnerState.recentAttempt.passed ? 'pass' : 'review'})
+              </p>
+            )}
+          </aside>
         </section>
       </main>
     </>
   );
 }
 
-function RoadmapColumn({ title, icon, items }: { title: string; icon: ReactNode; items: string[] }) {
+function StatusPanel({ stage, learnerState, percent }: { stage: CurriculumStage; learnerState: LearnerCurriculumState | null; percent: number }) {
+  return (
+    <div className="rounded-[1.5rem] bg-white/16 p-4 backdrop-blur">
+      <p className="text-xs font-black uppercase tracking-wide text-white/75">Trạng thái DB</p>
+      <p className="mt-2 text-2xl font-black">{stage.cefr}</p>
+      <p className="mt-1 text-sm font-black text-white/90">{stage.titleVi}</p>
+      <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/20">
+        <div className="h-full rounded-full bg-white" style={{ width: `${Math.max(percent, 4)}%` }} />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-black">
+        <span className="rounded-full bg-white/20 px-3 py-1">{learnerState?.placementDone ? 'Placement done' : 'Need placement'}</span>
+        <span className="rounded-full bg-white/20 px-3 py-1">{learnerState ? 'DB synced' : 'Guest/local'}</span>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({ label, value, helper }: { label: string; value: number | string; helper: string }) {
+  return (
+    <div className="rounded-[1.5rem] bg-white p-4 shadow-md ring-1 ring-slate-100">
+      <p className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-1 text-2xl font-black text-slate-900">{value}</p>
+      <p className="mt-1 text-sm font-bold text-slate-500">{helper}</p>
+    </div>
+  );
+}
+
+function Requirement({ label, current, target, active }: { label: string; current: number; target: number; active: boolean }) {
+  const value = active ? current : 0;
+  const pct = target > 0 ? Math.min(value / target, 1) * 100 : 100;
   return (
     <div>
-      <div className="mb-2 flex items-center gap-2 text-sm font-black text-slate-900">
-        <span className="text-violet-500">{icon}</span>
-        {title}
+      <div className="flex items-center justify-between text-xs font-black text-slate-500">
+        <span>{label}</span>
+        <span>{value}/{target}</span>
       </div>
-      <ul className="space-y-2">
-        {items.map((item) => (
-          <li key={item} className="rounded-2xl bg-slate-50 px-3 py-2 text-sm font-semibold leading-5 text-slate-600">
-            {item}
-          </li>
-        ))}
-      </ul>
+      <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
+        <div className="h-full rounded-full bg-violet-400" style={{ width: `${Math.max(pct, 4)}%` }} />
+      </div>
     </div>
+  );
+}
+
+function ActionLink({ href, label, done }: { href: string; label: string; done: boolean }) {
+  return (
+    <Link href={href} className="flex items-center justify-between rounded-2xl bg-white/10 px-4 py-3 text-sm font-black text-white transition hover:bg-white/15">
+      <span>{label}</span>
+      {done ? <ShieldCheck className="h-4 w-4 text-emerald-300" /> : <ArrowRight className="h-4 w-4" />}
+    </Link>
   );
 }
