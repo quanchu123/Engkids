@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Story } from '@/types';
 import { unstable_noStore as noStore } from 'next/cache';
 import { storeStoryImages } from './story-images';
+import { stageForStoryLevel } from '@/lib/curriculum';
 
 function getSupabaseReadClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -39,10 +40,11 @@ function getSupabasePublicReader() {
 
 export type StorySummary = Pick<
   Story,
-  'id' | 'title_en' | 'title_vi' | 'level' | 'topics' | 'cover_image' | 'estimated_minutes' | 'published'
+  'id' | 'title_en' | 'title_vi' | 'level' | 'curriculum_stage_id' | 'topics' | 'cover_image' | 'estimated_minutes' | 'published'
 >;
 
-const STORY_SUMMARY_COLUMNS = 'id,title_en,title_vi,level,topics,cover_image,estimated_minutes,published';
+const STORY_SUMMARY_COLUMNS = 'id,title_en,title_vi,level,curriculum_stage_id,topics,cover_image,estimated_minutes,published';
+const LEGACY_STORY_SUMMARY_COLUMNS = 'id,title_en,title_vi,level,topics,cover_image,estimated_minutes,published';
 
 export async function listStories(): Promise<Story[]> {
   noStore();
@@ -63,11 +65,23 @@ export async function listStories(): Promise<Story[]> {
 export async function listStorySummaries(): Promise<StorySummary[]> {
   noStore();
   const supabase = getSupabasePublicReader();
-  const { data, error } = await supabase
+  const result = await supabase
     .from('stories')
     .select(STORY_SUMMARY_COLUMNS)
     .eq('published', true)
     .order('created_at', { ascending: false });
+  let data: unknown[] | null = result.data as unknown[] | null;
+  let error = result.error;
+
+  if (error?.message?.includes('curriculum_stage_id')) {
+    const legacy = await supabase
+      .from('stories')
+      .select(LEGACY_STORY_SUMMARY_COLUMNS)
+      .eq('published', true)
+      .order('created_at', { ascending: false });
+    data = legacy.data as unknown[] | null;
+    error = legacy.error;
+  }
 
   if (error) {
     throw new Error(`Failed to list story summaries: ${error.message}`);
@@ -114,7 +128,10 @@ export async function getStory(id: string, includeDraft = false): Promise<Story 
 
 export async function createStory(story: Story): Promise<Story> {
   const supabase = getSupabaseAdmin();
-  const storedStory = await storeStoryImages(story);
+  const storedStory = await storeStoryImages({
+    ...story,
+    curriculum_stage_id: story.curriculum_stage_id || stageForStoryLevel(story.level),
+  });
   const { data, error } = await supabase
     .from('stories')
     .insert(storedStory)
@@ -130,7 +147,10 @@ export async function createStory(story: Story): Promise<Story> {
 
 export async function updateStoryById(id: string, story: Story): Promise<Story> {
   const supabase = getSupabaseAdmin();
-  const storedStory = await storeStoryImages(story);
+  const storedStory = await storeStoryImages({
+    ...story,
+    curriculum_stage_id: story.curriculum_stage_id || stageForStoryLevel(story.level),
+  });
   const { data, error } = await supabase
     .from('stories')
     .update(storedStory)

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { LEVEL_OPTIONS, TOPICS, AGE_GROUP_OPTIONS } from '@/config/constants';
+import { TOPICS, AGE_GROUP_OPTIONS } from '@/config/constants';
+import { CURRICULUM_STAGES } from '@/lib/curriculum';
 
 // Topic colors matching VideoCard
 const TOPIC_STYLES: Record<string, { bg: string; activeBg: string }> = {
@@ -102,20 +103,20 @@ export default function VideoFilters({
               Cấp độ
             </h4>
             <div className="flex flex-wrap gap-2">
-              {LEVEL_OPTIONS.map((level) => (
+              {CURRICULUM_STAGES.map((level) => (
                 <button
-                  key={level.value}
-                  onClick={() => updateFilter('level', filters.level === level.value ? null : level.value)}
+                  key={level.id}
+                  onClick={() => updateFilter('level', filters.level === level.id ? null : level.id)}
                   className={`
                     px-4 py-2 rounded-xl font-semibold transition-all duration-200
                     flex items-center gap-2
-                    ${filters.level === level.value
+                    ${filters.level === level.id
                       ? 'bg-gradient-to-r from-kid-green to-kid-blue text-white shadow-md scale-105'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:scale-102'
                     }
                   `}
                 >
-                  <span>{level.label.split(' ')[0]}</span>
+                  <span>{level.cefr}</span>
                 </button>
               ))}
             </div>

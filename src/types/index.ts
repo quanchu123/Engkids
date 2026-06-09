@@ -53,6 +53,7 @@ export interface Story {
   title_en: string;
   title_vi: string;
   level: 'Beginner' | 'Elementary' | 'Intermediate';
+  curriculum_stage_id?: string | null;
   topics: string[];
   cover_image: string;
   estimated_minutes: number;
@@ -252,6 +253,7 @@ export interface Video {
   // Metadata
   duration: number;        // seconds
   level: 'Beginner' | 'Elementary' | 'Intermediate';
+  curriculum_stage_id?: string | null;
   topics: string[];
   ageGroup?: '3-5' | '6-8' | '9-12';
   category: 'video' | 'music'; // Distinguish between educational videos and music

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Video, SubtitleCue, VideoQuizQuestion } from '@/types';
 import { getVideoPublicUrl } from './storage';
 import { unstable_noStore as noStore } from 'next/cache';
+import { stageForStoryLevel } from '@/lib/curriculum';
 
 // Track if we've already warned about Supabase being unavailable to avoid log spam
 let supabaseUnavailableWarned = false;
@@ -64,6 +65,7 @@ interface VideoRow {
   object_key: string | null;
   duration: number;
   level: 'Beginner' | 'Elementary' | 'Intermediate';
+  curriculum_stage_id: string | null;
   topics: string[];
   age_group: '3-5' | '6-8' | '9-12' | null;
   category: 'video' | 'music';
@@ -151,6 +153,7 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
     videoUrl,
     duration: Number.isFinite(row.duration) ? Math.max(0, Math.round(row.duration)) : 0,
     level: row.level,
+    curriculum_stage_id: row.curriculum_stage_id,
     topics: row.topics,
     ageGroup: row.age_group || undefined,
     category: row.category,
@@ -283,7 +286,8 @@ export async function createVideo(data: {
   objectKey: string;       // file name stored under public/uploads
   description?: string;
   thumbnailUrl?: string;
-  level?: Video['level'];
+    level?: Video['level'];
+    curriculumStageId?: string;
   topics?: string[];
   ageGroup?: Video['ageGroup'];
   category?: 'video' | 'music';
@@ -305,6 +309,7 @@ export async function createVideo(data: {
       description: data.description || null,
       thumbnail_url: data.thumbnailUrl || null,
       level: data.level || 'Beginner',
+      curriculum_stage_id: data.curriculumStageId || stageForStoryLevel(data.level || 'Beginner'),
       topics: data.topics || [],
       age_group: data.ageGroup || null,
       category: data.category || 'video',
@@ -335,6 +340,7 @@ export async function updateVideo(
     objectKey: string;
     duration: number;
     level: Video['level'];
+    curriculumStageId: string;
     topics: string[];
     ageGroup: Video['ageGroup'];
     status: Video['status'];
@@ -353,6 +359,8 @@ export async function updateVideo(
   if (updates.objectKey !== undefined) dbUpdates.object_key = updates.objectKey;
   if (updates.duration !== undefined) dbUpdates.duration = updates.duration;
   if (updates.level) dbUpdates.level = updates.level;
+  if (updates.curriculumStageId !== undefined) dbUpdates.curriculum_stage_id = updates.curriculumStageId || null;
+  else if (updates.level) dbUpdates.curriculum_stage_id = stageForStoryLevel(updates.level);
   if (updates.topics) dbUpdates.topics = updates.topics;
   if (updates.ageGroup !== undefined) dbUpdates.age_group = updates.ageGroup;
   if (updates.status) dbUpdates.status = updates.status;

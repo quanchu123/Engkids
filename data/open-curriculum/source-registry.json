@@ -1,0 +1,67 @@
+[
+  {
+    "sourceId": "cefr-rld-framework",
+    "title": "CEFR Reference Level Descriptions",
+    "publisher": "Council of Europe",
+    "url": "https://www.coe.int/en/web/language-policy/cefr-reference-level-descriptions",
+    "licenseName": "Reference link only",
+    "licenseUrl": "https://www.coe.int/en/web/about-us/terms-and-conditions",
+    "attribution": "Council of Europe, Common European Framework of Reference resources.",
+    "allowedUse": "Use as framework reference/metadata; do not republish copyrighted descriptors verbatim without permission.",
+    "sourceKind": "framework",
+    "importMode": "staging-only",
+    "levelMapping": ["a2-key", "b1-preliminary", "b2-first", "c1-advanced"]
+  },
+  {
+    "sourceId": "tatoeba-corpus-sentences",
+    "title": "Tatoeba Corpus Downloads",
+    "publisher": "Tatoeba Project",
+    "url": "https://tatoeba.org/gos/downloads",
+    "licenseName": "CC BY 2.0 FR / mixed attribution per sentence",
+    "licenseUrl": "https://en.wiki.tatoeba.org/articles/show/terms-of-use",
+    "attribution": "Tatoeba Project contributors; preserve per-sentence attribution where imported.",
+    "allowedUse": "Stage sentence examples only with source metadata and attribution; approve before learner publishing.",
+    "sourceKind": "lexical",
+    "importMode": "staging-only",
+    "levelMapping": ["a2-key", "b1-preliminary", "b2-first", "c1-advanced"]
+  },
+  {
+    "sourceId": "wordnet-princeton-lexical",
+    "title": "WordNet License and Use",
+    "publisher": "Princeton University",
+    "url": "https://wordnet.princeton.edu/license-and-commercial-use",
+    "licenseName": "WordNet license",
+    "licenseUrl": "https://wordnet.princeton.edu/license-and-commercial-use",
+    "attribution": "WordNet, Princeton University.",
+    "allowedUse": "Stage lexical definitions/synsets with attribution and source hash; approve before learner publishing.",
+    "sourceKind": "lexical",
+    "importMode": "staging-only",
+    "levelMapping": ["a2-key", "b1-preliminary", "b2-first", "c1-advanced"]
+  },
+  {
+    "sourceId": "gutenberg-public-domain-reading",
+    "title": "Project Gutenberg License Guidance",
+    "publisher": "Project Gutenberg Literary Archive Foundation",
+    "url": "https://www.gutenberg.org/policy/license",
+    "licenseName": "Project Gutenberg terms / public domain review required per item",
+    "licenseUrl": "https://www.gutenberg.org/policy/license",
+    "attribution": "Project Gutenberg and the relevant text author where applicable.",
+    "allowedUse": "Stage candidate reading texts only after item-level public-domain/license review.",
+    "sourceKind": "reading",
+    "importMode": "staging-only",
+    "levelMapping": ["b1-preliminary", "b2-first", "c1-advanced"]
+  },
+  {
+    "sourceId": "usa-gov-public-domain-guidance",
+    "title": "USA.gov Government Copyright Guidance",
+    "publisher": "U.S. General Services Administration",
+    "url": "https://www.usa.gov/government-copyright",
+    "licenseName": "U.S. government works guidance",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "attribution": "USA.gov guidance; verify each source for third-party material.",
+    "allowedUse": "Use only for item-level rights review of U.S. government educational text; do not assume all linked content is public domain.",
+    "sourceKind": "reading",
+    "importMode": "staging-only",
+    "levelMapping": ["a2-key", "b1-preliminary", "b2-first", "c1-advanced"]
+  }
+]

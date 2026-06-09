@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import type { GameScore, SavedWord, StoryProgress, UserProgress } from '@/types';
 import { createDefaultProgress } from './progress';
 import { getLearnerStageProgress, stageForDifficulty, stageForStoryLevel } from './curriculum';
@@ -34,36 +34,36 @@ function makeProgress({ words = 0, stories = 0, games = 0 }: { words?: number; s
 }
 
 describe('curriculum stage mapping', () => {
-  it('maps story levels to CEFR learning stages', () => {
-    expect(stageForStoryLevel('Beginner')).toBe('pre-a1-starters');
-    expect(stageForStoryLevel('Elementary')).toBe('a1-movers');
-    expect(stageForStoryLevel('Intermediate')).toBe('a2-flyers');
+  it('maps legacy story levels into the active A2 path', () => {
+    expect(stageForStoryLevel('Beginner')).toBe('a2-key');
+    expect(stageForStoryLevel('Elementary')).toBe('a2-key');
+    expect(stageForStoryLevel('Intermediate')).toBe('a2-key');
   });
 
-  it('maps game difficulty to stage', () => {
-    expect(stageForDifficulty('easy')).toBe('pre-a1-starters');
-    expect(stageForDifficulty('medium')).toBe('a1-movers');
-    expect(stageForDifficulty('advanced')).toBe('a2-flyers');
+  it('maps game difficulty to active A2-C1 stages', () => {
+    expect(stageForDifficulty('easy')).toBe('a2-key');
+    expect(stageForDifficulty('medium')).toBe('b1-preliminary');
+    expect(stageForDifficulty('advanced')).toBe('b2-first');
   });
 });
 
 describe('getLearnerStageProgress', () => {
-  it('starts a new learner in sound-play', () => {
+  it('starts a new learner in A2 Key', () => {
     const result = getLearnerStageProgress(makeProgress({}));
-    expect(result.stage.id).toBe('sound-play');
+    expect(result.stage.id).toBe('a2-key');
     expect(result.percent).toBe(0);
     expect(result.missing).toHaveLength(3);
   });
 
-  it('advances to Pre A1 Starters after readiness targets are met', () => {
+  it('stays in A2 Key until active A2 targets are met', () => {
     const result = getLearnerStageProgress(makeProgress({ words: 50, stories: 1, games: 3 }));
-    expect(result.stage.id).toBe('pre-a1-starters');
+    expect(result.stage.id).toBe('a2-key');
     expect(result.stats.masteredWords).toBe(50);
   });
 
-  it('advances to A2 bridge when Flyers targets are met', () => {
-    const result = getLearnerStageProgress(makeProgress({ words: 720, stories: 24, games: 40 }));
-    expect(result.stage.id).toBe('a2-bridge');
+  it('advances through the active A2-C1 path when targets are met', () => {
+    const result = getLearnerStageProgress(makeProgress({ words: 5200, stories: 90, games: 160 }));
+    expect(result.stage.id).toBe('c1-advanced');
     expect(result.nextStage).toBeNull();
   });
 });

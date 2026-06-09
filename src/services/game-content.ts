@@ -1,4 +1,4 @@
-// ============================================
+﻿// ============================================
 // GAME CONTENT SERVICE
 // ============================================
 // Reads/writes admin-editable game content from the `game_content` table, with
@@ -166,7 +166,7 @@ export async function getTrueFalseContent(): Promise<TFContent> {
 export async function saveMultipleChoiceContent(raw: unknown): Promise<MCContent> {
   const normalized = normalizeMC(raw);
   if (!normalized) {
-    throw new Error('Nội dung không hợp lệ: cần ít nhất 1 câu hỏi hợp lệ.');
+    throw new Error('Ná»™i dung khÃ´ng há»£p lá»‡: cáº§n Ã­t nháº¥t 1 cÃ¢u há»i há»£p lá»‡.');
   }
   await upsert('multiple-choice', normalized);
   return normalized;
@@ -175,7 +175,7 @@ export async function saveMultipleChoiceContent(raw: unknown): Promise<MCContent
 export async function saveTrueFalseContent(raw: unknown): Promise<TFContent> {
   const normalized = normalizeTF(raw);
   if (!normalized) {
-    throw new Error('Nội dung không hợp lệ: cần ít nhất 1 câu hỏi hợp lệ.');
+    throw new Error('Ná»™i dung khÃ´ng há»£p lá»‡: cáº§n Ã­t nháº¥t 1 cÃ¢u há»i há»£p lá»‡.');
   }
   await upsert('true-false', normalized);
   return normalized;
@@ -258,7 +258,7 @@ async function syncWordBankItems(words: WordPair[], source = 'admin', replaceExi
     const rows = words.map((word, index) => ({
       en: word.en,
       vi: word.vi,
-      level: word.level || 'pre-a1-starters',
+      level: word.level || 'a2-key',
       topic: word.topic || 'general',
       example: word.example || `I can see ${word.en.toLowerCase()}.`,
       source,
@@ -304,9 +304,10 @@ export async function getWordBank(): Promise<WordPair[]> {
 export async function saveWordBank(raw: unknown): Promise<WordPair[]> {
   const normalized = normalizeWordBank(raw);
   if (!normalized) {
-    throw new Error('Nội dung không hợp lệ: cần ít nhất 1 từ có cả tiếng Anh và tiếng Việt.');
+    throw new Error('Ná»™i dung khÃ´ng há»£p lá»‡: cáº§n Ã­t nháº¥t 1 tá»« cÃ³ cáº£ tiáº¿ng Anh vÃ  tiáº¿ng Viá»‡t.');
   }
   await syncWordBankItems(normalized, 'admin', true);
   await upsert('word-bank', normalized);
   return normalized;
 }
+

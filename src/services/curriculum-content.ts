@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+﻿import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
@@ -73,6 +73,10 @@ export interface AssessmentAttemptResult {
 export interface LearnerCurriculumState {
   currentStageId: CurriculumStageId;
   unlockedStageIds: CurriculumStageId[];
+  levelSource: 'auto' | 'manual' | 'placement' | 'parent';
+  selectedLevelAt: string | null;
+  levelChangedAt: string | null;
+  needsLevelSelection: boolean;
   placementDone: boolean;
   lastCheckpointAt: string | null;
   nextCheckpointDueAt: string | null;
@@ -259,6 +263,10 @@ function defaultUnlocked(stageId: CurriculumStageId): CurriculumStageId[] {
   return CURRICULUM_STAGES.slice(0, Math.max(index + 1, 2)).map((stage) => stage.id);
 }
 
+function normalizeLevelSource(value: unknown): LearnerCurriculumState['levelSource'] {
+  return value === 'manual' || value === 'placement' || value === 'parent' ? value : 'auto';
+}
+
 export async function getCurriculumCatalog(profileId?: string | null): Promise<CurriculumCatalog> {
   const reader = getSupabaseReader();
   let stages = CURRICULUM_STAGES;
@@ -397,7 +405,7 @@ export async function getProfileIdFromRequest(request: NextRequest): Promise<str
   return getOrCreateProfileId(await getAuthUserIdFromRequest(request));
 }
 
-export async function ensureLearnerCurriculumState(profileId: string, stageId: CurriculumStageId = 'pre-a1-starters'): Promise<void> {
+export async function ensureLearnerCurriculumState(profileId: string, stageId: CurriculumStageId = 'a2-key'): Promise<void> {
   const admin = getSupabaseAdmin();
   if (!admin) return;
   await admin
@@ -417,15 +425,26 @@ export async function getLearnerCurriculumState(profileId: string): Promise<Lear
 
   await ensureLearnerCurriculumState(profileId);
 
-  const { data: state } = await admin
+  const extendedStateResult = await admin
     .from('learner_curriculum_state')
-    .select('current_stage_id, unlocked_stage_ids, placement_attempt_id, last_checkpoint_at, next_checkpoint_due_at, recommended_task')
+    .select('current_stage_id, unlocked_stage_ids, level_source, selected_level_at, level_changed_at, placement_attempt_id, last_checkpoint_at, next_checkpoint_due_at, recommended_task')
     .eq('user_profile_id', profileId)
     .maybeSingle();
+  let state: Record<string, unknown> | null = extendedStateResult.data as Record<string, unknown> | null;
+  const stateError = extendedStateResult.error;
+
+  if (stateError && stateError.message?.includes('selected_level_at')) {
+    const legacy = await admin
+      .from('learner_curriculum_state')
+      .select('current_stage_id, unlocked_stage_ids, placement_attempt_id, last_checkpoint_at, next_checkpoint_due_at, recommended_task')
+      .eq('user_profile_id', profileId)
+      .maybeSingle();
+    state = legacy.data as Record<string, unknown> | null;
+  }
 
   if (!state) return null;
 
-  const currentStageId = normalizeStageId((state as { current_stage_id?: unknown }).current_stage_id) || 'pre-a1-starters';
+  const currentStageId = normalizeStageId((state as { current_stage_id?: unknown }).current_stage_id) || 'a2-key';
   const unlockedStageIds = Array.isArray((state as { unlocked_stage_ids?: unknown }).unlocked_stage_ids)
     ? ((state as { unlocked_stage_ids: unknown[] }).unlocked_stage_ids.map(normalizeStageId).filter(Boolean) as CurriculumStageId[])
     : defaultUnlocked(currentStageId);
@@ -451,6 +470,10 @@ export async function getLearnerCurriculumState(profileId: string): Promise<Lear
   return {
     currentStageId,
     unlockedStageIds,
+    levelSource: normalizeLevelSource((state as { level_source?: unknown }).level_source),
+    selectedLevelAt: ((state as { selected_level_at?: string | null }).selected_level_at) || null,
+    levelChangedAt: ((state as { level_changed_at?: string | null }).level_changed_at) || null,
+    needsLevelSelection: !((state as { selected_level_at?: string | null }).selected_level_at),
     placementDone: Boolean((state as { placement_attempt_id?: unknown }).placement_attempt_id),
     lastCheckpointAt: ((state as { last_checkpoint_at?: string | null }).last_checkpoint_at) || null,
     nextCheckpointDueAt: ((state as { next_checkpoint_due_at?: string | null }).next_checkpoint_due_at) || null,
@@ -464,6 +487,37 @@ export async function getLearnerCurriculumState(profileId: string): Promise<Lear
       createdAt: (recent as { created_at: string }).created_at,
     } : null,
   };
+}
+
+export async function setLearnerLevel(
+  profileId: string,
+  stageId: CurriculumStageId,
+  source: LearnerCurriculumState['levelSource'] = 'manual',
+): Promise<LearnerCurriculumState | null> {
+  const admin = getSupabaseAdmin();
+  if (!admin) return null;
+
+  const normalizedStageId = normalizeStageId(stageId) || 'a2-key';
+  const now = new Date().toISOString();
+
+  const { data: existing } = await admin
+    .from('learner_curriculum_state')
+    .select('selected_level_at')
+    .eq('user_profile_id', profileId)
+    .maybeSingle();
+
+  await admin.from('learner_curriculum_state').upsert({
+    user_profile_id: profileId,
+    current_stage_id: normalizedStageId,
+    unlocked_stage_ids: defaultUnlocked(normalizedStageId),
+    level_source: normalizeLevelSource(source),
+    selected_level_at: ((existing as { selected_level_at?: string | null } | null)?.selected_level_at) || now,
+    level_changed_at: ((existing as { selected_level_at?: string | null } | null)?.selected_level_at) ? now : null,
+    recommended_task: { kind: 'today', href: '/learn/today' },
+    updated_at: now,
+  }, { onConflict: 'user_profile_id' });
+
+  return getLearnerCurriculumState(profileId);
 }
 
 function buildDistractors(target: WordPair, bank: WordPair[], count: number, mode: 'en' | 'vi'): string[] {
@@ -489,7 +543,7 @@ function itemFromWord(word: WordPair, bank: WordPair[], skillId: CurriculumSkill
   const choicesMode = itemType === 'meaning-choice' ? 'vi' : 'en';
   const correct = choicesMode === 'vi' ? word.vi : word.en.toLowerCase();
   const choices = [correct, ...buildDistractors(word, bank, 3, choicesMode)].sort(() => Math.random() - 0.5);
-  const stageId = word.level || 'pre-a1-starters';
+  const stageId = normalizeStageId(word.level) || 'a2-key';
 
   if (itemType === 'meaning-choice') {
     return {
@@ -630,7 +684,7 @@ export async function getAssessment(kind: AssessmentKind, stageId?: CurriculumSt
   const blueprint = catalog.blueprints.find((item) => item.kind === kind && (!item.stageId || item.stageId === stageId))
     || DEFAULT_BLUEPRINTS.find((item) => item.kind === kind)
     || DEFAULT_BLUEPRINTS[0];
-  const resolvedStage = stageId || blueprint.stageId || 'pre-a1-starters';
+  const resolvedStage = stageId || blueprint.stageId || 'a2-key';
   const items = await ensureAssessmentItems(kind, resolvedStage, blueprint.itemCount);
 
   if (items && items.length > 0) {
@@ -642,10 +696,10 @@ export async function getAssessment(kind: AssessmentKind, stageId?: CurriculumSt
 
 function recommendStageFromScore(kind: AssessmentKind, stageId: CurriculumStageId, score: number): CurriculumStageId {
   if (kind === 'placement') {
-    if (score >= 90) return 'a2-flyers';
-    if (score >= 78) return 'a1-movers';
-    if (score >= 55) return 'pre-a1-starters';
-    return 'sound-play';
+    if (score >= 92) return 'c1-advanced';
+    if (score >= 84) return 'b2-first';
+    if (score >= 68) return 'b1-preliminary';
+    return 'a2-key';
   }
 
   if (score >= 85) {
@@ -656,7 +710,7 @@ function recommendStageFromScore(kind: AssessmentKind, stageId: CurriculumStageI
 }
 
 export async function saveAssessmentAttempt(profileId: string | null, input: AssessmentAttemptInput): Promise<AssessmentAttemptResult> {
-  const stageId = input.stageId || 'pre-a1-starters';
+  const stageId = input.stageId || 'a2-key';
   const assessment = await getAssessment(input.kind, stageId);
   const itemById = new Map<string, AssessmentItemRow>();
 
@@ -772,6 +826,12 @@ export async function saveAssessmentAttempt(profileId: string | null, input: Ass
   }
 
   const unlocked = defaultUnlocked(recommendedStageId);
+  const { data: existingState } = await admin
+    .from('learner_curriculum_state')
+    .select('selected_level_at')
+    .eq('user_profile_id', profileId)
+    .maybeSingle();
+  const existingSelectedAt = (existingState as { selected_level_at?: string | null } | null)?.selected_level_at || null;
   const statePatch: Record<string, unknown> = {
     user_profile_id: profileId,
     current_stage_id: recommendedStageId,
@@ -781,7 +841,12 @@ export async function saveAssessmentAttempt(profileId: string | null, input: Ass
       : { kind: 'review', href: '/progress/review' },
     updated_at: new Date().toISOString(),
   };
-  if (input.kind === 'placement') statePatch.placement_attempt_id = attemptId;
+  if (input.kind === 'placement') {
+    statePatch.placement_attempt_id = attemptId;
+    statePatch.level_source = 'placement';
+    statePatch.selected_level_at = existingSelectedAt || new Date().toISOString();
+    if (existingSelectedAt) statePatch.level_changed_at = new Date().toISOString();
+  }
   if (input.kind === 'weekly-checkpoint' || input.kind === 'stage-exit') {
     statePatch.last_checkpoint_at = new Date().toISOString();
     const next = new Date();
@@ -793,3 +858,5 @@ export async function saveAssessmentAttempt(profileId: string | null, input: Ass
 
   return { attemptId, saved: true, scorePercent, passed, recommendedStageId, skillBreakdown };
 }
+
+

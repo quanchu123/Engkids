@@ -1,0 +1,18 @@
+﻿[
+  {
+    "sourceId": "publisher-book-a2-sample",
+    "title": "Licensed A2 Course Sample",
+    "publisher": "Publisher name",
+    "licenseProof": "Invoice, contract, written permission, or internal asset ID proving Engkids can use this content",
+    "sourceUrl": "https://publisher.example/path-or-contract-reference",
+    "attribution": "Publisher name and title, used with permission.",
+    "licenseName": "Written permission / commercial license",
+    "licenseUrl": "https://publisher.example/license-or-terms",
+    "allowedUse": "May import adapted vocabulary/lesson data into Engkids for enrolled learners",
+    "level": "a2-key",
+    "filePath": "data/licensed-curriculum/raw/publisher-book-a2-sample.csv",
+    "contentType": "word-bank-csv",
+    "importMode": "direct",
+    "approved": false
+  }
+]

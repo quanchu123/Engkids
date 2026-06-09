@@ -1,4 +1,15 @@
-import { Story, Video } from '@/types';
+﻿import { Story, Video } from '@/types';
+import { getStageIndex, normalizeStageId, stageForStoryLevel, type CurriculumStageId } from './curriculum';
+
+function resolveStoryStage(story: Story): CurriculumStageId {
+  return normalizeStageId(story.curriculum_stage_id) || stageForStoryLevel(story.level);
+}
+
+function resolveVideoStage(video: Video): CurriculumStageId {
+  const curriculumStage = normalizeStageId(video.curriculum_stage_id);
+  if (curriculumStage) return curriculumStage;
+  return stageForStoryLevel(video.level);
+}
 
 export function getStoryTopics(stories: Story[]): string[] {
   const topics = new Set<string>();
@@ -15,6 +26,8 @@ export function filterStories(
   topic: string,
 ): Story[] {
   const normalizedQuery = searchQuery.toLowerCase().trim();
+  const selectedStage = normalizeStageId(level) || (level === 'all' ? undefined : stageForStoryLevel(level));
+  const selectedIndex = selectedStage ? getStageIndex(selectedStage) : -1;
 
   return stories.filter((story) => {
     if (normalizedQuery) {
@@ -28,7 +41,12 @@ export function filterStories(
       }
     }
 
-    if (level !== 'all' && story.level !== level) {
+    if (selectedStage) {
+      const storyStage = resolveStoryStage(story);
+      if (getStageIndex(storyStage) > selectedIndex) {
+        return false;
+      }
+    } else if (level !== 'all' && story.level !== level) {
       return false;
     }
 
@@ -49,6 +67,9 @@ export function filterVideos(
     ageGroup?: string | null;
   },
 ): Video[] {
+  const selectedStage = normalizeStageId(filters.level || undefined) || (filters.level ? stageForStoryLevel(filters.level) : undefined);
+  const selectedIndex = selectedStage ? getStageIndex(selectedStage) : -1;
+
   return videos.filter((video) => {
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
@@ -59,7 +80,12 @@ export function filterVideos(
       if (!matchesSearch) return false;
     }
 
-    if (filters.level && video.level !== filters.level) return false;
+    if (filters.level) {
+      if (selectedStage) {
+        const videoStage = resolveVideoStage(video);
+        if (getStageIndex(videoStage) > selectedIndex) return false;
+      } else if (video.level !== filters.level) return false;
+    }
     if (filters.topic && !video.topics?.includes(filters.topic)) return false;
     if (filters.ageGroup && video.ageGroup !== filters.ageGroup) return false;
 
@@ -76,7 +102,7 @@ export function groupVideosByLevel(videos: Video[]) {
 }
 
 // Group videos by their feature label. Videos without a feature fall under the
-// provided default label (e.g. "Tổng Hợp"). Returns an ordered list of groups,
+// provided default label (e.g. "Tá»•ng Há»£p"). Returns an ordered list of groups,
 // with the default group placed last.
 export function groupVideosByFeature(
   videos: Video[],
@@ -103,3 +129,4 @@ export function groupVideosByFeature(
 
   return entries;
 }
+

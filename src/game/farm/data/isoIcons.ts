@@ -14,6 +14,7 @@
 // (tsconfig has `resolveJsonModule: true`). It is typed as `unknown` and narrowed
 // defensively below: a malformed manifest must never break the build or runtime.
 import manifestJson from '../../../../public/games/english-farm/iso/manifest.json'
+import { staticAssetUrl } from '@/lib/static-assets'
 
 /** Shape of a single manifest entry we care about (other fields are ignored). */
 interface ManifestEntry {
@@ -87,7 +88,7 @@ export function isoIconSrc(name: string): string | null {
   if (typeof name !== 'string' || name.length === 0) return null
   // Only known art names get an override path; unknown names resolve to null.
   if (!Object.prototype.hasOwnProperty.call(ICON_LOOKUP, name)) return null
-  return `${ASSETS_OVERRIDE_BASE}/${name}.png`
+  return staticAssetUrl(`${ASSETS_OVERRIDE_BASE}/${name}.png`)
 }
 
 /**

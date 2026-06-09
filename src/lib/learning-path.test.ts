@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import { DailyQuestState, DailyQuestStepType } from '@/types';
 import { buildLessonPath, getLessonSummary, LessonStep } from '@/lib/learning-path';
 
@@ -23,15 +23,16 @@ function makeQuest(done: Partial<Record<DailyQuestStepType, boolean>> = {}): Dai
 }
 
 describe('buildLessonPath', () => {
-  it('returns steps in the fixed order review -> story -> media -> game', () => {
+  it('returns steps in the fixed order review -> lesson -> story -> media -> game', () => {
     const steps = buildLessonPath({ dueWords: 0, quest: makeQuest() });
-    expect(steps.map((s) => s.kind)).toEqual(['review', 'story', 'media', 'game']);
+    expect(steps.map((s) => s.kind)).toEqual(['review', 'lesson', 'story', 'media', 'game']);
   });
 
   it('uses the correct hrefs, falling back to /stories when no next story', () => {
     const steps = buildLessonPath({ dueWords: 3, quest: makeQuest() });
     const byKind = Object.fromEntries(steps.map((s) => [s.kind, s.href]));
     expect(byKind.review).toBe('/progress/review');
+    expect(byKind.lesson).toBe('/learn/today');
     expect(byKind.story).toBe('/stories');
     expect(byKind.media).toBe('/videos');
     expect(byKind.game).toBe('/games');
@@ -60,13 +61,13 @@ describe('buildLessonPath', () => {
 
   it('adds placement first when the learner has no placement result', () => {
     const steps = buildLessonPath({ dueWords: 0, quest: makeQuest(), placementDone: false });
-    expect(steps.map((s) => s.kind)).toEqual(['placement', 'review', 'story', 'media', 'game']);
+    expect(steps.map((s) => s.kind)).toEqual(['placement', 'review', 'lesson', 'story', 'media', 'game']);
     expect(steps[0].href).toBe('/learn/placement');
   });
 
   it('adds checkpoint after the daily loop when a checkpoint is due', () => {
     const steps = buildLessonPath({ dueWords: 0, quest: makeQuest(), checkpointDue: true });
-    expect(steps.map((s) => s.kind)).toEqual(['review', 'story', 'media', 'game', 'checkpoint']);
+    expect(steps.map((s) => s.kind)).toEqual(['review', 'lesson', 'story', 'media', 'game', 'checkpoint']);
     expect(steps.at(-1)?.href).toBe('/learn/checkpoint');
   });
   it('derives story/media/game done flags from the quest state', () => {
@@ -83,16 +84,17 @@ describe('getLessonSummary', () => {
     const steps = buildLessonPath({ dueWords: 0, quest: makeQuest({ story: true }) });
     const summary = getLessonSummary(steps);
     // review done (dueWords 0) + story done = 2
-    expect(summary.total).toBe(4);
+    expect(summary.total).toBe(5);
     expect(summary.done).toBe(2);
     expect(summary.allDone).toBe(false);
   });
 
   it('reports allDone true when every step is complete', () => {
     const quest = makeQuest({ story: true, media: true, game: true });
-    const steps = buildLessonPath({ dueWords: 0, quest });
+    const steps = buildLessonPath({ dueWords: 0, quest, lessonDone: true });
     const summary = getLessonSummary(steps);
-    expect(summary.done).toBe(4);
+    expect(summary.done).toBe(5);
     expect(summary.allDone).toBe(true);
   });
 });
+

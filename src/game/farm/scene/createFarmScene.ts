@@ -30,6 +30,7 @@ import {
 } from '../constants'
 import { getCropById } from '../data/crops'
 import { isoIconSrc, isoFallbackSrc } from '../data/isoIcons'
+import { staticAssetUrl } from '@/lib/static-assets'
 import {
   till,
   plant,
@@ -254,13 +255,13 @@ export function createFarmScene(
           loadWithFallbacks(name, webpVariant(fallback) || fallback, [fallback])
         } else {
           // No manifest entry: still try the direct assets/ path.
-          loadWithFallbacks(name, `/games/english-farm/assets/${name}.webp`, [`/games/english-farm/assets/${name}.png`])
+          loadWithFallbacks(name, staticAssetUrl(`/games/english-farm/assets/${name}.webp`), [`/games/english-farm/assets/${name}.webp`, `/games/english-farm/assets/${name}.png`])
         }
       }
 
       // Dreamina staged crops + ground tiles (direct from assets/; emoji on miss).
       for (const name of DIRECT_TEXTURES) {
-        loadWithFallbacks(name, `/games/english-farm/assets/${name}.webp`, [`/games/english-farm/assets/${name}.png`])
+        loadWithFallbacks(name, staticAssetUrl(`/games/english-farm/assets/${name}.webp`), [`/games/english-farm/assets/${name}.webp`, `/games/english-farm/assets/${name}.png`])
       }
     }
 

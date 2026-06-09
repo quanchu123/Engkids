@@ -11,6 +11,7 @@ import { filterStories, getStoryTopics } from '@/lib/content-selectors';
 import { onContentChange } from '@/lib/content-sync';
 import { StoryFallbackArtwork } from '@/components/common/FallbackArtwork';
 import { DecorIcon } from '@/components/common/DecorIcon';
+import { CURRICULUM_STAGES, getStageById, type CurriculumStageId } from '@/lib/curriculum';
 
 type SortOption = 'recommended' | 'new' | 'shortest';
 
@@ -22,6 +23,7 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
   const [liveStories, setLiveStories] = useState(stories);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
+  const [learnerStageId, setLearnerStageId] = useState<CurriculumStageId | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('recommended');
   const storiesProgress = useAppStore((state) => state.progress.storiesProgress);
@@ -53,6 +55,23 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
       unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/learner/level', { credentials: 'include', cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        const stageId = data?.learnerState?.currentStageId as CurriculumStageId | undefined;
+        if (active && stageId) {
+          setLearnerStageId(stageId);
+          setSelectedLevel(stageId);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
     };
   }, []);
 
@@ -100,16 +119,32 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
           </div>
         </section>
 
-        <section className="soft-panel mb-6 flex flex-wrap gap-3 rounded-[20px] p-4">
+        <section className="soft-panel mb-6 flex flex-wrap items-center gap-3 rounded-[20px] p-4">
+          {learnerStageId && (
+            <button
+              type="button"
+              onClick={() => setSelectedLevel(learnerStageId)}
+              className={`min-h-[44px] rounded-xl px-4 text-sm font-black shadow-sm ${selectedLevel === learnerStageId ? 'bg-violet-600 text-white' : 'bg-white text-violet-700 ring-1 ring-violet-100'}`}
+            >
+              Level của bé: {getStageById(learnerStageId).cefr}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setSelectedLevel('all')}
+            className={`min-h-[44px] rounded-xl px-4 text-sm font-black shadow-sm ${selectedLevel === 'all' ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-100'}`}
+          >
+            Xem tất cả
+          </button>
           <select
             value={selectedLevel}
             onChange={(e) => setSelectedLevel(e.target.value)}
             className="min-h-[44px] rounded-xl border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 shadow-sm"
           >
             <option value="all">Mọi level</option>
-            <option value="Beginner">Beginner</option>
-            <option value="Elementary">Elementary</option>
-            <option value="Intermediate">Intermediate</option>
+            {CURRICULUM_STAGES.map((stage) => (
+              <option key={stage.id} value={stage.id}>{stage.cefr}</option>
+            ))}
           </select>
           <select
             value={selectedTopic}

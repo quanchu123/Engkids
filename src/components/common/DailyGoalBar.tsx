@@ -15,7 +15,7 @@ import type { DailyQuestStepType } from '@/types';
 const STEP_ORDER: DailyQuestStepType[] = ['story', 'media', 'game', 'saveWord'];
 // Hidden on admin / auth routes and inside full-screen games (/games/<id>),
 // where the floating pill would overlap the game's own bottom UI.
-const HIDDEN_PREFIXES = ['/admin', '/login', '/auth', '/games/'];
+const HIDDEN_PREFIXES = ['/admin', '/login', '/auth', '/onboarding', '/games/'];
 
 export default function DailyGoalBar() {
   const pathname = usePathname();

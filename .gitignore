@@ -1,4 +1,4 @@
-# Dependencies
+﻿# Dependencies
 node_modules/
 .pnp/
 .pnp.js
@@ -60,3 +60,15 @@ recovery/
 # Local dev server logs
 output-dev.err.log
 output-dev.out.log
+
+# Licensed source files stay local; commit only manifests/examples
+data/licensed-curriculum/raw/*
+!data/licensed-curriculum/raw/.gitkeep
+data/licensed-curriculum/staging/*
+!data/licensed-curriculum/staging/.gitkeep
+
+# Generated source snapshots / droplet asset manifests
+data/open-curriculum/snapshots/*
+!data/open-curriculum/snapshots/.gitkeep
+data/static-assets/manifest.json
+

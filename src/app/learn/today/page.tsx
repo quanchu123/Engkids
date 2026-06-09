@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
@@ -13,6 +13,7 @@ import {
   Gamepad2,
   Headphones,
   Layers,
+  GraduationCap,
   ListChecks,
   Play,
   Route,
@@ -37,15 +38,17 @@ const STEP_STYLE: Record<LessonStep['kind'], { soft: string; solid: string; text
   story: { soft: 'bg-sky-50', solid: 'bg-sky-500', text: 'text-sky-700', bar: 'bg-sky-500', icon: BookOpen },
   media: { soft: 'bg-amber-50', solid: 'bg-amber-500', text: 'text-amber-700', bar: 'bg-amber-500', icon: Headphones },
   game: { soft: 'bg-emerald-50', solid: 'bg-emerald-500', text: 'text-emerald-700', bar: 'bg-emerald-500', icon: Gamepad2 },
+  lesson: { soft: 'bg-rose-50', solid: 'bg-rose-500', text: 'text-rose-700', bar: 'bg-rose-500', icon: GraduationCap },
   checkpoint: { soft: 'bg-indigo-50', solid: 'bg-indigo-500', text: 'text-indigo-700', bar: 'bg-indigo-500', icon: ClipboardCheck },
 };
 
 const STEP_LABELS: Record<LessonStep['kind'], string> = {
-  placement: 'Đầu vào',
-  review: 'Ôn tập',
-  story: 'Truyện',
+  placement: 'Äáº§u vÃ o',
+  review: 'Ã”n táº­p',
+  story: 'Truyá»‡n',
   media: 'Video',
   game: 'Game',
+  lesson: 'Lesson',
   checkpoint: 'Checkpoint',
 };
 
@@ -54,6 +57,7 @@ export default function TodayLearnPage() {
   const [stories, setStories] = useState<Story[]>([]);
   const [dueWords, setDueWords] = useState(0);
   const [learnerState, setLearnerState] = useState<LearnerCurriculumState | null>(null);
+  const [nextLesson, setNextLesson] = useState<{ id: string; titleVi: string } | null>(null);
   const learner = useMemo(() => getLearnerStageProgress(progress), [progress]);
   const currentStage = learnerState?.currentStageId ? getStageById(learnerState.currentStageId) : learner.stage;
 
@@ -93,6 +97,25 @@ export default function TodayLearnPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/lessons?stage=${encodeURIComponent(currentStage.id)}`, { credentials: 'include', cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return response.json();
+      })
+      .then((data) => {
+        if (!active) return;
+        const lesson = Array.isArray(data?.lessons) ? data.lessons[0] : null;
+        setNextLesson(lesson ? { id: lesson.id, titleVi: lesson.titleVi || lesson.titleEn || lesson.id } : null);
+      })
+      .catch(() => {
+        if (active) setNextLesson(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [currentStage.id]);
   const nextStory = useMemo(() => {
     const unread = stories.filter((story) => !progress.storiesProgress[story.id]?.completed);
     return unread.find((story) => stageForStoryLevel(story.level) === currentStage.id) ?? unread[0];
@@ -111,10 +134,12 @@ export default function TodayLearnPage() {
         quest: progress.dailyQuestState,
         nextStoryId: nextStory?.id,
         nextStoryTitle: nextStory?.title_vi || nextStory?.title_en,
+        nextLessonId: nextLesson?.id,
+        nextLessonTitle: nextLesson?.titleVi,
         placementDone: learnerState?.placementDone ?? false,
         checkpointDue,
       }),
-    [dueWords, progress.dailyQuestState, nextStory, learnerState, checkpointDue],
+    [dueWords, progress.dailyQuestState, nextStory, nextLesson, learnerState, checkpointDue],
   );
 
   const summary = useMemo(() => getLessonSummary(steps), [steps]);
@@ -139,18 +164,18 @@ export default function TodayLearnPage() {
 
               <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_220px] lg:items-end">
                 <div>
-                  <h1 className="max-w-3xl text-3xl font-black leading-tight text-slate-950 md:text-5xl">Nhiệm vụ hôm nay</h1>
+                  <h1 className="max-w-3xl text-3xl font-black leading-tight text-slate-950 md:text-5xl">Nhiá»‡m vá»¥ hÃ´m nay</h1>
                   <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-600 md:text-base">
-                    {currentStage.titleVi}. Làm theo queue từ trên xuống để giữ nhịp học và cập nhật tiến trình.
+                    {currentStage.titleVi}. LÃ m theo queue tá»« trÃªn xuá»‘ng Ä‘á»ƒ giá»¯ nhá»‹p há»c vÃ  cáº­p nháº­t tiáº¿n trÃ¬nh.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-3">
                     {nextOpenStep && (
                       <Link href={nextOpenStep.href} className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5">
-                        Bắt đầu: {nextOpenStep.titleVi} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                        Báº¯t Ä‘áº§u: {nextOpenStep.titleVi} <ArrowRight className="h-4 w-4" aria-hidden="true" />
                       </Link>
                     )}
                     <Link href="/roadmap" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-black text-violet-700 shadow-sm ring-1 ring-violet-100 transition hover:-translate-y-0.5">
-                      Xem lộ trình <Route className="h-4 w-4" aria-hidden="true" />
+                      Xem lá»™ trÃ¬nh <Route className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   </div>
                 </div>
@@ -164,10 +189,10 @@ export default function TodayLearnPage() {
         </section>
 
         <section className="mx-auto grid max-w-7xl gap-3 px-4 py-5 sm:grid-cols-2 xl:grid-cols-4">
-          <MiniMetric icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />} label="Placement" value={learnerState?.placementDone ? 'Done' : 'Todo'} helper="Xếp chặng học" tone="violet" />
-          <MiniMetric icon={<Layers className="h-5 w-5" aria-hidden="true" />} label="Từ cần ôn" value={dueWords} helper="SRS hôm nay" tone="sky" />
-          <MiniMetric icon={<BookOpen className="h-5 w-5" aria-hidden="true" />} label="Truyện tiếp" value={nextStory ? 'Ready' : '--'} helper={nextStory?.title_vi || nextStory?.title_en || 'Chưa có truyện'} tone="emerald" />
-          <MiniMetric icon={<BadgeCheck className="h-5 w-5" aria-hidden="true" />} label="Checkpoint" value={checkpointDue ? 'Due' : 'OK'} helper={learnerState?.nextCheckpointDueAt || 'Theo tiến trình'} tone="amber" />
+          <MiniMetric icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />} label="Placement" value={learnerState?.placementDone ? 'Done' : 'Todo'} helper="Xáº¿p cháº·ng há»c" tone="violet" />
+          <MiniMetric icon={<Layers className="h-5 w-5" aria-hidden="true" />} label="Tá»« cáº§n Ã´n" value={dueWords} helper="SRS hÃ´m nay" tone="sky" />
+          <MiniMetric icon={<BookOpen className="h-5 w-5" aria-hidden="true" />} label="Truyá»‡n tiáº¿p" value={nextStory ? 'Ready' : '--'} helper={nextStory?.title_vi || nextStory?.title_en || 'ChÆ°a cÃ³ truyá»‡n'} tone="emerald" />
+          <MiniMetric icon={<BadgeCheck className="h-5 w-5" aria-hidden="true" />} label="Checkpoint" value={checkpointDue ? 'Due' : 'OK'} helper={learnerState?.nextCheckpointDueAt || 'Theo tiáº¿n trÃ¬nh'} tone="amber" />
         </section>
 
         <section className="mx-auto grid max-w-7xl gap-5 px-4 lg:grid-cols-[1fr_340px]">
@@ -187,7 +212,7 @@ function ProgressCard({ done, total, percent, allDone }: { done: number; total: 
     <div className="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-100">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-400">Tiến độ</p>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-400">Tiáº¿n Ä‘á»™</p>
           <p className="mt-1 text-3xl font-black text-slate-950">{done}/{total}</p>
         </div>
         <div className={`flex h-16 w-16 items-center justify-center rounded-lg text-2xl font-black ring-1 ${allDone ? 'bg-emerald-50 text-emerald-700 ring-emerald-100' : 'bg-violet-50 text-violet-700 ring-violet-100'}`}>
@@ -206,8 +231,8 @@ function NextStepCard({ step, learnerState }: { step?: LessonStep; learnerState:
     return (
       <aside className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
         <CheckCircle2 className="h-8 w-8 text-emerald-600" aria-hidden="true" />
-        <h2 className="mt-3 text-xl font-black text-slate-950">Hoàn thành hôm nay</h2>
-        <p className="mt-2 text-sm font-bold leading-6 text-slate-600">Bạn có thể vào roadmap để xem chặng tiếp theo.</p>
+        <h2 className="mt-3 text-xl font-black text-slate-950">HoÃ n thÃ nh hÃ´m nay</h2>
+        <p className="mt-2 text-sm font-bold leading-6 text-slate-600">Báº¡n cÃ³ thá»ƒ vÃ o roadmap Ä‘á»ƒ xem cháº·ng tiáº¿p theo.</p>
       </aside>
     );
   }
@@ -226,11 +251,11 @@ function NextStepCard({ step, learnerState }: { step?: LessonStep; learnerState:
       </div>
       <p className="mt-4 text-sm font-semibold leading-6 text-white/70">{step.descVi}</p>
       <div className="mt-5 rounded-lg bg-white/10 p-4">
-        <p className="text-xs font-black uppercase tracking-wide text-white/50">Trạng thái lưu</p>
-        <p className="mt-1 text-sm font-bold text-white/80">{learnerState ? 'Đồng bộ theo tài khoản.' : 'Đang dùng guest/local.'}</p>
+        <p className="text-xs font-black uppercase tracking-wide text-white/50">Tráº¡ng thÃ¡i lÆ°u</p>
+        <p className="mt-1 text-sm font-bold text-white/80">{learnerState ? 'Äá»“ng bá»™ theo tÃ i khoáº£n.' : 'Äang dÃ¹ng guest/local.'}</p>
       </div>
       <Link href={step.href} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-black text-slate-950 shadow-sm">
-        Bắt đầu <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        Báº¯t Ä‘áº§u <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
     </aside>
   );
@@ -242,10 +267,10 @@ function LearningQueue({ steps }: { steps: LessonStep[] }) {
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-wide text-violet-500">Queue</p>
-          <h2 className="text-2xl font-black text-slate-950">Thứ tự học</h2>
+          <h2 className="text-2xl font-black text-slate-950">Thá»© tá»± há»c</h2>
         </div>
         <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-slate-200">
-          <ListChecks className="h-4 w-4" aria-hidden="true" /> {steps.length} bước
+          <ListChecks className="h-4 w-4" aria-hidden="true" /> {steps.length} bÆ°á»›c
         </span>
       </div>
 
@@ -286,7 +311,7 @@ function LessonRow({ step, index, total }: { step: LessonStep; index: number; to
           href={step.href}
           className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black shadow-sm ${step.done ? 'bg-white text-emerald-700 ring-1 ring-emerald-100' : isNext ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-700'}`}
         >
-          {step.done ? 'Xem lại' : 'Bắt đầu'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          {step.done ? 'Xem láº¡i' : 'Báº¯t Ä‘áº§u'} <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </div>
     </li>
@@ -331,14 +356,14 @@ function StatusPanel({ learnerState, allDone }: { learnerState: LearnerCurriculu
         </span>
         <div>
           <p className="text-xs font-black uppercase tracking-wide text-emerald-600">Status</p>
-          <h2 className="text-xl font-black text-slate-950">{allDone ? 'Hoàn thành' : 'Đang học'}</h2>
+          <h2 className="text-xl font-black text-slate-950">{allDone ? 'HoÃ n thÃ nh' : 'Äang há»c'}</h2>
         </div>
       </div>
       <p className="mt-4 rounded-lg bg-slate-50 px-4 py-3 text-sm font-bold leading-6 text-slate-600 ring-1 ring-slate-100">
-        {learnerState ? 'Tiến trình, placement và checkpoint đang đồng bộ theo tài khoản.' : 'Bạn đang dùng tiến trình guest/local. Đăng nhập để lưu kết quả lâu dài.'}
+        {learnerState ? 'Tiáº¿n trÃ¬nh, placement vÃ  checkpoint Ä‘ang Ä‘á»“ng bá»™ theo tÃ i khoáº£n.' : 'Báº¡n Ä‘ang dÃ¹ng tiáº¿n trÃ¬nh guest/local. ÄÄƒng nháº­p Ä‘á»ƒ lÆ°u káº¿t quáº£ lÃ¢u dÃ i.'}
       </p>
       <Link href="/learn/checkpoint" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-sm">
-        Làm checkpoint <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        LÃ m checkpoint <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
     </section>
   );
@@ -370,3 +395,5 @@ function toneClasses(tone: MetricTone): string {
   };
   return classes[tone];
 }
+
+

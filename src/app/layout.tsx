@@ -5,6 +5,7 @@ import RouterLoading from '@/components/common/RouterLoading';
 import UserProgressSync from '@/components/common/UserProgressSync';
 import RewardOverlay from '@/components/common/RewardOverlay';
 import DailyGoalBar from '@/components/common/DailyGoalBar';
+import LevelOnboardingGate from '@/components/common/LevelOnboardingGate';
 
 const DEFAULT_PRODUCTION_URL = 'https://engkidstienganhchobe.tech';
 
@@ -69,6 +70,7 @@ export default function RootLayout({
       <body className="antialiased">
         <RouterLoading />
         <UserProgressSync />
+        <LevelOnboardingGate />
         {children}
         <RewardOverlay />
         <DailyGoalBar />

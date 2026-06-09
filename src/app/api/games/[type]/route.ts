@@ -8,6 +8,7 @@ import {
   saveTrueFalseContent,
   saveWordBank,
 } from '@/services/game-content';
+import { filterWordBank } from '@/lib/word-bank';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ const SUPPORTED = ['multiple-choice', 'true-false', 'word-bank'];
 
 // GET /api/games/[type] - current content (override or built-in defaults)
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ type: string }> },
 ) {
   const { type } = await params;
@@ -29,7 +30,11 @@ export async function GET(
     let data;
     if (type === 'multiple-choice') data = await getMultipleChoiceForAdmin();
     else if (type === 'true-false') data = await getTrueFalseForAdmin();
-    else data = await getWordBank();
+    else {
+      const stage = request.nextUrl.searchParams.get('stage') || undefined;
+      const topic = request.nextUrl.searchParams.get('topic') || undefined;
+      data = filterWordBank(await getWordBank(), { level: stage, topic });
+    }
     return NextResponse.json(
       { data },
       { headers: { 'Cache-Control': 'no-store, max-age=0' } },

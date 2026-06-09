@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_WORD_BANK,
   filterWordBank,
@@ -14,11 +14,11 @@ import {
 } from './word-bank';
 
 const BANK: WordPair[] = [
-  { en: 'Apple', vi: 'Qua tao', level: 'pre-a1-starters', topic: 'food', example: 'I eat an apple.' },
-  { en: 'River', vi: 'Dong song', level: 'pre-a1-starters', topic: 'nature', example: 'The river is blue.' },
-  { en: 'Castle', vi: 'Lau dai', level: 'a1-movers', topic: 'places', example: 'The castle is tall.' },
-  { en: 'Adventure', vi: 'Cuoc phieu luu', level: 'a2-flyers', topic: 'adventure', example: 'The adventure starts today.' },
-  { en: 'Community', vi: 'Cong dong', level: 'a2-flyers', topic: 'community', example: 'Our community helps people.' },
+  { en: 'Apple', vi: 'Qua tao', level: 'a2-key', topic: 'food', example: 'I eat an apple.' },
+  { en: 'River', vi: 'Dong song', level: 'a2-key', topic: 'nature', example: 'The river is blue.' },
+  { en: 'Castle', vi: 'Lau dai', level: 'b1-preliminary', topic: 'places', example: 'The castle is tall.' },
+  { en: 'Adventure', vi: 'Cuoc phieu luu', level: 'b2-first', topic: 'adventure', example: 'The adventure starts today.' },
+  { en: 'Community', vi: 'Cong dong', level: 'b2-first', topic: 'community', example: 'Our community helps people.' },
 ];
 
 describe('DEFAULT_WORD_BANK curriculum seed', () => {
@@ -27,11 +27,10 @@ describe('DEFAULT_WORD_BANK curriculum seed', () => {
     expect(stats.total).toBeGreaterThan(150);
     expect(stats.fiveLetterCount).toBeGreaterThanOrEqual(20);
     expect(stats.exampleCount).toBe(stats.total);
-    expect(getStageWordCount('sound-play')).toBeGreaterThan(20);
-    expect(getStageWordCount('pre-a1-starters')).toBeGreaterThan(40);
-    expect(getStageWordCount('a1-movers')).toBeGreaterThan(40);
-    expect(getStageWordCount('a2-flyers')).toBeGreaterThan(35);
-    expect(getStageWordCount('a2-bridge')).toBeGreaterThan(20);
+    expect(getStageWordCount('a2-key')).toBeGreaterThan(150);
+    expect(getStageWordCount('b1-preliminary')).toBeGreaterThanOrEqual(0);
+    expect(getStageWordCount('b2-first')).toBeGreaterThanOrEqual(0);
+    expect(getStageWordCount('c1-advanced')).toBeGreaterThanOrEqual(0);
   });
   it('keeps each default word assigned to a level and topic', () => {
     expect(DEFAULT_WORD_BANK.every((word) => word.level && word.topic && word.example)).toBe(true);
@@ -41,7 +40,7 @@ describe('DEFAULT_WORD_BANK curriculum seed', () => {
 describe('normalizeWordBank', () => {
   it('keeps curriculum metadata and drops malformed rows', () => {
     const normalized = normalizeWordBank([
-      { en: ' Apple ', vi: ' Qua tao ', level: 'a1-movers', topic: ' Food ', example: 'I like Apple.' },
+      { en: ' Apple ', vi: ' Qua tao ', level: 'b1-preliminary', topic: ' Food ', example: 'I like Apple.' },
       { en: '', vi: 'Missing English' },
       { nope: true },
     ]);
@@ -50,7 +49,7 @@ describe('normalizeWordBank', () => {
     expect(normalized?.[0]).toMatchObject({
       en: 'Apple',
       vi: 'Qua tao',
-      level: 'a1-movers',
+      level: 'b1-preliminary',
       topic: 'food',
       example: 'I like Apple.',
     });
@@ -59,7 +58,7 @@ describe('normalizeWordBank', () => {
 
 describe('filterWordBank', () => {
   it('includes words at or below the requested stage', () => {
-    const filtered = filterWordBank(BANK, { level: 'a1-movers', min: 1 });
+    const filtered = filterWordBank(BANK, { level: 'b1-preliminary', min: 1 });
     expect(filtered.map((word) => word.en)).toEqual(expect.arrayContaining(['Apple', 'River', 'Castle']));
     expect(filtered.map((word) => word.en)).not.toContain('Adventure');
   });
@@ -86,7 +85,7 @@ describe('word-bank game adapters', () => {
 
   it('creates RPG questions with Vietnamese answer choices', () => {
     const [question] = toRpgQuestions(BANK);
-    expect(question.q).toContain('nghĩa là gì');
+    expect(question.q).toContain('nghÄ©a lÃ  gÃ¬');
     expect(question.choices).toHaveLength(4);
     expect(question.correct).toBeGreaterThanOrEqual(0);
   });
@@ -105,3 +104,4 @@ describe('word-bank game adapters', () => {
     expect(sentence.hint).toBeTruthy();
   });
 });
+

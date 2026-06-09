@@ -3,10 +3,10 @@ import { isoIconSrc, isoFallbackSrc } from './isoIcons'
 
 describe('isoIconSrc (preferred override source)', () => {
   it('prefers a user override path under assets/<name>.png for known art', () => {
-    expect(isoIconSrc('carrot')).toBe('/games/english-farm/assets/carrot.png')
-    expect(isoIconSrc('farmer')).toBe('/games/english-farm/assets/farmer.png')
+    expect(isoIconSrc('carrot')).toBe('/api/assets/file/games/english-farm/assets/carrot.png')
+    expect(isoIconSrc('farmer')).toBe('/api/assets/file/games/english-farm/assets/farmer.png')
     expect(isoIconSrc('watering-can')).toBe(
-      '/games/english-farm/assets/watering-can.png',
+      '/api/assets/file/games/english-farm/assets/watering-can.png',
     )
   })
 

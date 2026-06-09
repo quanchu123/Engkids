@@ -1,6 +1,12 @@
-import type { GameScore, UserProgress } from '@/types';
+﻿import type { GameScore, UserProgress } from '@/types';
 
 export type CurriculumStageId =
+  | 'a2-key'
+  | 'b1-preliminary'
+  | 'b2-first'
+  | 'c1-advanced';
+
+export type LegacyCurriculumStageId =
   | 'sound-play'
   | 'pre-a1-starters'
   | 'a1-movers'
@@ -40,123 +46,138 @@ export interface LearnerStageProgress {
   missing: string[];
 }
 
+export const LEGACY_STAGE_IDS: LegacyCurriculumStageId[] = [
+  'sound-play',
+  'pre-a1-starters',
+  'a1-movers',
+  'a2-flyers',
+  'a2-bridge',
+];
+
 export const CURRICULUM_STAGES: CurriculumStage[] = [
   {
-    id: 'sound-play',
-    cefr: 'Pre-A1 readiness',
-    titleVi: 'Làm quen âm thanh',
-    objectiveVi: 'Bé nhận ra âm, từ đơn và phản xạ với chỉ dẫn rất ngắn trước khi học câu.',
-    ageVi: '4-6 tuổi hoặc mới bắt đầu',
-    weeksVi: '4-8 tuần',
-    targetWords: 40,
-    targetStories: 1,
-    targetGames: 3,
-    topics: ['greetings', 'colors', 'numbers', 'animals', 'family', 'toys'],
-    focus: ['Nghe và bắt chước âm quen thuộc', 'Nhận diện tranh, màu, số, người thân', 'Trả lời yes/no và lặp lại cụm 1-3 từ'],
-    canDo: ['Hiểu lời chào và chỉ dẫn 1 bước như listen, point, choose.', 'Chọn đúng tranh hoặc từ khi nghe tiếng Anh.', 'Nói lại từ đơn/cụm ngắn với phát âm gần đúng.'],
-    dailyLoop: ['5 phút nghe bài hát/video rất ngắn', '5 phút ghép tranh-từ', '5 phút chơi game phản xạ 1 từ'],
-    weeklyPlan: ['3 buổi nghe + nhắc lại', '2 buổi màu/số/đồ vật', '1 buổi truyện tranh siêu ngắn', '1 buổi ôn bằng game'],
-    assessment: ['Bé chọn đúng 8/10 tranh khi nghe.', 'Bé nói được tối thiểu 20 từ quen thuộc.', 'Bé làm game dễ với trợ giúp ít dần.'],
-    exitCriteria: ['40 từ ở mức nhớ tốt', 'Hoàn thành 1 truyện rất ngắn', '3 lượt game đạt 70%+'],
-    engkids: ['Video/bài hát ngắn', 'Memory Match, Matching Pairs dễ', 'Pet chăm sóc bằng câu hỏi 1 từ'],
+    id: 'a2-key',
+    cefr: 'A2 Key',
+    titleVi: 'A2 Key - Nen tang giao tiep',
+    objectiveVi: 'Be hieu noi dung quen thuoc, noi/viet cau ngan va tu tin trong cac tinh huong hang ngay.',
+    ageVi: '9-13 tuoi hoac da co nen tang A1',
+    weeksVi: '4-6 thang',
+    targetWords: 1200,
+    targetStories: 18,
+    targetGames: 35,
+    topics: ['daily life', 'school', 'travel', 'health', 'hobbies', 'stories', 'technology', 'community'],
+    focus: ['Mo rong tu vung A2', 'Hoi dap ve trai nghiem va ke hoach gan', 'Doc/nghe doan ngan co chi tiet ro'],
+    canDo: ['Hieu y chinh trong cau chuyen, video va hoi thoai ngan.', 'Viet tin nhan/email ngan ve chu de quen thuoc.', 'Dung thi hien tai, qua khu don va tu noi co ban.'],
+    dailyLoop: ['Review tu den han', 'Mot lesson ngan', 'Game luyen phan xa', 'Checkpoint mini'],
+    weeklyPlan: ['Vocabulary + listening', 'Reading story', 'Grammar in context', 'Speaking prompt', 'Writing mini task', 'Checkpoint'],
+    assessment: ['Placement A2', 'Daily check 8 cau', 'Weekly checkpoint 16 cau', 'Stage exit 24 cau'],
+    exitCriteria: ['1200 tu active', '18 lesson/story hoan thanh', '35 luot game dat 70%+', 'Checkpoint >= 70%'],
+    engkids: ['Today queue', 'Word-bank games', 'Story/video lesson', 'Parent progress'],
   },
   {
-    id: 'pre-a1-starters',
-    cefr: 'Pre A1 Starters',
-    titleVi: 'Nền tảng từ và câu ngắn',
-    objectiveVi: 'Bé dùng từ quen thuộc để hiểu câu ngắn về bản thân, gia đình, lớp học và đồ vật quanh mình.',
-    ageVi: '6-8 tuổi',
-    weeksVi: '3-5 tháng',
-    targetWords: 180,
-    targetStories: 5,
-    targetGames: 10,
-    topics: ['family', 'animals', 'school', 'food', 'body', 'home', 'weather', 'nature'],
-    focus: ['Từ vựng đời sống gần bé', 'Mẫu câu I like..., This is..., Where is...?', 'Đọc từ/câu rất ngắn có tranh hỗ trợ'],
-    canDo: ['Trả lời câu hỏi cá nhân rất đơn giản.', 'Ghép Anh-Việt và đọc câu ngắn có tranh hỗ trợ.', 'Điền hoặc kéo thả được từ đơn đúng ngữ cảnh.'],
-    dailyLoop: ['5 phút ôn từ cũ', '10 phút truyện/video', '10 phút game word_bank', '2 phút nói lại 1 câu mẫu'],
-    weeklyPlan: ['2 buổi school/home', '2 buổi food/body/animals', '1 buổi weather/nature', '1 buổi truyện + vocab', '1 buổi review dashboard'],
-    assessment: ['Bé hiểu câu hỏi What is it? Where is it? Do you like...?', 'Bé đọc được câu 3-6 từ.', 'Bé tự dùng I like/I can/This is trong ví dụ ngắn.'],
-    exitCriteria: ['180 từ ở mức nhớ tốt', 'Hoàn thành 5 truyện', '10 lượt game đạt 70%+'],
-    engkids: ['Stories cấp dễ', 'Word Burst, Word Puzzle, Matching Pairs', 'Progress Review để ôn từ đã lưu'],
-  },
-  {
-    id: 'a1-movers',
-    cefr: 'A1 Movers',
-    titleVi: 'Giao tiếp câu đơn',
-    objectiveVi: 'Bé hiểu và dùng câu đơn để nói về thói quen, sở thích, nơi chốn và trải nghiệm rất quen thuộc.',
-    ageVi: '7-10 tuổi',
-    weeksVi: '5-8 tháng',
-    targetWords: 360,
-    targetStories: 12,
-    targetGames: 22,
-    topics: ['daily routines', 'places', 'hobbies', 'transport', 'nature', 'feelings'],
-    focus: ['Hỏi đáp về thói quen, sở thích, nơi chốn', 'Đọc truyện ngắn 80-150 từ', 'Viết cụm và câu đơn'],
-    canDo: ['Hiểu đoạn hội thoại ngắn có chủ đề quen thuộc.', 'Kể lại nội dung truyện bằng 2-4 câu đơn.', 'Dùng được hiện tại đơn, mệnh lệnh và cụm chỉ thời gian quen thuộc.'],
-    dailyLoop: ['5 phút SRS', '10 phút đọc/nghe', '10 phút English Farm hoặc game câu hỏi', '3 phút nói/viết 1-2 câu'],
-    weeklyPlan: ['2 buổi routine/places', '1 buổi transport/hobbies', '1 buổi nature/feelings', '1 buổi story game', '1 buổi farm review', '1 buổi kiểm tra can-do'],
-    assessment: ['Bé mô tả được ngày thường bằng 3 câu.', 'Bé trả lời Why/Where/When đơn giản.', 'Bé làm quiz có câu đầy đủ thay vì chỉ chọn từ đơn.'],
-    exitCriteria: ['360 từ ở mức nhớ tốt', 'Hoàn thành 12 truyện', '22 lượt game đạt 70%+'],
-    engkids: ['English Farm học từ theo vòng lặp', 'RPG Battle, Tower Climb', 'Story games sau mỗi truyện'],
-  },
-  {
-    id: 'a2-flyers',
-    cefr: 'A2 Flyers',
-    titleVi: 'Đọc hiểu và kể chuyện',
-    objectiveVi: 'Bé hiểu ý chính, chi tiết quen thuộc và bắt đầu diễn đạt ý kiến hoặc lý do bằng nhiều câu nối tiếp.',
-    ageVi: '9-12 tuổi',
-    weeksVi: '8-12 tháng',
-    targetWords: 720,
-    targetStories: 24,
-    targetGames: 40,
-    topics: ['adventure', 'science', 'health', 'technology', 'language', 'community'],
-    focus: ['Đọc đoạn 150-300 từ', 'Nghe chi tiết chính trong video/truyện', 'Viết 4-6 câu có trình tự'],
-    canDo: ['Nắm ý chính và chi tiết trong truyện/video ngắn.', 'Mô tả tranh, nhân vật, sự kiện bằng câu nối tiếp.', 'Dùng quá khứ đơn cơ bản và từ nối như because, then, first.'],
-    dailyLoop: ['5 phút ôn từ đến hạn', '12 phút đọc/video', '10 phút fill blank/sentence scramble', '5 phút viết hoặc nói lại'],
-    weeklyPlan: ['2 buổi adventure/story', '1 buổi science/health', '1 buổi technology/language', '1 buổi video quiz', '1 buổi sentence writing', '1 buổi progress review'],
-    assessment: ['Bé trả lời được câu hỏi chi tiết sau truyện.', 'Bé viết được 4 câu theo tranh hoặc chủ đề.', 'Bé giải thích lựa chọn bằng because/then/first.'],
-    exitCriteria: ['720 từ ở mức nhớ tốt', 'Hoàn thành 24 truyện', '40 lượt game đạt 70%+'],
-    engkids: ['Fill Blanks, Sentence Scramble', 'Video quiz và Story vocab', 'SRS review theo ngày đến hạn'],
-  },
-  {
-    id: 'a2-bridge',
-    cefr: 'A2 bridge',
-    titleVi: 'Tự học có hướng dẫn',
-    objectiveVi: 'Bé tự theo dõi mục tiêu tuần, đọc nhiều chủ đề hơn và trình bày ý kiến/kế hoạch bằng đoạn ngắn.',
-    ageVi: '10+ hoặc đã hoàn thành Flyers',
-    weeksVi: '3-6 tháng',
-    targetWords: 1000,
+    id: 'b1-preliminary',
+    cefr: 'B1 Preliminary',
+    titleVi: 'B1 Preliminary - Giao tiep doc lap',
+    objectiveVi: 'Be giao tiep ve truong lop, so thich, y kien va su kien quen thuoc bang doan ngan co cau truc.',
+    ageVi: '11-15 tuoi',
+    weeksVi: '6-9 thang',
+    targetWords: 2200,
     targetStories: 36,
-    targetGames: 60,
-    topics: ['projects', 'culture', 'problem solving', 'media', 'opinions', 'future plans'],
-    focus: ['Đọc nhiều chủ đề hơn', 'Nói/viết ý kiến đơn giản', 'Tự theo dõi lỗi và mục tiêu tuần'],
-    canDo: ['Đọc email, tin nhắn, truyện ngắn đời thường.', 'Nói về kế hoạch, trải nghiệm, sở thích bằng đoạn ngắn.', 'Biết ôn lại từ yếu và chọn hoạt động phù hợp.'],
-    dailyLoop: ['5 phút xem mục tiêu', '10 phút đọc/nghe tự chọn', '10 phút game hoặc viết', '5 phút tự đánh dấu lỗi cần ôn'],
-    weeklyPlan: ['1 buổi project/culture', '1 buổi media/news', '1 buổi problem solving', '1 buổi opinion writing', '1 buổi presentation nhỏ', '1 buổi review tự chọn'],
-    assessment: ['Bé lập kế hoạch học tuần.', 'Bé trình bày 5-6 câu về một chủ đề quen thuộc.', 'Bé tự nhận ra từ/cấu trúc cần ôn.'],
-    exitCriteria: ['1000 từ ở mức nhớ tốt', 'Hoàn thành 36 truyện', '60 lượt game đạt 70%+'],
-    engkids: ['Progress dashboard', 'Today plan', 'Game luyện phản xạ và từ vựng nâng cao'],
+    targetGames: 70,
+    topics: ['teen life', 'environment', 'culture', 'media', 'science', 'problem solving', 'future plans'],
+    focus: ['Doc bai 250-500 tu', 'Nghe chi tiet va suy luan don gian', 'Viet email/story/review ngan'],
+    canDo: ['Giai thich ly do va y kien bang nhieu cau noi tiep.', 'Tom tat y chinh cua bai doc/video quen thuoc.', 'Tu sua loi co ban trong cau va doan ngan.'],
+    dailyLoop: ['SRS', 'Reading/listening task', 'Skill drill', 'Writing or speaking output'],
+    weeklyPlan: ['Theme input', 'Vocabulary depth', 'Grammar pattern', 'Listening detail', 'Writing task', 'Checkpoint'],
+    assessment: ['B1 checkpoint theo skill', 'Stage exit voi writing/speaking prompt', 'Weak-skill review'],
+    exitCriteria: ['2200 tu active', '36 lesson hoan thanh', '70 luot game dat 70%+', 'Skill thap nhat >= 60%'],
+    engkids: ['Learning path', 'Review queue', 'Skill breakdown', 'Parent dashboard'],
+  },
+  {
+    id: 'b2-first',
+    cefr: 'B2 First',
+    titleVi: 'B2 First - Tu tin dien dat',
+    objectiveVi: 'Be hieu van ban dai hon, so sanh quan diem va trinh bay y tuong ro rang trong bai noi/viet co cau truc.',
+    ageVi: '13-16 tuoi',
+    weeksVi: '8-12 thang',
+    targetWords: 3600,
+    targetStories: 60,
+    targetGames: 110,
+    topics: ['global issues', 'education', 'technology', 'creativity', 'health', 'careers', 'literature'],
+    focus: ['Doc bai 500-900 tu', 'Phan biet y chinh/chi tiet/thai do', 'Viet review/article/opinion paragraph'],
+    canDo: ['Bao ve y kien bang vi du.', 'So sanh hai lua chon hoac hai quan diem.', 'Dung cau phuc, tu noi va paraphrase phu hop.'],
+    dailyLoop: ['Advanced review', 'Input rich lesson', 'Analysis task', 'Output task'],
+    weeklyPlan: ['Article/story', 'Listening viewpoint', 'Use of English', 'Writing workshop', 'Speaking cards', 'Checkpoint'],
+    assessment: ['B2 mixed-skill checkpoint', 'Stage exit voi writing rubric', 'Targeted remediation'],
+    exitCriteria: ['3600 tu active', '60 lesson hoan thanh', '110 luot game dat 70%+', 'Checkpoint >= 75%'],
+    engkids: ['Dashboard path', 'Lesson workspace', 'Assessment report', 'Portfolio tasks'],
+  },
+  {
+    id: 'c1-advanced',
+    cefr: 'C1 Advanced',
+    titleVi: 'C1 Advanced - Hoc thuat than thien',
+    objectiveVi: 'Be/teen hieu y phuc tap, tom tat, tranh luan va viet/noi ro rang ve chu de hoc thuat vua suc.',
+    ageVi: '14+ hoac da dat B2 vung',
+    weeksVi: '9-15 thang',
+    targetWords: 5200,
+    targetStories: 90,
+    targetGames: 160,
+    topics: ['research', 'society', 'innovation', 'arts', 'ethics', 'communication', 'independent learning'],
+    focus: ['Doc bai dai co lap luan', 'Nghe quan diem/ham y', 'Viet summary, proposal, presentation script'],
+    canDo: ['Tom tat va danh gia y kien trong nguon doc/nghe.', 'Trinh bay lap luan co cau truc va vi du.', 'Dieu chinh van phong cho nguoi nghe/nguoi doc.'],
+    dailyLoop: ['Precision vocab', 'Long-form input', 'Critical thinking task', 'Polished output'],
+    weeklyPlan: ['Deep reading', 'Lecture-style listening', 'Vocabulary nuance', 'Discussion', 'Writing revision', 'Checkpoint'],
+    assessment: ['C1 checkpoint theo rubric', 'Stage exit portfolio', 'Parent/learner review'],
+    exitCriteria: ['5200 tu active', '90 lesson hoan thanh', '160 luot game dat 70%+', 'Portfolio task dat rubric'],
+    engkids: ['Advanced lesson path', 'Portfolio', 'Skill radar', 'Parent summary'],
   },
 ];
 
+const STAGE_IDS = new Set<string>(CURRICULUM_STAGES.map((stage) => stage.id));
+const LEGACY_TO_ACTIVE: Record<LegacyCurriculumStageId, CurriculumStageId> = {
+  'sound-play': 'a2-key',
+  'pre-a1-starters': 'a2-key',
+  'a1-movers': 'a2-key',
+  'a2-flyers': 'a2-key',
+  'a2-bridge': 'a2-key',
+};
+
 export function normalizeStageId(value: unknown): CurriculumStageId | undefined {
   if (typeof value !== 'string') return undefined;
-  return CURRICULUM_STAGES.find((stage) => stage.id === value)?.id;
+  const trimmed = value.trim();
+  if (STAGE_IDS.has(trimmed)) return trimmed as CurriculumStageId;
+  if (trimmed in LEGACY_TO_ACTIVE) return LEGACY_TO_ACTIVE[trimmed as LegacyCurriculumStageId];
+  return undefined;
+}
+
+export function isActiveStageId(value: unknown): value is CurriculumStageId {
+  return typeof value === 'string' && STAGE_IDS.has(value);
+}
+
+export function mapLegacyStageId(value: unknown): CurriculumStageId {
+  return normalizeStageId(value) || 'a2-key';
 }
 
 export function getStageById(id: CurriculumStageId | string | undefined): CurriculumStage {
-  return CURRICULUM_STAGES.find((stage) => stage.id === id) ?? CURRICULUM_STAGES[1];
+  const normalized = normalizeStageId(id);
+  return CURRICULUM_STAGES.find((stage) => stage.id === normalized) ?? CURRICULUM_STAGES[0];
+}
+
+export function getStageIndex(stageId: CurriculumStageId | string | undefined): number {
+  const normalized = normalizeStageId(stageId);
+  const index = CURRICULUM_STAGES.findIndex((stage) => stage.id === normalized);
+  return Math.max(index, 0);
 }
 
 export function stageForStoryLevel(level: string | undefined): CurriculumStageId {
-  if (level === 'Intermediate') return 'a2-flyers';
-  if (level === 'Elementary') return 'a1-movers';
-  return 'pre-a1-starters';
+  if (level === 'Intermediate' || level === 'Elementary' || level === 'Beginner') return 'a2-key';
+  return normalizeStageId(level) || 'a2-key';
 }
 
 export function stageForDifficulty(level: string | undefined): CurriculumStageId {
-  if (level === 'advanced' || level === 'hard') return 'a2-flyers';
-  if (level === 'intermediate' || level === 'medium') return 'a1-movers';
-  return 'pre-a1-starters';
+  if (level === 'advanced' || level === 'hard') return 'b2-first';
+  if (level === 'intermediate' || level === 'medium') return 'b1-preliminary';
+  return 'a2-key';
 }
 
 function countMasteredWords(progress: UserProgress): number {
@@ -191,14 +212,14 @@ export function getLearnerStageProgress(progress: UserProgress): LearnerStagePro
 
   const stage = CURRICULUM_STAGES[stageIndex];
   const nextStage = CURRICULUM_STAGES[stageIndex + 1] ?? null;
-  const wordPct = Math.min(masteredWords / stage.targetWords, 1);
-  const storyPct = Math.min(completedStories / stage.targetStories, 1);
-  const gamePct = Math.min(strongGameScores / stage.targetGames, 1);
+  const wordPct = Math.min(masteredWords / Math.max(stage.targetWords, 1), 1);
+  const storyPct = Math.min(completedStories / Math.max(stage.targetStories, 1), 1);
+  const gamePct = Math.min(strongGameScores / Math.max(stage.targetGames, 1), 1);
   const percent = Math.round(((wordPct + storyPct + gamePct) / 3) * 100);
   const missing: string[] = [];
-  if (masteredWords < stage.targetWords) missing.push(`${stage.targetWords - masteredWords} từ nhớ tốt`);
-  if (completedStories < stage.targetStories) missing.push(`${stage.targetStories - completedStories} truyện hoàn thành`);
-  if (strongGameScores < stage.targetGames) missing.push(`${stage.targetGames - strongGameScores} lượt game đạt 70%+`);
+  if (masteredWords < stage.targetWords) missing.push(`${stage.targetWords - masteredWords} tu active`);
+  if (completedStories < stage.targetStories) missing.push(`${stage.targetStories - completedStories} lesson/story hoan thanh`);
+  if (strongGameScores < stage.targetGames) missing.push(`${stage.targetGames - strongGameScores} luot game dat 70%+`);
 
   return {
     stage,

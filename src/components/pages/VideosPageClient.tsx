@@ -11,6 +11,7 @@ import { filterVideos, groupVideosByFeature } from '@/lib/content-selectors';
 import { Video } from '@/types';
 import { onContentChange } from '@/lib/content-sync';
 import { DecorIcon } from '@/components/common/DecorIcon';
+import { getStageById, type CurriculumStageId } from '@/lib/curriculum';
 
 // Rotating palette for feature sections.
 const FEATURE_COLORS: Array<'pink' | 'purple' | 'blue' | 'green' | 'orange' | 'yellow'> = [
@@ -21,6 +22,7 @@ export default function VideosPageClient() {
   const [liveVideos, setLiveVideos] = useState<Video[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [learnerStageId, setLearnerStageId] = useState<CurriculumStageId | null>(null);
   const [filters, setFilters] = useState<VideoFiltersState>({
     search: '',
     level: null,
@@ -60,6 +62,23 @@ export default function VideosPageClient() {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleFocus);
       unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/learner/level', { credentials: 'include', cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        const stageId = data?.learnerState?.currentStageId as CurriculumStageId | undefined;
+        if (active && stageId) {
+          setLearnerStageId(stageId);
+          setFilters((current) => ({ ...current, level: stageId }));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
     };
   }, []);
 
@@ -128,13 +147,29 @@ export default function VideosPageClient() {
 
         <div className="mx-auto max-w-7xl px-4">
           <div className="mb-6 flex items-center justify-between">
-            <button
-              onClick={() => setShowFilters((current) => !current)}
-              className={`flex min-h-[44px] items-center gap-2 rounded-xl px-4 font-black transition-colors ${showFilters ? 'bg-kid-purple text-white' : 'bg-white text-slate-700 shadow'}`}
-            >
-              <SlidersHorizontal size={17} aria-hidden="true" />
-              Lọc video
-            </button>
+            <div className="flex flex-wrap gap-2">
+              {learnerStageId && (
+                <button
+                  onClick={() => setFilters((current) => ({ ...current, level: learnerStageId }))}
+                  className={`flex min-h-[44px] items-center gap-2 rounded-xl px-4 font-black transition-colors ${filters.level === learnerStageId ? 'bg-kid-purple text-white' : 'bg-white text-violet-700 shadow'}`}
+                >
+                  Level của bé: {getStageById(learnerStageId).cefr}
+                </button>
+              )}
+              <button
+                onClick={() => setFilters((current) => ({ ...current, level: null }))}
+                className={`flex min-h-[44px] items-center gap-2 rounded-xl px-4 font-black transition-colors ${filters.level === null ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 shadow'}`}
+              >
+                Xem tất cả
+              </button>
+              <button
+                onClick={() => setShowFilters((current) => !current)}
+                className={`flex min-h-[44px] items-center gap-2 rounded-xl px-4 font-black transition-colors ${showFilters ? 'bg-kid-purple text-white' : 'bg-white text-slate-700 shadow'}`}
+              >
+                <SlidersHorizontal size={17} aria-hidden="true" />
+                Lọc video
+              </button>
+            </div>
           </div>
 
           {showFilters && (
