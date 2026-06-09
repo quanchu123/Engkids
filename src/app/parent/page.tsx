@@ -1,14 +1,14 @@
-﻿'use client';
+'use client';
 
 /**
- * F4 â€” "Báº£ng phá»¥ huynh" (Parent dashboard).
+ * F4 — "Bảng phụ huynh" (Parent dashboard).
  *
  * A read-only summary of the child's learning progress aimed at parents.
  * Cleaner / less childish than the kid-facing pages, but still friendly.
  *
  * NOTE ON THE PIN GATE: the optional 4-digit PIN stored in localStorage
  * (key `engkids.parentPin`) is a SOFT, CLIENT-ONLY gate. It is meant to keep a
- * curious child out, not to provide real security â€” anyone with devtools or
+ * curious child out, not to provide real security — anyone with devtools or
  * filesystem access can read or clear it. Do not treat it as authentication.
  */
 
@@ -55,7 +55,7 @@ export default function ParentDashboardPage() {
       const stored = window.localStorage.getItem(PIN_STORAGE_KEY);
       setMode(stored ? 'enter' : 'setup');
     } catch {
-      // localStorage unavailable (privacy mode / SSR edge) â€” fall back to open.
+      // localStorage unavailable (privacy mode / SSR edge) — fall back to open.
       setMode('unlocked');
     }
   }, []);
@@ -101,11 +101,11 @@ function PinGate({ mode, onUnlock }: { mode: GateMode; onUnlock: () => void }) {
 
   const handleSetup = () => {
     if (!isValidPin(pin)) {
-      setError('MÃ£ PIN pháº£i gá»“m Ä‘Ãºng 4 chá»¯ sá»‘.');
+      setError('Mã PIN phải gồm đúng 4 chữ số.');
       return;
     }
     if (pin !== confirmPin) {
-      setError('Hai mÃ£ PIN chÆ°a khá»›p nhau.');
+      setError('Hai mã PIN chưa khớp nhau.');
       return;
     }
     try {
@@ -126,7 +126,7 @@ function PinGate({ mode, onUnlock }: { mode: GateMode; onUnlock: () => void }) {
     if (pin === stored) {
       onUnlock();
     } else {
-      setError('MÃ£ PIN khÃ´ng Ä‘Ãºng. Vui lÃ²ng thá»­ láº¡i.');
+      setError('Mã PIN không đúng. Vui lòng thử lại.');
     }
   };
 
@@ -135,16 +135,16 @@ function PinGate({ mode, onUnlock }: { mode: GateMode; onUnlock: () => void }) {
       <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg">
         <Lock className="h-8 w-8" />
       </div>
-      <h1 className="text-2xl font-bold text-slate-900">Báº£ng phá»¥ huynh</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Bảng phụ huynh</h1>
 
       {mode === 'setup' ? (
         <>
           <p className="mt-2 text-sm text-slate-500">
-            Äáº·t mÃ£ PIN (4 sá»‘) Ä‘á»ƒ báº£o vá»‡ khu vá»±c dÃ nh cho phá»¥ huynh, hoáº·c bá» qua Ä‘á»ƒ xem ngay.
+            Đặt mã PIN (4 số) để bảo vệ khu vực dành cho phụ huynh, hoặc bỏ qua để xem ngay.
           </p>
           <div className="mt-6 space-y-3 text-left">
-            <PinInput label="MÃ£ PIN (4 sá»‘)" value={pin} onChange={setPin} />
-            <PinInput label="Nháº­p láº¡i mÃ£ PIN" value={confirmPin} onChange={setConfirmPin} />
+            <PinInput label="Mã PIN (4 số)" value={pin} onChange={setPin} />
+            <PinInput label="Nhập lại mã PIN" value={confirmPin} onChange={setConfirmPin} />
           </div>
           {error && <p className="mt-3 text-sm font-medium text-rose-600">{error}</p>}
           <div className="mt-6 flex flex-col gap-3">
@@ -152,33 +152,33 @@ function PinGate({ mode, onUnlock }: { mode: GateMode; onUnlock: () => void }) {
               onClick={handleSetup}
               className="rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-500 px-5 py-3 text-sm font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
             >
-              Äáº·t mÃ£ PIN vÃ  tiáº¿p tá»¥c
+              Đặt mã PIN và tiếp tục
             </button>
             <button
               onClick={onUnlock}
               className="rounded-2xl bg-slate-100 px-5 py-3 text-sm font-bold text-slate-600 transition-colors hover:bg-slate-200"
             >
-              Bá» qua
+              Bỏ qua
             </button>
           </div>
         </>
       ) : (
         <>
-          <p className="mt-2 text-sm text-slate-500">Nháº­p mÃ£ PIN Ä‘á»ƒ xem tiáº¿n Ä‘á»™ há»c táº­p cá»§a bÃ©.</p>
+          <p className="mt-2 text-sm text-slate-500">Nhập mã PIN để xem tiến độ học tập của bé.</p>
           <div className="mt-6 text-left">
-            <PinInput label="MÃ£ PIN" value={pin} onChange={setPin} onEnter={handleEnter} />
+            <PinInput label="Mã PIN" value={pin} onChange={setPin} onEnter={handleEnter} />
           </div>
           {error && <p className="mt-3 text-sm font-medium text-rose-600">{error}</p>}
           <button
             onClick={handleEnter}
             className="mt-6 w-full rounded-2xl bg-gradient-to-r from-indigo-500 to-violet-500 px-5 py-3 text-sm font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
           >
-            Má»Ÿ khÃ³a
+            Má»Ÿ khóa
           </button>
         </>
       )}
       <p className="mt-5 text-xs text-slate-400">
-        MÃ£ PIN chá»‰ lÃ  lá»›p báº£o vá»‡ nháº¹ trÃªn thiáº¿t bá»‹ nÃ y, khÃ´ng pháº£i báº£o máº­t tháº­t sá»±.
+        Mã PIN chỉ là lớp bảo vệ nhẹ trên thiết bị này, không phải bảo mật thật sự.
       </p>
     </div>
   );
@@ -208,7 +208,7 @@ function PinInput({
           if (event.key === 'Enter' && onEnter) onEnter();
         }}
         className="soft-panel w-full rounded-2xl px-4 py-3 text-center text-lg font-bold tracking-[0.5em] text-slate-700 outline-none"
-        placeholder="â€¢â€¢â€¢â€¢"
+        placeholder="••••"
       />
     </label>
   );
@@ -260,25 +260,25 @@ function Dashboard({ progress, hydrated }: DashboardProps) {
               <GraduationCap className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Báº£ng phá»¥ huynh</h1>
-              <p className="text-sm text-slate-500">Tá»•ng quan hÃ nh trÃ¬nh há»c tiáº¿ng Anh cá»§a bÃ©</p>
+              <h1 className="text-2xl font-bold text-slate-900">Bảng phụ huynh</h1>
+              <p className="text-sm text-slate-500">Tổng quan hành trình học tiếng Anh của bé</p>
             </div>
           </div>
         </header>
 
         {/* Metric cards */}
         <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <MetricCard icon={<GraduationCap className="h-5 w-5" />} label="Tá»« Ä‘Ã£ há»c" value={summary.wordsLearned} tint="from-sky-500 to-indigo-500" />
-          <MetricCard icon={<Sparkles className="h-5 w-5" />} label="Tá»« thÃ nh tháº¡o" value={summary.wordsMastered} tint="from-emerald-500 to-teal-500" />
-          <MetricCard icon={<BookOpenCheck className="h-5 w-5" />} label="Truyá»‡n hoÃ n thÃ nh" value={summary.storiesCompleted} tint="from-violet-500 to-fuchsia-500" />
-          <MetricCard icon={<Gamepad2 className="h-5 w-5" />} label="LÆ°á»£t chÆ¡i game" value={summary.gamesPlayed} tint="from-orange-500 to-amber-500" />
-          <MetricCard icon={<Star className="h-5 w-5" />} label="Tá»•ng sao" value={summary.totalStars} tint="from-amber-500 to-yellow-500" />
-          <MetricCard icon={<Flame className="h-5 w-5" />} label="Chuá»—i ngÃ y há»c" value={summary.currentStreak} tint="from-rose-500 to-pink-500" />
-          <MetricCard icon={<Award className="h-5 w-5" />} label="Huy hiá»‡u" value={summary.badgesUnlocked} tint="from-indigo-500 to-blue-500" />
+          <MetricCard icon={<GraduationCap className="h-5 w-5" />} label="Từ đã học" value={summary.wordsLearned} tint="from-sky-500 to-indigo-500" />
+          <MetricCard icon={<Sparkles className="h-5 w-5" />} label="Từ thành thạo" value={summary.wordsMastered} tint="from-emerald-500 to-teal-500" />
+          <MetricCard icon={<BookOpenCheck className="h-5 w-5" />} label="Truyện hoàn thành" value={summary.storiesCompleted} tint="from-violet-500 to-fuchsia-500" />
+          <MetricCard icon={<Gamepad2 className="h-5 w-5" />} label="Lượt chơi game" value={summary.gamesPlayed} tint="from-orange-500 to-amber-500" />
+          <MetricCard icon={<Star className="h-5 w-5" />} label="Tổng sao" value={summary.totalStars} tint="from-amber-500 to-yellow-500" />
+          <MetricCard icon={<Flame className="h-5 w-5" />} label="Chuỗi ngày học" value={summary.currentStreak} tint="from-rose-500 to-pink-500" />
+          <MetricCard icon={<Award className="h-5 w-5" />} label="Huy hiệu" value={summary.badgesUnlocked} tint="from-indigo-500 to-blue-500" />
           <MetricCard
             icon={<RefreshCw className="h-5 w-5" />}
-            label="Tá»« cáº§n Ã´n hÃ´m nay"
-            value={dueToday ?? 'â€”'}
+            label="Từ cần ôn hôm nay"
+            value={dueToday ?? '—'}
             tint="from-cyan-500 to-sky-500"
           />
         </section>
@@ -288,7 +288,7 @@ function Dashboard({ progress, hydrated }: DashboardProps) {
           <section className="toy-panel rounded-3xl p-6">
             <div className="mb-5 flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-indigo-500" />
-              <h2 className="text-lg font-bold text-slate-900">Hoáº¡t Ä‘á»™ng 7 ngÃ y qua</h2>
+              <h2 className="text-lg font-bold text-slate-900">Hoạt động 7 ngày qua</h2>
             </div>
             <div className="flex h-44 items-end justify-between gap-2">
               {weekly.map((day) => {
@@ -300,7 +300,7 @@ function Dashboard({ progress, hydrated }: DashboardProps) {
                       <div
                         className="w-full rounded-t-lg bg-gradient-to-t from-indigo-500 to-violet-400 transition-all"
                         style={{ height: `${heightPct}%` }}
-                        title={`${day.date}: ${day.count} hoáº¡t Ä‘á»™ng`}
+                        title={`${day.date}: ${day.count} hoạt động`}
                       />
                     </div>
                     <span className="text-[10px] font-medium text-slate-400">{formatDayLabel(day.date)}</span>
@@ -312,7 +312,7 @@ function Dashboard({ progress, hydrated }: DashboardProps) {
 
           {/* Recent activity */}
           <section className="toy-panel rounded-3xl p-6">
-            <h2 className="mb-5 text-lg font-bold text-slate-900">Hoáº¡t Ä‘á»™ng gáº§n Ä‘Ã¢y</h2>
+            <h2 className="mb-5 text-lg font-bold text-slate-900">Hoạt động gần đây</h2>
             {recent.length > 0 ? (
               <ul className="space-y-3">
                 {recent.map((item, index) => (
@@ -326,7 +326,7 @@ function Dashboard({ progress, hydrated }: DashboardProps) {
                 ))}
               </ul>
             ) : (
-              <p className="py-8 text-center text-sm text-slate-400">ChÆ°a cÃ³ hoáº¡t Ä‘á»™ng nÃ o Ä‘Æ°á»£c ghi nháº­n.</p>
+              <p className="py-8 text-center text-sm text-slate-400">Chưa có hoạt động nào được ghi nhận.</p>
             )}
           </section>
         </div>
@@ -337,7 +337,7 @@ function Dashboard({ progress, hydrated }: DashboardProps) {
         <section className="toy-panel mt-6 rounded-3xl p-6">
           <div className="mb-5 flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-emerald-500" />
-            <h2 className="text-lg font-bold text-slate-900">Tá»« vá»±ng bÃ© Ä‘Ã£ thÃ nh tháº¡o</h2>
+            <h2 className="text-lg font-bold text-slate-900">Từ vựng bé đã thành thạo</h2>
             <span className="kid-chip ml-1 px-3 py-1 text-xs font-bold text-emerald-700">{masteredWords.length}</span>
           </div>
           {masteredWords.length > 0 ? (
@@ -351,13 +351,13 @@ function Dashboard({ progress, hydrated }: DashboardProps) {
             </div>
           ) : (
             <p className="py-6 text-center text-sm text-slate-400">
-              BÃ© chÆ°a cÃ³ tá»« nÃ o Ä‘áº¡t má»©c thÃ nh tháº¡o. HÃ£y cÃ¹ng bÃ© luyá»‡n táº­p thÃªm nhÃ©!
+              Bé chưa có từ nào đạt mức thành thạo. Hãy cùng bé luyện tập thêm nhé!
             </p>
           )}
         </section>
 
         {!hydrated && (
-          <p className="mt-6 text-center text-xs text-slate-400">Äang táº£i dá»¯ liá»‡u tiáº¿n Ä‘á»™...</p>
+          <p className="mt-6 text-center text-xs text-slate-400">Đang tải dữ liệu tiến độ...</p>
         )}
       </div>
     </main>
@@ -431,7 +431,7 @@ function LevelSettings() {
   }, []);
 
   const save = async () => {
-    if (!confirm('Äá»•i level sáº½ cáº­p nháº­t Today Plan vÃ  ná»™i dung Æ°u tiÃªn. Lá»‹ch sá»­ bÃ i kiá»ƒm tra/progress váº«n Ä‘Æ°á»£c giá»¯. Tiáº¿p tá»¥c?')) return;
+    if (!confirm('Đổi level sẽ cập nhật Today Plan và nội dung ưu tiên. Lịch sử bài kiểm tra/progress vẫn được giữ. Tiếp tục?')) return;
     setSaving(true);
     setMessage('');
     try {
@@ -441,12 +441,12 @@ function LevelSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stageId: selectedStageId, source: 'parent' }),
       });
-      if (!response.ok) throw new Error('KhÃ´ng lÆ°u Ä‘Æ°á»£c level.');
+      if (!response.ok) throw new Error('Không lưu được level.');
       const data = await response.json();
       setLearnerState(data.learnerState || null);
-      setMessage('ÄÃ£ cáº­p nháº­t level há»c cho bÃ©.');
+      setMessage('Đã cập nhật level học cho bé.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'KhÃ´ng lÆ°u Ä‘Æ°á»£c level.');
+      setMessage(error instanceof Error ? error.message : 'Không lưu được level.');
     } finally {
       setSaving(false);
     }
@@ -458,25 +458,25 @@ function LevelSettings() {
         <div>
           <div className="mb-2 flex items-center gap-2">
             <GraduationCap className="h-5 w-5 text-indigo-500" />
-            <h2 className="text-lg font-bold text-slate-900">Level há»c cá»§a bÃ©</h2>
+            <h2 className="text-lg font-bold text-slate-900">Level học của bé</h2>
           </div>
           <p className="max-w-2xl text-sm font-semibold leading-6 text-slate-500">
-            Level nÃ y dÃ¹ng Ä‘á»ƒ Æ°u tiÃªn truyá»‡n, video, game tá»« vá»±ng vÃ  checkpoint. Äá»•i level khÃ´ng xÃ³a lá»‹ch sá»­ há»c.
+            Level này dùng để ưu tiên truyện, video, game từ vựng và checkpoint. Đổi level không xóa lịch sử học.
           </p>
         </div>
         {learnerState?.selectedLevelAt && (
           <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
-            ÄÃ£ chá»n {formatDateTime(learnerState.selectedLevelAt)}
+            Đã chọn {formatDateTime(learnerState.selectedLevelAt)}
           </span>
         )}
       </div>
 
       {loading ? (
-        <p className="text-sm font-bold text-slate-400">Äang táº£i level...</p>
+        <p className="text-sm font-bold text-slate-400">Đang tải level...</p>
       ) : learnerState ? (
         <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
           <label className="block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Cháº·ng hiá»‡n táº¡i</span>
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">Chặng hiện tại</span>
             <select
               value={selectedStageId}
               onChange={(event) => setSelectedStageId(event.target.value as CurriculumStageId)}
@@ -493,12 +493,12 @@ function LevelSettings() {
             disabled={saving || selectedStageId === learnerState.currentStageId}
             className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Save className="h-4 w-4" aria-hidden="true" /> {saving ? 'Äang lÆ°u...' : 'LÆ°u level'}
+            <Save className="h-4 w-4" aria-hidden="true" /> {saving ? 'Đang lưu...' : 'Lưu level'}
           </button>
         </div>
       ) : (
         <p className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
-          ÄÄƒng nháº­p tÃ i khoáº£n há»c Ä‘á»ƒ lÆ°u level vÃ o database.
+          Đăng nhập tài khoản học để lưu level vào database.
         </p>
       )}
 

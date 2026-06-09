@@ -99,7 +99,7 @@ describe('applyAction', () => {
   });
 
   it('reduces repeated care when the same action is spammed too soon', () => {
-    const first = applyAction({ ...createPet('char-fox', 'CÃ¡o', 0), hunger: 70 }, 'feed', 0);
+    const first = applyAction({ ...createPet('char-fox', 'Cáo', 0), hunger: 70 }, 'feed', 0);
     const second = applyAction(first.pet, 'feed', 60_000);
     expect(second.quality).toBe('wasted');
     expect(second.expReward).toBeLessThan(first.expReward);
@@ -166,12 +166,12 @@ describe('mood', () => {
 
 describe('petActionReadiness', () => {
   it('marks urgent actions when the primary need is low', () => {
-    const p = { ...createPet('char-fox', 'CÃ¡o', 0), hunger: 18 };
+    const p = { ...createPet('char-fox', 'Cáo', 0), hunger: 18 };
     expect(petActionReadiness(p, 'feed', 0).tone).toBe('urgent');
   });
 
   it('warns when playing while the pet is exhausted', () => {
-    const p = { ...createPet('char-fox', 'CÃ¡o', 0), happiness: 20, energy: 10 };
+    const p = { ...createPet('char-fox', 'Cáo', 0), happiness: 20, energy: 10 };
     expect(petActionReadiness(p, 'play', 0).tone).toBe('tired');
   });
 });

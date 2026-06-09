@@ -199,7 +199,7 @@ export default function WordPuzzlePage() {
       <div className="fixed inset-0 flex flex-col overflow-hidden"
         style={{ background: 'linear-gradient(170deg, #0a0a0f 0%, #111128 50%, #0a0f1a 100%)' }}>
 
-        {/* â”€â”€ Toast â”€â”€ */}
+        {/* ?? Toast ?? */}
         {toast && (
           <div className="fixed top-20 left-1/2 z-50 px-6 py-3 rounded-xl font-bold text-white text-sm"
             style={{

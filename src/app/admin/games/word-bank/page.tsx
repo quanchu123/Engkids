@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -34,7 +34,7 @@ export default function WordBankEditorPage() {
         : DEFAULT_WORD_BANK.map(enrichWordPair);
       setWords(loaded);
     } catch {
-      toast.error('KhÃ´ng táº£i Ä‘Æ°á»£c kho tá»« vá»±ng');
+      toast.error('Không tải được kho từ vựng');
       setWords(DEFAULT_WORD_BANK.map(enrichWordPair));
     } finally {
       setLoading(false);
@@ -82,9 +82,9 @@ export default function WordBankEditorPage() {
   };
 
   const loadEngkidsSeed = () => {
-    if (words.length > 0 && !confirm('Náº¡p bá»™ seed chuáº©n Engkids sáº½ thay danh sÃ¡ch Ä‘ang chá»‰nh trÃªn mÃ n hÃ¬nh. Tiáº¿p tá»¥c?')) return;
+    if (words.length > 0 && !confirm('Nạp bộ seed chuẩn Engkids sẽ thay danh sách đang chỉnh trên màn hình. Tiếp tục?')) return;
     setWords(DEFAULT_WORD_BANK.map(enrichWordPair));
-    toast.success(`ÄÃ£ náº¡p ${DEFAULT_WORD_BANK.length} tá»« theo lá»™ trÃ¬nh Engkids.`);
+    toast.success(`Đã nạp ${DEFAULT_WORD_BANK.length} từ theo lộ trình Engkids.`);
   };
 
   const handleSave = async () => {
@@ -100,21 +100,21 @@ export default function WordBankEditorPage() {
         }))
         .filter((w) => w.en && w.vi);
       if (cleaned.length === 0) {
-        toast.error('Cáº§n Ã­t nháº¥t 1 tá»« cÃ³ cáº£ tiáº¿ng Anh vÃ  tiáº¿ng Viá»‡t.');
+        toast.error('Cần ít nhất 1 từ có cả tiếng Anh và tiếng Việt.');
         setSaving(false);
         return;
       }
       await api.put('/api/games/word-bank', { data: cleaned }, { auth: true });
-      toast.success('ÄÃ£ lÆ°u kho tá»« vá»±ng!');
+      toast.success('Đã lưu kho từ vựng!');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'LÆ°u tháº¥t báº¡i');
+      toast.error(err instanceof Error ? err.message : 'Lưu thất bại');
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <LoadingSpinner message="Äang táº£i kho tá»« vá»±ng..." />;
+    return <LoadingSpinner message="Đang tải kho từ vựng..." />;
   }
 
   return (
@@ -122,45 +122,45 @@ export default function WordBankEditorPage() {
       <header className="admin-card flex flex-col gap-4 p-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-admin-primary">Game content</p>
-          <h1 className="mt-1 text-3xl font-black text-admin-text">Word bank theo lá»™ trÃ¬nh</h1>
+          <h1 className="mt-1 text-3xl font-black text-admin-text">Word bank theo lộ trình</h1>
           <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-admin-text-muted">
-            Bá»™ tá»« nÃ y dÃ¹ng chung cho matching, farm, pet, RPG, fill blank, sentence scramble. Má»—i tá»« nÃªn cÃ³ cáº¥p Ä‘á»™, topic vÃ  cÃ¢u vÃ­ dá»¥ Ä‘á»ƒ game tá»± chá»n Ä‘Ãºng Ä‘á»™ khÃ³.
+            Bộ từ này dùng chung cho matching, farm, pet, RPG, fill blank, sentence scramble. Mỗi từ nên có cấp độ, topic và câu ví dụ để game tự chọn đúng độ khó.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => router.push('/admin/games')} className="admin-btn admin-btn-secondary">
-            Quay láº¡i
+            Quay lại
           </button>
           <button type="button" onClick={loadEngkidsSeed} className="admin-btn admin-btn-secondary">
-            Náº¡p bá»™ chuáº©n Engkids
+            Nạp bộ chuẩn Engkids
           </button>
           <button type="button" onClick={handleSave} disabled={saving} className="admin-btn admin-btn-primary">
-            {saving ? 'Äang lÆ°u...' : 'LÆ°u kho tá»«'}
+            {saving ? 'Đang lưu...' : 'Lưu kho từ'}
           </button>
         </div>
       </header>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Tá»•ng tá»«" value={stats.total} />
-        <StatCard label="Tá»« 5 chá»¯" value={stats.fiveLetterCount} helper="Cho Word Puzzle" />
-        <StatCard label="CÃ³ cÃ¢u vÃ­ dá»¥" value={stats.exampleCount} />
+        <StatCard label="Tổng từ" value={stats.total} />
+        <StatCard label="Từ 5 chữ" value={stats.fiveLetterCount} helper="Cho Word Puzzle" />
+        <StatCard label="Có câu ví dụ" value={stats.exampleCount} />
         <StatCard label="Topic" value={topics.length} />
       </section>
 
       <section className="grid gap-3 lg:grid-cols-3">
         <QualityCard
-          title="Stage dÆ°á»›i chuáº©n"
-          empty="Má»i stage Ä‘áº¡t sá»‘ lÆ°á»£ng tá»‘i thiá»ƒu."
+          title="Stage dưới chuẩn"
+          empty="Mọi stage đạt số lượng tối thiểu."
           items={quality.stagesBelowTarget.map(({ stage, count, target }) => `${stage.cefr}: ${count}/${target}`)}
         />
         <QualityCard
-          title="Topic quÃ¡ Ã­t tá»«"
-          empty="Topic nÃ o cÅ©ng Ä‘á»§ dá»¯ liá»‡u cÆ¡ báº£n."
+          title="Topic quá ít từ"
+          empty="Topic nào cÅ©ng đủ dữ liệu cơ bản."
           items={quality.thinTopics.slice(0, 8).map(([topic, count]) => `${topic}: ${count}`)}
         />
         <QualityCard
-          title="Thiáº¿u example"
-          empty="Táº¥t cáº£ tá»« Ä‘ang cÃ³ cÃ¢u vÃ­ dá»¥."
+          title="Thiếu example"
+          empty="Tất cả từ đang có câu ví dụ."
           items={quality.missingExamples.map((word) => word.en)}
         />
       </section>
@@ -168,11 +168,11 @@ export default function WordBankEditorPage() {
       <section className="admin-card p-4">
         <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-lg font-black text-admin-text">PhÃ¢n bá»• theo cháº·ng</h2>
-            <p className="text-sm font-semibold text-admin-text-muted">DÃ¹ng Ä‘á»ƒ kiá»ƒm tra game easy/medium/hard cÃ³ Ä‘á»§ tá»« phÃ¹ há»£p.</p>
+            <h2 className="text-lg font-black text-admin-text">Phân bổ theo chặng</h2>
+            <p className="text-sm font-semibold text-admin-text-muted">Dùng để kiểm tra game easy/medium/hard có đủ từ phù hợp.</p>
           </div>
           <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
-            NÃªn giá»¯ Ã­t nháº¥t 5 tá»« 5 chá»¯ cho Word Puzzle
+            Nên giữ ít nhất 5 từ 5 chữ cho Word Puzzle
           </span>
         </div>
         <div className="grid gap-3 md:grid-cols-5">
@@ -199,17 +199,17 @@ export default function WordBankEditorPage() {
         <div className="border-b border-admin-border p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <h2 className="text-lg font-black text-admin-text">Danh sÃ¡ch tá»«</h2>
-              <p className="text-sm font-semibold text-admin-text-muted">CÃ¢u vÃ­ dá»¥ nÃªn chá»©a chÃ­nh xÃ¡c tá»« tiáº¿ng Anh Ä‘á»ƒ Fill Blanks tá»± táº¡o chá»— trá»‘ng.</p>
+              <h2 className="text-lg font-black text-admin-text">Danh sách từ</h2>
+              <p className="text-sm font-semibold text-admin-text-muted">Câu ví dụ nên chứa chính xác từ tiếng Anh để Fill Blanks tự tạo chỗ trống.</p>
             </div>
-            <p className="text-sm font-black text-admin-text-muted">Äang xem {visibleWords.length}/{words.length} tá»«</p>
+            <p className="text-sm font-black text-admin-text-muted">Đang xem {visibleWords.length}/{words.length} từ</p>
           </div>
           <div className="mt-4 grid gap-2 lg:grid-cols-[1fr_190px_180px_auto]">
             <input
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="TÃ¬m English, Vietnamese hoáº·c example"
+              placeholder="Tìm English, Vietnamese hoặc example"
               className="admin-input"
             />
             <select
@@ -217,7 +217,7 @@ export default function WordBankEditorPage() {
               onChange={(event) => setLevelFilter(event.target.value as CurriculumStageId | 'all')}
               className="admin-input text-sm font-semibold"
             >
-              <option value="all">Táº¥t cáº£ level</option>
+              <option value="all">Tất cả level</option>
               {CURRICULUM_STAGES.map((stage) => (
                 <option key={stage.id} value={stage.id}>{stage.cefr}</option>
               ))}
@@ -227,7 +227,7 @@ export default function WordBankEditorPage() {
               onChange={(event) => setTopicFilter(event.target.value)}
               className="admin-input text-sm font-semibold"
             >
-              <option value="all">Táº¥t cáº£ topic</option>
+              <option value="all">Tất cả topic</option>
               {topics.map((topic) => (
                 <option key={topic} value={topic}>{topic}</option>
               ))}
@@ -241,7 +241,7 @@ export default function WordBankEditorPage() {
               }}
               className="admin-btn admin-btn-secondary justify-center"
             >
-              XÃ³a lá»c
+              Xóa lọc
             </button>
           </div>
         </div>
@@ -261,14 +261,14 @@ export default function WordBankEditorPage() {
                 type="text"
                 value={w.vi}
                 onChange={(e) => update(i, { vi: e.target.value })}
-                placeholder="Tiáº¿ng Viá»‡t"
+                placeholder="Tiếng Việt"
                 className="admin-input"
               />
               <select
                 value={w.level ?? 'pre-a1-starters'}
                 onChange={(e) => update(i, { level: e.target.value as CurriculumStageId })}
                 className="admin-input text-sm font-semibold"
-                title="Cáº¥p Ä‘á»™"
+                title="Cấp độ"
               >
                 {CURRICULUM_STAGES.map((stage) => (
                   <option key={stage.id} value={stage.id}>{stage.cefr}</option>
@@ -285,9 +285,9 @@ export default function WordBankEditorPage() {
                 type="button"
                 onClick={() => setWords((prev) => prev.filter((_, idx) => idx !== i))}
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-sm font-black text-red-600 transition-colors hover:bg-red-100"
-                title="XÃ³a tá»«"
+                title="Xóa từ"
               >
-                Ã—
+                ×
               </button>
               <input
                 type="text"
@@ -301,7 +301,7 @@ export default function WordBankEditorPage() {
         </div>
           {visibleWords.length === 0 && (
             <div className="p-8 text-center text-sm font-bold text-admin-text-muted">
-              KhÃ´ng cÃ³ tá»« nÃ o khá»›p bá»™ lá»c hiá»‡n táº¡i.
+              Không có từ nào khớp bộ lọc hiện tại.
             </div>
           )}
       </section>
@@ -313,11 +313,11 @@ export default function WordBankEditorPage() {
             onClick={() => setWords((prev) => [...prev, { en: '', vi: '', level: 'pre-a1-starters', topic: '', example: '' }])}
             className="admin-btn admin-btn-secondary"
           >
-            ThÃªm tá»«
+            Thêm từ
           </button>
-          <span className="text-sm font-black text-admin-text-muted">{words.length} tá»«</span>
+          <span className="text-sm font-black text-admin-text-muted">{words.length} từ</span>
           <button type="button" onClick={handleSave} disabled={saving} className="admin-btn admin-btn-primary">
-            {saving ? 'Äang lÆ°u...' : 'LÆ°u kho tá»«'}
+            {saving ? 'Đang lưu...' : 'Lưu kho từ'}
           </button>
         </div>
       </div>

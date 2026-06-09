@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
@@ -40,39 +40,39 @@ const STAGE_ACCENTS: Record<CurriculumStageId, { soft: string; solid: string; te
 };
 
 const SKILL_LABELS: Record<string, string> = {
-  vocabulary: 'Tá»« vá»±ng',
+  vocabulary: 'Từ vựng',
   listening: 'Nghe',
-  reading: 'Äá»c hiá»ƒu',
-  grammar: 'Ngá»¯ phÃ¡p',
-  writing: 'Viáº¿t',
-  speaking: 'NÃ³i',
+  reading: 'Đọc hiểu',
+  grammar: 'Ngữ pháp',
+  writing: 'Viết',
+  speaking: 'Nói',
 };
 
 const ASSESSMENT_META: Record<AssessmentKind, { label: string; purpose: string; href: string; tone: MetricTone; icon: ComponentType<{ className?: string }> }> = {
   placement: {
-    label: 'Äáº§u vÃ o',
-    purpose: 'Xáº¿p Ä‘Ãºng cháº·ng há»c ban Ä‘áº§u vÃ  má»Ÿ Today Plan phÃ¹ há»£p.',
+    label: 'Đầu vào',
+    purpose: 'Xếp đúng chặng học ban đầu và má»Ÿ Today Plan phù hợp.',
     href: '/learn/placement',
     tone: 'violet',
     icon: ShieldCheck,
   },
   'daily-check': {
-    label: 'Háº±ng ngÃ y',
-    purpose: 'Kiá»ƒm nhanh tá»« vÃ  máº«u cÃ¢u Ä‘á»ƒ giá»¯ nhá»‹p há»c má»—i ngÃ y.',
+    label: 'Hằng ngày',
+    purpose: 'Kiểm nhanh từ và mẫu câu để giữ nhịp học mỗi ngày.',
     href: '/learn/today',
     tone: 'sky',
     icon: Play,
   },
   'weekly-checkpoint': {
     label: 'Checkpoint',
-    purpose: 'Äo ká»¹ nÄƒng theo cháº·ng hiá»‡n táº¡i vÃ  cáº­p nháº­t mastery.',
+    purpose: 'Đo kỹ năng theo chặng hiện tại và cập nhật mastery.',
     href: '/learn/checkpoint',
     tone: 'emerald',
     icon: ClipboardCheck,
   },
   'stage-exit': {
-    label: 'Qua cháº·ng',
-    purpose: 'Kiá»ƒm Ä‘iá»u kiá»‡n má»Ÿ cháº·ng tiáº¿p theo khi bÃ© Ä‘Ã£ sáºµn sÃ ng.',
+    label: 'Qua chặng',
+    purpose: 'Kiểm điều kiện má»Ÿ chặng tiếp theo khi bé đã sẵn sàng.',
     href: '/learn/checkpoint',
     tone: 'amber',
     icon: Flag,
@@ -140,13 +140,13 @@ export default function RoadmapPage() {
               </div>
               <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_220px] lg:items-end">
                 <div>
-                  <h1 className="max-w-3xl text-3xl font-black leading-tight text-slate-950 md:text-5xl">Báº£n Ä‘á»“ há»c cá»§a bÃ©</h1>
+                  <h1 className="max-w-3xl text-3xl font-black leading-tight text-slate-950 md:text-5xl">Bản đồ học của bé</h1>
                   <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-600 md:text-base">
-                    Cháº·ng hiá»‡n táº¡i, Ä‘iá»u kiá»‡n qua cháº·ng, bÃ i kiá»ƒm tra vÃ  ká»¹ nÄƒng yáº¿u Ä‘Æ°á»£c gom vÃ o má»™t dashboard dá»… nhÃ¬n.
+                    Chặng hiện tại, điều kiện qua chặng, bài kiểm tra và kỹ năng yếu được gom vào một dashboard dễ nhìn.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-3">
                     <Link href="/learn/today" className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5">
-                      Há»c tiáº¿p <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      Học tiếp <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </Link>
                     <Link href="/learn/placement" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-black text-violet-700 shadow-sm ring-1 ring-violet-100 transition hover:-translate-y-0.5">
                       Placement <ShieldCheck className="h-4 w-4" aria-hidden="true" />
@@ -162,20 +162,20 @@ export default function RoadmapPage() {
         </section>
 
         <section className="mx-auto grid max-w-7xl gap-3 px-4 py-5 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard icon={<Database className="h-5 w-5" aria-hidden="true" />} label="Word bank" value={seedStats.total} helper={`${seedStats.fiveLetterCount} tá»« 5 chá»¯`} tone="sky" />
-          <MetricCard icon={<GraduationCap className="h-5 w-5" aria-hidden="true" />} label="Cháº·ng hiá»‡n táº¡i" value={`${currentIndex + 1}/5`} helper={currentStage.cefr} tone="violet" />
-          <MetricCard icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />} label="Placement" value={learnerState?.placementDone ? 'Done' : 'Todo'} helper="Xáº¿p trÃ¬nh Ä‘á»™" tone="emerald" />
-          <MetricCard icon={<ClipboardCheck className="h-5 w-5" aria-hidden="true" />} label="Checkpoint" value={recentScore === null ? '--' : `${Math.round(recentScore)}%`} helper="Äiá»ƒm gáº§n nháº¥t" tone="amber" />
+          <MetricCard icon={<Database className="h-5 w-5" aria-hidden="true" />} label="Word bank" value={seedStats.total} helper={`${seedStats.fiveLetterCount} từ 5 chữ`} tone="sky" />
+          <MetricCard icon={<GraduationCap className="h-5 w-5" aria-hidden="true" />} label="Chặng hiện tại" value={`${currentIndex + 1}/5`} helper={currentStage.cefr} tone="violet" />
+          <MetricCard icon={<ShieldCheck className="h-5 w-5" aria-hidden="true" />} label="Placement" value={learnerState?.placementDone ? 'Done' : 'Todo'} helper="Xếp trình độ" tone="emerald" />
+          <MetricCard icon={<ClipboardCheck className="h-5 w-5" aria-hidden="true" />} label="Checkpoint" value={recentScore === null ? '--' : `${Math.round(recentScore)}%`} helper="Điểm gần nhất" tone="amber" />
         </section>
 
         <section className="mx-auto max-w-7xl px-4">
           <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-wide text-violet-500">Roadmap</p>
-              <h2 className="text-2xl font-black text-slate-950">5 cháº·ng há»c</h2>
+              <h2 className="text-2xl font-black text-slate-950">5 chặng học</h2>
             </div>
             <Link href="/learn/checkpoint" className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-sm">
-              LÃ m checkpoint <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              Làm checkpoint <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
 
@@ -214,9 +214,9 @@ function getStageStatus(index: number, currentIndex: number, unlocked: boolean):
 
 function getMissingRequirements(stage: CurriculumStage, stats: ReturnType<typeof getLearnerStageProgress>['stats']): string[] {
   const missing: string[] = [];
-  if (stats.masteredWords < stage.targetWords) missing.push(`${stage.targetWords - stats.masteredWords} tá»« nhá»› tá»‘t`);
-  if (stats.completedStories < stage.targetStories) missing.push(`${stage.targetStories - stats.completedStories} truyá»‡n hoÃ n thÃ nh`);
-  if (stats.strongGameScores < stage.targetGames) missing.push(`${stage.targetGames - stats.strongGameScores} lÆ°á»£t game Ä‘áº¡t 70%+`);
+  if (stats.masteredWords < stage.targetWords) missing.push(`${stage.targetWords - stats.masteredWords} từ nhớ tốt`);
+  if (stats.completedStories < stage.targetStories) missing.push(`${stage.targetStories - stats.completedStories} truyện hoàn thành`);
+  if (stats.strongGameScores < stage.targetGames) missing.push(`${stage.targetGames - stats.strongGameScores} lượt game đạt 70%+`);
   return missing;
 }
 
@@ -231,7 +231,7 @@ function StageBadge({ stage, stageIndex, masteryAverage }: { stage: CurriculumSt
     <div className="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-100">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-wide text-slate-400">Äang há»c</p>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-400">Đang học</p>
           <h2 className="mt-1 text-2xl font-black text-slate-950">{stage.cefr}</h2>
           <p className="mt-1 text-sm font-bold text-slate-500">{stage.titleVi}</p>
         </div>
@@ -240,7 +240,7 @@ function StageBadge({ stage, stageIndex, masteryAverage }: { stage: CurriculumSt
         </span>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <MiniStat label="Cháº·ng" value={stageIndex + 1} />
+        <MiniStat label="Chặng" value={stageIndex + 1} />
         <MiniStat label="Mastery" value={`${masteryAverage}%`} />
       </div>
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
@@ -285,22 +285,22 @@ function StageStep({ stage, index, status, stats }: { stage: CurriculumStage; in
       <p className="mt-4 text-xs font-black uppercase tracking-wide text-slate-400">{stage.cefr}</p>
       <h3 className="mt-1 min-h-[48px] text-lg font-black leading-6 text-slate-950">{stage.titleVi}</h3>
       <div className="mt-4 space-y-3">
-        <RequirementLine icon={<BookOpen className="h-4 w-4" aria-hidden="true" />} label="Tá»«" current={displayStats.masteredWords} target={stage.targetWords} tone={accent.bar} />
-        <RequirementLine icon={<BadgeCheck className="h-4 w-4" aria-hidden="true" />} label="Truyá»‡n" current={displayStats.completedStories} target={stage.targetStories} tone={accent.bar} />
+        <RequirementLine icon={<BookOpen className="h-4 w-4" aria-hidden="true" />} label="Từ" current={displayStats.masteredWords} target={stage.targetWords} tone={accent.bar} />
+        <RequirementLine icon={<BadgeCheck className="h-4 w-4" aria-hidden="true" />} label="Truyện" current={displayStats.completedStories} target={stage.targetStories} tone={accent.bar} />
         <RequirementLine icon={<Gamepad2 className="h-4 w-4" aria-hidden="true" />} label="Game" current={displayStats.strongGameScores} target={stage.targetGames} tone={accent.bar} />
       </div>
       <Link
         href={locked ? '/learn/checkpoint' : active ? '/learn/today' : `/roadmap#${stage.id}`}
         className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-black ${locked ? 'bg-slate-100 text-slate-400' : `${accent.soft} ${accent.text}`}`}
       >
-        {locked ? 'Cáº§n checkpoint' : active ? 'Há»c hÃ´m nay' : 'Xem cháº·ng'}
+        {locked ? 'Cần checkpoint' : active ? 'Học hôm nay' : 'Xem chặng'}
       </Link>
     </article>
   );
 }
 
 function StatusPill({ status }: { status: StageStatus }) {
-  const labels: Record<StageStatus, string> = { done: 'Xong', current: 'Äang há»c', unlocked: 'Má»Ÿ', locked: 'KhÃ³a' };
+  const labels: Record<StageStatus, string> = { done: 'Xong', current: 'Đang học', unlocked: 'Má»Ÿ', locked: 'Khóa' };
   const classes: Record<StageStatus, string> = {
     done: 'bg-emerald-50 text-emerald-700 ring-emerald-100',
     current: 'bg-violet-50 text-violet-700 ring-violet-100',
@@ -320,22 +320,22 @@ function CurrentStagePanel({ stage, stats, learnerState, missing }: { stage: Cur
             <Target className="h-6 w-6" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-xs font-black uppercase tracking-wide text-violet-500">Äiá»u kiá»‡n cháº·ng</p>
+            <p className="text-xs font-black uppercase tracking-wide text-violet-500">Điều kiện chặng</p>
             <h2 className="text-xl font-black text-slate-950">{stage.titleVi}</h2>
           </div>
         </div>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">{learnerState ? 'Äá»“ng bá»™ DB' : 'Guest/local'}</span>
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-500">{learnerState ? 'Đồng bộ DB' : 'Guest/local'}</span>
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
-        <GoalTile label="Tá»« nhá»› tá»‘t" value={stats.masteredWords} target={stage.targetWords} tone="violet" />
-        <GoalTile label="Truyá»‡n xong" value={stats.completedStories} target={stage.targetStories} tone="sky" />
+        <GoalTile label="Từ nhớ tốt" value={stats.masteredWords} target={stage.targetWords} tone="violet" />
+        <GoalTile label="Truyện xong" value={stats.completedStories} target={stage.targetStories} tone="sky" />
         <GoalTile label="Game 70%+" value={stats.strongGameScores} target={stage.targetGames} tone="emerald" />
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_260px]">
         <div>
-          <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Chá»§ Ä‘á»</p>
+          <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Chủ đề</p>
           <div className="flex flex-wrap gap-2">
             {stage.topics.slice(0, 8).map((topic) => (
               <span key={topic} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">{topic}</span>
@@ -343,7 +343,7 @@ function CurrentStagePanel({ stage, stats, learnerState, missing }: { stage: Cur
           </div>
         </div>
         <div className="rounded-lg bg-slate-50 p-4 ring-1 ring-slate-100">
-          <p className="text-xs font-black uppercase tracking-wide text-slate-400">Thiáº¿u Ä‘á»ƒ qua cháº·ng</p>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-400">Thiếu để qua chặng</p>
           <div className="mt-2 space-y-2">
             {missing.length > 0 ? missing.map((item) => (
               <div key={item} className="flex items-center gap-2 text-sm font-bold text-slate-700">
@@ -351,7 +351,7 @@ function CurrentStagePanel({ stage, stats, learnerState, missing }: { stage: Cur
               </div>
             )) : (
               <div className="flex items-center gap-2 text-sm font-bold text-emerald-700">
-                <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Sáºµn sÃ ng lÃ m checkpoint.
+                <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Sẵn sàng làm checkpoint.
               </div>
             )}
           </div>
@@ -363,9 +363,9 @@ function CurrentStagePanel({ stage, stats, learnerState, missing }: { stage: Cur
 
 function NextActionPanel({ learnerState, recentScore, missingCount }: { learnerState: LearnerCurriculumState | null; recentScore: number | null; missingCount: number }) {
   const actions = [
-    { href: '/learn/placement', label: 'Placement test', helper: 'Xáº¿p trÃ¬nh Ä‘á»™', done: learnerState?.placementDone || false, icon: ShieldCheck },
-    { href: '/learn/today', label: 'Today Plan', helper: 'Há»c tiáº¿p theo queue', done: false, icon: Play },
-    { href: '/learn/checkpoint', label: 'Checkpoint', helper: missingCount > 0 ? `${missingCount} má»¥c cÃ²n thiáº¿u` : 'Sáºµn sÃ ng kiá»ƒm tra', done: learnerState?.recentAttempt?.passed || false, icon: ClipboardCheck },
+    { href: '/learn/placement', label: 'Placement test', helper: 'Xếp trình độ', done: learnerState?.placementDone || false, icon: ShieldCheck },
+    { href: '/learn/today', label: 'Today Plan', helper: 'Học tiếp theo queue', done: false, icon: Play },
+    { href: '/learn/checkpoint', label: 'Checkpoint', helper: missingCount > 0 ? `${missingCount} mục còn thiếu` : 'Sẵn sàng kiểm tra', done: learnerState?.recentAttempt?.passed || false, icon: ClipboardCheck },
   ];
   return (
     <aside className="rounded-lg border border-slate-800 bg-slate-950 p-5 text-white shadow-sm md:p-6">
@@ -375,7 +375,7 @@ function NextActionPanel({ learnerState, recentScore, missingCount }: { learnerS
         </span>
         <div>
           <p className="text-xs font-black uppercase tracking-wide text-white/50">Next action</p>
-          <h2 className="text-xl font-black">Viá»‡c cáº§n lÃ m</h2>
+          <h2 className="text-xl font-black">Việc cần làm</h2>
         </div>
       </div>
       <div className="mt-5 space-y-3">
@@ -396,7 +396,7 @@ function NextActionPanel({ learnerState, recentScore, missingCount }: { learnerS
         })}
       </div>
       <div className="mt-5 rounded-lg bg-white/10 p-4">
-        <p className="text-xs font-black uppercase tracking-wide text-white/50">Äiá»ƒm gáº§n nháº¥t</p>
+        <p className="text-xs font-black uppercase tracking-wide text-white/50">Điểm gần nhất</p>
         <p className="mt-1 text-3xl font-black">{recentScore === null ? '--' : `${Math.round(recentScore)}%`}</p>
       </div>
     </aside>
@@ -414,11 +414,11 @@ function MasteryPanel({ learnerState }: { learnerState: LearnerCurriculumState |
           </span>
           <div>
             <p className="text-xs font-black uppercase tracking-wide text-emerald-600">Mastery</p>
-            <h2 className="text-xl font-black text-slate-950">Ká»¹ nÄƒng</h2>
+            <h2 className="text-xl font-black text-slate-950">Kỹ năng</h2>
           </div>
         </div>
         <Link href="/progress/review" className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700">
-          Ã”n táº­p <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          Ôn tập <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -437,18 +437,18 @@ function AssessmentCatalog({ blueprints }: { blueprints: AssessmentBlueprint[] }
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-black uppercase tracking-wide text-violet-500">Assessments</p>
-          <h2 className="text-2xl font-black text-slate-950">BÃ i kiá»ƒm tra</h2>
+          <h2 className="text-2xl font-black text-slate-950">Bài kiểm tra</h2>
         </div>
-        <span className="hidden rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-slate-200 sm:inline-flex">{blueprints.length} cáº¥u hÃ¬nh</span>
+        <span className="hidden rounded-full bg-white px-3 py-1 text-xs font-black text-slate-500 ring-1 ring-slate-200 sm:inline-flex">{blueprints.length} cấu hình</span>
       </div>
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="hidden grid-cols-[1.1fr_110px_110px_1fr_120px] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-wide text-slate-400 lg:grid">
-          <span>BÃ i</span>
-          <span className="text-right">CÃ¢u</span>
+          <span>Bài</span>
+          <span className="text-right">Câu</span>
           <span className="text-right">Pass</span>
-          <span>Ká»¹ nÄƒng</span>
-          <span className="text-right">HÃ nh Ä‘á»™ng</span>
+          <span>Kỹ năng</span>
+          <span className="text-right">Hành động</span>
         </div>
         {blueprints.map((blueprint) => <AssessmentRow key={blueprint.id} blueprint={blueprint} />)}
       </div>
@@ -473,21 +473,21 @@ function AssessmentRow({ blueprint }: { blueprint: AssessmentBlueprint }) {
           </div>
         </div>
       </div>
-      <DataCell label="CÃ¢u" value={blueprint.itemCount} />
+      <DataCell label="Câu" value={blueprint.itemCount} />
       <DataCell label="Pass" value={`${blueprint.passPercent}%`} helper={`Min ${blueprint.minSkillPercent}%`} />
       <div className="min-w-0">
-        <p className="mb-2 text-xs font-black uppercase text-slate-400 lg:hidden">Ká»¹ nÄƒng</p>
+        <p className="mb-2 text-xs font-black uppercase text-slate-400 lg:hidden">Kỹ năng</p>
         <div className="flex flex-wrap gap-2">
           {weights.length > 0 ? weights.slice(0, 5).map(([skill, value]) => (
             <span key={skill} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">
               {SKILL_LABELS[skill] ?? skill} {value}
             </span>
-          )) : <span className="text-sm font-bold text-slate-400">Theo cáº¥u hÃ¬nh máº·c Ä‘á»‹nh</span>}
+          )) : <span className="text-sm font-bold text-slate-400">Theo cấu hình mặc định</span>}
         </div>
       </div>
       <div className="lg:text-right">
         <Link href={meta.href} className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-black text-white shadow-sm">
-          Má»Ÿ bÃ i <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          Má»Ÿ bài <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </div>
     </div>

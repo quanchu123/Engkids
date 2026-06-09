@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -194,7 +194,7 @@ body {
   50%       { opacity: 1;   transform: scale(1.2); }
 }
 
-/* Floating deco elements â€” sprinkle these via JS or hardcode in layout */
+/* Floating deco elements — sprinkle these via JS or hardcode in layout */
 .deco-float { animation: floatUp   3s ease-in-out infinite; }
 .deco-side  { animation: floatSide 4s ease-in-out infinite; }
 .deco-spin  { animation: spinSlow  8s linear infinite; }

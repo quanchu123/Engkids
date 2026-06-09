@@ -1,13 +1,13 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import { DEFAULT_WORD_BANK, loadWordBank, toCoinQuestions } from '@/lib/word-bank';
 
-// â”€â”€â”€ Adapted from: digitsensitive/phaser3-typescript (coin-runner) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Adapted from: digitsensitive/phaser3-typescript (coin-runner) ────────────
 // Background + coin sprites from real GitHub repo (768x576 landscape scene)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface Question {
   vi: string;           // Vietnamese shown at top
@@ -74,9 +74,9 @@ export default function WordCollectorPage() {
       const W = 768, H = 480;
       const COIN_COUNT = 4;
 
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // ══════════════════════════════════════
       //  PRELOADER
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // ══════════════════════════════════════
       class PreloaderScene extends Phaser.Scene {
         constructor() { super({ key: 'Preload' }); }
 
@@ -105,14 +105,14 @@ export default function WordCollectorPage() {
         create() { this.scene.start('Game'); }
       }
 
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // ══════════════════════════════════════
       //  GAME SCENE
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // ══════════════════════════════════════
       class GameScene extends Phaser.Scene {
         constructor() { super({ key: 'Game' }); }
 
         create() {
-          // â”€â”€ Init state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Init state ────────────────────
           const self = this as any;
           const sourceQuestions = questionsRef.current.length >= COIN_COUNT ? questionsRef.current : ALL_QUESTIONS;
           self.qs       = [...sourceQuestions].sort(() => Math.random() - 0.5);
@@ -123,7 +123,7 @@ export default function WordCollectorPage() {
           self.coinObjs = [];
           self.tweens_  = [];
 
-          // â”€â”€ Background â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Background ────────────────────
           // Using real 768x576 landscape background from digitsensitive/phaser3-typescript
           const bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
           // Crop to fit 768x480 (it's 768x576 so just show top portion)
@@ -132,7 +132,7 @@ export default function WordCollectorPage() {
           // Semi-transparent overlay so cards are readable
           this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.22);
 
-          // â”€â”€ Top question bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Top question bar ──────────────
           const topBar = this.add.graphics();
           topBar.fillStyle(0x1e1b4b, 0.88);
           topBar.fillRoundedRect(W / 2 - 300, 10, 600, 54, 16);
@@ -142,7 +142,7 @@ export default function WordCollectorPage() {
             stroke: '#000000', strokeThickness: 3,
           }).setOrigin(0.5).setDepth(5);
 
-          // â”€â”€ Hearts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Hearts ──────────────────────
           self.heartTexts = [];
           for (let i = 0; i < 3; i++) {
             const h = this.add.text(680 + i * 26, 14, '?', {
@@ -151,13 +151,13 @@ export default function WordCollectorPage() {
             self.heartTexts.push(h);
           }
 
-          // â”€â”€ Score text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Score text ────────────────────
           self.scoreText = this.add.text(12, 14, 'Score: 0', {
             fontSize: '15px', color: '#4ade80', fontStyle: 'bold',
             stroke: '#000000', strokeThickness: 2,
           }).setDepth(5);
 
-          // â”€â”€ Progress bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Progress bar ──────────────────
           const totalQ = Math.min(self.qs.length, 20);
           const progBg = this.add.graphics();
           progBg.fillStyle(0x000000, 0.4);
@@ -165,7 +165,7 @@ export default function WordCollectorPage() {
           self.progBar = this.add.graphics();
           self.totalQ  = totalQ;
 
-          // â”€â”€ Floating coins â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Floating coins ────────────────
           for (let i = 0; i < COIN_COUNT; i++) {
             // coin image (real 56x56 coin from coin-runner)
             const cx = 150 + (i % 2) * 450;
@@ -204,7 +204,7 @@ export default function WordCollectorPage() {
             self.coinObjs.push({ img: coinImg, txt: wordTxt, zone, baseX: cx, baseY: cy });
           }
 
-          // â”€â”€ Status popup text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Status popup text ─────────────
           self.popup = this.add.text(W / 2, H / 2 - 10, '', {
             fontSize: '32px', color: '#ffffff', fontStyle: 'bold',
             stroke: '#000000', strokeThickness: 5,
@@ -213,7 +213,7 @@ export default function WordCollectorPage() {
           this._loadQuestion();
         }
 
-        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ─────────────────────────────────────
         _loadQuestion() {
           const self = this as any;
           if (self.qi >= Math.min(self.qs.length, self.totalQ)) {
@@ -248,7 +248,7 @@ export default function WordCollectorPage() {
           self.busy = false;
         }
 
-        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ─────────────────────────────────────
         _pick(idx: number) {
           const self = this as any;
           if (self.busy || !self._curQ) return;
@@ -268,7 +268,7 @@ export default function WordCollectorPage() {
               this._loadQuestion();
             });
           } else {
-            // Wrong â€” flash red, shake
+            // Wrong — flash red, shake
             img.setTint(0xff3333);
             this._popup('Sai!', '#f87171');
             this.cameras.main.shake(200, 0.007);
@@ -314,7 +314,7 @@ export default function WordCollectorPage() {
           this.tweens.add({ targets: p, alpha: 0, delay: 600, duration: 300 });
         }
 
-        // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ─────────────────────────────────────
         _endGame(win: boolean) {
           const self = this as any;
           self.busy = true;
@@ -353,9 +353,9 @@ export default function WordCollectorPage() {
         }
       }
 
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // ══════════════════════════════════════
       //  LAUNCH
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // ══════════════════════════════════════
       game = new Phaser.Game({
         type: Phaser.CANVAS,
         backgroundColor: '#3A99D9',

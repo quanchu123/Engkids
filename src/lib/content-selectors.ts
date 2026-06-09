@@ -1,4 +1,4 @@
-﻿import { Story, Video } from '@/types';
+import { Story, Video } from '@/types';
 import { getStageIndex, normalizeStageId, stageForStoryLevel, type CurriculumStageId } from './curriculum';
 
 function resolveStoryStage(story: Story): CurriculumStageId {
@@ -102,7 +102,7 @@ export function groupVideosByLevel(videos: Video[]) {
 }
 
 // Group videos by their feature label. Videos without a feature fall under the
-// provided default label (e.g. "Tá»•ng Há»£p"). Returns an ordered list of groups,
+// provided default label (e.g. "Tổng Hợp"). Returns an ordered list of groups,
 // with the default group placed last.
 export function groupVideosByFeature(
   videos: Video[],

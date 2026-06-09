@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_WORD_BANK,
   filterWordBank,
@@ -85,7 +85,7 @@ describe('word-bank game adapters', () => {
 
   it('creates RPG questions with Vietnamese answer choices', () => {
     const [question] = toRpgQuestions(BANK);
-    expect(question.q).toContain('nghÄ©a lÃ  gÃ¬');
+    expect(question.q).toContain('nghĩa là gì');
     expect(question.choices).toHaveLength(4);
     expect(question.correct).toBeGreaterThanOrEqual(0);
   });
