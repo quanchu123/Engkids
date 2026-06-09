@@ -130,6 +130,8 @@ export default function PetGamePage() {
   const [combo, setCombo] = useState(0);
   const [floats, setFloats] = useState<Array<{ id: number; text: string }>>([]);
   const [careBursts, setCareBursts] = useState<Array<{ id: number; action: PetActionKey }>>([]);
+  const [starBursts, setStarBursts] = useState<Array<{ id: number; tone: 'correct' | 'combo' | 'battle' }>>([]);
+  const [tapRipples, setTapRipples] = useState<number[]>([]);
   const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
   const questDoneRef = useRef(false);
 
@@ -153,6 +155,8 @@ export default function PetGamePage() {
   const heartId = useRef(0);
   const floatId = useRef(0);
   const burstId = useRef(0);
+  const starBurstId = useRef(0);
+  const tapRippleId = useRef(0);
   const prevStageRef = useRef<number | null>(null);
 
   const preferredWords = useMemo<WordPair[]>(
@@ -223,6 +227,18 @@ export default function PetGamePage() {
     setTimeout(() => setCareBursts((items) => items.filter((item) => item.id !== id)), 1700);
   }, []);
 
+  const triggerStarBurst = useCallback((tone: 'correct' | 'combo' | 'battle') => {
+    const id = starBurstId.current++;
+    setStarBursts((items) => [...items, { id, tone }]);
+    setTimeout(() => setStarBursts((items) => items.filter((item) => item.id !== id)), 1150);
+  }, []);
+
+  const triggerTapRipple = useCallback(() => {
+    const id = tapRippleId.current++;
+    setTapRipples((items) => [...items, id]);
+    setTimeout(() => setTapRipples((items) => items.filter((item) => item !== id)), 650);
+  }, []);
+
   const openQuiz = (action: PetActionKey) => {
     const nextQuiz = buildPetQuiz(bank, PET_ACTIONS[action].quizDirection, Math.random, preferredWords);
     setQuizAction(action);
@@ -259,6 +275,7 @@ export default function PetGamePage() {
       playDing();
       speakEnglish(quiz.word.en);
       pokeHappy();
+      triggerStarBurst(combo >= 1 ? 'combo' : 'correct');
       setTimeout(() => triggerCareBurst(quizAction), 1250);
       setLearnedWords((prev) => {
         const next = new Set(prev);
@@ -329,6 +346,7 @@ export default function PetGamePage() {
     if (correct) {
       playDing();
       pokeHappy();
+      triggerStarBurst(nextBattle.finished === 'win' ? 'battle' : 'correct');
     } else {
       setCombo(0);
       playBuzz();
@@ -451,7 +469,7 @@ export default function PetGamePage() {
             </Link>
             <div className="flex flex-wrap items-center justify-end gap-2">
               {combo >= 2 && (
-                <span className="rounded-full bg-white/90 px-3 py-2 text-xs font-black text-fuchsia-600 shadow-md">Combo x{combo}</span>
+                <span className="pet-combo-ribbon rounded-full bg-white/90 px-3 py-2 text-xs font-black text-fuchsia-600 shadow-md">Combo x{combo}</span>
               )}
               <span className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-black text-amber-600 shadow-md">
                 <UiIcon name="coins" size={20} /> {coins} xu
@@ -487,13 +505,15 @@ export default function PetGamePage() {
                     style={{ background: `radial-gradient(circle, ${species.glow} 0%, transparent 70%)` }}
                   />
                   {hearts.map((id) => (<span key={id} className="pet-heart pointer-events-none absolute text-2xl">💗</span>))}
+                  {starBursts.map((burst) => (<PetStarBurst key={burst.id} tone={burst.tone} />))}
+                  {tapRipples.map((id) => (<span key={id} className="pet-tap-ripple pointer-events-none absolute" aria-hidden="true" />))}
                   {careBursts.map((burst) => (<CareActionBurst key={burst.id} action={burst.action} />))}
                   {floats.map((float) => (
                     <span key={float.id} className="pet-float-msg pointer-events-none absolute z-20 whitespace-nowrap rounded-full bg-white/95 px-3 py-1 text-xs font-black text-emerald-600 shadow">
                       {float.text}
                     </span>
                   ))}
-                  <button type="button" onClick={pokeHappy} aria-label="Chạm vào thú cưng" className="pet-bob relative z-10 outline-none">
+                  <button type="button" onClick={() => { pokeHappy(); triggerTapRipple(); }} aria-label="Chạm vào thú cưng" className="pet-bob relative z-10 outline-none">
                     <span className="pet-sway block">
                       <span className={`block ${reactClass}`}>
                         <span className="pet-breathe block">
@@ -566,7 +586,7 @@ export default function PetGamePage() {
                     <button
                       key={key}
                       onClick={() => openQuiz(key)}
-                      className={`group rounded-[1.25rem] bg-gradient-to-br ${ACTION_STYLE[key]} p-0.5 shadow-lg transition-transform hover:-translate-y-1`}
+                      className={`pet-action-button group rounded-[1.25rem] bg-gradient-to-br ${ACTION_STYLE[key]} p-0.5 shadow-lg transition-transform hover:-translate-y-1 active:scale-95`}
                     >
                       <span className="flex h-[92px] flex-col items-center justify-center gap-1.5 rounded-[1.1rem] bg-white/92 p-2">
                         <Image src={`/games/pet/${def.asset}.webp`} alt={def.labelVi} width={40} height={40} unoptimized className="h-10 w-10 transition-transform group-hover:scale-110" />
@@ -640,6 +660,54 @@ export default function PetGamePage() {
 }
 
 const CARE_BURST_ITEMS = Array.from({ length: 9 }, (_, index) => index);
+const STAR_BURST_ITEMS = Array.from({ length: 12 }, (_, index) => index);
+const QUIZ_BURST_ITEMS = Array.from({ length: 16 }, (_, index) => index);
+
+function PetStarBurst({ tone }: { tone: 'correct' | 'combo' | 'battle' }) {
+  return (
+    <div className={`pet-star-burst pet-star-${tone} pointer-events-none absolute inset-0 z-30`} aria-hidden="true">
+      {STAR_BURST_ITEMS.map((index) => {
+        const angle = (index / STAR_BURST_ITEMS.length) * Math.PI * 2;
+        const radius = 86 + (index % 3) * 18;
+        const style = {
+          ['--tx' as string]: `${Math.round(Math.cos(angle) * radius)}px`,
+          ['--ty' as string]: `${Math.round(Math.sin(angle) * radius * 0.72)}px`,
+          ['--delay' as string]: `${index * 22}ms`,
+          ['--size' as string]: `${8 + (index % 4) * 3}px`,
+        };
+        return <span key={index} className="pet-star-particle" style={style} />;
+      })}
+    </div>
+  );
+}
+
+function QuizRewardBurst({ combo }: { combo: number }) {
+  return (
+    <div className="quiz-reward-burst pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+      {QUIZ_BURST_ITEMS.map((index) => {
+        const angle = (index / QUIZ_BURST_ITEMS.length) * Math.PI * 2;
+        const radius = 92 + (index % 4) * 14 + Math.min(combo, 6) * 4;
+        const style = {
+          ['--tx' as string]: `${Math.round(Math.cos(angle) * radius)}px`,
+          ['--ty' as string]: `${Math.round(Math.sin(angle) * radius * 0.62)}px`,
+          ['--delay' as string]: `${index * 18}ms`,
+          ['--rot' as string]: `${index * 41}deg`,
+        };
+        return <span key={index} className={`quiz-reward-piece quiz-reward-piece-${index % 4}`} style={style} />;
+      })}
+    </div>
+  );
+}
+
+function BattleImpact({ result }: { result: 'correct' | 'wrong' }) {
+  return (
+    <div className={`battle-impact battle-impact-${result} pointer-events-none absolute inset-0 z-0`} aria-hidden="true">
+      <span className="battle-impact-ring" />
+      <span className="battle-impact-slash battle-impact-slash-one" />
+      <span className="battle-impact-slash battle-impact-slash-two" />
+    </div>
+  );
+}
 
 function CareActionBurst({ action }: { action: PetActionKey }) {
   const asset = PET_ACTIONS[action].asset;
@@ -708,7 +776,7 @@ function QuizModal({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/62 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="quiz-pop w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+      <div className="quiz-pop relative w-full max-w-md overflow-hidden rounded-[2rem] bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className={`bg-gradient-to-r ${ACTION_STYLE[action]} px-5 py-4 text-white`}>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-sm font-black">
@@ -722,13 +790,14 @@ function QuizModal({
 
         <div className="p-5">
           {result === 'correct' ? (
-            <div className="quiz-pop flex flex-col items-center py-3 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-4xl shadow-inner">✓</div>
-              <div className="mt-2 text-xl font-black text-emerald-600">Chính xác!</div>
-              <button onClick={() => speakEnglish(quiz.word.en)} className="mt-2 flex items-center gap-2 rounded-full bg-violet-50 px-4 py-1.5 text-base font-black text-violet-700">
+            <div className="quiz-pop relative flex flex-col items-center py-3 text-center">
+              <QuizRewardBurst combo={combo} />
+              <div className="quiz-checkmark relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-4xl shadow-inner">✓</div>
+              <div className="relative z-10 mt-2 text-xl font-black text-emerald-600">Chính xác!</div>
+              <button onClick={() => speakEnglish(quiz.word.en)} className="relative z-10 mt-2 flex items-center gap-2 rounded-full bg-violet-50 px-4 py-1.5 text-base font-black text-violet-700">
                 🔊 {quiz.word.en} <span className="text-sm font-bold text-slate-400">= {quiz.word.vi}</span>
               </button>
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm font-black">
+              <div className="relative z-10 mt-3 flex flex-wrap items-center justify-center gap-2 text-sm font-black">
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-600">+{lastReward.exp} EXP</span>
                 <span className="rounded-full bg-orange-100 px-3 py-1 text-orange-600">+{lastReward.coins} xu</span>
                 <span className="rounded-full bg-sky-100 px-3 py-1 text-sky-600">{QUALITY_MESSAGE[lastReward.quality]}</span>
@@ -868,9 +937,10 @@ function BattleModal({
             )}
           </div>
 
-          <div className="rounded-[1.5rem] bg-gradient-to-br from-indigo-50 to-emerald-50 p-4 ring-1 ring-indigo-100">
+          <div className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-indigo-50 to-emerald-50 p-4 ring-1 ring-indigo-100">
+            {result && <BattleImpact result={result} />}
             {quiz && activeMove ? (
-              <>
+              <div className="relative z-10">
                 <p className="text-xs font-black uppercase tracking-wide text-indigo-500">{activeMove.labelVi}</p>
                 <div className="mt-2 flex items-center justify-center gap-2 rounded-2xl bg-white py-4 shadow-sm">
                   <span className="text-3xl font-black text-indigo-700">{quiz.prompt}</span>
@@ -898,9 +968,9 @@ function BattleModal({
                     );
                   })}
                 </div>
-              </>
+              </div>
             ) : (
-              <div className="flex h-full min-h-[260px] flex-col items-center justify-center text-center">
+              <div className="relative z-10 flex h-full min-h-[260px] flex-col items-center justify-center text-center">
                 <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white text-4xl shadow-inner">⚔️</div>
                 <h3 className="mt-3 text-xl font-black text-slate-950">Chọn kỹ năng</h3>
                 <p className="mt-1 max-w-xs text-sm font-bold text-slate-500">Mỗi kỹ năng mở một câu hỏi. Đúng thì pet ra đòn, sai thì đối thủ phản công nhẹ.</p>
@@ -976,6 +1046,106 @@ function PetStyles() {
       .pet-spark { animation: pet-spark-anim 2.8s ease-in-out infinite; }
       @keyframes pet-heart-float { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-110px) scale(1.2); opacity: 0; } }
       .pet-heart { bottom: 80px; animation: pet-heart-float 1.2s ease-out forwards; }
+      @keyframes pet-tap-ripple-anim { 0% { opacity: 0.7; transform: translate(-50%,-50%) scale(0.45); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.8); } }
+      .pet-tap-ripple {
+        left: 50%;
+        top: 50%;
+        height: min(46svh, 260px);
+        width: min(46svh, 260px);
+        border: 3px solid rgba(255,255,255,0.92);
+        border-radius: 999px;
+        box-shadow: 0 0 34px rgba(255,255,255,0.55), inset 0 0 28px rgba(255,255,255,0.32);
+        animation: pet-tap-ripple-anim 0.65s ease-out forwards;
+      }
+      .pet-star-burst { filter: drop-shadow(0 12px 18px rgba(15,23,42,0.2)); }
+      .pet-star-particle {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        height: var(--size);
+        width: var(--size);
+        border-radius: 35% 65% 55% 45%;
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.35) rotate(0deg);
+        animation: pet-star-pop 1.05s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+        animation-delay: var(--delay);
+      }
+      .pet-star-correct .pet-star-particle { background: linear-gradient(135deg, #bbf7d0, #34d399 48%, #fef08a); }
+      .pet-star-combo .pet-star-particle { background: linear-gradient(135deg, #f5d0fe, #f472b6 48%, #fde68a); }
+      .pet-star-battle .pet-star-particle { background: linear-gradient(135deg, #bfdbfe, #818cf8 48%, #6ee7b7); }
+      @keyframes pet-star-pop {
+        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(0deg); }
+        22% { opacity: 1; }
+        100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.05) rotate(210deg); }
+      }
+      @keyframes pet-combo-ribbon-pulse { 0%,100% { transform: scale(1); box-shadow: 0 8px 20px rgba(217,70,239,0.16); } 50% { transform: scale(1.06); box-shadow: 0 10px 26px rgba(217,70,239,0.32); } }
+      .pet-combo-ribbon { animation: pet-combo-ribbon-pulse 1.15s ease-in-out infinite; }
+      .pet-action-button { position: relative; overflow: hidden; }
+      .pet-action-button::after {
+        content: '';
+        position: absolute;
+        inset: 3px;
+        border-radius: 1.1rem;
+        background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.58), transparent 58%);
+        opacity: 0;
+        transform: scale(0.65);
+        transition: opacity 180ms ease, transform 180ms ease;
+        pointer-events: none;
+      }
+      .pet-action-button:active::after { opacity: 1; transform: scale(1); }
+      .quiz-reward-piece {
+        position: absolute;
+        left: 50%;
+        top: 44%;
+        height: 11px;
+        width: 18px;
+        border-radius: 4px;
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(var(--rot)) scale(0.35);
+        animation: quiz-reward-piece-pop 1.05s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+        animation-delay: var(--delay);
+      }
+      .quiz-reward-piece-0 { background: #facc15; }
+      .quiz-reward-piece-1 { background: #34d399; border-radius: 999px; }
+      .quiz-reward-piece-2 { background: #f472b6; }
+      .quiz-reward-piece-3 { background: #60a5fa; border-radius: 999px 999px 999px 4px; }
+      @keyframes quiz-reward-piece-pop {
+        0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rot)) scale(0.32); }
+        24% { opacity: 1; }
+        100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) rotate(calc(var(--rot) + 220deg)) scale(1); }
+      }
+      @keyframes quiz-checkmark-pop { 0% { transform: scale(0.65) rotate(-8deg); } 55% { transform: scale(1.14) rotate(5deg); } 100% { transform: scale(1) rotate(0); } }
+      .quiz-checkmark { animation: quiz-checkmark-pop 0.55s cubic-bezier(0.34,1.56,0.64,1) both; }
+      .battle-impact-ring {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        height: 140px;
+        width: 140px;
+        border-radius: 999px;
+        border: 4px solid rgba(255,255,255,0.76);
+        transform: translate(-50%, -50%) scale(0.45);
+        animation: battle-impact-ring-pop 0.8s ease-out forwards;
+      }
+      .battle-impact-correct .battle-impact-ring { box-shadow: 0 0 34px rgba(52,211,153,0.6); background: radial-gradient(circle, rgba(167,243,208,0.45), transparent 65%); }
+      .battle-impact-wrong .battle-impact-ring { box-shadow: 0 0 34px rgba(244,63,94,0.45); background: radial-gradient(circle, rgba(254,205,211,0.5), transparent 65%); }
+      @keyframes battle-impact-ring-pop { 0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.35); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.75); } }
+      .battle-impact-slash {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        height: 7px;
+        width: 130px;
+        border-radius: 999px;
+        transform-origin: center;
+        opacity: 0;
+        animation: battle-impact-slash-sweep 0.62s ease-out forwards;
+      }
+      .battle-impact-correct .battle-impact-slash { background: linear-gradient(90deg, transparent, #34d399, #fef08a, transparent); }
+      .battle-impact-wrong .battle-impact-slash { background: linear-gradient(90deg, transparent, #fb7185, #fed7aa, transparent); }
+      .battle-impact-slash-one { transform: translate(-50%, -50%) rotate(-24deg) scaleX(0.25); }
+      .battle-impact-slash-two { transform: translate(-50%, -50%) rotate(24deg) scaleX(0.25); animation-delay: 90ms; }
+      @keyframes battle-impact-slash-sweep { 0% { opacity: 0; scale: 0.5 1; } 35% { opacity: 1; } 100% { opacity: 0; scale: 1.35 1; } }
       @keyframes pet-float-msg-anim { 0% { transform: translateY(0) scale(0.8); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-70px) scale(1.05); opacity: 0; } }
       .pet-float-msg { top: 20px; animation: pet-float-msg-anim 1.3s ease-out forwards; }
       .pet-care-burst { filter: drop-shadow(0 10px 14px rgba(15,23,42,0.16)); }
@@ -1067,7 +1237,7 @@ function PetStyles() {
       }
       @media (prefers-reduced-motion: reduce) {
         .pet-bob, .pet-sway, .pet-breathe, .pet-aura, .pet-shadow, .pet-spark, .evolve-ring, .evolve-beam, .evolve-creature, .evolve-particle { animation: none; }
-        .pet-happy, .pet-sad, .pet-evolve, .pet-flash, .pet-heart, .pet-float-msg, .pet-care-particle, .quiz-pop, .quiz-shake, .evolve-title { animation-duration: 0.4s; animation-iteration-count: 1; }
+        .pet-happy, .pet-sad, .pet-evolve, .pet-flash, .pet-heart, .pet-tap-ripple, .pet-star-particle, .pet-combo-ribbon, .pet-float-msg, .pet-care-particle, .quiz-pop, .quiz-shake, .quiz-reward-piece, .quiz-checkmark, .battle-impact-ring, .battle-impact-slash, .evolve-title { animation-duration: 0.4s; animation-iteration-count: 1; }
       }
     `}</style>
   );

@@ -137,6 +137,22 @@ TODOs / next suggestions:
 - For deeper confidence, run real browser E2E outside this sandbox, especially on Phaser-based game pages and Bunny/Supabase flows.
 - `next build` completed successfully in the latest pet-game pass.
 
+- Game effects + usability verification pass (2026-06-09):
+  - added Farm Phaser polish: tap rings by tool, soil crack feedback, water ripples, harvest beam, leaf/coin sparkle burst, floating +1 harvest label, and a `window.render_game_to_text` state hook from the Farm page for smoke tests
+  - tightened Farm mobile usability by hiding the long play-guide/source blocks on small screens; mobile now keeps only the key action buttons so the field is not buried
+  - added Pet polish: pet tap ripple, correct/combo/battle star bursts, pulsing combo ribbon, and action-button press glow while preserving reduced-motion support
+  - verified core static/data health: `npm run type-check`, `npm run lint`, `npm run test:run`, `npm run curriculum:verify-db`, `npm run curriculum:verify-open-content`, `npm run storage:audit`
+  - route smoke after dev-server restart: `/`, `/roadmap`, `/learn/today`, `/learn/lessons/a2-key-open-lesson-01`, `/parent`, `/games/english-farm`, `/games/pet`, `/learn/placement` all returned 200
+  - game visual artifacts: `output/web-game/farm-effects-final-slow/shot-0.png`, `output/playwright/game-effects/farm-mobile-compact.png`, `output/playwright/game-effects/pet-tap-effect.png`, `output/playwright/game-effects/pet-quiz-modal.png`
+  - known gap: some pet stage assets still contain a checkerboard preview background baked into the image; a quick flood-fill cleanup attempt was reverted because it damaged wing art, so this should be fixed with better source assets or a proper segmentation pass
+
+- Fuller Farm/Pet animation pack pass (2026-06-09):
+  - Farm: added clear/sunny/rain ambient loops, drifting motes, rain streaks, sunny ray rotation, tool swipe arcs, seed swirl, and water arc animation on top of existing tap rings/ripples/harvest bursts
+  - Pet: added quiz-result confetti burst inside the modal, animated checkmark pop, and PokiWar battle impact ring/slashes for correct/wrong answers; kept reduced-motion fallback updated
+  - validation: `npm run type-check`, `npm run lint`, `npm run test:run` all pass
+  - visual artifacts: `output/playwright/animation-pack/farm-animation-pack.png`, `output/playwright/animation-pack/pet-quiz-reward-animation.png`, `output/playwright/animation-pack/pet-room-after-reward.png`, `output/playwright/animation-pack/pet-battle-modal.png`
+  - browser smoke note: game pages still log guest `401` from learner-level/auth fetches, same as previous pass; UI renders and interactions continue normally
+
 - Curriculum + wordbank integration pass:
   - added shared curriculum stages in `src/lib/curriculum.ts` with CEFR/Cambridge-style stages and progress derivation from mastered words, completed stories, and 70%+ game scores
   - added `/roadmap` and connected roadmap links through header/home/games/progress earlier; updated roadmap/today/progress to show the learner's current stage from real progress
@@ -192,3 +208,5 @@ TODOs / next suggestions:
     - `npm run build`
     - Browser smoke on `http://127.0.0.1:3003` for `/roadmap`, `/learn/today`, `/learn/placement`
     - Playwright submit smoke for placement with screenshots in `output/playwright/db-curriculum-smoke/`
+
+- Final animation sanity check (2026-06-09): fixed sunny Farm ambient to rotate rays around its own center instead of canvas origin; reran npm run type-check, npm run lint, npm run test:run; reran develop-web-game smoke for /games/english-farm and /games/pet; inspected farm-ready screenshot at output/playwright/final-animation-check/farm-ready.png and pet animation artifacts. Only known console noise remains guest auth 401.

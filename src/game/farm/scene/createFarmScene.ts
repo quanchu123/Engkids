@@ -37,6 +37,7 @@ import {
   water,
   harvest,
   isMature,
+  getFarmWeather,
 } from '../systems/farmingSystem'
 import {
   describePlot,
@@ -147,6 +148,7 @@ const PARTICLE_DOT = 'farm-particle-dot'
 const DEPTH = {
   sky: -10_000,
   light: -9_500,
+  weather: -9_200,
   fieldPanel: -8_000,
   fieldShadow: -8_500,
   ground: -5_000, // flat plot tiles (soil/grass)
@@ -269,6 +271,7 @@ export function createFarmScene(
       this.cameras.main.setBackgroundColor('#bfe9ff')
       this.ensureParticleTexture()
       this.buildScene()
+      this.installTestHooks()
 
       // A single scene-level pointer handler routes taps to the tapped tile.
       this.input.on('pointerdown', this.handlePointer, this)
@@ -284,6 +287,32 @@ export function createFarmScene(
         teardown()
       })
       this.events.once(PhaserNS.Scenes.Events.DESTROY, teardown)
+    }
+
+    /** Expose a compact state snapshot for browser smoke tests. */
+    private installTestHooks(): void {
+      if (typeof window === 'undefined') return
+      const testWindow = window as Window & { render_game_to_text?: () => string }
+      testWindow.render_game_to_text = () => this.renderGameToText()
+    }
+
+    private renderGameToText(): string {
+      const state = this.safeGetState()
+      const plots = state.grid.plots.map((plot) => ({
+        id: plot.id,
+        state: plot.state,
+        crop: plot.crop?.cropTypeId ?? null,
+        stage: plot.crop?.stage ?? null,
+        watered: plot.crop?.wateredToday ?? false,
+      }))
+      return JSON.stringify({
+        game: 'english-farm',
+        coordinateSystem: 'screen pixels, origin top-left, y down',
+        selectedTool: bridge.getSelectedTool(),
+        selectedSeed: bridge.getSelectedSeed(),
+        farmerCell: this.farmerCell,
+        grid: { cols: state.grid.cols, rows: state.grid.rows, plots },
+      })
     }
 
     /** Public: re-read state and redraw everything (page calls after Next Day). */
@@ -404,11 +433,13 @@ export function createFarmScene(
       })
 
       this.drawBackground(width, height)
+      this.drawWeatherAmbient(width, height, state.day)
       this.drawFieldPanel(cols, rows)
       this.drawDecorBack(cols, rows)
       this.buildGrid(cols, rows)
       this.drawDecorFront(cols, rows)
       this.buildFarmer(cols, rows)
+      this.installTestHooks()
     }
 
     // --- geometry helpers ----------------------------------------------------
@@ -450,6 +481,107 @@ export function createFarmScene(
         light.fillCircle(cx, cy, r)
       }
       this.decorObjects.push(light as unknown as Sprite)
+    }
+
+    /** Tiny ambient weather loops: clear motes, sunny rays, or soft rain. */
+    private drawWeatherAmbient(width: number, height: number, day: number): void {
+      const forecast = getFarmWeather(day)
+      const mobile = this.isMobile()
+
+      if (forecast.weather === 'rain') {
+        const cloud = this.add.graphics().setDepth(DEPTH.weather)
+        cloud.fillStyle(0xffffff, 0.42)
+        cloud.fillEllipse(width * 0.35, height * 0.17, width * 0.32, height * 0.09)
+        cloud.fillEllipse(width * 0.55, height * 0.15, width * 0.42, height * 0.11)
+        this.decorObjects.push(cloud as unknown as Sprite)
+        const drift = this.tweens.add({
+          targets: cloud,
+          x: width * 0.04,
+          duration: 4200,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        })
+        this.decorTweens.push(drift)
+
+        const drops = mobile ? 12 : 24
+        for (let i = 0; i < drops; i += 1) {
+          const x = (width / drops) * i + Math.random() * (width / drops)
+          const y = Math.random() * height * 0.72
+          const drop = this.add.graphics().setDepth(DEPTH.weather + 1)
+          drop.lineStyle(mobile ? 1 : 2, 0x7dd3fc, 0.44)
+          drop.beginPath()
+          drop.moveTo(0, 0)
+          drop.lineTo(-5, 18)
+          drop.strokePath()
+          drop.setPosition(x, y)
+          this.decorObjects.push(drop as unknown as Sprite)
+          this.decorTweens.push(this.tweens.add({
+            targets: drop,
+            y: y + height * 0.26,
+            x: x - 24,
+            alpha: 0.08,
+            duration: 900 + (i % 5) * 120,
+            delay: i * 45,
+            repeat: -1,
+            ease: 'Linear',
+            onRepeat: () => {
+              drop.setPosition((width / drops) * i + Math.random() * (width / drops), -24)
+              drop.setAlpha(1)
+            },
+          }))
+        }
+        return
+      }
+
+      if (forecast.weather === 'sunny') {
+        const sun = this.add.graphics().setDepth(DEPTH.weather)
+        const sunX = width * 0.84
+        const sunY = height * 0.16
+        const sunRadius = Math.max(28, Math.min(width, height) * 0.07)
+        sun.fillStyle(0xfff7ad, 0.62)
+        sun.fillCircle(0, 0, sunRadius)
+        sun.lineStyle(3, 0xfff7ad, 0.32)
+        for (let i = 0; i < 10; i += 1) {
+          const a = (i / 10) * Math.PI * 2
+          const r1 = Math.max(38, Math.min(width, height) * 0.09)
+          const r2 = r1 + 22
+          sun.beginPath()
+          sun.moveTo(Math.cos(a) * r1, Math.sin(a) * r1)
+          sun.lineTo(Math.cos(a) * r2, Math.sin(a) * r2)
+          sun.strokePath()
+        }
+        sun.setPosition(sunX, sunY)
+        this.decorObjects.push(sun as unknown as Sprite)
+        this.decorTweens.push(this.tweens.add({
+          targets: sun,
+          angle: 360,
+          duration: 16000,
+          repeat: -1,
+          ease: 'Linear',
+        }))
+      }
+
+      const moteCount = mobile ? 8 : 16
+      for (let i = 0; i < moteCount; i += 1) {
+        const mote = this.add.graphics().setDepth(DEPTH.weather + 2)
+        const tint = i % 3 === 0 ? 0xfacc15 : i % 3 === 1 ? 0x86efac : 0xffffff
+        mote.fillStyle(tint, 0.4)
+        mote.fillCircle(0, 0, 2 + (i % 3))
+        mote.setPosition(Math.random() * width, height * (0.18 + Math.random() * 0.64))
+        this.decorObjects.push(mote as unknown as Sprite)
+        this.decorTweens.push(this.tweens.add({
+          targets: mote,
+          x: mote.x + 24 + (i % 4) * 10,
+          y: mote.y - 18 - (i % 5) * 6,
+          alpha: 0.06,
+          duration: 2600 + (i % 6) * 380,
+          delay: i * 140,
+          repeat: -1,
+          yoyo: true,
+          ease: 'Sine.easeInOut',
+        }))
+      }
     }
 
     /**
@@ -958,6 +1090,8 @@ export function createFarmScene(
 
       const plotId = row * cols + col
       const tool = bridge.getSelectedTool()
+      const c = this.cellCenter(col, row)
+      this.emitTapRing(c.x, c.y, tool)
       this.moveFarmerToCell({ col, row }, () => this.performToolAction(tool, plotId))
     }
 
@@ -1033,9 +1167,11 @@ export function createFarmScene(
       const cols = this.safeGetState().grid.cols || GRID_COLS
       const { col, row } = this.cellOf(plotId, cols)
       const c = this.cellCenter(col, row)
+      this.emitToolMotion(kind, c.x, c.y)
 
       if (kind === 'plant') {
         this.emitDust(c.x, c.y + this.layout.tileSize * 0.2, this.particleCount(6))
+        this.emitSeedSwirl(c.x, c.y, this.particleCount(8))
         return
       }
 
@@ -1043,9 +1179,12 @@ export function createFarmScene(
       // rule (soil wins when both tilling AND watering happen at once).
       const particle = resolveParticleKind(kind === 'till', kind === 'water')
       if (particle === 'soil') {
+        this.emitSoilCrack(c.x, c.y, this.layout.tileSize)
         this.emitDust(c.x, c.y, this.particleCount(14))
       } else if (particle === 'water') {
+        this.emitWaterArc(c.x, c.y, this.layout.tileSize)
         this.emitWater(c.x, c.y, this.layout.tileSize)
+        this.emitWaterRipple(c.x, c.y, this.layout.tileSize)
         // Care reaction: the watered crop perks up (happy bounce + sparkle).
         this.reactCrop(plotId)
       }
@@ -1179,6 +1318,9 @@ export function createFarmScene(
       const y = crop?.y ?? 0
       this.emitCoins(x, y, this.particleCount(12))
       this.emitSparkle(x, y, this.particleCount(14))
+      this.emitLeafBurst(x, y, this.particleCount(10))
+      this.emitHarvestBeam(x, y)
+      this.emitFloatingLabel(x, y - this.layout.tileSize * 0.62, '+1')
 
       if (!crop) return
       this.tweens.killTweensOf(crop)
@@ -1220,6 +1362,195 @@ export function createFarmScene(
           this.flashOverlays.delete(overlay)
           overlay.destroy()
         },
+      })
+      this.emitTapRing(c.x, c.y, 'harvest', 0xef4444)
+    }
+
+    private emitTapRing(x: number, y: number, tool: FarmTool, overrideColor?: number): void {
+      const colorByTool: Record<FarmTool, number> = {
+        hoe: 0x8a5f37,
+        seed: 0x22c55e,
+        water: 0x38bdf8,
+        harvest: 0xf59e0b,
+      }
+      const ring = this.add.graphics().setDepth(DEPTH.flash - 1)
+      ring.lineStyle(Math.max(2, this.layout.tileSize * 0.035), overrideColor ?? colorByTool[tool], 0.72)
+      ring.strokeCircle(x, y, this.layout.tileSize * 0.34)
+      this.flashOverlays.add(ring)
+      this.tweens.add({
+        targets: ring,
+        scaleX: 1.45,
+        scaleY: 1.45,
+        alpha: 0,
+        duration: 360,
+        ease: 'Quad.easeOut',
+        onComplete: () => {
+          this.flashOverlays.delete(ring)
+          ring.destroy()
+        },
+      })
+    }
+
+    private emitToolMotion(kind: string, x: number, y: number): void {
+      const color = kind === 'till' ? 0x92400e : kind === 'plant' ? 0x16a34a : kind === 'water' ? 0x0284c7 : 0xf59e0b
+      const arc = this.add.graphics().setDepth(DEPTH.flyUp)
+      arc.lineStyle(Math.max(3, this.layout.tileSize * 0.04), color, 0.74)
+      arc.beginPath()
+      arc.arc(x, y - this.layout.tileSize * 0.14, this.layout.tileSize * 0.38, Math.PI * 0.95, Math.PI * 1.65)
+      arc.strokePath()
+      arc.setScale(0.7)
+      this.flashOverlays.add(arc)
+      this.tweens.add({
+        targets: arc,
+        angle: kind === 'water' ? -18 : 18,
+        scaleX: 1.2,
+        scaleY: 1.2,
+        alpha: 0,
+        duration: 380,
+        ease: 'Cubic.easeOut',
+        onComplete: () => {
+          this.flashOverlays.delete(arc)
+          arc.destroy()
+        },
+      })
+    }
+
+    private emitSeedSwirl(x: number, y: number, count: number): void {
+      this.burst(PARTICLE_DOT, x, y + this.layout.tileSize * 0.08, count, 700, {
+        speed: { min: 18, max: 88 },
+        angle: { min: 245, max: 295 },
+        gravityY: 90,
+        lifespan: 700,
+        scale: { start: 0.42, end: 0 },
+        alpha: { start: 0.9, end: 0 },
+        tint: [0x22c55e, 0xa3e635, 0xfacc15],
+      })
+    }
+
+    private emitWaterArc(x: number, y: number, size: number): void {
+      const g = this.add.graphics().setDepth(DEPTH.flyUp)
+      g.lineStyle(Math.max(2, size * 0.035), 0x38bdf8, 0.72)
+      for (let i = 0; i < 3; i += 1) {
+        g.beginPath()
+        g.arc(x - size * 0.18 + i * size * 0.16, y - size * 0.42, size * (0.24 + i * 0.03), Math.PI * 0.2, Math.PI * 0.82)
+        g.strokePath()
+      }
+      this.flashOverlays.add(g)
+      this.tweens.add({
+        targets: g,
+        y: size * 0.18,
+        alpha: 0,
+        duration: 480,
+        ease: 'Sine.easeOut',
+        onComplete: () => {
+          this.flashOverlays.delete(g)
+          g.destroy()
+        },
+      })
+    }
+
+    private emitSoilCrack(x: number, y: number, size: number): void {
+      const g = this.add.graphics().setDepth(DEPTH.groundDecal + 4)
+      const w = Math.max(2, size * 0.026)
+      g.lineStyle(w, 0x5c3d22, 0.55)
+      for (let i = -1; i <= 1; i += 1) {
+        const yy = y + i * size * 0.13
+        g.beginPath()
+        g.moveTo(x - size * 0.28, yy)
+        g.lineTo(x - size * 0.08, yy - size * 0.05)
+        g.lineTo(x + size * 0.1, yy + size * 0.04)
+        g.lineTo(x + size * 0.28, yy - size * 0.03)
+        g.strokePath()
+      }
+      this.flashOverlays.add(g)
+      this.tweens.add({
+        targets: g,
+        alpha: 0,
+        duration: 520,
+        ease: 'Sine.easeOut',
+        onComplete: () => {
+          this.flashOverlays.delete(g)
+          g.destroy()
+        },
+      })
+    }
+
+    private emitWaterRipple(x: number, y: number, size: number): void {
+      for (let i = 0; i < 2; i += 1) {
+        const ripple = this.add.graphics().setDepth(DEPTH.groundDecal + 6)
+        ripple.lineStyle(Math.max(2, size * 0.025), 0x7dd3fc, 0.68)
+        ripple.strokeEllipse(x, y + size * 0.04, size * 0.28, size * 0.1)
+        ripple.setScale(0.55)
+        this.flashOverlays.add(ripple)
+        this.tweens.add({
+          targets: ripple,
+          scaleX: 1.65 + i * 0.28,
+          scaleY: 1.65 + i * 0.28,
+          alpha: 0,
+          delay: i * 80,
+          duration: 520,
+          ease: 'Quad.easeOut',
+          onComplete: () => {
+            this.flashOverlays.delete(ripple)
+            ripple.destroy()
+          },
+        })
+      }
+    }
+
+    private emitLeafBurst(x: number, y: number, count: number): void {
+      this.burst(PARTICLE_DOT, x, y, count, 850, {
+        speed: { min: 40, max: 160 },
+        angle: { min: 205, max: 335 },
+        gravityY: 110,
+        lifespan: 850,
+        scale: { start: 0.48, end: 0 },
+        alpha: { start: 0.92, end: 0 },
+        tint: [0x22c55e, 0x84cc16, 0xfacc15],
+      })
+    }
+
+    private emitHarvestBeam(x: number, y: number): void {
+      const beam = this.add.graphics().setDepth(DEPTH.flash - 2)
+      beam.fillStyle(0xfffbeb, 0.46)
+      beam.fillEllipse(x, y - this.layout.tileSize * 0.34, this.layout.tileSize * 0.82, this.layout.tileSize * 1.08)
+      beam.setScale(0.45)
+      this.flashOverlays.add(beam)
+      this.tweens.add({
+        targets: beam,
+        scaleX: 1.35,
+        scaleY: 1.35,
+        alpha: 0,
+        duration: 460,
+        ease: 'Cubic.easeOut',
+        onComplete: () => {
+          this.flashOverlays.delete(beam)
+          beam.destroy()
+        },
+      })
+    }
+
+    private emitFloatingLabel(x: number, y: number, text: string): void {
+      const label = this.add
+        .text(x, y, text, {
+          fontFamily: 'Arial',
+          fontSize: `${Math.max(16, Math.round(this.layout.tileSize * 0.28))}px`,
+          fontStyle: 'bold',
+          color: '#fff7ed',
+          stroke: '#92400e',
+          strokeThickness: 4,
+        })
+        .setOrigin(0.5)
+        .setDepth(DEPTH.flyUp + 1)
+      this.tweens.add({
+        targets: label,
+        y: y - this.layout.tileSize * 0.35,
+        scaleX: 1.18,
+        scaleY: 1.18,
+        alpha: 0,
+        duration: 720,
+        ease: 'Cubic.easeOut',
+        onComplete: () => label.destroy(),
       })
     }
 

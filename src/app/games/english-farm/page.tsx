@@ -174,6 +174,37 @@ export default function EnglishFarmPage() {
     }
   }, [loaded, sceneReady]);
 
+  useEffect(() => {
+    const testWindow = window as Window & { render_game_to_text?: () => string };
+    testWindow.render_game_to_text = () => {
+      const state = farmStateRef.current;
+      return JSON.stringify({
+        game: 'english-farm',
+        coordinateSystem: 'screen pixels, origin top-left, y down',
+        selectedTool: selectedToolRef.current,
+        selectedSeed: selectedSeedRef.current,
+        day: state.day,
+        coins: state.coins,
+        level: state.level,
+        farmerReady: !!sceneRef.current,
+        grid: {
+          cols: state.grid.cols,
+          rows: state.grid.rows,
+          plots: state.grid.plots.map((plot) => ({
+            id: plot.id,
+            state: plot.state,
+            crop: plot.crop?.cropTypeId ?? null,
+            stage: plot.crop?.stage ?? null,
+            watered: plot.crop?.wateredToday ?? false,
+          })),
+        },
+      });
+    };
+    return () => {
+      if (testWindow.render_game_to_text) delete testWindow.render_game_to_text;
+    };
+  }, []);
+
   // --- create the Phaser game ONCE (SSR-safe dynamic import)
   useEffect(() => {
     if (!containerRef.current) return;
@@ -530,7 +561,7 @@ export default function EnglishFarmPage() {
             </span>
           </div>
 
-          <div className="rounded-2xl bg-emerald-50 p-2.5">
+          <div className="hidden rounded-2xl bg-emerald-50 p-2.5 sm:block">
             <p className="text-xs font-black uppercase tracking-wide text-emerald-700">Cách chơi</p>
             <ol className="mt-1 space-y-1 text-xs font-bold text-slate-700">
               <li>1. Cày ô đất trống.</li>
@@ -564,7 +595,7 @@ export default function EnglishFarmPage() {
             </button>
           </div>
 
-          <p className="mt-2 rounded-2xl bg-slate-50 px-3 py-2 text-[11px] font-bold leading-snug text-slate-500">
+          <p className="mt-2 hidden rounded-2xl bg-slate-50 px-3 py-2 text-[11px] font-bold leading-snug text-slate-500 sm:block">
             Nguồn từ: {wordBankCount > 0 ? `${wordBankCount} từ trong word_bank` : 'đang tải word_bank'}.
           </p>
         </div>
