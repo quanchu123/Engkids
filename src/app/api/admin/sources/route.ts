@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = getSupabaseAdmin();
-    const [{ data: sources, error: sourcesError }, { data: staging, error: stagingError }] = await Promise.all([
+    const [{ data: sources, error: sourcesError }, { data: staging, error: stagingError }, lexical, sentences, reading] = await Promise.all([
       supabase
         .from('curriculum_import_sources')
         .select('id,title,publisher,source_url,license_name,license_url,attribution,allowed_use,source_kind,import_mode,approved,trust_status,source_hash,imported_at,updated_at')
@@ -25,15 +25,28 @@ export async function GET(request: NextRequest) {
       supabase
         .from('curriculum_import_staging')
         .select('source_id,review_status,entity_type'),
+      supabase.from('source_lexical_items').select('source_id,review_status'),
+      supabase.from('source_sentence_items').select('source_id,review_status'),
+      supabase.from('source_reading_passages').select('source_id,review_status'),
     ]);
 
     if (sourcesError) throw sourcesError;
     if (stagingError) throw stagingError;
+    if (lexical.error) throw lexical.error;
+    if (sentences.error) throw sentences.error;
+    if (reading.error) throw reading.error;
 
     const counts = new Map<string, Record<string, number>>();
     for (const row of staging || []) {
       const sourceId = row.source_id || 'unknown';
       const status = row.review_status || 'unknown';
+      const current = counts.get(sourceId) || {};
+      current[status] = (current[status] || 0) + 1;
+      counts.set(sourceId, current);
+    }
+    for (const row of [...(lexical.data || []), ...(sentences.data || []), ...(reading.data || [])]) {
+      const sourceId = row.source_id || 'unknown';
+      const status = `item_${row.review_status || 'unknown'}`;
       const current = counts.get(sourceId) || {};
       current[status] = (current[status] || 0) + 1;
       counts.set(sourceId, current);

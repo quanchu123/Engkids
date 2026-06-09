@@ -29,6 +29,7 @@ import { buildLessonPath, getLessonSummary, type LessonStep } from '@/lib/learni
 import { getLearnerStageProgress, getStageById, stageForStoryLevel } from '@/lib/curriculum';
 import type { Story } from '@/types';
 import type { LearnerCurriculumState } from '@/services/curriculum-content';
+import type { NextLearningAction } from '@/services/learning-intelligence';
 
 type MetricTone = 'sky' | 'violet' | 'emerald' | 'amber' | 'rose' | 'slate';
 
@@ -58,6 +59,7 @@ export default function TodayLearnPage() {
   const [dueWords, setDueWords] = useState(0);
   const [learnerState, setLearnerState] = useState<LearnerCurriculumState | null>(null);
   const [nextLesson, setNextLesson] = useState<{ id: string; titleVi: string } | null>(null);
+  const [nextAction, setNextAction] = useState<NextLearningAction | null>(null);
   const learner = useMemo(() => getLearnerStageProgress(progress), [progress]);
   const currentStage = learnerState?.currentStageId ? getStageById(learnerState.currentStageId) : learner.stage;
 
@@ -90,6 +92,15 @@ export default function TodayLearnPage() {
       })
       .catch(() => {
         if (active) setLearnerState(null);
+      });
+
+    fetch('/api/learn/next-action', { credentials: 'include', cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (active && data?.action) setNextAction(data.action);
+      })
+      .catch(() => {
+        if (active) setNextAction(null);
       });
 
     return () => {
@@ -145,6 +156,11 @@ export default function TodayLearnPage() {
   const summary = useMemo(() => getLessonSummary(steps), [steps]);
   const percent = summary.total > 0 ? Math.round((summary.done / summary.total) * 100) : 0;
   const nextOpenStep = steps.find((step) => !step.done) ?? steps[0];
+  const bigAction = nextAction || (nextOpenStep ? {
+    title: nextOpenStep.titleVi,
+    description: nextOpenStep.descVi,
+    href: nextOpenStep.href,
+  } : null);
 
   return (
     <>
@@ -169,9 +185,9 @@ export default function TodayLearnPage() {
                     {currentStage.titleVi}. Làm theo queue từ trên xuống để giữ nhịp học và cập nhật tiến trình.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-3">
-                    {nextOpenStep && (
-                      <Link href={nextOpenStep.href} className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5">
-                        Bắt đầu: {nextOpenStep.titleVi} <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    {bigAction && (
+                      <Link href={bigAction.href} className="inline-flex items-center gap-2 rounded-lg bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5">
+                        Big Play: {bigAction.title} <ArrowRight className="h-4 w-4" aria-hidden="true" />
                       </Link>
                     )}
                     <Link href="/roadmap" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-black text-violet-700 shadow-sm ring-1 ring-violet-100 transition hover:-translate-y-0.5">
@@ -184,7 +200,7 @@ export default function TodayLearnPage() {
               </div>
             </div>
 
-            <NextStepCard step={nextOpenStep} learnerState={learnerState} />
+            <NextStepCard step={nextOpenStep} learnerState={learnerState} action={nextAction} />
           </div>
         </section>
 
@@ -226,7 +242,31 @@ function ProgressCard({ done, total, percent, allDone }: { done: number; total: 
   );
 }
 
-function NextStepCard({ step, learnerState }: { step?: LessonStep; learnerState: LearnerCurriculumState | null }) {
+function NextStepCard({ step, learnerState, action }: { step?: LessonStep; learnerState: LearnerCurriculumState | null; action: NextLearningAction | null }) {
+  if (action) {
+    return (
+      <aside className="rounded-lg border border-slate-800 bg-slate-950 p-5 text-white shadow-sm md:p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/10">
+            <Play className="h-6 w-6" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-xs font-black uppercase tracking-wide text-white/50">Big Play</p>
+            <h2 className="text-xl font-black">{action.title}</h2>
+          </div>
+        </div>
+        <p className="mt-4 text-sm font-semibold leading-6 text-white/70">{action.description}</p>
+        <div className="mt-5 grid gap-2 rounded-lg bg-white/10 p-4 text-sm font-bold text-white/75">
+          <span>Mode: {action.learningMode}</span>
+          <span>Why: {action.reason}</span>
+          {action.weakSkill && <span>Weak skill: {action.weakSkill}</span>}
+        </div>
+        <Link href={action.href} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-black text-slate-950 shadow-sm">
+          Start now <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </aside>
+    );
+  }
   if (!step) {
     return (
       <aside className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 shadow-sm">

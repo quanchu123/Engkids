@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, Clock3, GraduationCap, Layers, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock3, GraduationCap, Layers, Loader2, Save, ShieldCheck, Target } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import type { LessonDetailPublic } from '@/services/lessons';
 
@@ -61,6 +61,21 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
     }
   };
 
+  const saveEvent = async (eventType: 'step-complete' | 'quiz-result' | 'output-submit' | 'reflection' | 'reward', stepId?: string | null) => {
+    if (!lesson) return;
+    await fetch(`/api/lessons/${encodeURIComponent(lesson.id)}/events`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventType,
+        stepId,
+        skillId: activeStep?.cefrSkill || undefined,
+        payload: { learningMode: lesson.learningMode, stepType: activeStep?.stepType },
+      }),
+    }).catch(() => undefined);
+  };
+
   return (
     <>
       <Header />
@@ -86,6 +101,9 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
                     <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-500 ring-1 ring-slate-100">
                       <Clock3 className="h-4 w-4" aria-hidden="true" /> {lesson.estimatedMinutes} phut
                     </span>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">
+                      <ShieldCheck className="h-4 w-4" aria-hidden="true" /> {lesson.learningMode} mode
+                    </span>
                   </div>
                   <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight text-slate-950 md:text-5xl">{lesson.titleVi}</h1>
                   <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-slate-600 md:text-base">{lesson.objectiveVi}</p>
@@ -93,6 +111,10 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
                     {lesson.skillFocus.map((skill) => (
                       <span key={skill} className="rounded-full bg-white px-3 py-1 text-xs font-black uppercase text-sky-700 ring-1 ring-sky-100">{skill}</span>
                     ))}
+                  </div>
+                  <div className="mt-5 grid gap-3 md:grid-cols-2">
+                    <InfoBox label="Can-do goal" value={lesson.canDoStatement || lesson.objectiveVi} />
+                    <InfoBox label="Expected output" value={lesson.expectedOutput || 'Level-appropriate response'} />
                   </div>
                 </section>
 
@@ -120,7 +142,33 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
                         </span>
                         <h2 className="mt-4 text-2xl font-black text-slate-950">{activeStep.titleVi}</h2>
                         <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{activeStep.instructionVi}</p>
-                        <pre className="mt-5 overflow-auto rounded-lg bg-slate-950 p-4 text-xs font-semibold leading-5 text-slate-100">{JSON.stringify(activeStep.payload, null, 2)}</pre>
+                        <div className="mt-4 grid gap-3 md:grid-cols-2">
+                          <InfoBox label="Skill" value={activeStep.cefrSkill || activeStep.stepType} />
+                          <InfoBox label="Output" value={activeStep.expectedOutput || 'Step completion'} />
+                        </div>
+                        {activeStep.canDoStatement && (
+                          <p className="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-800 ring-1 ring-emerald-100">
+                            {activeStep.canDoStatement}
+                          </p>
+                        )}
+                        {lesson.rubric.length > 0 && (
+                          <div className="mt-5 rounded-lg bg-slate-50 p-4 ring-1 ring-slate-100">
+                            <div className="mb-2 flex items-center gap-2 text-sm font-black text-slate-900">
+                              <Target className="h-4 w-4 text-violet-600" aria-hidden="true" /> Rubric
+                            </div>
+                            <ul className="space-y-2 text-sm font-semibold text-slate-600">
+                              {lesson.rubric.map((item) => <li key={item}>- {item}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                        <pre className="mt-5 max-h-72 overflow-auto rounded-lg bg-slate-950 p-4 text-xs font-semibold leading-5 text-slate-100">{JSON.stringify(activeStep.payload, null, 2)}</pre>
+                        <button
+                          type="button"
+                          onClick={() => saveEvent('step-complete', activeStep.id)}
+                          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-sm font-black text-white shadow-sm"
+                        >
+                          <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Mark step practiced
+                        </button>
                       </>
                     ) : (
                       <p className="text-sm font-bold text-slate-500">Lesson nay chua co step.</p>
@@ -132,7 +180,10 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
                       <button
                         key={step.id}
                         type="button"
-                        onClick={() => setActiveStepId(step.id)}
+                        onClick={() => {
+                          setActiveStepId(step.id);
+                          void saveEvent('step-complete', activeStep?.id || null);
+                        }}
                         className={`flex w-full items-center gap-3 rounded-lg border bg-white p-3 text-left shadow-sm ${activeStep?.id === step.id ? 'border-violet-300 ring-2 ring-violet-100' : 'border-slate-200'}`}
                       >
                         <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-sm font-black text-slate-600">{index + 1}</span>
@@ -151,5 +202,14 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
         </section>
       </main>
     </>
+  );
+}
+
+function InfoBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-white/80 p-3 text-sm ring-1 ring-slate-100">
+      <p className="text-xs font-black uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-1 font-bold leading-6 text-slate-700">{value}</p>
+    </div>
   );
 }

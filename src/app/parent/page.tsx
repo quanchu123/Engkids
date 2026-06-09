@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   Award,
   BarChart3,
@@ -38,6 +39,7 @@ import {
 } from '@/lib/parent-stats';
 import { CURRICULUM_STAGES, type CurriculumStageId } from '@/lib/curriculum';
 import type { LearnerCurriculumState } from '@/services/curriculum-content';
+import type { ParentProgressSummary } from '@/services/learning-intelligence';
 
 const PIN_STORAGE_KEY = 'engkids.parentPin';
 
@@ -233,6 +235,7 @@ function Dashboard({ progress, hydrated }: DashboardProps) {
 
   // `dueToday` comes from the SRS service which may throw for guests.
   const [dueToday, setDueToday] = useState<number | null>(null);
+  const [dbProgress, setDbProgress] = useState<ParentProgressSummary | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -244,6 +247,21 @@ function Dashboard({ progress, hydrated }: DashboardProps) {
         if (active) setDueToday(null);
       }
     })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/parent/progress', { credentials: 'include', cache: 'no-store' })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (active) setDbProgress(data?.progress || null);
+      })
+      .catch(() => {
+        if (active) setDbProgress(null);
+      });
     return () => {
       active = false;
     };
@@ -282,6 +300,8 @@ function Dashboard({ progress, hydrated }: DashboardProps) {
             tint="from-cyan-500 to-sky-500"
           />
         </section>
+
+        {dbProgress && <InternationalProgressPanel progress={dbProgress} />}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           {/* Weekly activity chart */}
@@ -398,6 +418,62 @@ function ActivityIcon({ kind }: { kind: ActivityKind }) {
   return (
     <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${tint} text-white`}>
       {icon}
+    </div>
+  );
+}
+
+function InternationalProgressPanel({ progress }: { progress: ParentProgressSummary }) {
+  const lessonPercent = progress.totalLessons > 0 ? Math.round((progress.lessonsCompleted / progress.totalLessons) * 100) : 0;
+  const maxWeekly = Math.max(1, ...progress.weeklyActivity.map((day) => day.count));
+  return (
+    <section className="toy-panel mt-6 rounded-3xl p-6">
+      <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+        <div>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black uppercase text-indigo-700">{progress.cefr}</span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase text-emerald-700">{progress.learningMode} mode</span>
+            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-black uppercase text-sky-700">CEFR aligned</span>
+          </div>
+          <h2 className="text-xl font-black text-slate-900">International learning summary</h2>
+          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+            Current path: {progress.stageId}. Lessons completed: {progress.lessonsCompleted}/{progress.totalLessons}. Review due: {progress.dueWords} words.
+          </p>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-400" style={{ width: `${Math.max(lessonPercent, 4)}%` }} />
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <MiniParentStat label="Mastered words" value={progress.wordsMastered} />
+            <MiniParentStat label="Strongest skill" value={progress.strongestSkill || 'n/a'} />
+            <MiniParentStat label="Weakest skill" value={progress.weakestSkill || 'n/a'} />
+          </div>
+        </div>
+        <div className="rounded-2xl bg-slate-950 p-5 text-white">
+          <p className="text-xs font-black uppercase tracking-wide text-white/50">What to do next</p>
+          <h3 className="mt-2 text-xl font-black">{progress.nextAction.title}</h3>
+          <p className="mt-2 text-sm font-semibold leading-6 text-white/70">{progress.nextAction.description}</p>
+          <p className="mt-3 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white/70">{progress.nextAction.reason}</p>
+          <Link href={progress.nextAction.href} className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950">
+            Open next action
+          </Link>
+        </div>
+      </div>
+      <div className="mt-5 flex h-24 items-end gap-2 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">
+        {progress.weeklyActivity.map((day) => (
+          <div key={day.date} className="flex flex-1 flex-col items-center gap-1">
+            <div className="w-full rounded-t-lg bg-indigo-400" style={{ height: `${day.count === 0 ? 5 : Math.round((day.count / maxWeekly) * 100)}%` }} />
+            <span className="text-[10px] font-bold text-slate-400">{formatDayLabel(day.date)}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MiniParentStat({ label, value }: { label: string; value: number | string }) {
+  return (
+    <div className="rounded-2xl bg-white px-4 py-3 ring-1 ring-slate-100">
+      <p className="text-xs font-black uppercase text-slate-400">{label}</p>
+      <p className="mt-1 truncate text-lg font-black text-slate-900">{value}</p>
     </div>
   );
 }

@@ -22,6 +22,10 @@ const REQUIRED_TABLES = [
   'lesson_progress',
   'curriculum_import_sources',
   'curriculum_import_staging',
+  'source_sentence_items',
+  'source_lexical_items',
+  'source_reading_passages',
+  'lesson_events',
 ];
 
 function getSupabaseAdmin() {
@@ -116,6 +120,16 @@ async function main() {
   const activeLessons = await countWhere(supabase, 'lessons', (query) => query.eq('active', true));
   printCheck('lessons active >= 4', activeLessons.ok && activeLessons.count >= 4, activeLessons.ok ? String(activeLessons.count) : activeLessons.error);
   if (!activeLessons.ok || activeLessons.count < 4) failures.push('lessons active < 4');
+
+  for (const field of ['cefr_level', 'can_do_statement', 'expected_output', 'cefr_reason']) {
+    const missing = await countWhere(supabase, 'lessons', (query) => query.eq('active', true).or(`${field}.is.null,${field}.eq.`));
+    printCheck(`lessons missing ${field} = 0`, missing.ok && missing.count === 0, missing.ok ? `${missing.count}` : missing.error);
+    if (!missing.ok || missing.count !== 0) failures.push(`lessons missing ${field}`);
+  }
+
+  const blockedLessons = await countWhere(supabase, 'lessons', (query) => query.eq('active', true).or('quality_status.eq.blocked,safety_status.eq.blocked'));
+  printCheck('learner-facing lessons blocked = 0', blockedLessons.ok && blockedLessons.count === 0, blockedLessons.ok ? `${blockedLessons.count}` : blockedLessons.error);
+  if (!blockedLessons.ok || blockedLessons.count !== 0) failures.push('blocked active lessons');
 
   const storyMissingStage = await countWhere(supabase, 'stories', (query) => query.is('curriculum_stage_id', null));
   printCheck('stories curriculum_stage_id backfilled', storyMissingStage.ok && storyMissingStage.count === 0, storyMissingStage.ok ? `${storyMissingStage.count} missing` : storyMissingStage.error);

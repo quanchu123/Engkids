@@ -26,6 +26,14 @@ export interface LessonSummaryPublic {
   estimatedMinutes: number;
   coverAssetUrl: string | null;
   skillFocus: string[];
+  learningMode: 'kid' | 'teen';
+  canDoStatement: string;
+  expectedOutput: string;
+  rubric: string[];
+  difficultyScore: number;
+  ageBand: string;
+  qualityStatus: 'approved' | 'needs-review' | 'blocked';
+  cefrReason: string;
   sortOrder: number;
   unit?: CurriculumUnitPublic | null;
   progress?: LessonProgressPublic | null;
@@ -38,6 +46,9 @@ export interface LessonStepPublic {
   titleVi: string;
   instructionVi: string;
   payload: Record<string, unknown>;
+  cefrSkill: string | null;
+  canDoStatement: string;
+  expectedOutput: string;
   sortOrder: number;
 }
 
@@ -126,6 +137,14 @@ function mapLesson(row: Record<string, unknown>, progress?: LessonProgressPublic
     estimatedMinutes: Number(row.estimated_minutes) || 15,
     coverAssetUrl: typeof row.cover_asset_url === 'string' ? row.cover_asset_url : null,
     skillFocus: asStringArray(row.skill_focus),
+    learningMode: row.learning_mode === 'teen' ? 'teen' : 'kid',
+    canDoStatement: String(row.can_do_statement || ''),
+    expectedOutput: String(row.expected_output || ''),
+    rubric: asStringArray(row.rubric),
+    difficultyScore: Number(row.difficulty_score) || 0,
+    ageBand: String(row.age_band || ''),
+    qualityStatus: row.quality_status === 'blocked' || row.quality_status === 'needs-review' ? row.quality_status : 'approved',
+    cefrReason: String(row.cefr_reason || ''),
     sortOrder: Number(row.sort_order) || 0,
     unit: mapUnit(row.curriculum_units as Record<string, unknown> | null),
     progress: progress || null,
@@ -140,6 +159,9 @@ function mapStep(row: Record<string, unknown>): LessonStepPublic {
     titleVi: String(row.title_vi || ''),
     instructionVi: String(row.instruction_vi || ''),
     payload: (row.payload && typeof row.payload === 'object' ? row.payload : {}) as Record<string, unknown>,
+    cefrSkill: typeof row.cefr_skill === 'string' ? row.cefr_skill : null,
+    canDoStatement: String(row.can_do_statement || ''),
+    expectedOutput: String(row.expected_output || ''),
     sortOrder: Number(row.sort_order) || 0,
   };
 }
@@ -187,9 +209,11 @@ export async function listLessons(request: NextRequest): Promise<{ lessons: Less
 
   let query = admin
     .from('lessons')
-    .select('id,unit_id,stage_id,title_vi,title_en,objective_vi,cefr,estimated_minutes,cover_asset_url,skill_focus,sort_order,curriculum_units(id,stage_id,title_vi,theme,target_skills,sort_order)')
+    .select('id,unit_id,stage_id,title_vi,title_en,objective_vi,cefr,estimated_minutes,cover_asset_url,skill_focus,learning_mode,can_do_statement,expected_output,rubric,difficulty_score,age_band,quality_status,cefr_reason,sort_order,curriculum_units(id,stage_id,title_vi,theme,target_skills,sort_order)')
     .eq('active', true)
     .eq('review_status', 'approved')
+    .neq('quality_status', 'blocked')
+    .neq('safety_status', 'blocked')
     .order('stage_id', { ascending: true })
     .order('sort_order', { ascending: true });
   if (stageId) query = query.eq('stage_id', stageId);
@@ -215,10 +239,12 @@ export async function getLessonDetail(request: NextRequest, lessonId: string): P
 
   const { data: lessonRow, error } = await admin
     .from('lessons')
-    .select('id,unit_id,stage_id,title_vi,title_en,objective_vi,cefr,estimated_minutes,cover_asset_url,skill_focus,sort_order,curriculum_units(id,stage_id,title_vi,theme,target_skills,sort_order)')
+    .select('id,unit_id,stage_id,title_vi,title_en,objective_vi,cefr,estimated_minutes,cover_asset_url,skill_focus,learning_mode,can_do_statement,expected_output,rubric,difficulty_score,age_band,quality_status,cefr_reason,sort_order,curriculum_units(id,stage_id,title_vi,theme,target_skills,sort_order)')
     .eq('id', lessonId)
     .eq('active', true)
     .eq('review_status', 'approved')
+    .neq('quality_status', 'blocked')
+    .neq('safety_status', 'blocked')
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!lessonRow) return null;
@@ -228,7 +254,7 @@ export async function getLessonDetail(request: NextRequest, lessonId: string): P
   if (!lesson) return null;
 
   const [{ data: stepRows }, { data: assetRows }] = await Promise.all([
-    admin.from('lesson_steps').select('id,lesson_id,step_type,title_vi,instruction_vi,payload,sort_order').eq('lesson_id', lessonId).eq('active', true).eq('review_status', 'approved').order('sort_order', { ascending: true }),
+    admin.from('lesson_steps').select('id,lesson_id,step_type,title_vi,instruction_vi,payload,cefr_skill,can_do_statement,expected_output,sort_order').eq('lesson_id', lessonId).eq('active', true).eq('review_status', 'approved').neq('quality_status', 'blocked').neq('safety_status', 'blocked').order('sort_order', { ascending: true }),
     admin.from('lesson_assets').select('id,lesson_id,asset_kind,original_url,optimized_url,derivative_format,width,height,bytes,optimized_bytes').eq('lesson_id', lessonId).eq('active', true).eq('review_status', 'approved'),
   ]);
 

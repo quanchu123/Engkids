@@ -17,7 +17,7 @@
 import manifestJson from '../../public/assets/iconscout/manifest.json';
 
 /** Admin icon keys used across the admin UI (sidebar nav, stat cards, etc.). */
-export type AdminIconKey = 'stories' | 'videos' | 'games' | 'music' | 'dashboard' | 'upload';
+export type AdminIconKey = 'stories' | 'videos' | 'games' | 'music' | 'dashboard' | 'upload' | 'standards';
 
 /**
  * Maps each admin icon key to the manifest entry `name` used by
@@ -30,6 +30,7 @@ const MANIFEST_NAME: Record<AdminIconKey, string> = {
   music: 'admin-music',
   dashboard: 'admin-dashboard',
   upload: 'admin-upload',
+  standards: 'admin-dashboard',
 };
 
 /** Shape of a single manifest entry we care about (other fields are ignored). */

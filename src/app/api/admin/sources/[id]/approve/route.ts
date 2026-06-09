@@ -34,12 +34,15 @@ export async function POST(
     if (sourceError) throw sourceError;
     if (!source) return NextResponse.json({ error: 'Source not found' }, { status: 404 });
 
-    const { error: stagingError } = await supabase
-      .from('curriculum_import_staging')
-      .update({ review_status: action === 'approve' ? 'approved' : 'rejected' })
-      .eq('source_id', id)
-      .in('review_status', ['pending', 'approved']);
-    if (stagingError) throw stagingError;
+    const status = action === 'approve' ? 'approved' : 'rejected';
+    const updates = await Promise.all([
+      supabase.from('curriculum_import_staging').update({ review_status: status }).eq('source_id', id).in('review_status', ['pending', 'approved']),
+      supabase.from('source_lexical_items').update({ review_status: status, imported_at: action === 'approve' ? now : null }).eq('source_id', id).eq('safety_status', 'safe').in('review_status', ['pending', 'approved']),
+      supabase.from('source_sentence_items').update({ review_status: status, imported_at: action === 'approve' ? now : null }).eq('source_id', id).eq('safety_status', 'safe').in('review_status', ['pending', 'approved']),
+      supabase.from('source_reading_passages').update({ review_status: status, imported_at: action === 'approve' ? now : null }).eq('source_id', id).eq('safety_status', 'safe').in('review_status', ['pending', 'approved']),
+    ]);
+    const failed = updates.find((result) => result.error);
+    if (failed?.error) throw failed.error;
 
     return NextResponse.json({ source, action }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {

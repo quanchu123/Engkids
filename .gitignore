@@ -70,5 +70,9 @@ data/licensed-curriculum/staging/*
 # Generated source snapshots / droplet asset manifests
 data/open-curriculum/snapshots/*
 !data/open-curriculum/snapshots/.gitkeep
+data/open-curriculum/raw/*
+!data/open-curriculum/raw/.gitkeep
+data/open-curriculum/curated/*
+!data/open-curriculum/curated/.gitkeep
 data/static-assets/manifest.json
 
