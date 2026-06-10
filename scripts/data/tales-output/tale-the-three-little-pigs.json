@@ -1,0 +1,546 @@
+{
+  "id": "tale-the-three-little-pigs",
+  "title_en": "The Three Little Pigs",
+  "title_vi": "Ba con lợn nhỏ",
+  "level": "Beginner",
+  "topics": [
+    "Animals",
+    "House"
+  ],
+  "cover_image": "🏰",
+  "estimated_minutes": 4,
+  "published": false,
+  "panels": [
+    {
+      "panel_id": 1,
+      "image": "🦊",
+      "image_alt": "The Three Little Pigs - panel 1",
+      "sentence_en": "Three little pigs live with their mom.",
+      "sentence_vi": "Ba con lợn nhỏ sống với mẹ của chúng.",
+      "tokens": [
+        {
+          "display": "Three",
+          "norm": "three",
+          "lemma": "three"
+        },
+        {
+          "display": "little",
+          "norm": "little",
+          "lemma": "little"
+        },
+        {
+          "display": "pigs",
+          "norm": "pigs",
+          "lemma": "pig",
+          "vi": "lợn"
+        },
+        {
+          "display": "live",
+          "norm": "live",
+          "lemma": "live"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "their",
+          "norm": "their",
+          "lemma": "their"
+        },
+        {
+          "display": "mom",
+          "norm": "mom",
+          "lemma": "mom",
+          "vi": "mẹ"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 2,
+      "image": "🐻",
+      "image_alt": "The Three Little Pigs - panel 2",
+      "sentence_en": "They want to build their own houses.",
+      "sentence_vi": "Chúng muốn xây những ngôi nhà của riêng mình.",
+      "tokens": [
+        {
+          "display": "They",
+          "norm": "they",
+          "lemma": "they"
+        },
+        {
+          "display": "want",
+          "norm": "want",
+          "lemma": "want"
+        },
+        {
+          "display": "to",
+          "norm": "to",
+          "lemma": "to"
+        },
+        {
+          "display": "build",
+          "norm": "build",
+          "lemma": "build"
+        },
+        {
+          "display": "their",
+          "norm": "their",
+          "lemma": "their"
+        },
+        {
+          "display": "own",
+          "norm": "own",
+          "lemma": "own"
+        },
+        {
+          "display": "houses",
+          "norm": "houses",
+          "lemma": "house",
+          "vi": "ngôi nhà"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 3,
+      "image": "🐰",
+      "image_alt": "The Three Little Pigs - panel 3",
+      "sentence_en": "The first pig builds a house with straw.",
+      "sentence_vi": "Con lợn đầu tiên xây một ngôi nhà bằng rơm.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "first",
+          "norm": "first",
+          "lemma": "first"
+        },
+        {
+          "display": "pig",
+          "norm": "pig",
+          "lemma": "pig"
+        },
+        {
+          "display": "builds",
+          "norm": "builds",
+          "lemma": "build"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "house",
+          "norm": "house",
+          "lemma": "house",
+          "vi": "ngôi nhà"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "straw",
+          "norm": "straw",
+          "lemma": "straw",
+          "vi": "rơm"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 4,
+      "image": "🌳",
+      "image_alt": "The Three Little Pigs - panel 4",
+      "sentence_en": "The second pig builds a house with sticks.",
+      "sentence_vi": "Con lợn thứ hai xây một ngôi nhà bằng que.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "second",
+          "norm": "second",
+          "lemma": "second"
+        },
+        {
+          "display": "pig",
+          "norm": "pig",
+          "lemma": "pig"
+        },
+        {
+          "display": "builds",
+          "norm": "builds",
+          "lemma": "build"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "house",
+          "norm": "house",
+          "lemma": "house",
+          "vi": "ngôi nhà"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "sticks",
+          "norm": "sticks",
+          "lemma": "stick",
+          "vi": "que"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 5,
+      "image": "🏰",
+      "image_alt": "The Three Little Pigs - panel 5",
+      "sentence_en": "The third pig builds a house with bricks.",
+      "sentence_vi": "Con lợn thứ ba xây một ngôi nhà bằng gạch.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "third",
+          "norm": "third",
+          "lemma": "third"
+        },
+        {
+          "display": "pig",
+          "norm": "pig",
+          "lemma": "pig"
+        },
+        {
+          "display": "builds",
+          "norm": "builds",
+          "lemma": "build"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "house",
+          "norm": "house",
+          "lemma": "house",
+          "vi": "ngôi nhà"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "bricks",
+          "norm": "bricks",
+          "lemma": "brick",
+          "vi": "gạch"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 6,
+      "image": "🌟",
+      "image_alt": "The Three Little Pigs - panel 6",
+      "sentence_en": "A bad wolf comes to their houses.",
+      "sentence_vi": "Một con sói xấu đến những ngôi nhà của chúng.",
+      "tokens": [
+        {
+          "display": "A",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "bad",
+          "norm": "bad",
+          "lemma": "bad"
+        },
+        {
+          "display": "wolf",
+          "norm": "wolf",
+          "lemma": "wolf",
+          "vi": "sói"
+        },
+        {
+          "display": "comes",
+          "norm": "comes",
+          "lemma": "come"
+        },
+        {
+          "display": "to",
+          "norm": "to",
+          "lemma": "to"
+        },
+        {
+          "display": "their",
+          "norm": "their",
+          "lemma": "their"
+        },
+        {
+          "display": "houses",
+          "norm": "houses",
+          "lemma": "house",
+          "vi": "ngôi nhà"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 7,
+      "image": "🌈",
+      "image_alt": "The Three Little Pigs - panel 7",
+      "sentence_en": "The wolf blows the first two houses down.",
+      "sentence_vi": "Con sói thổi bay hai ngôi nhà đầu tiên.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "wolf",
+          "norm": "wolf",
+          "lemma": "wolf",
+          "vi": "sói"
+        },
+        {
+          "display": "blows",
+          "norm": "blows",
+          "lemma": "blow"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "first",
+          "norm": "first",
+          "lemma": "first"
+        },
+        {
+          "display": "two",
+          "norm": "two",
+          "lemma": "two"
+        },
+        {
+          "display": "houses",
+          "norm": "houses",
+          "lemma": "house",
+          "vi": "ngôi nhà"
+        },
+        {
+          "display": "down",
+          "norm": "down",
+          "lemma": "down"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 8,
+      "image": "🦋",
+      "image_alt": "The Three Little Pigs - panel 8",
+      "sentence_en": "The three pigs are safe in the brick house.",
+      "sentence_vi": "Ba con lợn an toàn trong ngôi nhà bằng gạch.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "three",
+          "norm": "three",
+          "lemma": "three"
+        },
+        {
+          "display": "pigs",
+          "norm": "pigs",
+          "lemma": "pig",
+          "vi": "lợn"
+        },
+        {
+          "display": "are",
+          "norm": "are",
+          "lemma": "are"
+        },
+        {
+          "display": "safe",
+          "norm": "safe",
+          "lemma": "safe"
+        },
+        {
+          "display": "in",
+          "norm": "in",
+          "lemma": "in"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "brick",
+          "norm": "brick",
+          "lemma": "brick"
+        },
+        {
+          "display": "house",
+          "norm": "house",
+          "lemma": "house",
+          "vi": "ngôi nhà"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "word": "pigs",
+      "vi": "lợn",
+      "ipa": ""
+    },
+    {
+      "word": "mom",
+      "vi": "mẹ",
+      "ipa": ""
+    },
+    {
+      "word": "house",
+      "vi": "ngôi nhà",
+      "ipa": ""
+    },
+    {
+      "word": "straw",
+      "vi": "rơm",
+      "ipa": ""
+    },
+    {
+      "word": "sticks",
+      "vi": "que",
+      "ipa": ""
+    },
+    {
+      "word": "bricks",
+      "vi": "gạch",
+      "ipa": ""
+    },
+    {
+      "word": "wolf",
+      "vi": "sói",
+      "ipa": ""
+    }
+  ],
+  "games": {
+    "match": [
+      {
+        "word": "pigs",
+        "vi": "lợn"
+      },
+      {
+        "word": "mom",
+        "vi": "mẹ"
+      },
+      {
+        "word": "house",
+        "vi": "ngôi nhà"
+      },
+      {
+        "word": "straw",
+        "vi": "rơm"
+      },
+      {
+        "word": "sticks",
+        "vi": "que"
+      },
+      {
+        "word": "bricks",
+        "vi": "gạch"
+      }
+    ],
+    "fill_blank": [
+      {
+        "sentence_en": "Three little pigs ___ with their mom.",
+        "answer": "live",
+        "choices": [
+          "live",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "They want to ___ their own houses.",
+        "answer": "build",
+        "choices": [
+          "build",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "The first pig builds a ___ with straw.",
+        "answer": "house",
+        "choices": [
+          "happy",
+          "good",
+          "house"
+        ]
+      }
+    ]
+  }
+}

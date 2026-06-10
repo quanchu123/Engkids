@@ -10,6 +10,8 @@ import { UPLOADS_DIR } from '@/services/storage';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+
 const CONTENT_TYPES: Record<string, string> = {
   '.mp4': 'video/mp4',
   '.webm': 'video/webm',
@@ -25,6 +27,23 @@ const CONTENT_TYPES: Record<string, string> = {
   '.webp': 'image/webp',
 };
 
+function escapeSvgText(value: string) {
+  return value.replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[char] || char);
+}
+
+function missingImageResponse(name: string) {
+  const label = escapeSvgText(path.parse(name).name.slice(0, 18) || 'thumbnail');
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Missing thumbnail"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stop-color="#7c3aed"/><stop offset="55%" stop-color="#ec4899"/><stop offset="100%" stop-color="#f59e0b"/></linearGradient></defs><rect width="640" height="360" fill="url(#g)"/><circle cx="120" cy="80" r="72" fill="#ffffff" opacity="0.16"/><circle cx="550" cy="310" r="120" fill="#ffffff" opacity="0.13"/><path d="M276 132v96l92-48-92-48Z" fill="#fff" opacity="0.94"/><text x="320" y="286" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#fff" opacity="0.86">Engkids video</text><text x="320" y="318" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#fff" opacity="0.64">' + label + '</text></svg>';
+  return new Response(svg, {
+    status: 200,
+    headers: {
+      'Content-Type': 'image/svg+xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+      'X-Engkids-Fallback': 'missing-thumbnail',
+    },
+  });
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ name: string }> },
@@ -38,13 +57,14 @@ export async function GET(
   }
 
   const filePath = path.join(UPLOADS_DIR, safeName);
+  const ext = path.extname(safeName).toLowerCase();
   if (!existsSync(filePath)) {
+    if (IMAGE_EXTENSIONS.has(ext)) return missingImageResponse(safeName);
     return new Response('Not found', { status: 404 });
   }
 
   const stat = statSync(filePath);
   const fileSize = stat.size;
-  const ext = path.extname(safeName).toLowerCase();
   const contentType = CONTENT_TYPES[ext] || 'application/octet-stream';
 
   const range = request.headers.get('range');

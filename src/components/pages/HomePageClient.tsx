@@ -161,6 +161,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
                       width={200}
                       height={200}
                       className="scale-110 object-contain"
+                      style={{ width: 'auto', height: 'auto' }}
                       priority
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';

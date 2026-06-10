@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { DEFAULT_WORD_BANK, loadWordBank, toFiveLetterWords } from '@/lib/word-bank';
 
-/* ─── Vocabulary: 5-letter words (defaults; replaced by the shared bank) ─── */
+// Vocabulary: 5-letter words (defaults; replaced by the shared bank after mount).
 const WORDS = toFiveLetterWords(DEFAULT_WORD_BANK);
 
 const MAX_GUESSES = 6;
@@ -12,7 +12,7 @@ const WORD_LENGTH = 5;
 const KEYBOARD_ROWS = [
   ['Q','W','E','R','T','Y','U','I','O','P'],
   ['A','S','D','F','G','H','J','K','L'],
-  ['ENTER','Z','X','C','V','B','N','M','⌫'],
+  ['ENTER','Z','X','C','V','B','N','M','BACKSPACE'],
 ];
 
 type TileState = 'empty' | 'tbd' | 'correct' | 'present' | 'absent';
@@ -43,10 +43,8 @@ function evaluateGuess(guess: string, answer: string): TileState[] {
 
 export default function WordPuzzlePage() {
   const TOTAL_QUESTIONS = 6;
-  const [targets, setTargets] = useState(() => {
-    const shuffled = [...WORDS].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, TOTAL_QUESTIONS);
-  });
+  const initialTargets = useMemo(() => WORDS.slice(0, TOTAL_QUESTIONS), []);
+  const [targets, setTargets] = useState(initialTargets);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
 
@@ -93,7 +91,7 @@ export default function WordPuzzlePage() {
     if (current.length !== WORD_LENGTH) {
       setShake(true);
       setTimeout(() => setShake(false), 600);
-      showToast('Cần nhập đủ 5 chữ cái');
+      showToast('C\u1ea7n nh\u1eadp \u0111\u1ee7 5 ch\u1eef c\u00e1i');
       return;
     }
     const newGuesses = [...guesses, current];
@@ -106,10 +104,10 @@ export default function WordPuzzlePage() {
       if (current === target.en) {
         setGameState('won');
         setScore(s => s + 1);
-        showToast('Xuất sắc!');
+        showToast('Xu\u1ea5t s\u1eafc!');
       } else if (newGuesses.length >= MAX_GUESSES) {
         setGameState('lost');
-        showToast(`Đáp án: ${target.en}`);
+        showToast(`\u0110\u00e1p \u00e1n: ${target.en}`);
       }
     }, WORD_LENGTH * 350 + 200);
   }, [current, guesses, target, showToast]);
@@ -118,7 +116,7 @@ export default function WordPuzzlePage() {
     if (gameState !== 'playing') return;
     if (key === 'ENTER') {
       submitGuess();
-    } else if (key === '⌫' || key === 'BACKSPACE') {
+    } else if (key === 'BACKSPACE') {
       setCurrent(c => c.slice(0, -1));
     } else if (/^[A-Z]$/.test(key) && current.length < WORD_LENGTH) {
       setCurrent(c => c + key);
@@ -199,7 +197,7 @@ export default function WordPuzzlePage() {
       <div className="fixed inset-0 flex flex-col overflow-hidden"
         style={{ background: 'linear-gradient(170deg, #0a0a0f 0%, #111128 50%, #0a0f1a 100%)' }}>
 
-        {/* ?? Toast ?? */}
+        {/* Toast */}
         {toast && (
           <div className="fixed top-20 left-1/2 z-50 px-6 py-3 rounded-xl font-bold text-white text-sm"
             style={{
@@ -214,7 +212,7 @@ export default function WordPuzzlePage() {
           </div>
         )}
 
-        {/* ─── Header ─── */}
+        {/* Header */}
         <header className="flex items-center justify-between px-4 py-3"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <Link href="/games" className="text-white/40 hover:text-white text-sm font-bold transition-colors">

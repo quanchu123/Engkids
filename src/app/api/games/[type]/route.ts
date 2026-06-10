@@ -8,7 +8,7 @@ import {
   saveTrueFalseContent,
   saveWordBank,
 } from '@/services/game-content';
-import { filterWordBank } from '@/lib/word-bank';
+import { filterPlayableWordBank, filterWordBank } from '@/lib/word-bank';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +33,15 @@ export async function GET(
     else {
       const stage = request.nextUrl.searchParams.get('stage') || undefined;
       const topic = request.nextUrl.searchParams.get('topic') || undefined;
-      data = filterWordBank(await getWordBank(), { level: stage, topic });
+      const raw = request.nextUrl.searchParams.get('raw') === '1';
+      const bank = await getWordBank();
+      if (raw) {
+        const isAuthed = await checkAdminAuth(request);
+        if (!isAuthed) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        data = filterWordBank(bank, { level: stage, topic, min: 1 });
+      } else {
+        data = filterWordBank(filterPlayableWordBank(bank), { level: stage, topic });
+      }
     }
     return NextResponse.json(
       { data },

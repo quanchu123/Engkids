@@ -3,8 +3,10 @@
 // ============================================
 // Reads/writes global site settings (key/value JSON). First use: home-page
 // background music.
+import { existsSync } from 'fs';
+import path from 'path';
 import { createClient } from '@supabase/supabase-js';
-import { deleteVideoObject, getVideoPublicUrl } from '@/services/storage';
+import { deleteVideoObject, getVideoPublicUrl, UPLOADS_DIR } from '@/services/storage';
 
 const MUSIC_KEY = 'background_music';
 
@@ -31,6 +33,12 @@ function getSupabaseAdmin() {
   return createClient(url, serviceKey, {
     global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) }
   });
+}
+
+function localObjectExists(objectKey: string): boolean {
+  if (!objectKey || /^https?:\/\//i.test(objectKey)) return true;
+  const name = objectKey.replace('/uploads/', '').replace(/^\/+/, '');
+  return existsSync(path.join(UPLOADS_DIR, path.basename(name)));
 }
 
 async function fetchSetting(key: string): Promise<unknown | null> {
@@ -60,12 +68,13 @@ function normalizeMusic(raw: unknown): BackgroundMusic {
   let volume = typeof obj.volume === 'number' ? obj.volume : 0.4;
   if (volume < 0) volume = 0;
   if (volume > 1) volume = 1;
-  const enabled = Boolean(obj.enabled) && Boolean(objectKey);
+  const fileAvailable = objectKey ? localObjectExists(objectKey) : false;
+  const enabled = Boolean(obj.enabled) && Boolean(objectKey) && fileAvailable;
   return {
     enabled,
     objectKey,
     volume,
-    url: objectKey ? getVideoPublicUrl(objectKey) : undefined,
+    url: objectKey && fileAvailable ? getVideoPublicUrl(objectKey) : undefined,
   };
 }
 

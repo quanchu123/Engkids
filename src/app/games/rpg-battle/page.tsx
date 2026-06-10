@@ -140,7 +140,7 @@ export default function RpgBattlePage() {
           anim('hero-attack-anim', 'hero-attack', 0, 2, 10,  0);  // 3 frames (0-2)
           anim('mole-walk-anim',   'mole-walk',   0, 3, 7,  -1);  // 4 frames (0-3)
           anim('treant-walk-anim', 'treant-walk', 0, 3, 7,  -1);  // 4 frames (0-3)
-          anim('death-anim',       'death',       0, 6, 15,  0);  // 7 frames (0-6)
+          anim('death-anim',       'death',       0, 5, 15,  0);  // 6 frames (0-5)
 
           this.scene.start('Battle');
         }

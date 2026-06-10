@@ -74,33 +74,27 @@ export function middleware(request: NextRequest) {
     const identifier = request.ip || request.headers.get('x-forwarded-for') || 'anonymous';
 
     // Skip rate limiting for localhost in development
-    const isLocalhost = identifier === '::1' || identifier === '127.0.0.1' || identifier === 'anonymous';
+    const host = request.headers.get('host') || request.nextUrl.hostname;
+    const isLocalhost = identifier === '::1' ||
+      identifier === '127.0.0.1' ||
+      identifier === 'anonymous' ||
+      identifier.startsWith('::ffff:127.') ||
+      host.startsWith('localhost') ||
+      host.startsWith('127.0.0.1');
     const isDev = process.env.NODE_ENV === 'development';
 
-    if (isLocalhost && isDev) {
-      const limit = 1000;
-      const windowMs = 60 * 1000;
-
-      if (!checkRateLimit(identifier, limit, windowMs)) {
-        return NextResponse.json(
-          { error: 'Too many requests. Please try again later.' },
-          {
-            status: 429,
-            headers: {
-              'Retry-After': '60',
-            },
-          }
-        );
-      }
-    } else {
+    if (!(isLocalhost && isDev)) {
       // Production rate limits.
-      // Use SEPARATE counters per category so that normal navigation requests
-      // (page loads, status polls, listing) never eat into the upload budget,
-      // and vice-versa. Previously a single shared per-IP counter meant routine
-      // browsing could trip the strict upload limit before any upload happened.
+      // Use SEPARATE counters per category so normal navigation/media requests
+      // never eat into upload or mutation budgets.
       const isFileUpload = pathname.startsWith('/api/videos/upload');
-      const bucket = isFileUpload ? 'upload' : 'api';
-      const limit = isFileUpload ? 60 : 300;
+      const isMediaRead = request.method === 'GET' && (
+        pathname.startsWith('/api/videos/file/') ||
+        pathname.startsWith('/api/assets/file/') ||
+        pathname.startsWith('/api/images/file/')
+      );
+      const bucket = isFileUpload ? 'upload' : isMediaRead ? 'media' : 'api';
+      const limit = isFileUpload ? 60 : isMediaRead ? 2000 : 300;
       const windowMs = 15 * 60 * 1000; // 15 minutes
 
       if (!checkRateLimit(`${bucket}:${identifier}`, limit, windowMs)) {

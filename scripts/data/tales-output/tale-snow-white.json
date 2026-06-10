@@ -1,0 +1,1292 @@
+{
+  "id": "tale-snow-white",
+  "title_en": "Snow White and the Seven Dwarfs",
+  "title_vi": "Nàng Bạch Tuyết và Bảy Chú Lùn",
+  "level": "Elementary",
+  "topics": [
+    "Fantasy",
+    "Nature"
+  ],
+  "cover_image": "🏰",
+  "estimated_minutes": 5,
+  "published": false,
+  "panels": [
+    {
+      "panel_id": 1,
+      "image": "🦊",
+      "image_alt": "Snow White and the Seven Dwarfs - panel 1",
+      "sentence_en": "Long ago, a gentle princess named Snow White had skin as pale as winter snow and lips like roses.",
+      "sentence_vi": "Ngày xưa, có một nàng công chúa hiền dịu tên Bạch Tuyết, với làn da trắng mịn như tuyết mùa đông và đôi môi đỏ thắm như hoa hồng.",
+      "tokens": [
+        {
+          "display": "Long",
+          "norm": "long",
+          "lemma": "long"
+        },
+        {
+          "display": "ago",
+          "norm": "ago",
+          "lemma": "ago"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "gentle",
+          "norm": "gentle",
+          "lemma": "gentle",
+          "vi": "hiền dịu"
+        },
+        {
+          "display": "princess",
+          "norm": "princess",
+          "lemma": "princess"
+        },
+        {
+          "display": "named",
+          "norm": "named",
+          "lemma": "nam"
+        },
+        {
+          "display": "Snow",
+          "norm": "snow",
+          "lemma": "snow"
+        },
+        {
+          "display": "White",
+          "norm": "white",
+          "lemma": "white"
+        },
+        {
+          "display": "had",
+          "norm": "had",
+          "lemma": "had"
+        },
+        {
+          "display": "skin",
+          "norm": "skin",
+          "lemma": "skin"
+        },
+        {
+          "display": "as",
+          "norm": "as",
+          "lemma": "a"
+        },
+        {
+          "display": "pale",
+          "norm": "pale",
+          "lemma": "pale"
+        },
+        {
+          "display": "as",
+          "norm": "as",
+          "lemma": "a"
+        },
+        {
+          "display": "winter",
+          "norm": "winter",
+          "lemma": "winter"
+        },
+        {
+          "display": "snow",
+          "norm": "snow",
+          "lemma": "snow"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "lips",
+          "norm": "lips",
+          "lemma": "lip"
+        },
+        {
+          "display": "like",
+          "norm": "like",
+          "lemma": "like"
+        },
+        {
+          "display": "roses",
+          "norm": "roses",
+          "lemma": "rose"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 2,
+      "image": "🐻",
+      "image_alt": "Snow White and the Seven Dwarfs - panel 2",
+      "sentence_en": "Her jealous stepmother, a vain and wicked queen, owned a magic mirror that always told the honest truth.",
+      "sentence_vi": "Người mẹ kế ghen tuông của nàng, một hoàng hậu kiêu ngạo và độc ác, sở hữu một chiếc gương thần luôn nói lên sự thật.",
+      "tokens": [
+        {
+          "display": "Her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "jealous",
+          "norm": "jealous",
+          "lemma": "jealou",
+          "vi": "ghen tuông"
+        },
+        {
+          "display": "stepmother",
+          "norm": "stepmother",
+          "lemma": "stepmother"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "vain",
+          "norm": "vain",
+          "lemma": "vain",
+          "vi": "kiêu ngạo"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "wicked",
+          "norm": "wicked",
+          "lemma": "wick",
+          "vi": "độc ác"
+        },
+        {
+          "display": "queen",
+          "norm": "queen",
+          "lemma": "queen"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "owned",
+          "norm": "owned",
+          "lemma": "own"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "magic",
+          "norm": "magic",
+          "lemma": "magic"
+        },
+        {
+          "display": "mirror",
+          "norm": "mirror",
+          "lemma": "mirror"
+        },
+        {
+          "display": "that",
+          "norm": "that",
+          "lemma": "that"
+        },
+        {
+          "display": "always",
+          "norm": "always",
+          "lemma": "alway"
+        },
+        {
+          "display": "told",
+          "norm": "told",
+          "lemma": "told"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "honest",
+          "norm": "honest",
+          "lemma": "honest"
+        },
+        {
+          "display": "truth",
+          "norm": "truth",
+          "lemma": "truth"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 3,
+      "image": "🐰",
+      "image_alt": "Snow White and the Seven Dwarfs - panel 3",
+      "sentence_en": "When the mirror declared Snow White the fairest of all, the furious queen ordered a huntsman to harm her.",
+      "sentence_vi": "Khi chiếc gương tuyên bố Bạch Tuyết là người đẹp nhất trần gian, hoàng hậu nổi giận đùng đùng và ra lệnh cho một thợ săn hãm hại nàng.",
+      "tokens": [
+        {
+          "display": "When",
+          "norm": "when",
+          "lemma": "when"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "mirror",
+          "norm": "mirror",
+          "lemma": "mirror"
+        },
+        {
+          "display": "declared",
+          "norm": "declared",
+          "lemma": "declar"
+        },
+        {
+          "display": "Snow",
+          "norm": "snow",
+          "lemma": "snow"
+        },
+        {
+          "display": "White",
+          "norm": "white",
+          "lemma": "white"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "fairest",
+          "norm": "fairest",
+          "lemma": "fairest"
+        },
+        {
+          "display": "of",
+          "norm": "of",
+          "lemma": "of"
+        },
+        {
+          "display": "all",
+          "norm": "all",
+          "lemma": "all"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "furious",
+          "norm": "furious",
+          "lemma": "furiou",
+          "vi": "nổi giận"
+        },
+        {
+          "display": "queen",
+          "norm": "queen",
+          "lemma": "queen"
+        },
+        {
+          "display": "ordered",
+          "norm": "ordered",
+          "lemma": "order"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "huntsman",
+          "norm": "huntsman",
+          "lemma": "huntsman",
+          "vi": "thợ săn"
+        },
+        {
+          "display": "to",
+          "norm": "to",
+          "lemma": "to"
+        },
+        {
+          "display": "harm",
+          "norm": "harm",
+          "lemma": "harm"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 4,
+      "image": "🌳",
+      "image_alt": "Snow White and the Seven Dwarfs - panel 4",
+      "sentence_en": "But the kind huntsman pitied the frightened girl and secretly let her escape dep into the dark forest.",
+      "sentence_vi": "Nhưng người thợ săn tốt bụng đã thương xót cô gái tội nghiệp và bí mật để nàng trốn thoát vào sâu trong khu rừng tối tăm.",
+      "tokens": [
+        {
+          "display": "But",
+          "norm": "but",
+          "lemma": "but"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "kind",
+          "norm": "kind",
+          "lemma": "kind"
+        },
+        {
+          "display": "huntsman",
+          "norm": "huntsman",
+          "lemma": "huntsman",
+          "vi": "thợ săn"
+        },
+        {
+          "display": "pitied",
+          "norm": "pitied",
+          "lemma": "piti"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "frightened",
+          "norm": "frightened",
+          "lemma": "frighten"
+        },
+        {
+          "display": "girl",
+          "norm": "girl",
+          "lemma": "girl"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "secretly",
+          "norm": "secretly",
+          "lemma": "secretly"
+        },
+        {
+          "display": "let",
+          "norm": "let",
+          "lemma": "let"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "escape",
+          "norm": "escape",
+          "lemma": "escape"
+        },
+        {
+          "display": "dep",
+          "norm": "dep",
+          "lemma": "dep"
+        },
+        {
+          "display": "into",
+          "norm": "into",
+          "lemma": "into"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "dark",
+          "norm": "dark",
+          "lemma": "dark"
+        },
+        {
+          "display": "forest",
+          "norm": "forest",
+          "lemma": "forest"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 5,
+      "image": "🏰",
+      "image_alt": "Snow White and the Seven Dwarfs - panel 5",
+      "sentence_en": "Exhausted and alone, Snow White discovered a tiny cottage where seven friendly dwarfs welcomed her with warmth and care.",
+      "sentence_vi": "Kiệt sức và cô đơn, Bạch Tuyết tìm thấy một ngôi nhà nhỏ xinh nơi bảy chú lùn thân thiện đón tiếp nàng bằng sự ấm áp và chu đáo.",
+      "tokens": [
+        {
+          "display": "Exhausted",
+          "norm": "exhausted",
+          "lemma": "exhaust"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "alone",
+          "norm": "alone",
+          "lemma": "alone"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "Snow",
+          "norm": "snow",
+          "lemma": "snow"
+        },
+        {
+          "display": "White",
+          "norm": "white",
+          "lemma": "white"
+        },
+        {
+          "display": "discovered",
+          "norm": "discovered",
+          "lemma": "discover"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "tiny",
+          "norm": "tiny",
+          "lemma": "tiny"
+        },
+        {
+          "display": "cottage",
+          "norm": "cottage",
+          "lemma": "cottage",
+          "vi": "ngôi nhà nhỏ"
+        },
+        {
+          "display": "where",
+          "norm": "where",
+          "lemma": "where"
+        },
+        {
+          "display": "seven",
+          "norm": "seven",
+          "lemma": "seven"
+        },
+        {
+          "display": "friendly",
+          "norm": "friendly",
+          "lemma": "friendly"
+        },
+        {
+          "display": "dwarfs",
+          "norm": "dwarfs",
+          "lemma": "dwarf"
+        },
+        {
+          "display": "welcomed",
+          "norm": "welcomed",
+          "lemma": "welcom"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "warmth",
+          "norm": "warmth",
+          "lemma": "warmth"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "care",
+          "norm": "care",
+          "lemma": "care"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 6,
+      "image": "🌟",
+      "image_alt": "Snow White and the Seven Dwarfs - panel 6",
+      "sentence_en": "The cuning queen disguised herself as an old woman and tricked Snow White into biting a poisoned red apple.",
+      "sentence_vi": "Hoàng hậu xảo quyệt cải trang thành một bà lão và lừa Bạch Tuyết cắn vào quả táo đỏ có tẩm độc.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "cuning",
+          "norm": "cuning",
+          "lemma": "cun"
+        },
+        {
+          "display": "queen",
+          "norm": "queen",
+          "lemma": "queen"
+        },
+        {
+          "display": "disguised",
+          "norm": "disguised",
+          "lemma": "disguis",
+          "vi": "cải trang"
+        },
+        {
+          "display": "herself",
+          "norm": "herself",
+          "lemma": "herself"
+        },
+        {
+          "display": "as",
+          "norm": "as",
+          "lemma": "a"
+        },
+        {
+          "display": "an",
+          "norm": "an",
+          "lemma": "an"
+        },
+        {
+          "display": "old",
+          "norm": "old",
+          "lemma": "old"
+        },
+        {
+          "display": "woman",
+          "norm": "woman",
+          "lemma": "woman"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "tricked",
+          "norm": "tricked",
+          "lemma": "trick"
+        },
+        {
+          "display": "Snow",
+          "norm": "snow",
+          "lemma": "snow"
+        },
+        {
+          "display": "White",
+          "norm": "white",
+          "lemma": "white"
+        },
+        {
+          "display": "into",
+          "norm": "into",
+          "lemma": "into"
+        },
+        {
+          "display": "biting",
+          "norm": "biting",
+          "lemma": "bit"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "poisoned",
+          "norm": "poisoned",
+          "lemma": "poison",
+          "vi": "có tẩm độc"
+        },
+        {
+          "display": "red",
+          "norm": "red",
+          "lemma": "r"
+        },
+        {
+          "display": "apple",
+          "norm": "apple",
+          "lemma": "apple"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 7,
+      "image": "🌈",
+      "image_alt": "Snow White and the Seven Dwarfs - panel 7",
+      "sentence_en": "Snow White collapsed at once, and the heartbroken dwarfs laid her gently in a beautiful glass coffin among the trees.",
+      "sentence_vi": "Bạch Tuyết ngã xuống ngay tức khắc, và bảy chú lùn đau lòng khôn xiết đã nhẹ nhàng đặt nàng vào một chiếc quan tài bằng kính đẹp đẽ giữa rừng cây.",
+      "tokens": [
+        {
+          "display": "Snow",
+          "norm": "snow",
+          "lemma": "snow"
+        },
+        {
+          "display": "White",
+          "norm": "white",
+          "lemma": "white"
+        },
+        {
+          "display": "collapsed",
+          "norm": "collapsed",
+          "lemma": "collaps"
+        },
+        {
+          "display": "at",
+          "norm": "at",
+          "lemma": "at"
+        },
+        {
+          "display": "once",
+          "norm": "once",
+          "lemma": "once"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "heartbroken",
+          "norm": "heartbroken",
+          "lemma": "heartbroken"
+        },
+        {
+          "display": "dwarfs",
+          "norm": "dwarfs",
+          "lemma": "dwarf"
+        },
+        {
+          "display": "laid",
+          "norm": "laid",
+          "lemma": "laid"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "gently",
+          "norm": "gently",
+          "lemma": "gently"
+        },
+        {
+          "display": "in",
+          "norm": "in",
+          "lemma": "in"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "beautiful",
+          "norm": "beautiful",
+          "lemma": "beautiful"
+        },
+        {
+          "display": "glass",
+          "norm": "glass",
+          "lemma": "glass"
+        },
+        {
+          "display": "coffin",
+          "norm": "coffin",
+          "lemma": "coffin",
+          "vi": "quan tài"
+        },
+        {
+          "display": "among",
+          "norm": "among",
+          "lemma": "among"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "trees",
+          "norm": "trees",
+          "lemma": "tree"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 8,
+      "image": "🦋",
+      "image_alt": "Snow White and the Seven Dwarfs - panel 8",
+      "sentence_en": "One day a noble prince rode by, and the moment he saw her, he fell deply and instantly in love.",
+      "sentence_vi": "Một ngày nọ, một vị hoàng tử cao quý cưỡi ngựa đi ngang qua, và ngay khoảnh khắc nhìn thấy nàng, chàng đã yêu say đắm và không thể dứt.",
+      "tokens": [
+        {
+          "display": "One",
+          "norm": "one",
+          "lemma": "one"
+        },
+        {
+          "display": "day",
+          "norm": "day",
+          "lemma": "day"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "noble",
+          "norm": "noble",
+          "lemma": "noble"
+        },
+        {
+          "display": "prince",
+          "norm": "prince",
+          "lemma": "prince"
+        },
+        {
+          "display": "rode",
+          "norm": "rode",
+          "lemma": "rode"
+        },
+        {
+          "display": "by",
+          "norm": "by",
+          "lemma": "by"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "moment",
+          "norm": "moment",
+          "lemma": "moment"
+        },
+        {
+          "display": "he",
+          "norm": "he",
+          "lemma": "he"
+        },
+        {
+          "display": "saw",
+          "norm": "saw",
+          "lemma": "saw"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "he",
+          "norm": "he",
+          "lemma": "he"
+        },
+        {
+          "display": "fell",
+          "norm": "fell",
+          "lemma": "fell"
+        },
+        {
+          "display": "deply",
+          "norm": "deply",
+          "lemma": "deply"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "instantly",
+          "norm": "instantly",
+          "lemma": "instantly"
+        },
+        {
+          "display": "in",
+          "norm": "in",
+          "lemma": "in"
+        },
+        {
+          "display": "love",
+          "norm": "love",
+          "lemma": "love"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 9,
+      "image": "🐸",
+      "image_alt": "Snow White and the Seven Dwarfs - panel 9",
+      "sentence_en": "As his servants lifted the coffin, the deadly piece of apple slipped free, and Snow White awoke at last.",
+      "sentence_vi": "Khi những người hầu nhấc chiếc quan tài lên, miếng táo độc bỗng rơi ra ngoài, và Bạch Tuyết cuối cùng đã thức giấc.",
+      "tokens": [
+        {
+          "display": "As",
+          "norm": "as",
+          "lemma": "a"
+        },
+        {
+          "display": "his",
+          "norm": "his",
+          "lemma": "hi"
+        },
+        {
+          "display": "servants",
+          "norm": "servants",
+          "lemma": "servant"
+        },
+        {
+          "display": "lifted",
+          "norm": "lifted",
+          "lemma": "lift"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "coffin",
+          "norm": "coffin",
+          "lemma": "coffin",
+          "vi": "quan tài"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "deadly",
+          "norm": "deadly",
+          "lemma": "deadly"
+        },
+        {
+          "display": "piece",
+          "norm": "piece",
+          "lemma": "piece"
+        },
+        {
+          "display": "of",
+          "norm": "of",
+          "lemma": "of"
+        },
+        {
+          "display": "apple",
+          "norm": "apple",
+          "lemma": "apple"
+        },
+        {
+          "display": "slipped",
+          "norm": "slipped",
+          "lemma": "slipp"
+        },
+        {
+          "display": "free",
+          "norm": "free",
+          "lemma": "free"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "Snow",
+          "norm": "snow",
+          "lemma": "snow"
+        },
+        {
+          "display": "White",
+          "norm": "white",
+          "lemma": "white"
+        },
+        {
+          "display": "awoke",
+          "norm": "awoke",
+          "lemma": "awoke"
+        },
+        {
+          "display": "at",
+          "norm": "at",
+          "lemma": "at"
+        },
+        {
+          "display": "last",
+          "norm": "last",
+          "lemma": "last"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 10,
+      "image": "👑",
+      "image_alt": "Snow White and the Seven Dwarfs - panel 10",
+      "sentence_en": "The wicked queen was finally defeated, and Snow White married her prince, living happily for the rest of her days.",
+      "sentence_vi": "Hoàng hậu độc ác cuối cùng đã bị đánh bại, và Bạch Tuyết kết hôn với hoàng tử của mình, sống hạnh phúc mãi mãi về sau.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "wicked",
+          "norm": "wicked",
+          "lemma": "wick",
+          "vi": "độc ác"
+        },
+        {
+          "display": "queen",
+          "norm": "queen",
+          "lemma": "queen"
+        },
+        {
+          "display": "was",
+          "norm": "was",
+          "lemma": "wa"
+        },
+        {
+          "display": "finally",
+          "norm": "finally",
+          "lemma": "finally"
+        },
+        {
+          "display": "defeated",
+          "norm": "defeated",
+          "lemma": "defeat"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "Snow",
+          "norm": "snow",
+          "lemma": "snow"
+        },
+        {
+          "display": "White",
+          "norm": "white",
+          "lemma": "white"
+        },
+        {
+          "display": "married",
+          "norm": "married",
+          "lemma": "marri"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "prince",
+          "norm": "prince",
+          "lemma": "prince"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "living",
+          "norm": "living",
+          "lemma": "liv"
+        },
+        {
+          "display": "happily",
+          "norm": "happily",
+          "lemma": "happily"
+        },
+        {
+          "display": "for",
+          "norm": "for",
+          "lemma": "for"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "rest",
+          "norm": "rest",
+          "lemma": "rest"
+        },
+        {
+          "display": "of",
+          "norm": "of",
+          "lemma": "of"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "days",
+          "norm": "days",
+          "lemma": "day"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "word": "gentle",
+      "vi": "hiền dịu",
+      "ipa": ""
+    },
+    {
+      "word": "jealous",
+      "vi": "ghen tuông",
+      "ipa": ""
+    },
+    {
+      "word": "vain",
+      "vi": "kiêu ngạo",
+      "ipa": ""
+    },
+    {
+      "word": "wicked",
+      "vi": "độc ác",
+      "ipa": ""
+    },
+    {
+      "word": "furious",
+      "vi": "nổi giận",
+      "ipa": ""
+    },
+    {
+      "word": "huntsman",
+      "vi": "thợ săn",
+      "ipa": ""
+    },
+    {
+      "word": "cottage",
+      "vi": "ngôi nhà nhỏ",
+      "ipa": ""
+    },
+    {
+      "word": "disguised",
+      "vi": "cải trang",
+      "ipa": ""
+    },
+    {
+      "word": "poisoned",
+      "vi": "có tẩm độc",
+      "ipa": ""
+    },
+    {
+      "word": "coffin",
+      "vi": "quan tài",
+      "ipa": ""
+    }
+  ],
+  "games": {
+    "match": [
+      {
+        "word": "gentle",
+        "vi": "hiền dịu"
+      },
+      {
+        "word": "jealous",
+        "vi": "ghen tuông"
+      },
+      {
+        "word": "vain",
+        "vi": "kiêu ngạo"
+      },
+      {
+        "word": "wicked",
+        "vi": "độc ác"
+      },
+      {
+        "word": "furious",
+        "vi": "nổi giận"
+      },
+      {
+        "word": "huntsman",
+        "vi": "thợ săn"
+      }
+    ],
+    "fill_blank": [
+      {
+        "sentence_en": "Long ago, a gentle princess named Snow White had ___ as pale as winter snow and lips like roses.",
+        "answer": "skin",
+        "choices": [
+          "skin",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "Her jealous stepmother, a vain and wicked queen, owned a ___ mirror that always told the honest truth.",
+        "answer": "magic",
+        "choices": [
+          "magic",
+          "happy",
+          "good"
+        ]
+      },
+      {
+        "sentence_en": "When the mirror declared Snow White the ___ of all, the furious queen ordered a huntsman to harm her.",
+        "answer": "fairest",
+        "choices": [
+          "happy",
+          "good",
+          "fairest"
+        ]
+      }
+    ]
+  }
+}

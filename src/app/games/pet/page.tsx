@@ -1269,7 +1269,7 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
 
               <div className="relative mt-5 flex h-48 w-64 items-center justify-center sm:h-[min(36svh,230px)] sm:min-h-[185px]">
                 <div className="pet-aura absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: `radial-gradient(circle, ${selected.glow} 0%, transparent 70%)` }} />
-                <Image src={eggArt} alt={selected.nameVi} width={158} height={158} unoptimized className="adopt-bob relative z-10 h-[min(25svh,158px)] w-[min(25svh,158px)] object-contain" style={{ filter: 'drop-shadow(0 16px 22px rgba(15,23,42,0.32))' }} />
+                <Image src={eggArt} alt={selected.nameVi} width={158} height={158} unoptimized priority className="adopt-bob relative z-10 h-[min(25svh,158px)] w-[min(25svh,158px)] object-contain" style={{ filter: 'drop-shadow(0 16px 22px rgba(15,23,42,0.32))' }} />
                 <div className="pet-shadow absolute bottom-8 h-5 w-40 rounded-full bg-black/25 blur-md" />
               </div>
 

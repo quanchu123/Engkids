@@ -1,0 +1,1199 @@
+{
+  "id": "tale-cinderella",
+  "title_en": "Cinderella and the Midnight Magic",
+  "title_vi": "Cô Bé Lọ Lem và Phép Màu Lúc Nửa Đêm",
+  "level": "Elementary",
+  "topics": [
+    "Fantasy",
+    "Friendship"
+  ],
+  "cover_image": "🏰",
+  "estimated_minutes": 5,
+  "published": false,
+  "panels": [
+    {
+      "panel_id": 1,
+      "image": "🦊",
+      "image_alt": "Cinderella and the Midnight Magic - panel 1",
+      "sentence_en": "Long ago, a kind girl named Cinderella lived with her cruel stepmother and two jealous stepsisters.",
+      "sentence_vi": "Ngày xưa, có một cô gái tốt bụng tên Lọ Lem sống cùng người mẹ kế độc ác và hai người chị kế hay ghen tị.",
+      "tokens": [
+        {
+          "display": "Long",
+          "norm": "long",
+          "lemma": "long"
+        },
+        {
+          "display": "ago",
+          "norm": "ago",
+          "lemma": "ago"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "kind",
+          "norm": "kind",
+          "lemma": "kind"
+        },
+        {
+          "display": "girl",
+          "norm": "girl",
+          "lemma": "girl"
+        },
+        {
+          "display": "named",
+          "norm": "named",
+          "lemma": "nam"
+        },
+        {
+          "display": "Cinderella",
+          "norm": "cinderella",
+          "lemma": "cinderella"
+        },
+        {
+          "display": "lived",
+          "norm": "lived",
+          "lemma": "liv"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "cruel",
+          "norm": "cruel",
+          "lemma": "cruel",
+          "vi": "độc ác"
+        },
+        {
+          "display": "stepmother",
+          "norm": "stepmother",
+          "lemma": "stepmother"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "two",
+          "norm": "two",
+          "lemma": "two"
+        },
+        {
+          "display": "jealous",
+          "norm": "jealous",
+          "lemma": "jealou",
+          "vi": "ghen tị"
+        },
+        {
+          "display": "stepsisters",
+          "norm": "stepsisters",
+          "lemma": "stepsister"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 2,
+      "image": "🐻",
+      "image_alt": "Cinderella and the Midnight Magic - panel 2",
+      "sentence_en": "Every day she scrubbed floors and cooked meals, yet she stayed gentle and never lost her hope.",
+      "sentence_vi": "Ngày nào cô cũng cọ sàn và nấu ăn, thế nhưng cô vẫn giữ tính hiền lành và không bao giờ mất đi hy vọng.",
+      "tokens": [
+        {
+          "display": "Every",
+          "norm": "every",
+          "lemma": "every"
+        },
+        {
+          "display": "day",
+          "norm": "day",
+          "lemma": "day"
+        },
+        {
+          "display": "she",
+          "norm": "she",
+          "lemma": "she"
+        },
+        {
+          "display": "scrubbed",
+          "norm": "scrubbed",
+          "lemma": "scrubb",
+          "vi": "cọ rửa"
+        },
+        {
+          "display": "floors",
+          "norm": "floors",
+          "lemma": "floor"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "cooked",
+          "norm": "cooked",
+          "lemma": "cook"
+        },
+        {
+          "display": "meals",
+          "norm": "meals",
+          "lemma": "meal"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "yet",
+          "norm": "yet",
+          "lemma": "yet"
+        },
+        {
+          "display": "she",
+          "norm": "she",
+          "lemma": "she"
+        },
+        {
+          "display": "stayed",
+          "norm": "stayed",
+          "lemma": "stay"
+        },
+        {
+          "display": "gentle",
+          "norm": "gentle",
+          "lemma": "gentle"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "never",
+          "norm": "never",
+          "lemma": "never"
+        },
+        {
+          "display": "lost",
+          "norm": "lost",
+          "lemma": "lost"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "hope",
+          "norm": "hope",
+          "lemma": "hope"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 3,
+      "image": "🐰",
+      "image_alt": "Cinderella and the Midnight Magic - panel 3",
+      "sentence_en": "One morning, a royal invitation arrived, announcing a grand ball where the prince would choose a bride.",
+      "sentence_vi": "Một buổi sáng, một tấm thiệp mời từ hoàng cung gửi đến, thông báo về một dạ tiệc lớn nơi hoàng tử sẽ chọn người kết hôn.",
+      "tokens": [
+        {
+          "display": "One",
+          "norm": "one",
+          "lemma": "one"
+        },
+        {
+          "display": "morning",
+          "norm": "morning",
+          "lemma": "morn"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "royal",
+          "norm": "royal",
+          "lemma": "royal"
+        },
+        {
+          "display": "invitation",
+          "norm": "invitation",
+          "lemma": "invitation",
+          "vi": "lời mời"
+        },
+        {
+          "display": "arrived",
+          "norm": "arrived",
+          "lemma": "arriv"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "announcing",
+          "norm": "announcing",
+          "lemma": "announc"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "grand",
+          "norm": "grand",
+          "lemma": "grand"
+        },
+        {
+          "display": "ball",
+          "norm": "ball",
+          "lemma": "ball"
+        },
+        {
+          "display": "where",
+          "norm": "where",
+          "lemma": "where"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "prince",
+          "norm": "prince",
+          "lemma": "prince"
+        },
+        {
+          "display": "would",
+          "norm": "would",
+          "lemma": "would"
+        },
+        {
+          "display": "choose",
+          "norm": "choose",
+          "lemma": "choose"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "bride",
+          "norm": "bride",
+          "lemma": "bride"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 4,
+      "image": "🌳",
+      "image_alt": "Cinderella and the Midnight Magic - panel 4",
+      "sentence_en": "The spiteful stepsisters left for the palace, leaving poor Cinderella alone and weeping beside the fireplace.",
+      "sentence_vi": "Hai người chị kế nhẫn tâm lên đường vào cung, để mặc Lọ Lem tội nghiệp một mình khóc bên lò sưởi.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "spiteful",
+          "norm": "spiteful",
+          "lemma": "spiteful",
+          "vi": "nhẫn tâm"
+        },
+        {
+          "display": "stepsisters",
+          "norm": "stepsisters",
+          "lemma": "stepsister"
+        },
+        {
+          "display": "left",
+          "norm": "left",
+          "lemma": "left"
+        },
+        {
+          "display": "for",
+          "norm": "for",
+          "lemma": "for"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "palace",
+          "norm": "palace",
+          "lemma": "palace"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "leaving",
+          "norm": "leaving",
+          "lemma": "leav"
+        },
+        {
+          "display": "poor",
+          "norm": "poor",
+          "lemma": "poor"
+        },
+        {
+          "display": "Cinderella",
+          "norm": "cinderella",
+          "lemma": "cinderella"
+        },
+        {
+          "display": "alone",
+          "norm": "alone",
+          "lemma": "alone"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "weeping",
+          "norm": "weeping",
+          "lemma": "weep"
+        },
+        {
+          "display": "beside",
+          "norm": "beside",
+          "lemma": "beside"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "fireplace",
+          "norm": "fireplace",
+          "lemma": "fireplace"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 5,
+      "image": "🏰",
+      "image_alt": "Cinderella and the Midnight Magic - panel 5",
+      "sentence_en": "Suddenly her fairy godmother appeared and transformed a pumpkin into a glittering carriage with a single wave.",
+      "sentence_vi": "Bỗng nhiên bà tiên xuất hiện và chỉ bằng một vẫy tay đã biến quả bí ngô thành chiếc xe ngựa lấp lánh.",
+      "tokens": [
+        {
+          "display": "Suddenly",
+          "norm": "suddenly",
+          "lemma": "suddenly"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "fairy",
+          "norm": "fairy",
+          "lemma": "fairy"
+        },
+        {
+          "display": "godmother",
+          "norm": "godmother",
+          "lemma": "godmother"
+        },
+        {
+          "display": "appeared",
+          "norm": "appeared",
+          "lemma": "appear"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "transformed",
+          "norm": "transformed",
+          "lemma": "transform",
+          "vi": "biến đổi"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "pumpkin",
+          "norm": "pumpkin",
+          "lemma": "pumpkin"
+        },
+        {
+          "display": "into",
+          "norm": "into",
+          "lemma": "into"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "glittering",
+          "norm": "glittering",
+          "lemma": "glitter",
+          "vi": "lấp lánh"
+        },
+        {
+          "display": "carriage",
+          "norm": "carriage",
+          "lemma": "carriage"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "single",
+          "norm": "single",
+          "lemma": "single"
+        },
+        {
+          "display": "wave",
+          "norm": "wave",
+          "lemma": "wave"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 6,
+      "image": "🌟",
+      "image_alt": "Cinderella and the Midnight Magic - panel 6",
+      "sentence_en": "She gave Cinderella a sparkling gown and glass slippers, but warned that the magic would vanish at midnight.",
+      "sentence_vi": "Bà trao cho Lọ Lem chiếc váy lộng lẫy và đôi giày thủy tinh, nhưng dặn rằng phép màu sẽ tan biến vào lúc nửa đêm.",
+      "tokens": [
+        {
+          "display": "She",
+          "norm": "she",
+          "lemma": "she"
+        },
+        {
+          "display": "gave",
+          "norm": "gave",
+          "lemma": "gave"
+        },
+        {
+          "display": "Cinderella",
+          "norm": "cinderella",
+          "lemma": "cinderella"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "sparkling",
+          "norm": "sparkling",
+          "lemma": "sparkl"
+        },
+        {
+          "display": "gown",
+          "norm": "gown",
+          "lemma": "gown"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "glass",
+          "norm": "glass",
+          "lemma": "glass"
+        },
+        {
+          "display": "slippers",
+          "norm": "slippers",
+          "lemma": "slipper"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "but",
+          "norm": "but",
+          "lemma": "but"
+        },
+        {
+          "display": "warned",
+          "norm": "warned",
+          "lemma": "warn"
+        },
+        {
+          "display": "that",
+          "norm": "that",
+          "lemma": "that"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "magic",
+          "norm": "magic",
+          "lemma": "magic"
+        },
+        {
+          "display": "would",
+          "norm": "would",
+          "lemma": "would"
+        },
+        {
+          "display": "vanish",
+          "norm": "vanish",
+          "lemma": "vanish"
+        },
+        {
+          "display": "at",
+          "norm": "at",
+          "lemma": "at"
+        },
+        {
+          "display": "midnight",
+          "norm": "midnight",
+          "lemma": "midnight"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 7,
+      "image": "🌈",
+      "image_alt": "Cinderella and the Midnight Magic - panel 7",
+      "sentence_en": "At the ball, the enchanted prince danced only with Cinderella, who forgot the time as the clock struck twelve.",
+      "sentence_vi": "Tại dạ tiệc, hoàng tử như bị bùa mê chỉ khiêu vũ cùng Lọ Lem, và cô đã quên mất thời gian khi đồng hồ điểm mười hai tiếng.",
+      "tokens": [
+        {
+          "display": "At",
+          "norm": "at",
+          "lemma": "at"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "ball",
+          "norm": "ball",
+          "lemma": "ball"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "enchanted",
+          "norm": "enchanted",
+          "lemma": "enchant",
+          "vi": "bị bùa mê"
+        },
+        {
+          "display": "prince",
+          "norm": "prince",
+          "lemma": "prince"
+        },
+        {
+          "display": "danced",
+          "norm": "danced",
+          "lemma": "danc"
+        },
+        {
+          "display": "only",
+          "norm": "only",
+          "lemma": "only"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "Cinderella",
+          "norm": "cinderella",
+          "lemma": "cinderella"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "who",
+          "norm": "who",
+          "lemma": "who"
+        },
+        {
+          "display": "forgot",
+          "norm": "forgot",
+          "lemma": "forgot"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "time",
+          "norm": "time",
+          "lemma": "time"
+        },
+        {
+          "display": "as",
+          "norm": "as",
+          "lemma": "a"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "clock",
+          "norm": "clock",
+          "lemma": "clock"
+        },
+        {
+          "display": "struck",
+          "norm": "struck",
+          "lemma": "struck"
+        },
+        {
+          "display": "twelve",
+          "norm": "twelve",
+          "lemma": "twelve"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 8,
+      "image": "🦋",
+      "image_alt": "Cinderella and the Midnight Magic - panel 8",
+      "sentence_en": "She fled instantly, but one delicate glass sliper slipped from her foot upon the marble palace stairs.",
+      "sentence_vi": "Cô lập tức bỏ chạy, nhưng một chiếc giày thủy tinh mỏng manh đã tuột khỏi chân cô trên bậc thềm đá cẩm thạch củaung điện.",
+      "tokens": [
+        {
+          "display": "She",
+          "norm": "she",
+          "lemma": "she"
+        },
+        {
+          "display": "fled",
+          "norm": "fled",
+          "lemma": "fl"
+        },
+        {
+          "display": "instantly",
+          "norm": "instantly",
+          "lemma": "instantly"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "but",
+          "norm": "but",
+          "lemma": "but"
+        },
+        {
+          "display": "one",
+          "norm": "one",
+          "lemma": "one"
+        },
+        {
+          "display": "delicate",
+          "norm": "delicate",
+          "lemma": "delicate",
+          "vi": "mỏng manh"
+        },
+        {
+          "display": "glass",
+          "norm": "glass",
+          "lemma": "glass"
+        },
+        {
+          "display": "sliper",
+          "norm": "sliper",
+          "lemma": "sliper"
+        },
+        {
+          "display": "slipped",
+          "norm": "slipped",
+          "lemma": "slipp"
+        },
+        {
+          "display": "from",
+          "norm": "from",
+          "lemma": "from"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "foot",
+          "norm": "foot",
+          "lemma": "foot"
+        },
+        {
+          "display": "upon",
+          "norm": "upon",
+          "lemma": "upon"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "marble",
+          "norm": "marble",
+          "lemma": "marble"
+        },
+        {
+          "display": "palace",
+          "norm": "palace",
+          "lemma": "palace"
+        },
+        {
+          "display": "stairs",
+          "norm": "stairs",
+          "lemma": "stair"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 9,
+      "image": "🐸",
+      "image_alt": "Cinderella and the Midnight Magic - panel 9",
+      "sentence_en": "The determined prince searched the kingdom, and the slipper fit Cinderella's foot perfectly, proving she was his mysterious dancer.",
+      "sentence_vi": "Hoàng tử kiên quyết tìm kiếm khắp vương quốc, và chiếc giày vừa khít với bàn chân Lọ Lem, chứng minh cô chính là vũ nữ bí ẩn của chàng.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "determined",
+          "norm": "determined",
+          "lemma": "determin",
+          "vi": "kiên quyết"
+        },
+        {
+          "display": "prince",
+          "norm": "prince",
+          "lemma": "prince"
+        },
+        {
+          "display": "searched",
+          "norm": "searched",
+          "lemma": "search"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "kingdom",
+          "norm": "kingdom",
+          "lemma": "kingdom"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "slipper",
+          "norm": "slipper",
+          "lemma": "slipper"
+        },
+        {
+          "display": "fit",
+          "norm": "fit",
+          "lemma": "fit"
+        },
+        {
+          "display": "Cinderella's",
+          "norm": "cinderella's",
+          "lemma": "cinderella'"
+        },
+        {
+          "display": "foot",
+          "norm": "foot",
+          "lemma": "foot"
+        },
+        {
+          "display": "perfectly",
+          "norm": "perfectly",
+          "lemma": "perfectly"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "proving",
+          "norm": "proving",
+          "lemma": "prov"
+        },
+        {
+          "display": "she",
+          "norm": "she",
+          "lemma": "she"
+        },
+        {
+          "display": "was",
+          "norm": "was",
+          "lemma": "wa"
+        },
+        {
+          "display": "his",
+          "norm": "his",
+          "lemma": "hi"
+        },
+        {
+          "display": "mysterious",
+          "norm": "mysterious",
+          "lemma": "mysteriou"
+        },
+        {
+          "display": "dancer",
+          "norm": "dancer",
+          "lemma": "dancer"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 10,
+      "image": "👑",
+      "image_alt": "Cinderella and the Midnight Magic - panel 10",
+      "sentence_en": "They married joyfully, and Cinderella's patience and kindness were finally rewarded with a happy, peaceful life.",
+      "sentence_vi": "Họ vui mừng kết hôn, và sự kiên nhẫn cùng lòng tốt của Lọ Lem cuối cùng đã được đền đáp bằng một cuộc sống hạnh phúc và bình yên.",
+      "tokens": [
+        {
+          "display": "They",
+          "norm": "they",
+          "lemma": "they"
+        },
+        {
+          "display": "married",
+          "norm": "married",
+          "lemma": "marri"
+        },
+        {
+          "display": "joyfully",
+          "norm": "joyfully",
+          "lemma": "joyfully"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "Cinderella's",
+          "norm": "cinderella's",
+          "lemma": "cinderella'"
+        },
+        {
+          "display": "patience",
+          "norm": "patience",
+          "lemma": "patience"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "kindness",
+          "norm": "kindness",
+          "lemma": "kindness"
+        },
+        {
+          "display": "were",
+          "norm": "were",
+          "lemma": "were"
+        },
+        {
+          "display": "finally",
+          "norm": "finally",
+          "lemma": "finally"
+        },
+        {
+          "display": "rewarded",
+          "norm": "rewarded",
+          "lemma": "reward"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "happy",
+          "norm": "happy",
+          "lemma": "happy"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "peaceful",
+          "norm": "peaceful",
+          "lemma": "peaceful"
+        },
+        {
+          "display": "life",
+          "norm": "life",
+          "lemma": "life"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "word": "cruel",
+      "vi": "độc ác",
+      "ipa": ""
+    },
+    {
+      "word": "jealous",
+      "vi": "ghen tị",
+      "ipa": ""
+    },
+    {
+      "word": "scrubbed",
+      "vi": "cọ rửa",
+      "ipa": ""
+    },
+    {
+      "word": "invitation",
+      "vi": "lời mời",
+      "ipa": ""
+    },
+    {
+      "word": "spiteful",
+      "vi": "nhẫn tâm",
+      "ipa": ""
+    },
+    {
+      "word": "transformed",
+      "vi": "biến đổi",
+      "ipa": ""
+    },
+    {
+      "word": "glittering",
+      "vi": "lấp lánh",
+      "ipa": ""
+    },
+    {
+      "word": "enchanted",
+      "vi": "bị bùa mê",
+      "ipa": ""
+    },
+    {
+      "word": "delicate",
+      "vi": "mỏng manh",
+      "ipa": ""
+    },
+    {
+      "word": "determined",
+      "vi": "kiên quyết",
+      "ipa": ""
+    }
+  ],
+  "games": {
+    "match": [
+      {
+        "word": "cruel",
+        "vi": "độc ác"
+      },
+      {
+        "word": "jealous",
+        "vi": "ghen tị"
+      },
+      {
+        "word": "scrubbed",
+        "vi": "cọ rửa"
+      },
+      {
+        "word": "invitation",
+        "vi": "lời mời"
+      },
+      {
+        "word": "spiteful",
+        "vi": "nhẫn tâm"
+      },
+      {
+        "word": "transformed",
+        "vi": "biến đổi"
+      }
+    ],
+    "fill_blank": [
+      {
+        "sentence_en": "Long ago, a kind girl named Cinderella ___ with her cruel stepmother and two jealous stepsisters.",
+        "answer": "lived",
+        "choices": [
+          "lived",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "Every day she scrubbed floors and cooked meals, yet she ___ gentle and never lost her hope.",
+        "answer": "stayed",
+        "choices": [
+          "stayed",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "One morning, a royal invitation arrived, announcing a grand ___ where the prince would choose a bride.",
+        "answer": "ball",
+        "choices": [
+          "good",
+          "happy",
+          "ball"
+        ]
+      }
+    ]
+  }
+}

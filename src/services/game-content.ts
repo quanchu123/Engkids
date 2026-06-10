@@ -16,6 +16,14 @@ interface WordBankItemRow {
   level: WordPair['level'] | null;
   topic: string | null;
   example: string | null;
+  quality_status?: string | null;
+  vi_review_status?: string | null;
+  vi_source_id?: string | null;
+  vi_source_url?: string | null;
+  vi_license_name?: string | null;
+  vi_license_url?: string | null;
+  vi_attribution?: string | null;
+  vi_confidence?: number | null;
   sort_order: number | null;
 }
 
@@ -225,21 +233,42 @@ function mapWordBankRows(rows: WordBankItemRow[] | null | undefined): WordPair[]
     level: row.level || undefined,
     topic: row.topic || undefined,
     example: row.example || undefined,
+    qualityStatus: row.quality_status || undefined,
+    viReviewStatus: row.vi_review_status || undefined,
+    viSourceId: row.vi_source_id || undefined,
+    viSourceUrl: row.vi_source_url || undefined,
+    viLicenseName: row.vi_license_name || undefined,
+    viLicenseUrl: row.vi_license_url || undefined,
+    viAttribution: row.vi_attribution || undefined,
+    viConfidence: row.vi_confidence ?? undefined,
   })));
 }
+
+const WORD_BANK_PAGE_SIZE = 1000;
 
 async function getWordBankFromItems(): Promise<WordPair[] | null> {
   try {
     const supabase = getSupabasePublicReader();
-    const { data, error } = await supabase
-      .from('word_bank_items')
-      .select('en, vi, level, topic, example, sort_order')
-      .eq('active', true)
-      .order('sort_order', { ascending: true })
-      .order('en', { ascending: true });
+    const rows: WordBankItemRow[] = [];
 
-    if (isMissingTableError(error, 'word_bank_items') || error) return null;
-    return mapWordBankRows(data as WordBankItemRow[] | null);
+    for (let from = 0; ; from += WORD_BANK_PAGE_SIZE) {
+      const to = from + WORD_BANK_PAGE_SIZE - 1;
+      const { data, error } = await supabase
+        .from('word_bank_items')
+        .select('en, vi, level, topic, example, quality_status, vi_review_status, vi_source_id, vi_source_url, vi_license_name, vi_license_url, vi_attribution, vi_confidence, sort_order')
+        .eq('active', true)
+        .order('sort_order', { ascending: true })
+        .order('en', { ascending: true })
+        .range(from, to);
+
+      if (isMissingTableError(error, 'word_bank_items') || error) return null;
+      if (!data || data.length === 0) break;
+
+      rows.push(...(data as WordBankItemRow[]));
+      if (data.length < WORD_BANK_PAGE_SIZE) break;
+    }
+
+    return mapWordBankRows(rows);
   } catch {
     return null;
   }

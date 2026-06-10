@@ -1,0 +1,466 @@
+{
+  "id": "tale-jack-and-the-beanstalk",
+  "title_en": "Jack's Magic Beans",
+  "title_vi": "Đậu thần của Jack",
+  "level": "Beginner",
+  "topics": [
+    "Adventure",
+    "Fantasy"
+  ],
+  "cover_image": "🏰",
+  "estimated_minutes": 4,
+  "published": false,
+  "panels": [
+    {
+      "panel_id": 1,
+      "image": "🦊",
+      "image_alt": "Jack's Magic Beans - panel 1",
+      "sentence_en": "Jack has a cow.",
+      "sentence_vi": "Jack có một con bò.",
+      "tokens": [
+        {
+          "display": "Jack",
+          "norm": "jack",
+          "lemma": "jack",
+          "vi": "Jack"
+        },
+        {
+          "display": "has",
+          "norm": "has",
+          "lemma": "ha"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "cow",
+          "norm": "cow",
+          "lemma": "cow",
+          "vi": "bò"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 2,
+      "image": "🐻",
+      "image_alt": "Jack's Magic Beans - panel 2",
+      "sentence_en": "He sells the cow for magic beans.",
+      "sentence_vi": "Anh ta bán bò để lấy đậu thần.",
+      "tokens": [
+        {
+          "display": "He",
+          "norm": "he",
+          "lemma": "he"
+        },
+        {
+          "display": "sells",
+          "norm": "sells",
+          "lemma": "sell"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "cow",
+          "norm": "cow",
+          "lemma": "cow",
+          "vi": "bò"
+        },
+        {
+          "display": "for",
+          "norm": "for",
+          "lemma": "for"
+        },
+        {
+          "display": "magic",
+          "norm": "magic",
+          "lemma": "magic"
+        },
+        {
+          "display": "beans",
+          "norm": "beans",
+          "lemma": "bean",
+          "vi": "đậu"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 3,
+      "image": "🐰",
+      "image_alt": "Jack's Magic Beans - panel 3",
+      "sentence_en": "Jack plants the beans in his garden.",
+      "sentence_vi": "Jack trồng đậu trong vườn của mình.",
+      "tokens": [
+        {
+          "display": "Jack",
+          "norm": "jack",
+          "lemma": "jack",
+          "vi": "Jack"
+        },
+        {
+          "display": "plants",
+          "norm": "plants",
+          "lemma": "plant"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "beans",
+          "norm": "beans",
+          "lemma": "bean",
+          "vi": "đậu"
+        },
+        {
+          "display": "in",
+          "norm": "in",
+          "lemma": "in"
+        },
+        {
+          "display": "his",
+          "norm": "his",
+          "lemma": "hi"
+        },
+        {
+          "display": "garden",
+          "norm": "garden",
+          "lemma": "garden",
+          "vi": "vườn"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 4,
+      "image": "🌳",
+      "image_alt": "Jack's Magic Beans - panel 4",
+      "sentence_en": "A big beanstalk grows up to the sky.",
+      "sentence_vi": "Một cây đậu khổng lồ mọc lên tận trời.",
+      "tokens": [
+        {
+          "display": "A",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "big",
+          "norm": "big",
+          "lemma": "big"
+        },
+        {
+          "display": "beanstalk",
+          "norm": "beanstalk",
+          "lemma": "beanstalk"
+        },
+        {
+          "display": "grows",
+          "norm": "grows",
+          "lemma": "grow"
+        },
+        {
+          "display": "up",
+          "norm": "up",
+          "lemma": "up"
+        },
+        {
+          "display": "to",
+          "norm": "to",
+          "lemma": "to"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "sky",
+          "norm": "sky",
+          "lemma": "sky"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 5,
+      "image": "🏰",
+      "image_alt": "Jack's Magic Beans - panel 5",
+      "sentence_en": "Jack climbs the beanstalk and meets a giant.",
+      "sentence_vi": "Jack leo lên cây đậu và gặp một người khổng lồ.",
+      "tokens": [
+        {
+          "display": "Jack",
+          "norm": "jack",
+          "lemma": "jack",
+          "vi": "Jack"
+        },
+        {
+          "display": "climbs",
+          "norm": "climbs",
+          "lemma": "climb"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "beanstalk",
+          "norm": "beanstalk",
+          "lemma": "beanstalk"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "meets",
+          "norm": "meets",
+          "lemma": "meet"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "giant",
+          "norm": "giant",
+          "lemma": "giant",
+          "vi": "người khổng lồ"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 6,
+      "image": "🌟",
+      "image_alt": "Jack's Magic Beans - panel 6",
+      "sentence_en": "The giant has a nice golden egg.",
+      "sentence_vi": "Người khổng lồ có một quả trứng vàng đẹp.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "giant",
+          "norm": "giant",
+          "lemma": "giant",
+          "vi": "người khổng lồ"
+        },
+        {
+          "display": "has",
+          "norm": "has",
+          "lemma": "ha"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "nice",
+          "norm": "nice",
+          "lemma": "nice"
+        },
+        {
+          "display": "golden",
+          "norm": "golden",
+          "lemma": "golden"
+        },
+        {
+          "display": "egg",
+          "norm": "egg",
+          "lemma": "egg",
+          "vi": "trứng"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 7,
+      "image": "🌈",
+      "image_alt": "Jack's Magic Beans - panel 7",
+      "sentence_en": "Jack takes the egg and goes home happy.",
+      "sentence_vi": "Jack lấy quả trứng và về nhà hạnh phúc.",
+      "tokens": [
+        {
+          "display": "Jack",
+          "norm": "jack",
+          "lemma": "jack",
+          "vi": "Jack"
+        },
+        {
+          "display": "takes",
+          "norm": "takes",
+          "lemma": "take"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "egg",
+          "norm": "egg",
+          "lemma": "egg",
+          "vi": "trứng"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "goes",
+          "norm": "goes",
+          "lemma": "goe"
+        },
+        {
+          "display": "home",
+          "norm": "home",
+          "lemma": "home",
+          "vi": "nhà"
+        },
+        {
+          "display": "happy",
+          "norm": "happy",
+          "lemma": "happy"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "word": "jack",
+      "vi": "Jack",
+      "ipa": ""
+    },
+    {
+      "word": "cow",
+      "vi": "bò",
+      "ipa": ""
+    },
+    {
+      "word": "beans",
+      "vi": "đậu",
+      "ipa": ""
+    },
+    {
+      "word": "garden",
+      "vi": "vườn",
+      "ipa": ""
+    },
+    {
+      "word": "giant",
+      "vi": "người khổng lồ",
+      "ipa": ""
+    },
+    {
+      "word": "egg",
+      "vi": "trứng",
+      "ipa": ""
+    },
+    {
+      "word": "home",
+      "vi": "nhà",
+      "ipa": ""
+    }
+  ],
+  "games": {
+    "match": [
+      {
+        "word": "jack",
+        "vi": "Jack"
+      },
+      {
+        "word": "cow",
+        "vi": "bò"
+      },
+      {
+        "word": "beans",
+        "vi": "đậu"
+      },
+      {
+        "word": "garden",
+        "vi": "vườn"
+      },
+      {
+        "word": "giant",
+        "vi": "người khổng lồ"
+      },
+      {
+        "word": "egg",
+        "vi": "trứng"
+      }
+    ],
+    "fill_blank": [
+      {
+        "sentence_en": "___ has a cow.",
+        "answer": "Jack",
+        "choices": [
+          "Jack",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "He sells the cow for ___ beans.",
+        "answer": "magic",
+        "choices": [
+          "magic",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "Jack plants the ___ in his garden.",
+        "answer": "beans",
+        "choices": [
+          "beans",
+          "good",
+          "happy"
+        ]
+      }
+    ]
+  }
+}

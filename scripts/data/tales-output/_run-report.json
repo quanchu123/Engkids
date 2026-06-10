@@ -1,0 +1,20 @@
+{
+  "ranAt": "2026-06-10T19:01:27.384Z",
+  "opts": {
+    "limit": 5,
+    "start": 0,
+    "only": [
+      "cinderella"
+    ],
+    "images": false,
+    "dryRun": true
+  },
+  "results": [
+    {
+      "id": "tale-cinderella",
+      "ok": true,
+      "panels": 10,
+      "hadImages": 0
+    }
+  ]
+}

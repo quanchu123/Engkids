@@ -8,12 +8,22 @@ import { CURRICULUM_STAGES, normalizeStageId, stageForDifficulty, type Curriculu
 // a CEFR + Cambridge Young Learners progression, but it is not a verbatim copy
 // of any official wordlist. Admins can edit or replace it from the dashboard.
 
+export type ViReviewStatus = 'approved' | 'needs-review' | 'blocked' | 'translation_pending';
+
 export interface WordPair {
   en: string;
   vi: string;
   level?: CurriculumStageId | string;
   topic?: string;
   example?: string;
+  qualityStatus?: 'approved' | 'needs-review' | 'blocked' | string;
+  viReviewStatus?: ViReviewStatus | string;
+  viSourceId?: string;
+  viSourceUrl?: string;
+  viLicenseName?: string;
+  viLicenseUrl?: string;
+  viAttribution?: string;
+  viConfidence?: number;
 }
 
 export interface WordBankFilter {
@@ -114,7 +124,7 @@ export const DEFAULT_WORD_BANK: WordPair[] = [
     ['Foot', 'Bàn chân', 'My foot is small.'],
     ['Eye', 'Mắt', 'My eye is brown.'],
     ['Ear', 'Tai', 'My ear can hear.'],
-    ['Nose', 'MÅ©i', 'My nose is small.'],
+    ['Nose', 'Mũi', 'My nose is small.'],
     ['Mouth', 'Miệng', 'My mouth can smile.'],
     ['Hair', 'Tóc', 'Her hair is long.'],
   ]),
@@ -177,7 +187,7 @@ export const DEFAULT_WORD_BANK: WordPair[] = [
     ['Station', 'Nhà ga', 'The station is crowded.'],
     ['Museum', 'Bảo tàng', 'The museum has old pictures.'],
     ['Playground', 'Sân chơi', 'The playground is safe.'],
-    ['Zoo', 'Sá»Ÿ thú', 'The zoo has a zebra.'],
+    ['Zoo', 'Sở thú', 'The zoo has a zebra.'],
     ['Cinema', 'Rạp chiếu phim', 'The cinema is dark.'],
   ]),
   ...makeWords('a1-movers', 'transport', [
@@ -190,7 +200,7 @@ export const DEFAULT_WORD_BANK: WordPair[] = [
     ['Airport', 'Sân bay', 'The airport is far away.'],
   ]),
   ...makeWords('a1-movers', 'hobbies', [
-    ['Music', 'Ã‚m nhạc', 'Music makes me happy.'],
+    ['Music', 'Âm nhạc', 'Music makes me happy.'],
     ['Dance', 'Nhảy múa', 'Dance with your friends.'],
     ['Football', 'Bóng đá', 'Football is my hobby.'],
     ['Painting', 'Vẽ tranh', 'Painting is relaxing.'],
@@ -217,7 +227,7 @@ export const DEFAULT_WORD_BANK: WordPair[] = [
     ['Hungry', 'Đói', 'The girl is hungry.'],
     ['Thirsty', 'Khát nước', 'The boy is thirsty.'],
     ['Kind', 'Tốt bụng', 'My teacher is kind.'],
-    ['Brave', 'DÅ©ng cảm', 'The brave child helps.'],
+    ['Brave', 'Dũng cảm', 'The brave child helps.'],
     ['Quiet', 'Yên lặng', 'The room is quiet.'],
     ['Loud', 'To / ồn', 'The music is loud.'],
     ['Fast', 'Nhanh', 'The bike is fast.'],
@@ -278,7 +288,7 @@ export const DEFAULT_WORD_BANK: WordPair[] = [
     ['Compare', 'So sánh', 'Compare the two animals.'],
     ['Opinion', 'Ý kiến', 'My opinion is different.'],
     ['Reason', 'Lý do', 'Give one reason.'],
-    ['Because', 'Bá»Ÿi vì', 'I drink water because I am thirsty.'],
+    ['Because', 'Bởi vì', 'I drink water because I am thirsty.'],
     ['Suddenly', 'Bất ngờ', 'Suddenly, the door opens.'],
   ]),
 
@@ -313,7 +323,7 @@ export const DEFAULT_WORD_BANK: WordPair[] = [
     ['Confidence', 'Sự tự tin', 'Confidence grows with practice.'],
     ['Conversation', 'Cuộc trò chuyện', 'The conversation is friendly.'],
     ['Pronunciation', 'Phát âm', 'Pronunciation improves with listening.'],
-    ['Imagination', 'Trí tưá»Ÿng tượng', 'Imagination makes stories fun.'],
+    ['Imagination', 'Trí tưởng tượng', 'Imagination makes stories fun.'],
     ['Collaboration', 'Sự hợp tác', 'Collaboration helps the team finish.'],
   ]),
 ];
@@ -392,11 +402,46 @@ export function normalizeWordBank(raw: unknown): WordPair[] | null {
     const level = normalizeStageId(o.level);
     const topic = typeof o.topic === 'string' ? o.topic.trim().toLowerCase() : undefined;
     const example = typeof o.example === 'string' ? o.example.trim() : undefined;
-    if (en && vi) pairs.push(enrichWordPair({ en, vi, level, topic, example }));
+    const qualityStatus = typeof o.qualityStatus === 'string' ? o.qualityStatus : typeof o.quality_status === 'string' ? o.quality_status : undefined;
+    const viReviewStatus = typeof o.viReviewStatus === 'string' ? o.viReviewStatus : typeof o.vi_review_status === 'string' ? o.vi_review_status : undefined;
+    const viSourceId = typeof o.viSourceId === 'string' ? o.viSourceId : typeof o.vi_source_id === 'string' ? o.vi_source_id : undefined;
+    const viSourceUrl = typeof o.viSourceUrl === 'string' ? o.viSourceUrl : typeof o.vi_source_url === 'string' ? o.vi_source_url : undefined;
+    const viLicenseName = typeof o.viLicenseName === 'string' ? o.viLicenseName : typeof o.vi_license_name === 'string' ? o.vi_license_name : undefined;
+    const viLicenseUrl = typeof o.viLicenseUrl === 'string' ? o.viLicenseUrl : typeof o.vi_license_url === 'string' ? o.vi_license_url : undefined;
+    const viAttribution = typeof o.viAttribution === 'string' ? o.viAttribution : typeof o.vi_attribution === 'string' ? o.vi_attribution : undefined;
+    const viConfidenceRaw = typeof o.viConfidence === 'number' ? o.viConfidence : typeof o.vi_confidence === 'number' ? o.vi_confidence : undefined;
+    const viConfidence = typeof viConfidenceRaw === 'number' && Number.isFinite(viConfidenceRaw) ? viConfidenceRaw : undefined;
+    if (en && vi) pairs.push(enrichWordPair({ en, vi, level, topic, example, qualityStatus, viReviewStatus, viSourceId, viSourceUrl, viLicenseName, viLicenseUrl, viAttribution, viConfidence }));
   }
   return pairs.length > 0 ? pairs : null;
 }
 
+const BAD_VI_PREFIXES = ['tu ', 'tinh tu ', 'dong tu ', 't\u1eeb ', 't\u00ednh t\u1eeb ', '\u0111\u1ed9ng t\u1eeb '];
+const SYNTHETIC_PHRASE_PREFIX_RE = /^(red|blue|green|yellow|black|white|pink|brown|big|small|hot|cold|open|closed|clean|dirty|quiet|fast|slow|brave|careful|creative|crowded|helpful|healthy|important|possible|responsible|successful|useful)\s+/i;
+
+export function isPlayableWord(word: WordPair): boolean {
+  const en = word.en.trim();
+  const vi = word.vi.trim();
+  const viLower = vi.toLowerCase();
+  const status = String(word.viReviewStatus || '').toLowerCase();
+  const quality = String(word.qualityStatus || '').toLowerCase();
+
+  if (!en || !vi) return false;
+  if (quality === 'blocked' || status === 'blocked' || status === 'translation_pending') return false;
+  if (viLower === 'translation_pending' || viLower.includes('translation pending')) return false;
+  const viNoMarks = vi.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
+  if (BAD_VI_PREFIXES.some((prefix) => viLower.startsWith(prefix) || viNoMarks.startsWith(prefix))) return false;
+  if (!/[a-zA-Z]/.test(en)) return false;
+  if (/^[a-zA-Z]{1,2}$/.test(en)) return false;
+  if (SYNTHETIC_PHRASE_PREFIX_RE.test(en) && en.includes(' ')) return false;
+  return true;
+}
+
+export function filterPlayableWordBank(bank: WordPair[]): WordPair[] {
+  const source = (bank.length ? bank : DEFAULT_WORD_BANK).map(enrichWordPair);
+  const playable = source.filter(isPlayableWord);
+  return playable.length >= 4 ? playable : DEFAULT_WORD_BANK.map(enrichWordPair);
+}
 export function filterWordBank(
   bank: WordPair[],
   opts: WordBankFilter = {},
@@ -570,7 +615,7 @@ export async function loadWordBank(opts?: WordBankFilter): Promise<WordPair[]> {
     if (!res.ok) return opts ? filterWordBank(DEFAULT_WORD_BANK, opts) : DEFAULT_WORD_BANK.map(enrichWordPair);
     const json = await res.json();
     const normalized = normalizeWordBank(json?.data);
-    const bank = normalized || DEFAULT_WORD_BANK.map(enrichWordPair);
+    const bank = filterPlayableWordBank(normalized || DEFAULT_WORD_BANK.map(enrichWordPair));
     return opts ? filterWordBank(bank, opts) : bank;
   } catch {
     return opts ? filterWordBank(DEFAULT_WORD_BANK, opts) : DEFAULT_WORD_BANK.map(enrichWordPair);

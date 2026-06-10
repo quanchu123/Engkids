@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { loadWordBank } from '@/lib/word-bank';
 
-const VOCAB = [
+const FALLBACK_VOCAB = [
   { en: 'Apple',   vi: 'Quả táo' },  { en: 'Book',    vi: 'Quyển sách' },
   { en: 'Cat',     vi: 'Con mèo' },  { en: 'Dog',     vi: 'Con chó' },
   { en: 'Eagle',   vi: 'Đại bàng' }, { en: 'Fish',    vi: 'Con cá' },
@@ -45,7 +46,14 @@ export default function TankWordPage() {
     if (!containerRef.current) return;
     let destroyed = false;
 
-    import('phaser').then((Phaser) => {
+    (async () => {
+      const loaded = await loadWordBank().catch(() => []);
+      if (destroyed || !containerRef.current) return;
+      const activeVocab = loaded
+        .map((word) => ({ en: word.en, vi: word.vi }))
+        .filter((word) => word.en && word.vi);
+      const vocab = activeVocab.length >= 12 ? activeVocab : FALLBACK_VOCAB;
+      const Phaser = await import('phaser');
       if (destroyed || !containerRef.current) return;
 
       // ── Shared vocabulary state ──
@@ -53,17 +61,17 @@ export default function TankWordPage() {
       let currentTargetEn = '';
 
       function assignWords(count: number) {
-        const shuffled = [...VOCAB].sort(() => Math.random() - 0.5);
+        const shuffled = [...vocab].sort(() => Math.random() - 0.5);
         enemyWords = shuffled.slice(0, count).map(v => v.en);
         currentTargetEn = enemyWords[Math.floor(Math.random() * enemyWords.length)];
-        const vi = VOCAB.find(v => v.en === currentTargetEn)?.vi || '';
+        const vi = vocab.find(v => v.en === currentTargetEn)?.vi || '';
         setTarget(vi);
       }
 
       function replaceWord(idx: number) {
         const used = new Set(enemyWords);
-        const avail = VOCAB.filter(v => !used.has(v.en));
-        const pool = avail.length > 0 ? avail : VOCAB;
+        const avail = vocab.filter(v => !used.has(v.en));
+        const pool = avail.length > 0 ? avail : vocab;
         const pick = pool[Math.floor(Math.random() * pool.length)];
         enemyWords[idx] = pick.en;
         return pick;
@@ -73,7 +81,7 @@ export default function TankWordPage() {
         const aliveWords = enemyWords.filter((_, i) => i !== skipIdx);
         if (aliveWords.length === 0) return;
         currentTargetEn = aliveWords[Math.floor(Math.random() * aliveWords.length)];
-        const vi = VOCAB.find(v => v.en === currentTargetEn)?.vi || '';
+        const vi = vocab.find(v => v.en === currentTargetEn)?.vi || '';
         setTarget(vi);
       }
 
@@ -254,7 +262,7 @@ export default function TankWordPage() {
         }
 
         private _spawnSlot(idx: number, spawnX: number, spawnY: number) {
-          const word = enemyWords[idx] || VOCAB[idx % VOCAB.length].en;
+          const word = enemyWords[idx] || vocab[idx % vocab.length].en;
 
           const body = this.physics.add.image(spawnX, spawnY, 'tankRed')
             .setCollideWorldBounds(true).setDepth(10).setScale(1.1);

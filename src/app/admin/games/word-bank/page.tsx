@@ -28,7 +28,7 @@ export default function WordBankEditorPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const load = useCallback(async () => {
     try {
-      const res = await api.get<{ data: WordPair[] }>('/api/games/word-bank');
+      const res = await api.get<{ data: WordPair[] }>('/api/games/word-bank?raw=1', { auth: true });
       const loaded = Array.isArray(res.data) && res.data.length > 0
         ? res.data.map(enrichWordPair)
         : DEFAULT_WORD_BANK.map(enrichWordPair);
@@ -155,7 +155,7 @@ export default function WordBankEditorPage() {
         />
         <QualityCard
           title="Topic quá ít từ"
-          empty="Topic nào cÅ©ng đủ dữ liệu cơ bản."
+          empty="Topic nào cũng đủ dữ liệu cơ bản."
           items={quality.thinTopics.slice(0, 8).map(([topic, count]) => `${topic}: ${count}`)}
         />
         <QualityCard

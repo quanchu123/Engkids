@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_WORD_BANK,
+  filterPlayableWordBank,
   filterWordBank,
   getStageWordCount,
   getWordBankStats,
@@ -56,6 +57,21 @@ describe('normalizeWordBank', () => {
   });
 });
 
+describe('filterPlayableWordBank', () => {
+  it('drops imported rows that are not playable for learner games', () => {
+    const filtered = filterPlayableWordBank([
+      { en: 'sm', vi: 'translation_pending', level: 'b1-preliminary', topic: 'science', example: 'WordNet definition: a master degree in science' },
+      { en: 'River', vi: 'Dong song', level: 'a2-key', topic: 'nature', example: 'The river is blue.' },
+      { en: 'Book', vi: 'Quyen sach', level: 'a2-key', topic: 'school', example: 'The book is open.' },
+      { en: 'Garden', vi: 'Khu vuon', level: 'a2-key', topic: 'nature', example: 'The garden is green.' },
+      { en: 'Teacher', vi: 'Giao vien', level: 'a2-key', topic: 'school', example: 'The teacher is kind.' },
+    ]);
+
+    expect(filtered.map((word) => word.en)).not.toContain('sm');
+    expect(filtered.every((word) => word.vi !== 'translation_pending')).toBe(true);
+    expect(filtered.map((word) => word.en)).toEqual(expect.arrayContaining(['River', 'Book', 'Garden', 'Teacher']));
+  });
+});
 describe('filterWordBank', () => {
   it('includes words at or below the requested stage', () => {
     const filtered = filterWordBank(BANK, { level: 'b1-preliminary', min: 1 });

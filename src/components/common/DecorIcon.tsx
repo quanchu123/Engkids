@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import iconManifest from '../../../public/assets/iconscout/manifest.json';
 import {
   BookOpen,
   Clapperboard,
@@ -19,6 +20,17 @@ import {
   UserRound,
   Volume2,
 } from 'lucide-react';
+
+type IconscoutManifest = {
+  results?: Array<{ name?: string; file?: string }>;
+};
+
+const iconManifestData = iconManifest as IconscoutManifest;
+const ICONSCOUT_FILES = new Set(
+  (iconManifestData.results || [])
+    .map((asset) => asset.name || asset.file?.split('/').pop()?.replace(/\.png$/i, ''))
+    .filter((name): name is string => Boolean(name)),
+);
 
 const ICONS: Record<string, LucideIcon> = {
   animals: Heart,
@@ -58,10 +70,11 @@ export function DecorIcon({
   const [imageReady, setImageReady] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const Icon = ICONS[name] || Sparkles;
+  const hasImageAsset = ICONSCOUT_FILES.has(name);
 
   return (
     <span className={`inline-flex items-center justify-center ${className}`}>
-      {!imageFailed && (
+      {hasImageAsset && !imageFailed && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={`/assets/iconscout/${name}.png`}

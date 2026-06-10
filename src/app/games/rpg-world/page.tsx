@@ -150,7 +150,7 @@ export default function RpgWorldPage() {
             { key: 'treant-idle',       sheet: 'treant-idle-down',  s: 0, e: 0, fps: 5  },
             { key: 'mole-walk',         sheet: 'mole-walk-down',    s: 0, e: 3, fps: 7  },
             { key: 'mole-idle',         sheet: 'mole-idle-down',    s: 0, e: 0, fps: 5  },
-            { key: 'enemy-death',       sheet: 'enemy-death',       s: 0, e: 6, fps: 15 },
+            { key: 'enemy-death',       sheet: 'enemy-death',       s: 0, e: 5, fps: 15 },
           ];
           animDefs.forEach(a => {
             this.anims.create({

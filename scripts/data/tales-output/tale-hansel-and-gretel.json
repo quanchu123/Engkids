@@ -1,0 +1,593 @@
+{
+  "id": "tale-hansel-and-gretel",
+  "title_en": "Hansel and Gretel's Adventure",
+  "title_vi": "Cuộc phiêu lưu của Hansel và Gretel",
+  "level": "Beginner",
+  "topics": [
+    "Adventure",
+    "Family"
+  ],
+  "cover_image": "🏰",
+  "estimated_minutes": 4,
+  "published": false,
+  "panels": [
+    {
+      "panel_id": 1,
+      "image": "🦊",
+      "image_alt": "Hansel and Gretel's Adventure - panel 1",
+      "sentence_en": "Hansel and Gretel are brother and sister.",
+      "sentence_vi": "Hansel và Gretel là anh trai và em gái.",
+      "tokens": [
+        {
+          "display": "Hansel",
+          "norm": "hansel",
+          "lemma": "hansel"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "Gretel",
+          "norm": "gretel",
+          "lemma": "gretel"
+        },
+        {
+          "display": "are",
+          "norm": "are",
+          "lemma": "are"
+        },
+        {
+          "display": "brother",
+          "norm": "brother",
+          "lemma": "brother",
+          "vi": "anh trai"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "sister",
+          "norm": "sister",
+          "lemma": "sister",
+          "vi": "em gái"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 2,
+      "image": "🐻",
+      "image_alt": "Hansel and Gretel's Adventure - panel 2",
+      "sentence_en": "They live with their father and stepmother in a small house.",
+      "sentence_vi": "Họ sống với cha và mẹ kế trong một ngôi nhà nhỏ.",
+      "tokens": [
+        {
+          "display": "They",
+          "norm": "they",
+          "lemma": "they"
+        },
+        {
+          "display": "live",
+          "norm": "live",
+          "lemma": "live"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "their",
+          "norm": "their",
+          "lemma": "their"
+        },
+        {
+          "display": "father",
+          "norm": "father",
+          "lemma": "father",
+          "vi": "cha"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "stepmother",
+          "norm": "stepmother",
+          "lemma": "stepmother"
+        },
+        {
+          "display": "in",
+          "norm": "in",
+          "lemma": "in"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "small",
+          "norm": "small",
+          "lemma": "small"
+        },
+        {
+          "display": "house",
+          "norm": "house",
+          "lemma": "house",
+          "vi": "ngôi nhà"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 3,
+      "image": "🐰",
+      "image_alt": "Hansel and Gretel's Adventure - panel 3",
+      "sentence_en": "Their father takes them to the forest one day.",
+      "sentence_vi": "Cha của họ đưa họ đến rừng vào một ngày.",
+      "tokens": [
+        {
+          "display": "Their",
+          "norm": "their",
+          "lemma": "their"
+        },
+        {
+          "display": "father",
+          "norm": "father",
+          "lemma": "father",
+          "vi": "cha"
+        },
+        {
+          "display": "takes",
+          "norm": "takes",
+          "lemma": "take"
+        },
+        {
+          "display": "them",
+          "norm": "them",
+          "lemma": "them"
+        },
+        {
+          "display": "to",
+          "norm": "to",
+          "lemma": "to"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "forest",
+          "norm": "forest",
+          "lemma": "forest",
+          "vi": "rừng"
+        },
+        {
+          "display": "one",
+          "norm": "one",
+          "lemma": "one"
+        },
+        {
+          "display": "day",
+          "norm": "day",
+          "lemma": "day"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 4,
+      "image": "🌳",
+      "image_alt": "Hansel and Gretel's Adventure - panel 4",
+      "sentence_en": "He leaves them there with some food and clothes.",
+      "sentence_vi": "Ông để họ lại đó với một ít thức ăn và quần áo.",
+      "tokens": [
+        {
+          "display": "He",
+          "norm": "he",
+          "lemma": "he"
+        },
+        {
+          "display": "leaves",
+          "norm": "leaves",
+          "lemma": "leave"
+        },
+        {
+          "display": "them",
+          "norm": "them",
+          "lemma": "them"
+        },
+        {
+          "display": "there",
+          "norm": "there",
+          "lemma": "there"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "some",
+          "norm": "some",
+          "lemma": "some"
+        },
+        {
+          "display": "food",
+          "norm": "food",
+          "lemma": "food"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "clothes",
+          "norm": "clothes",
+          "lemma": "clothe"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 5,
+      "image": "🏰",
+      "image_alt": "Hansel and Gretel's Adventure - panel 5",
+      "sentence_en": "Gretel finds a house made of candy and cookies.",
+      "sentence_vi": "Gretel tìm thấy một ngôi nhà làm bằng kẹo và bánh quy.",
+      "tokens": [
+        {
+          "display": "Gretel",
+          "norm": "gretel",
+          "lemma": "gretel"
+        },
+        {
+          "display": "finds",
+          "norm": "finds",
+          "lemma": "find"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "house",
+          "norm": "house",
+          "lemma": "house",
+          "vi": "ngôi nhà"
+        },
+        {
+          "display": "made",
+          "norm": "made",
+          "lemma": "made"
+        },
+        {
+          "display": "of",
+          "norm": "of",
+          "lemma": "of"
+        },
+        {
+          "display": "candy",
+          "norm": "candy",
+          "lemma": "candy",
+          "vi": "kẹo"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "cookies",
+          "norm": "cookies",
+          "lemma": "cookie",
+          "vi": "bánh quy"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 6,
+      "image": "🌟",
+      "image_alt": "Hansel and Gretel's Adventure - panel 6",
+      "sentence_en": "Hansel eats the candy, but they get lost.",
+      "sentence_vi": "Hansel ăn kẹo, nhưng họ bị lạc.",
+      "tokens": [
+        {
+          "display": "Hansel",
+          "norm": "hansel",
+          "lemma": "hansel"
+        },
+        {
+          "display": "eats",
+          "norm": "eats",
+          "lemma": "eat"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "candy",
+          "norm": "candy",
+          "lemma": "candy",
+          "vi": "kẹo"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "but",
+          "norm": "but",
+          "lemma": "but"
+        },
+        {
+          "display": "they",
+          "norm": "they",
+          "lemma": "they"
+        },
+        {
+          "display": "get",
+          "norm": "get",
+          "lemma": "get"
+        },
+        {
+          "display": "lost",
+          "norm": "lost",
+          "lemma": "lost"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 7,
+      "image": "🌈",
+      "image_alt": "Hansel and Gretel's Adventure - panel 7",
+      "sentence_en": "A friendly bird helps them find their way home.",
+      "sentence_vi": "Một con chim thân thiện giúp họ tìm đường về nhà.",
+      "tokens": [
+        {
+          "display": "A",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "friendly",
+          "norm": "friendly",
+          "lemma": "friendly"
+        },
+        {
+          "display": "bird",
+          "norm": "bird",
+          "lemma": "bird",
+          "vi": "con chim"
+        },
+        {
+          "display": "helps",
+          "norm": "helps",
+          "lemma": "help"
+        },
+        {
+          "display": "them",
+          "norm": "them",
+          "lemma": "them"
+        },
+        {
+          "display": "find",
+          "norm": "find",
+          "lemma": "find"
+        },
+        {
+          "display": "their",
+          "norm": "their",
+          "lemma": "their"
+        },
+        {
+          "display": "way",
+          "norm": "way",
+          "lemma": "way"
+        },
+        {
+          "display": "home",
+          "norm": "home",
+          "lemma": "home"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 8,
+      "image": "🦋",
+      "image_alt": "Hansel and Gretel's Adventure - panel 8",
+      "sentence_en": "Their father is happy to see them again.",
+      "sentence_vi": "Cha của họ rất vui khi thấy họ lại.",
+      "tokens": [
+        {
+          "display": "Their",
+          "norm": "their",
+          "lemma": "their"
+        },
+        {
+          "display": "father",
+          "norm": "father",
+          "lemma": "father",
+          "vi": "cha"
+        },
+        {
+          "display": "is",
+          "norm": "is",
+          "lemma": "i"
+        },
+        {
+          "display": "happy",
+          "norm": "happy",
+          "lemma": "happy"
+        },
+        {
+          "display": "to",
+          "norm": "to",
+          "lemma": "to"
+        },
+        {
+          "display": "see",
+          "norm": "see",
+          "lemma": "see"
+        },
+        {
+          "display": "them",
+          "norm": "them",
+          "lemma": "them"
+        },
+        {
+          "display": "again",
+          "norm": "again",
+          "lemma": "again"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "word": "brother",
+      "vi": "anh trai",
+      "ipa": ""
+    },
+    {
+      "word": "sister",
+      "vi": "em gái",
+      "ipa": ""
+    },
+    {
+      "word": "father",
+      "vi": "cha",
+      "ipa": ""
+    },
+    {
+      "word": "house",
+      "vi": "ngôi nhà",
+      "ipa": ""
+    },
+    {
+      "word": "forest",
+      "vi": "rừng",
+      "ipa": ""
+    },
+    {
+      "word": "candy",
+      "vi": "kẹo",
+      "ipa": ""
+    },
+    {
+      "word": "cookies",
+      "vi": "bánh quy",
+      "ipa": ""
+    },
+    {
+      "word": "bird",
+      "vi": "con chim",
+      "ipa": ""
+    }
+  ],
+  "games": {
+    "match": [
+      {
+        "word": "brother",
+        "vi": "anh trai"
+      },
+      {
+        "word": "sister",
+        "vi": "em gái"
+      },
+      {
+        "word": "father",
+        "vi": "cha"
+      },
+      {
+        "word": "house",
+        "vi": "ngôi nhà"
+      },
+      {
+        "word": "forest",
+        "vi": "rừng"
+      },
+      {
+        "word": "candy",
+        "vi": "kẹo"
+      }
+    ],
+    "fill_blank": [
+      {
+        "sentence_en": "Hansel and Gretel are ___ and sister.",
+        "answer": "brother",
+        "choices": [
+          "brother",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "They live with their ___ and stepmother in a small house.",
+        "answer": "father",
+        "choices": [
+          "father",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "Their father ___ them to the forest one day.",
+        "answer": "takes",
+        "choices": [
+          "good",
+          "takes",
+          "happy"
+        ]
+      }
+    ]
+  }
+}
