@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Panel, Story, Token } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
-import { lookupWord, pronounceWord, speakWord, WordInfo } from '@/services/dictionary';
+import { lookupWord, pickFriendlyEnglishVoice, pronounceWord, speakWord, WordInfo } from '@/services/dictionary';
 import { translateToVietnamese } from '@/services/translate';
 import { isBase64Image, isImageUrl } from '@/services/image';
 import { useSmartPopup, WordData } from '@/components/SmartPopup';
@@ -80,6 +80,16 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
     if (!activePanel) return;
     speakWord(activePanel.sentence_en, readingRate(settings.readingSpeed));
   }, [currentPanel, settings.autoPlayAudio, settings.readingSpeed, story.panels]);
+
+  // Dừng mọi tiếng đọc khi rời màn đọc truyện (unmount), để khi thoát ra
+  // không còn nghe giọng đọc dội lại.
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   const handleWordClick = useCallback(async (token: Token) => {
     setSelectedWord(token);
@@ -184,13 +194,12 @@ export default function StoryReaderClient({ story }: StoryReaderClientProps) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
       utterance.rate = rate;
-      utterance.pitch = 1;
+      // Pitch hơi cao cho giọng êm, thân thiện với trẻ nhỏ.
+      utterance.pitch = 1.15;
 
-      const voices = window.speechSynthesis.getVoices();
-      const enVoice =
-        voices.find((v) => v.lang.startsWith('en-US')) ||
-        voices.find((v) => v.lang.startsWith('en'));
-      if (enVoice) utterance.voice = enVoice;
+      // Giọng nữ ngọt ngào, dễ nghe (dùng chung với speakWord).
+      const voice = pickFriendlyEnglishVoice();
+      if (voice) utterance.voice = voice;
 
       // onboundary may be unsupported in some browsers — that's fine, we just
       // won't highlight. Guard everything so it never throws.

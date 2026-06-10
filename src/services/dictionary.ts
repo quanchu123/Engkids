@@ -137,8 +137,56 @@ export async function lookupWords(words: string[]): Promise<Map<string, WordInfo
   return results;
 }
 
+// Tên các giọng nữ tiếng Anh dễ nghe, ngọt ngào (ưu tiên theo thứ tự) trên các
+// nền tảng phổ biến: Chrome/Google, Windows, macOS/iOS.
+const FRIENDLY_FEMALE_VOICE_NAMES = [
+  'Google US English',
+  'Microsoft Aria',
+  'Microsoft Jenny',
+  'Microsoft Zira',
+  'Samantha',
+  'Ava',
+  'Allison',
+  'Karen',
+  'Victoria',
+  'Susan',
+];
+
 /**
- * Phát âm từ bằng Web Speech API
+ * Chọn giọng nữ tiếng Anh nghe êm tai cho các bé. Ưu tiên danh sách giọng nữ
+ * quen thuộc, sau đó tới bất kỳ giọng nào tự nhận là "female", cuối cùng mới
+ * fallback về giọng en-US/en bất kỳ. Trả về undefined nếu chưa có giọng nào
+ * (danh sách giọng có thể nạp bất đồng bộ).
+ */
+export function pickFriendlyEnglishVoice(): SpeechSynthesisVoice | undefined {
+  if (typeof window === 'undefined' || !window.speechSynthesis) return undefined;
+
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length === 0) return undefined;
+
+  const enVoices = voices.filter((v) => v.lang.toLowerCase().startsWith('en'));
+  const pool = enVoices.length > 0 ? enVoices : voices;
+
+  // 1. Khớp tên giọng nữ ưu tiên.
+  for (const name of FRIENDLY_FEMALE_VOICE_NAMES) {
+    const match = pool.find((v) => v.name.toLowerCase().includes(name.toLowerCase()));
+    if (match) return match;
+  }
+
+  // 2. Bất kỳ giọng nào có chữ "female" trong tên.
+  const female = pool.find((v) => /female/i.test(v.name));
+  if (female) return female;
+
+  // 3. Fallback: giọng en-US, rồi en bất kỳ.
+  return (
+    pool.find((v) => v.lang.toLowerCase().startsWith('en-us')) ||
+    pool.find((v) => v.lang.toLowerCase().startsWith('en')) ||
+    pool[0]
+  );
+}
+
+/**
+ * Phát âm từ bằng Web Speech API với giọng nữ ngọt ngào, dễ nghe cho bé.
  */
 export function speakWord(word: string, rate: number = 0.9): void {
   if (typeof window === 'undefined' || !window.speechSynthesis) {
@@ -152,14 +200,12 @@ export function speakWord(word: string, rate: number = 0.9): void {
   const utterance = new SpeechSynthesisUtterance(word);
   utterance.lang = 'en-US';
   utterance.rate = rate;
-  utterance.pitch = 1;
+  // Pitch hơi cao một chút cho giọng êm, thân thiện với trẻ nhỏ.
+  utterance.pitch = 1.15;
 
-  // Tìm voice English
-  const voices = window.speechSynthesis.getVoices();
-  const enVoice = voices.find(v => v.lang.startsWith('en-US')) || 
-                  voices.find(v => v.lang.startsWith('en'));
-  if (enVoice) {
-    utterance.voice = enVoice;
+  const voice = pickFriendlyEnglishVoice();
+  if (voice) {
+    utterance.voice = voice;
   }
 
   window.speechSynthesis.speak(utterance);
