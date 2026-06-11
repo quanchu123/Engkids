@@ -1,3 +1,4 @@
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -53,7 +54,7 @@ function checkRateLimit(identifier: string, limit: number, windowMs: number): bo
   return true;
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const origin = request.headers.get('origin');
 
@@ -112,7 +113,59 @@ export function middleware(request: NextRequest) {
   }
 
   // Add CORS headers to response (only for allowed origins)
-  const response = NextResponse.next();
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  // Check auth for route protection
+  if (
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            request.cookies.set({ name, value, ...options });
+            response = NextResponse.next({
+              request: { headers: request.headers },
+            });
+            response.cookies.set({ name, value, ...options });
+          },
+          remove(name: string, options: CookieOptions) {
+            request.cookies.set({ name, value: '', ...options });
+            response = NextResponse.next({
+              request: { headers: request.headers },
+            });
+            response.cookies.set({ name, value: '', ...options });
+          },
+        },
+      }
+    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Define public routes
+    const isPublicRoute = 
+      pathname === '/' || 
+      pathname.startsWith('/login') || 
+      pathname.startsWith('/auth') || 
+      pathname.startsWith('/api') || // Allow API routes (they handle their own auth/rate limiting)
+      pathname.startsWith('/_next') ||
+      pathname.startsWith('/favicon');
+
+    if (!user && !isPublicRoute) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+  }
+
   const corsHeaders = getCorsHeaders(origin);
   if (corsHeaders) {
     Object.entries(corsHeaders).forEach(([key, value]) => {
@@ -124,7 +177,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/api/:path*',
-    '/admin/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
