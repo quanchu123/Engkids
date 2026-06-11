@@ -75,15 +75,30 @@ export async function signIn(email: string, password: string) {
 /**
  * Sign up with email and password
  */
-export async function signUp(email: string, password: string, name?: string) {
+export interface SignUpMetadata {
+  name: string;
+  parentName?: string;
+  birthDate?: string;
+  gender?: string;
+  address?: string;
+}
+
+export async function signUp(email: string, password: string, metadata?: SignUpMetadata | string) {
   const supabase = getSupabase();
+  
+  // Backward compatibility in case we pass just a string name
+  const metaObj = typeof metadata === 'string' ? { name: metadata } : (metadata || { name: '' });
   
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
-        name: name || email.split('@')[0],
+        name: metaObj.name || email.split('@')[0],
+        parent_name: metaObj.parentName,
+        birth_date: metaObj.birthDate,
+        gender: metaObj.gender,
+        address: metaObj.address
       },
     },
   });
