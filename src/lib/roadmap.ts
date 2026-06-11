@@ -233,3 +233,259 @@ function subtitleFor(kind: RoadmapNodeKind, current: number, target: number): st
       return '';
   }
 }
+
+// ============================================================
+// REAL LESSON PATH MODEL (Duolingo-style)
+// ============================================================
+// Turns the DB's real lessons (grouped in units, per CEFR stage) into a winding
+// path where every lesson is a node that unlocks in order. Unlock rules:
+// - A stage is "open" only if it is in the learner's unlockedStageIds (guests:
+//   only the first stage). Lessons in a locked stage are all `locked`.
+// - Inside an open stage, lessons unlock sequentially: a lesson is `unlocked`
+//   once the previous lesson is `done`; the first lesson of an open stage is
+//   always unlocked. Completed lessons are `done`.
+// - Exactly one node across the whole map becomes `current`: the first not-done
+//   unlocked lesson in the earliest open+incomplete stage.
+// Pure + deterministic; no React, no DB. Lesson/unit shapes mirror the
+// `LessonSummaryPublic` / `CurriculumUnitPublic` types from services/lessons.
+
+export type LessonNodeStatus = 'done' | 'current' | 'unlocked' | 'locked';
+
+export interface LessonRoadmapNodeInput {
+  id: string;
+  unitId: string;
+  stageId: CurriculumStageId | string;
+  titleVi: string;
+  objectiveVi?: string;
+  estimatedMinutes?: number;
+  skillFocus?: string[];
+  sortOrder?: number;
+  progress?: { status?: string | null } | null;
+}
+
+export interface LessonRoadmapUnitInput {
+  id: string;
+  stageId: CurriculumStageId | string;
+  titleVi: string;
+  theme: string;
+  sortOrder?: number;
+}
+
+export interface LessonRoadmapNode {
+  lessonId: string;
+  unitId: string;
+  stageId: CurriculumStageId;
+  titleVi: string;
+  objectiveVi: string;
+  estimatedMinutes: number;
+  skillFocus: string[];
+  href: string;
+  status: LessonNodeStatus;
+  orderInStage: number;
+}
+
+export interface LessonRoadmapUnit {
+  unitId: string;
+  titleVi: string;
+  theme: string;
+  stageId: CurriculumStageId;
+  sortOrder: number;
+  doneCount: number;
+  totalCount: number;
+  percent: number;
+  nodes: LessonRoadmapNode[];
+}
+
+export interface LessonRoadmapStage {
+  stage: CurriculumStage;
+  index: number;
+  open: boolean;
+  status: LessonNodeStatus;
+  doneCount: number;
+  totalCount: number;
+  percent: number;
+  units: LessonRoadmapUnit[];
+}
+
+export interface BuildLessonRoadmapInput {
+  stages: CurriculumStage[];
+  units: LessonRoadmapUnitInput[];
+  lessons: LessonRoadmapNodeInput[];
+  unlockedStageIds?: Array<CurriculumStageId | string> | null;
+  currentStageId?: CurriculumStageId | string | null;
+  isAuthenticated: boolean;
+}
+
+export interface LessonRoadmapModel {
+  stages: LessonRoadmapStage[];
+  allNodes: LessonRoadmapNode[];
+  currentLessonId: string | null;
+  totalLessons: number;
+  doneLessons: number;
+  overallPercent: number;
+  finished: boolean;
+}
+
+const FALLBACK_UNIT_SORT = Number.MAX_SAFE_INTEGER;
+
+export function buildLessonRoadmap(input: BuildLessonRoadmapInput): LessonRoadmapModel {
+  const stages = input.stages?.length ? input.stages : CURRICULUM_STAGES;
+  const isDone = (n: LessonRoadmapNodeInput) => (n.progress?.status || '') === 'done';
+
+  // Stage gate: open stages come from unlockedStageIds (auth) or just the first
+  // stage (guest / no state).
+  const unlockedSet = new Set<string>((input.unlockedStageIds || []).map(String));
+  const currentIdx = Math.min(Math.max(getStageIndex(input.currentStageId ?? undefined), 0), stages.length - 1);
+  const isStageOpen = (stageId: string, index: number): boolean => {
+    if (!input.isAuthenticated) return index === 0;
+    if (unlockedSet.size > 0) return unlockedSet.has(stageId);
+    return index === 0;
+  };
+
+  // Index units + lessons by stage.
+  const unitsByStage = new Map<string, LessonRoadmapUnitInput[]>();
+  for (const u of input.units || []) {
+    const key = String(u.stageId);
+    if (!unitsByStage.has(key)) unitsByStage.set(key, []);
+    unitsByStage.get(key)!.push(u);
+  }
+  const lessonsByStage = new Map<string, LessonRoadmapNodeInput[]>();
+  for (const l of input.lessons || []) {
+    const key = String(l.stageId);
+    if (!lessonsByStage.has(key)) lessonsByStage.set(key, []);
+    lessonsByStage.get(key)!.push(l);
+  }
+
+  const allNodes: LessonRoadmapNode[] = [];
+  const stageModels: LessonRoadmapStage[] = [];
+  let totalLessons = 0;
+  let doneLessons = 0;
+
+  stages.forEach((stage, index) => {
+    const open = isStageOpen(stage.id, index);
+    const stageLessons = lessonsByStage.get(stage.id) || [];
+    const stageUnits = unitsByStage.get(stage.id) || [];
+
+    // Resolve a unit for every lesson; lessons with an unknown unit fall into a
+    // synthetic "Ôn tập" unit rendered last.
+    const unitById = new Map<string, LessonRoadmapUnitInput>();
+    for (const u of stageUnits) unitById.set(u.id, u);
+
+    const unitOrder = (unitId: string): number => unitById.get(unitId)?.sortOrder ?? FALLBACK_UNIT_SORT;
+
+    // Canonical sequence: unit.sortOrder ASC, then lesson.sortOrder ASC.
+    const sequence = [...stageLessons].sort((a, b) => {
+      const ua = unitOrder(a.unitId);
+      const ub = unitOrder(b.unitId);
+      if (ua !== ub) return ua - ub;
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    });
+
+    // Build per-lesson status with a sequential frontier reset per stage.
+    let prevDone = true;
+    const builtNodes: LessonRoadmapNode[] = sequence.map((l, i) => {
+      const done = isDone(l);
+      let status: LessonNodeStatus;
+      if (!open) status = 'locked';
+      else if (done) status = 'done';
+      else if (prevDone) status = 'unlocked';
+      else status = 'locked';
+      prevDone = done;
+      const node: LessonRoadmapNode = {
+        lessonId: l.id,
+        unitId: l.unitId,
+        stageId: stage.id,
+        titleVi: l.titleVi,
+        objectiveVi: l.objectiveVi || '',
+        estimatedMinutes: l.estimatedMinutes || 0,
+        skillFocus: l.skillFocus || [],
+        href: `/learn/lessons/${l.id}`,
+        status,
+        orderInStage: i,
+      };
+      return node;
+    });
+
+    totalLessons += builtNodes.length;
+    const stageDone = builtNodes.filter((n) => n.status === 'done').length;
+    doneLessons += stageDone;
+
+    // Group nodes into units for rendering (omit empty units).
+    const groups = new Map<string, LessonRoadmapNode[]>();
+    for (const n of builtNodes) {
+      if (!groups.has(n.unitId)) groups.set(n.unitId, []);
+      groups.get(n.unitId)!.push(n);
+    }
+    const unitModels: LessonRoadmapUnit[] = [];
+    for (const [unitId, nodes] of groups.entries()) {
+      const meta = unitById.get(unitId);
+      const done = nodes.filter((n) => n.status === 'done').length;
+      unitModels.push({
+        unitId,
+        titleVi: meta?.titleVi || 'Ôn tập',
+        theme: meta?.theme || 'general',
+        stageId: stage.id,
+        sortOrder: meta?.sortOrder ?? FALLBACK_UNIT_SORT,
+        doneCount: done,
+        totalCount: nodes.length,
+        percent: nodes.length ? Math.round((done / nodes.length) * 100) : 0,
+        nodes,
+      });
+    }
+    unitModels.sort((a, b) => a.sortOrder - b.sortOrder);
+
+    const totalCount = builtNodes.length;
+    const stagePercent = totalCount ? Math.round((stageDone / totalCount) * 100) : 0;
+    const stageStatus: LessonNodeStatus = !open
+      ? 'locked'
+      : totalCount > 0 && stageDone === totalCount
+        ? 'done'
+        : 'unlocked';
+
+    stageModels.push({
+      stage,
+      index,
+      open,
+      status: stageStatus,
+      doneCount: stageDone,
+      totalCount,
+      percent: stagePercent,
+      units: unitModels,
+    });
+    allNodes.push(...builtNodes);
+  });
+
+  // Promote exactly one node to `current`: the first unlocked (not done) node in
+  // the earliest open+incomplete stage, by stage index then orderInStage.
+  let currentLessonId: string | null = null;
+  for (const sm of stageModels) {
+    if (!sm.open) continue;
+    const frontier = sm.units.flatMap((u) => u.nodes).find((n) => n.status === 'unlocked');
+    if (frontier) {
+      frontier.status = 'current';
+      currentLessonId = frontier.lessonId;
+      break;
+    }
+  }
+  // Mark the owning stage as current.
+  if (currentLessonId) {
+    for (const sm of stageModels) {
+      if (sm.units.some((u) => u.nodes.some((n) => n.lessonId === currentLessonId))) {
+        if (sm.status !== 'done') sm.status = 'current';
+        break;
+      }
+    }
+  }
+
+  const overallPercent = totalLessons ? Math.round((doneLessons / totalLessons) * 100) : 0;
+
+  return {
+    stages: stageModels,
+    allNodes,
+    currentLessonId,
+    totalLessons,
+    doneLessons,
+    overallPercent,
+    finished: totalLessons > 0 && doneLessons === totalLessons,
+  };
+}

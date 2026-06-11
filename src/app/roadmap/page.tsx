@@ -2,20 +2,20 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Lock, Check, Sparkles, Star } from 'lucide-react';
+import { ArrowRight, Lock, Check, Sparkles, Star, Loader2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import UiIcon, { type UiIconName } from '@/components/common/UiIcon';
 import { useAppStore } from '@/store/useAppStore';
-import { getLearnerStageProgress } from '@/lib/curriculum';
-import { CURRICULUM_STAGES, getStageById } from '@/lib/curriculum';
+import { getLearnerStageProgress, CURRICULUM_STAGES, getStageById } from '@/lib/curriculum';
 import {
-  buildRoadmap,
-  type RoadmapNode,
-  type RoadmapNodeKind,
-  type RoadmapNodeStatus,
-  type RoadmapStageGroup,
+  buildLessonRoadmap,
+  type LessonRoadmapNode,
+  type LessonRoadmapStage,
+  type LessonRoadmapUnit,
+  type LessonNodeStatus,
 } from '@/lib/roadmap';
 import type { CurriculumCatalog, LearnerCurriculumState } from '@/services/curriculum-content';
+import type { LessonSummaryPublic, CurriculumUnitPublic } from '@/services/lessons';
 
 // Per-stage colour worlds (kid-friendly, high contrast).
 const STAGE_THEME: Record<string, { from: string; to: string; ring: string; soft: string; text: string; dot: string }> = {
@@ -25,32 +25,58 @@ const STAGE_THEME: Record<string, { from: string; to: string; ring: string; soft
   'c1-advanced': { from: 'from-amber-400', to: 'to-orange-500', ring: 'ring-amber-200', soft: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
 };
 
-const NODE_ICON: Record<RoadmapNodeKind, UiIconName> = {
-  words: 'abc',
-  story: 'open-book',
-  game: 'controller',
-  checkpoint: 'goal',
-  trophy: 'trophy',
+// Pick a kid icon from the lesson's first skill focus.
+const SKILL_ICON: Record<string, UiIconName> = {
+  reading: 'open-book',
+  listening: 'audio',
+  speaking: 'microphone',
+  writing: 'abc',
+  grammar: 'light',
+  'use-of-english': 'light',
+  vocabulary: 'books',
 };
 
 function themeFor(stageId: string) {
   return STAGE_THEME[stageId] ?? STAGE_THEME['a2-key'];
 }
 
+function iconForNode(node: LessonRoadmapNode): UiIconName {
+  const skill = node.skillFocus[0];
+  return (skill && SKILL_ICON[skill]) || 'graduation-cap';
+}
+
+interface LessonApiResponse {
+  lessons?: LessonSummaryPublic[];
+  units?: CurriculumUnitPublic[];
+}
+
 export default function RoadmapPage() {
   const progress = useAppStore((state) => state.progress);
   const fallbackLearner = useMemo(() => getLearnerStageProgress(progress), [progress]);
   const [catalog, setCatalog] = useState<CurriculumCatalog | null>(null);
+  const [lessonData, setLessonData] = useState<LessonApiResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let active = true;
-    fetch('/api/curriculum', { credentials: 'include', cache: 'no-store' })
-      .then(async (response) => (response.ok ? response.json() : null))
-      .then((data) => {
-        if (active && data) setCatalog(data);
+    setLoading(true);
+    Promise.all([
+      fetch('/api/curriculum', { credentials: 'include', cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+      fetch('/api/lessons', { credentials: 'include', cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+    ])
+      .then(([cat, lessons]) => {
+        if (!active) return;
+        setCatalog(cat || null);
+        setLessonData(lessons || null);
+        if (!lessons?.lessons?.length) setError('Chưa tải được danh sách bài học.');
       })
-      .catch(() => {
-        if (active) setCatalog(null);
+      .finally(() => {
+        if (active) setLoading(false);
       });
     return () => {
       active = false;
@@ -59,23 +85,26 @@ export default function RoadmapPage() {
 
   const stages = catalog?.stages?.length ? catalog.stages : CURRICULUM_STAGES;
   const learnerState = catalog?.learnerState || null;
-  const checkpointPassed = learnerState?.recentAttempt?.passed ?? false;
+  const isAuthenticated = Boolean(learnerState);
 
   const model = useMemo(
     () =>
-      buildRoadmap({
+      buildLessonRoadmap({
         stages,
-        currentStageId: learnerState?.currentStageId ?? fallbackLearner.stage.id,
+        units: lessonData?.units ?? [],
+        lessons: lessonData?.lessons ?? [],
         unlockedStageIds: learnerState?.unlockedStageIds ?? null,
-        stats: fallbackLearner.stats,
-        checkpointPassed,
+        currentStageId: learnerState?.currentStageId ?? fallbackLearner.stage.id,
+        isAuthenticated,
       }),
-    [stages, learnerState, fallbackLearner, checkpointPassed],
+    [stages, lessonData, learnerState, fallbackLearner, isAuthenticated],
   );
 
-  const currentStage = learnerState?.currentStageId
-    ? getStageById(learnerState.currentStageId)
-    : fallbackLearner.stage;
+  // Current stage = earliest open+incomplete, else first.
+  const currentStageModel = model.stages.find((s) => s.status === 'current')
+    ?? model.stages.find((s) => s.open && s.status !== 'done')
+    ?? model.stages[0];
+  const currentStage = currentStageModel ? getStageById(currentStageModel.stage.id) : fallbackLearner.stage;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-violet-50 to-amber-50">
@@ -85,17 +114,33 @@ export default function RoadmapPage() {
         stageCefr={currentStage.cefr}
         stageTitle={currentStage.titleVi}
         overallPercent={model.overallPercent}
-        currentIndex={model.currentIndex}
-        totalStages={stages.length}
-        synced={Boolean(learnerState)}
+        doneLessons={model.doneLessons}
+        totalLessons={model.totalLessons}
+        synced={isAuthenticated}
       />
 
       <main className="mx-auto max-w-3xl px-4 pb-24">
-        {model.groups.map((group) => (
-          <StageWorld key={group.stage.id} group={group} currentNodeId={model.currentNodeId} />
-        ))}
-
-        <FinishFlag done={model.overallPercent >= 100} />
+        {loading ? (
+          <div className="mt-10 flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-8 text-sm font-bold text-slate-500 shadow-sm">
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> Đang tải bản đồ học tập...
+          </div>
+        ) : model.totalLessons === 0 ? (
+          <div className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center text-sm font-bold text-amber-800 shadow-sm">
+            {error || 'Chưa có bài học nào. Hãy quay lại sau nhé!'}
+          </div>
+        ) : (
+          <>
+            {!isAuthenticated && (
+              <div className="mt-6 rounded-2xl border border-violet-200 bg-white p-4 text-sm font-bold text-violet-700 shadow-sm">
+                Bạn đang xem ở chế độ khách. Đăng nhập để lưu tiến trình và mở khóa các chặng tiếp theo.
+              </div>
+            )}
+            {model.stages.map((stageModel) => (
+              <StageWorld key={stageModel.stage.id} stageModel={stageModel} currentLessonId={model.currentLessonId} />
+            ))}
+            <FinishFlag done={model.finished} />
+          </>
+        )}
       </main>
     </div>
   );
@@ -105,15 +150,15 @@ function JourneyHero({
   stageCefr,
   stageTitle,
   overallPercent,
-  currentIndex,
-  totalStages,
+  doneLessons,
+  totalLessons,
   synced,
 }: {
   stageCefr: string;
   stageTitle: string;
   overallPercent: number;
-  currentIndex: number;
-  totalStages: number;
+  doneLessons: number;
+  totalLessons: number;
   synced: boolean;
 }) {
   return (
@@ -135,18 +180,18 @@ function JourneyHero({
           Cuộc phiêu lưu tiếng Anh
         </h1>
         <p className="mt-2 text-sm font-bold text-white/90 md:text-base">
-          Chặng {currentIndex + 1}/{totalStages} · {stageCefr} — {stageTitle}
+          {stageCefr} — {stageTitle}
         </p>
 
         <div className="mt-5 rounded-2xl bg-white/15 p-4 backdrop-blur-sm">
           <div className="flex items-center justify-between text-xs font-black uppercase">
-            <span>Tổng tiến độ</span>
-            <span>{overallPercent}%</span>
+            <span>Bài đã xong</span>
+            <span>{doneLessons}/{totalLessons} · {overallPercent}%</span>
           </div>
           <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/25">
             <div
               className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-lime-300 transition-all"
-              style={{ width: `${Math.max(overallPercent, 4)}%` }}
+              style={{ width: `${Math.max(overallPercent, 3)}%` }}
             />
           </div>
         </div>
@@ -170,9 +215,9 @@ function JourneyHero({
   );
 }
 
-function StageWorld({ group, currentNodeId }: { group: RoadmapStageGroup; currentNodeId: string | null }) {
-  const theme = themeFor(group.stage.id);
-  const locked = group.status === 'locked';
+function StageWorld({ stageModel, currentLessonId }: { stageModel: LessonRoadmapStage; currentLessonId: string | null }) {
+  const theme = themeFor(stageModel.stage.id);
+  const locked = stageModel.status === 'locked';
 
   return (
     <section className="relative mt-10 first:mt-8">
@@ -180,36 +225,60 @@ function StageWorld({ group, currentNodeId }: { group: RoadmapStageGroup; curren
       <div className={`sticky top-2 z-10 mb-2 rounded-2xl border bg-white/90 px-4 py-3 shadow-sm backdrop-blur ${theme.ring} ring-1`}>
         <div className="flex items-center gap-3">
           <span className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${theme.from} ${theme.to} text-white shadow`}>
-            {group.status === 'done' ? (
+            {stageModel.status === 'done' ? (
               <Check className="h-6 w-6" aria-hidden="true" />
             ) : locked ? (
               <Lock className="h-5 w-5" aria-hidden="true" />
             ) : (
-              <span className="text-lg font-black">{group.index + 1}</span>
+              <span className="text-lg font-black">{stageModel.index + 1}</span>
             )}
           </span>
           <div className="min-w-0 flex-1">
-            <p className={`text-[11px] font-black uppercase tracking-wide ${theme.text}`}>{group.stage.cefr}</p>
-            <h2 className="truncate text-base font-black text-slate-900">{group.stage.titleVi}</h2>
+            <p className={`text-[11px] font-black uppercase tracking-wide ${theme.text}`}>{stageModel.stage.cefr}</p>
+            <h2 className="truncate text-base font-black text-slate-900">{stageModel.stage.titleVi}</h2>
           </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-black ${theme.soft} ${theme.text}`}>{group.percent}%</span>
+          <span className={`rounded-full px-3 py-1 text-xs font-black ${theme.soft} ${theme.text}`}>
+            {stageModel.doneCount}/{stageModel.totalCount}
+          </span>
         </div>
       </div>
 
-      {/* Winding node path */}
-      <div className="relative px-2 py-4">
-        {group.nodes.map((node, i) => (
+      {locked ? (
+        <div className="mx-2 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-4 py-6 text-center text-sm font-bold text-slate-400">
+          <Lock className="mx-auto mb-2 h-6 w-6" aria-hidden="true" />
+          Hoàn thành chặng trước hoặc làm bài kiểm tra để mở khóa.
+        </div>
+      ) : (
+        stageModel.units.map((unit) => <UnitSection key={unit.unitId} unit={unit} theme={theme} currentLessonId={currentLessonId} />)
+      )}
+    </section>
+  );
+}
+
+function UnitSection({ unit, theme, currentLessonId }: { unit: LessonRoadmapUnit; theme: ReturnType<typeof themeFor>; currentLessonId: string | null }) {
+  if (unit.nodes.length === 0) return null;
+  return (
+    <div className="mb-4 mt-3">
+      <div className="mb-1 flex items-center justify-between gap-3 px-3">
+        <div className="flex items-center gap-2">
+          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-black uppercase ${theme.soft} ${theme.text}`}>{unit.theme}</span>
+          <span className="text-sm font-black text-slate-700">{unit.titleVi}</span>
+        </div>
+        <span className="text-xs font-bold text-slate-400">{unit.doneCount}/{unit.totalCount}</span>
+      </div>
+      <div className="relative px-2 py-2">
+        {unit.nodes.map((node, i) => (
           <PathNode
-            key={node.id}
+            key={node.lessonId}
             node={node}
             align={i % 2 === 0 ? 'left' : 'right'}
-            isLast={i === group.nodes.length - 1}
+            isLast={i === unit.nodes.length - 1}
             theme={theme}
-            isCurrent={node.id === currentNodeId}
+            isCurrent={node.lessonId === currentLessonId}
           />
         ))}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -220,7 +289,7 @@ function PathNode({
   theme,
   isCurrent,
 }: {
-  node: RoadmapNode;
+  node: LessonRoadmapNode;
   align: 'left' | 'right';
   isLast: boolean;
   theme: ReturnType<typeof themeFor>;
@@ -245,7 +314,7 @@ function PathNode({
       )}
       <span
         className={[
-          'relative flex h-20 w-20 items-center justify-center rounded-full shadow-lg transition',
+          'relative flex h-[72px] w-[72px] items-center justify-center rounded-full shadow-lg transition',
           done
             ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
             : locked
@@ -261,7 +330,7 @@ function PathNode({
         ) : done ? (
           <Check className="h-9 w-9 text-white" aria-hidden="true" />
         ) : (
-          <UiIcon name={NODE_ICON[node.kind]} size={40} />
+          <UiIcon name={iconForNode(node)} size={36} />
         )}
         {done && (
           <span className="absolute -right-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-yellow-400 text-white shadow ring-2 ring-white">
@@ -273,12 +342,16 @@ function PathNode({
   );
 
   const label = (
-    <div className={`max-w-[200px] ${align === 'left' ? 'text-left' : 'text-right'}`}>
-      <p className={`text-sm font-black ${locked ? 'text-slate-400' : 'text-slate-900'}`}>{node.titleVi}</p>
-      <p className={`text-xs font-bold leading-snug ${locked ? 'text-slate-300' : 'text-slate-500'}`}>{node.subtitleVi}</p>
-      {node.progress && !done && !locked && (
-        <div className="mt-1.5 h-1.5 w-28 overflow-hidden rounded-full bg-slate-200">
-          <div className={`h-full rounded-full ${theme.dot}`} style={{ width: `${Math.max(node.progress.percent, 4)}%` }} />
+    <div className={`max-w-[210px] ${align === 'left' ? 'text-left' : 'text-right'}`}>
+      <p className={`text-sm font-black leading-snug ${locked ? 'text-slate-400' : 'text-slate-900'}`}>{node.titleVi}</p>
+      {!locked && node.estimatedMinutes > 0 && (
+        <p className="text-xs font-bold text-slate-500">{node.estimatedMinutes} phút</p>
+      )}
+      {!locked && node.skillFocus.length > 0 && (
+        <div className={`mt-1 flex flex-wrap gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
+          {node.skillFocus.slice(0, 3).map((skill) => (
+            <span key={skill} className={`rounded-full px-2 py-0.5 text-[10px] font-black ${theme.soft} ${theme.text}`}>{skill}</span>
+          ))}
         </div>
       )}
     </div>
@@ -286,15 +359,13 @@ function PathNode({
 
   return (
     <div className="relative">
-      <div
-        className={`flex items-center gap-4 ${align === 'left' ? 'justify-start pr-10' : 'flex-row-reverse justify-start pl-10'}`}
-      >
+      <div className={`flex items-center gap-4 ${align === 'left' ? 'justify-start pr-10' : 'flex-row-reverse justify-start pl-10'}`}>
         {circle}
         {label}
       </div>
       {!isLast && (
         <div className="flex justify-center py-1" aria-hidden="true">
-          <span className={`h-8 w-1.5 rounded-full ${done ? 'bg-emerald-300' : locked ? 'bg-slate-200' : theme.dot} opacity-60`} />
+          <span className={`h-7 w-1.5 rounded-full ${done ? 'bg-emerald-300' : locked ? 'bg-slate-200' : theme.dot} opacity-60`} />
         </div>
       )}
     </div>
@@ -318,7 +389,7 @@ function FinishFlag({ done }: { done: boolean }) {
       <p className="mt-1 max-w-xs text-center text-sm font-bold text-slate-500">
         {done
           ? 'Bé đã đi hết bản đồ tiếng Anh. Tuyệt vời!'
-          : 'Hoàn thành tất cả các chặng để mở chiếc cúp vàng.'}
+          : 'Hoàn thành tất cả bài học để mở chiếc cúp vàng.'}
       </p>
     </div>
   );

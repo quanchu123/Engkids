@@ -146,6 +146,23 @@ export interface BadgeProgress {
   unlockedAt: string;
 }
 
+export type MistakeKind = 'vocab' | 'grammar' | 'listening' | 'reading' | 'other';
+
+export interface MistakeItem {
+  id: string;
+  kind: MistakeKind;
+  promptVi: string;
+  questionEn: string;
+  yourAnswer: string;
+  correctAnswer: string;
+  skillId?: string;
+  stageId?: string;
+  addedAt: string;
+  reviewCount: number;
+  resolved: boolean;
+  lastReviewedAt?: string;
+}
+
 export interface UserProgress {
   storiesProgress: Record<string, StoryProgress>;
   savedWords: SavedWord[];
@@ -155,6 +172,7 @@ export interface UserProgress {
   lastActiveDate: string;
   dailyQuestState: DailyQuestState;
   badges: BadgeProgress[];
+  mistakes: MistakeItem[];
 }
 
 export interface ProgressSnapshot {

@@ -193,6 +193,9 @@ export default function TodayLearnPage() {
                     <Link href="/roadmap" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-black text-violet-700 shadow-sm ring-1 ring-violet-100 transition hover:-translate-y-0.5">
                       Xem lộ trình <Route className="h-4 w-4" aria-hidden="true" />
                     </Link>
+                    <Link href="/learn/mistakes" className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-black text-rose-700 shadow-sm ring-1 ring-rose-100 transition hover:-translate-y-0.5">
+                      Sổ tay lỗi sai <ListChecks className="h-4 w-4" aria-hidden="true" />
+                    </Link>
                   </div>
                 </div>
 

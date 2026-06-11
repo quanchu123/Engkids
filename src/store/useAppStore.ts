@@ -4,6 +4,7 @@ import {
   BadgeId,
   GameResult,
   GameScore,
+  MistakeItem,
   ProgressSnapshot,
   SavedWord,
   StoryProgress,
@@ -77,6 +78,9 @@ interface AppState {
   toggleWordFavorite: (wordText: string) => void;
   updateWordMastery: (wordText: string, masteryLevel: 0 | 1 | 2 | 3 | 4 | 5) => void;
   addGameScore: (score: GameScore) => void;
+  addMistake: (mistake: Omit<MistakeItem, 'id' | 'addedAt' | 'reviewCount' | 'resolved'> & { id?: string }) => void;
+  reviewMistake: (id: string, correct: boolean) => void;
+  clearResolvedMistakes: () => void;
   applyGameResult: (result: GameResult) => void;
   completeQuestStep: (step: 'story' | 'media' | 'game' | 'saveWord', amount?: number) => void;
   grantBadgeIfEligible: (badgeId: BadgeId) => void;
@@ -492,6 +496,58 @@ export const useAppStore = create<AppState>()(
             ...(gained > 0 ? { rewardEvent: { id: Date.now(), stars: gained, coins: gained } } : {}),
           };
         });
+      },
+
+      addMistake: (mistake) => {
+        set((state) => {
+          const id = `${mistake.kind}|${(mistake.questionEn || mistake.promptVi || '').toLowerCase().trim()}|${(mistake.correctAnswer || '').toLowerCase().trim()}`;
+          const now = new Date().toISOString();
+          const existing = state.progress.mistakes.find((m) => m.id === id);
+          const next: MistakeItem = existing
+            ? { ...existing, yourAnswer: mistake.yourAnswer, resolved: false, addedAt: now }
+            : {
+                id,
+                kind: mistake.kind,
+                promptVi: mistake.promptVi || '',
+                questionEn: mistake.questionEn || '',
+                yourAnswer: mistake.yourAnswer || '',
+                correctAnswer: mistake.correctAnswer || '',
+                skillId: mistake.skillId,
+                stageId: mistake.stageId,
+                addedAt: now,
+                reviewCount: 0,
+                resolved: false,
+              };
+          const others = state.progress.mistakes.filter((m) => m.id !== id);
+          return { progress: { ...state.progress, mistakes: [...others, next] } };
+        });
+      },
+
+      reviewMistake: (id, correct) => {
+        set((state) => ({
+          progress: {
+            ...state.progress,
+            mistakes: state.progress.mistakes.map((m) =>
+              m.id === id
+                ? {
+                    ...m,
+                    reviewCount: (m.reviewCount || 0) + 1,
+                    resolved: correct ? true : m.resolved,
+                    lastReviewedAt: new Date().toISOString(),
+                  }
+                : m,
+            ),
+          },
+        }));
+      },
+
+      clearResolvedMistakes: () => {
+        set((state) => ({
+          progress: {
+            ...state.progress,
+            mistakes: state.progress.mistakes.filter((m) => !m.resolved),
+          },
+        }));
       },
 
       completeQuestStep: (step, amount = 1) => {

@@ -12,6 +12,9 @@ import {
   Home,
   LogIn,
   LogOut,
+  MessageCircle,
+  Mic,
+  PenLine,
   Menu,
   Music,
   Route,
@@ -30,6 +33,9 @@ const NAV_ITEMS = [
   { name: 'Video', path: '/videos', icon: Clapperboard, tone: 'text-orange-600 bg-orange-50 border-orange-100' },
   { name: 'Nhạc', path: '/music', icon: Music, tone: 'text-rose-600 bg-rose-50 border-rose-100' },
   { name: 'Game', path: '/games', icon: Gamepad2, tone: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+  { name: 'Trò chuyện', path: '/learn/chat', icon: MessageCircle, tone: 'text-teal-600 bg-teal-50 border-teal-100' },
+  { name: 'Luyện nói', path: '/learn/speak', icon: Mic, tone: 'text-fuchsia-600 bg-fuchsia-50 border-fuchsia-100' },
+  { name: 'Luyện viết', path: '/learn/write', icon: PenLine, tone: 'text-amber-600 bg-amber-50 border-amber-100' },
 ];
 
 function Header() {

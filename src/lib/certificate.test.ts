@@ -20,6 +20,7 @@ function makeProgress(overrides: Partial<UserProgress> = {}): UserProgress {
       completed: false,
     },
     badges: [],
+    mistakes: [],
     ...overrides,
   };
 }

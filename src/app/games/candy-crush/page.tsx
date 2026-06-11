@@ -4,9 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import Image from 'next/image';
-import { DEFAULT_WORD_BANK, loadWordBank } from '@/lib/word-bank';
 
 // ─── Vocabulary mapping: candy type → { en, vi } ───────────────────────────
+// These map each candy SPRITE to the bakery word it depicts, so the legend and
+// toasts stay semantically correct. They are intentionally NOT pulled from the
+// shared word bank: a positional mapping would label the cookie sprite with an
+// unrelated CEFR word (e.g. "Hello"), breaking the picture↔word match.
 const CANDY_VOCAB: Record<string, { en: string; vi: string }> = {
   cookie1:    { en: 'Cookie',     vi: 'Bánh quy tròn' },
   cookie2:    { en: 'Biscuit',    vi: 'Bánh biscuit' },
@@ -23,15 +26,6 @@ const CANDY_VOCAB: Record<string, { en: string; vi: string }> = {
 };
 
 const CANDY_TYPES = Object.keys(CANDY_VOCAB);
-
-function buildCandyVocab(bank: Array<{ en: string; vi: string }>): Record<string, { en: string; vi: string }> {
-  const source = bank.length > 0 ? bank : DEFAULT_WORD_BANK;
-  return CANDY_TYPES.reduce((acc, key, index) => {
-    const word = source[index % source.length];
-    acc[key] = { en: word.en, vi: word.vi };
-    return acc;
-  }, {} as Record<string, { en: string; vi: string }>);
-}
 
 // Grid constants (matching original repo)
 const COLS = 8;
@@ -53,7 +47,7 @@ export default function CandyCrushPage() {
   const [moves, setMoves] = useState(MOVES_MAX);
   const [status, setStatus] = useState<'playing' | 'win' | 'lose'>('playing');
   const [targetWord, setTargetWord] = useState<{ key: string; en: string; vi: string } | null>(null);
-  const [candyVocab, setCandyVocab] = useState(CANDY_VOCAB);
+  const [candyVocab] = useState(CANDY_VOCAB);
   const [toast, setToast] = useState<string | null>(null);
   // expose score/moves/status to Phaser via ref
   const scoreRef = useRef(0);
@@ -72,19 +66,6 @@ export default function CandyCrushPage() {
   };
   const toastRef = useRef(showToast);
   toastRef.current = showToast;
-
-  useEffect(() => {
-    let active = true;
-    loadWordBank().then((bank) => {
-      if (!active) return;
-      const next = buildCandyVocab(bank);
-      candyVocabRef.current = next;
-      setCandyVocab(next);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;

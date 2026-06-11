@@ -61,6 +61,14 @@ export interface AssessmentAttemptInput {
   responses: AssessmentResponseInput[];
 }
 
+export interface AssessmentWrongItem {
+  skillId: string;
+  promptVi: string;
+  questionEn: string;
+  yourAnswer: string;
+  correctAnswer: string;
+}
+
 export interface AssessmentAttemptResult {
   attemptId: string | null;
   saved: boolean;
@@ -68,6 +76,7 @@ export interface AssessmentAttemptResult {
   passed: boolean;
   recommendedStageId: CurriculumStageId;
   skillBreakdown: Record<string, { correct: number; total: number; percent: number }>;
+  wrongItems: AssessmentWrongItem[];
 }
 
 export interface LearnerCurriculumState {
@@ -776,8 +785,20 @@ export async function saveAssessmentAttempt(profileId: string | null, input: Ass
     value.percent = value.total > 0 ? Math.round((value.correct / value.total) * 10000) / 100 : 0;
   }
 
+  // Wrong answers, surfaced to the client so it can add them to the local
+  // mistakes-review queue. Never includes correct answers the child got right.
+  const wrongItems = responseRows
+    .filter((row) => !row.isCorrect)
+    .map((row) => ({
+      skillId: row.item!.skill_id,
+      promptVi: row.item!.prompt_vi || '',
+      questionEn: row.item!.prompt || '',
+      yourAnswer: row.response.answer || '',
+      correctAnswer: row.correctAnswer || '',
+    }));
+
   if (!admin || !profileId) {
-    return { attemptId: null, saved: false, scorePercent, passed, recommendedStageId, skillBreakdown };
+    return { attemptId: null, saved: false, scorePercent, passed, recommendedStageId, skillBreakdown, wrongItems };
   }
 
   const { data: attempt, error } = await admin
@@ -798,7 +819,7 @@ export async function saveAssessmentAttempt(profileId: string | null, input: Ass
     .single();
 
   if (error || !attempt) {
-    return { attemptId: null, saved: false, scorePercent, passed, recommendedStageId, skillBreakdown };
+    return { attemptId: null, saved: false, scorePercent, passed, recommendedStageId, skillBreakdown, wrongItems };
   }
 
   const attemptId = (attempt as { id: string }).id;
@@ -856,7 +877,7 @@ export async function saveAssessmentAttempt(profileId: string | null, input: Ass
 
   await admin.from('learner_curriculum_state').upsert(statePatch, { onConflict: 'user_profile_id' });
 
-  return { attemptId, saved: true, scorePercent, passed, recommendedStageId, skillBreakdown };
+  return { attemptId, saved: true, scorePercent, passed, recommendedStageId, skillBreakdown, wrongItems };
 }
 
 

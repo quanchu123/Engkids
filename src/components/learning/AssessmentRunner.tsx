@@ -21,7 +21,18 @@ import {
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { getStageById, type CurriculumStageId } from '@/lib/curriculum';
+import { useAppStore } from '@/store/useAppStore';
+import type { MistakeKind } from '@/types';
 import type { AssessmentKind, AssessmentAttemptResult, AssessmentBlueprint, AssessmentItemPublic, CurriculumSkillId } from '@/services/curriculum-content';
+
+// Map a CEFR skill to the local mistake-review bucket.
+function mistakeKindForSkill(skillId: string): MistakeKind {
+  if (skillId === 'vocabulary') return 'vocab';
+  if (skillId === 'grammar') return 'grammar';
+  if (skillId === 'listening') return 'listening';
+  if (skillId === 'reading') return 'reading';
+  return 'other';
+}
 
 interface AssessmentPayload {
   blueprint: AssessmentBlueprint;
@@ -64,6 +75,7 @@ const SKILL_COLORS: Record<string, string> = {
 const ANSWER_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 export default function AssessmentRunner({ kind, stageId, titleVi, subtitleVi, backHref = '/learn/today' }: AssessmentRunnerProps) {
+  const addMistake = useAppStore((state) => state.addMistake);
   const [payload, setPayload] = useState<AssessmentPayload | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -152,6 +164,26 @@ export default function AssessmentRunner({ kind, stageId, titleVi, subtitleVi, b
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Không lưu được kết quả');
       setResult(data);
+
+      // Collect wrong answers into the local mistakes-review queue.
+      const wrong = Array.isArray(data?.wrongItems) ? data.wrongItems : [];
+      for (const w of wrong) {
+        const skill = String(w?.skillId || '');
+        const mistakeKind = skill === 'listening' ? 'listening'
+          : skill === 'reading' ? 'reading'
+          : skill === 'grammar' ? 'grammar'
+          : skill === 'vocabulary' ? 'vocab'
+          : 'other';
+        addMistake({
+          kind: mistakeKind,
+          promptVi: String(w?.promptVi || ''),
+          questionEn: String(w?.questionEn || ''),
+          yourAnswer: String(w?.yourAnswer || ''),
+          correctAnswer: String(w?.correctAnswer || ''),
+          skillId: skill || undefined,
+          stageId: stageId || undefined,
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không lưu được kết quả');
     } finally {

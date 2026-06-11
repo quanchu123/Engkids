@@ -5,6 +5,7 @@ import {
   DailyQuestStepType,
   GameResult,
   GameScore,
+  MistakeItem,
   ProgressSnapshot,
   SavedWord,
   StoryProgress,
@@ -46,6 +47,7 @@ export function createDefaultProgress(date: string = getTodayDate()): UserProgre
     lastActiveDate: date,
     dailyQuestState: createDailyQuestState(date),
     badges: [],
+    mistakes: [],
   };
 }
 
@@ -100,6 +102,28 @@ function dedupeGameScores(scores: GameScore[]): GameScore[] {
   }
 
   return merged.sort((a, b) => a.playedAt.localeCompare(b.playedAt));
+}
+
+function dedupeMistakes(mistakes: MistakeItem[]): MistakeItem[] {
+  const byId = new Map<string, MistakeItem>();
+  for (const m of mistakes) {
+    if (!m || typeof m !== 'object') continue;
+    const id = String(m.id || '').trim();
+    if (!id) continue;
+    const existing = byId.get(id);
+    if (!existing) {
+      byId.set(id, m);
+      continue;
+    }
+    byId.set(id, {
+      ...existing,
+      ...m,
+      reviewCount: Math.max(existing.reviewCount || 0, m.reviewCount || 0),
+      resolved: Boolean(existing.resolved || m.resolved),
+      lastReviewedAt: [existing.lastReviewedAt, m.lastReviewedAt].filter(Boolean).sort().at(-1),
+    });
+  }
+  return Array.from(byId.values()).sort((a, b) => a.addedAt.localeCompare(b.addedAt));
 }
 
 function mergeStoryProgress(
@@ -196,6 +220,7 @@ export function normalizeProgress(progress: Partial<UserProgress> | null | undef
     lastActiveDate: progress.lastActiveDate || getTodayDate(),
     dailyQuestState,
     badges,
+    mistakes: dedupeMistakes(progress.mistakes || []),
   };
 }
 
@@ -251,6 +276,10 @@ export function mergeProgressSnapshots(local: ProgressSnapshot, remote: Progress
     badges: dedupeBadges([
       ...normalizedRemote.progress.badges,
       ...normalizedLocal.progress.badges,
+    ]),
+    mistakes: dedupeMistakes([
+      ...normalizedRemote.progress.mistakes,
+      ...normalizedLocal.progress.mistakes,
     ]),
   });
 
