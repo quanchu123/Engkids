@@ -144,7 +144,12 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
                 </div>
                 <div>
                   <label htmlFor="childAge" className="block text-sm font-medium text-gray-300 mb-2">Tuổi của trẻ</label>
-                  <input id="childAge" type="number" required min="1" max="100" value={childAge} onChange={(e) => setChildAge(e.target.value)} placeholder="Tuổi của trẻ" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
+                  <select id="childAge" required value={childAge} onChange={(e) => setChildAge(e.target.value)} className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                    <option value="">Chọn tuổi</option>
+                    {Array.from({ length: 18 }, (_, i) => i + 1).map(age => (
+                      <option key={age} value={age}>{age} tuổi</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -155,7 +160,12 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
                 </div>
                 <div>
                   <label htmlFor="parentAge" className="block text-sm font-medium text-gray-300 mb-2">Tuổi của Bố mẹ</label>
-                  <input id="parentAge" type="number" min="18" max="100" value={parentAge} onChange={(e) => setParentAge(e.target.value)} placeholder="Tuổi của Bố mẹ" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
+                  <select id="parentAge" value={parentAge} onChange={(e) => setParentAge(e.target.value)} className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                    <option value="">Chọn tuổi</option>
+                    {Array.from({ length: 83 }, (_, i) => i + 18).map(age => (
+                      <option key={age} value={age}>{age} tuổi</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
