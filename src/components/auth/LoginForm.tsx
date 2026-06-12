@@ -16,7 +16,8 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [parentName, setParentName] = useState('');
-  const [birthDate, setBirthDate] = useState('');
+  const [childAge, setChildAge] = useState('');
+  const [parentAge, setParentAge] = useState('');
   const [gender, setGender] = useState('');
   const [address, setAddress] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -64,7 +65,8 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
         const data = await signUp(email, password, {
           name,
           parentName,
-          birthDate,
+          childAge,
+          parentAge,
           gender,
           address
         });
@@ -137,24 +139,30 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">Tên của bạn</label>
-                  <input id="name" type="text" data-testid="signup-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên của bạn" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">Họ tên trẻ</label>
+                  <input id="name" type="text" data-testid="signup-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Họ tên trẻ" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                  <input id="email" type="email" data-testid="login-email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
+                  <label htmlFor="childAge" className="block text-sm font-medium text-gray-300 mb-2">Tuổi của trẻ</label>
+                  <input id="childAge" type="number" required min="1" max="100" value={childAge} onChange={(e) => setChildAge(e.target.value)} placeholder="Tuổi của trẻ" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
                 </div>
-              </div>
-
-              <div>
-                <label htmlFor="parentName" className="block text-sm font-medium text-gray-300 mb-2">Họ tên bố/mẹ</label>
-                <input id="parentName" type="text" value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="Họ tên phụ huynh" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="birthDate" className="block text-sm font-medium text-gray-300 mb-2">Ngày sinh</label>
-                  <input id="birthDate" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
+                  <label htmlFor="parentName" className="block text-sm font-medium text-gray-300 mb-2">Họ tên Bố mẹ</label>
+                  <input id="parentName" type="text" value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="Họ tên Bố mẹ" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
+                </div>
+                <div>
+                  <label htmlFor="parentAge" className="block text-sm font-medium text-gray-300 mb-2">Tuổi của Bố mẹ</label>
+                  <input id="parentAge" type="number" min="18" max="100" value={parentAge} onChange={(e) => setParentAge(e.target.value)} placeholder="Tuổi của Bố mẹ" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+                  <input id="email" type="email" data-testid="login-email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
                 </div>
                 <div>
                   <label htmlFor="gender" className="block text-sm font-medium text-gray-300 mb-2">Giới tính</label>

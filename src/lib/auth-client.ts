@@ -78,7 +78,8 @@ export async function signIn(email: string, password: string) {
 export interface SignUpMetadata {
   name: string;
   parentName?: string;
-  birthDate?: string;
+  childAge?: string;
+  parentAge?: string;
   gender?: string;
   address?: string;
 }
@@ -96,7 +97,8 @@ export async function signUp(email: string, password: string, metadata?: SignUpM
       data: {
         name: metaObj.name || email.split('@')[0],
         parent_name: metaObj.parentName,
-        birth_date: metaObj.birthDate,
+        child_age: metaObj.childAge,
+        parent_age: metaObj.parentAge,
         gender: metaObj.gender,
         address: metaObj.address
       },
