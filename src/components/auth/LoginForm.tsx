@@ -71,17 +71,13 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
           address
         });
 
-        // If email confirmation is required, Supabase returns a user but no
-        // session. Tell the user to confirm before signing in.
-        if (data?.user && !data.session) {
-          setInfo('Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản, sau đó đăng nhập.');
+        if (data?.user) {
+          setInfo('Đăng kí thành công, mời đăng nhập');
           setIsSignup(false);
           setPassword('');
+          setConfirmPassword('');
           return;
         }
-
-        // Confirmation disabled — a session exists, go straight in.
-        router.push(authConfig.redirects.afterSignup);
       } else {
         let supabaseSignInError: unknown = null;
 
