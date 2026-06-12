@@ -37,11 +37,16 @@ export default function ProfileMenu({ user, onLogout }: ProfileMenuProps) {
 
   useEffect(() => {
     try {
-      setName(window.localStorage.getItem(NAME_KEY) || '');
+      if (user?.name) {
+        setName(user.name);
+        window.localStorage.setItem(NAME_KEY, user.name);
+      } else if (!user) {
+        setName(window.localStorage.getItem(NAME_KEY) || '');
+      }
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [user?.id, user?.name]);
 
   // Close on outside click / Escape.
   useEffect(() => {
