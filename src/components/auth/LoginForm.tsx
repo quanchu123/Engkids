@@ -121,7 +121,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
           return;
         }
 
-        router.push('/progress');
+        router.push('/');
       }
 
       onSuccess?.();
