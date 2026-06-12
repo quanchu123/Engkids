@@ -72,11 +72,24 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
         });
 
         if (data?.user) {
-          setInfo('Đăng kí thành công, mời đăng nhập');
-          setIsSignup(false);
-          setPassword('');
-          setConfirmPassword('');
-          return;
+          if (data.session) {
+            router.push('/');
+            return;
+          }
+
+          // Try to sign in manually if session is missing (in case of specific Supabase settings)
+          try {
+            await signIn(email, password);
+            router.push('/');
+            return;
+          } catch (err) {
+            // If it fails, it usually means email confirmation is required by Supabase
+            setInfo('Vui lòng kiểm tra email để xác nhận tài khoản trước khi đăng nhập.');
+            setIsSignup(false);
+            setPassword('');
+            setConfirmPassword('');
+            return;
+          }
         }
       } else {
         let supabaseSignInError: unknown = null;
