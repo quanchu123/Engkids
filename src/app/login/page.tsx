@@ -9,7 +9,7 @@ export default function LoginPage() {
     <>
       <Header />
       <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-gray-950 flex items-center justify-center px-6 pt-20">
-        <div className="w-full max-w-md -mt-20">
+        <div className="w-full flex flex-col items-center -mt-20">
           <div className="text-center mb-2">
             <h1 className="text-4xl font-bold text-white mb-3">EngKids</h1>
             <p className="text-gray-400 text-lg">Học tiếng Anh qua video và truyện tranh vui nhộn</p>
