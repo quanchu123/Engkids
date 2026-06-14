@@ -36,14 +36,14 @@ export function buildLessonPath(input: BuildLessonPathInput): LessonStep[] {
   } = input;
 
   const reviewDesc = dueWords > 0
-    ? `Ban co ${dueWords} tu can on lai hom nay.`
-    : 'Khong co tu nao can on hom nay.';
+    ? `Bạn có ${dueWords} từ cần ôn lại hôm nay.`
+    : 'Không có từ nào cần ôn hôm nay.';
   const lessonDesc = nextLessonTitle
-    ? `Lam lesson "${nextLessonTitle}" theo tung buoc ngan.`
-    : 'Lam lesson tiep theo theo dung level cua be.';
+    ? `Làm lesson "${nextLessonTitle}" theo từng bước ngắn.`
+    : 'Làm lesson tiếp theo theo đúng level của bé.';
   const storyDesc = nextStoryTitle
-    ? `Doc truyen "${nextStoryTitle}" va kham pha tu moi.`
-    : 'Doc mot truyen thu vi va kham pha tu moi.';
+    ? `Đọc truyện "${nextStoryTitle}" và khám phá từ mới.`
+    : 'Đọc một truyện thú vị và khám phá từ mới.';
 
   const steps: LessonStep[] = [];
 
@@ -51,8 +51,8 @@ export function buildLessonPath(input: BuildLessonPathInput): LessonStep[] {
     steps.push({
       id: 'placement',
       kind: 'placement',
-      titleVi: 'Kiem tra dau vao',
-      descVi: 'Lam placement test de he thong xep dung chang hoc va luu ket qua vao DB.',
+      titleVi: 'Kiểm tra đầu vào',
+      descVi: 'Làm bài kiểm tra đầu vào để hệ thống xếp đúng chặng học và lưu kết quả.',
       href: '/learn/placement',
       emoji: 'target',
       done: false,
@@ -63,7 +63,7 @@ export function buildLessonPath(input: BuildLessonPathInput): LessonStep[] {
     {
       id: 'review',
       kind: 'review',
-      titleVi: 'On lai tu vung',
+      titleVi: 'Ôn lại từ vựng',
       descVi: reviewDesc,
       href: '/progress/review',
       emoji: 'brain',

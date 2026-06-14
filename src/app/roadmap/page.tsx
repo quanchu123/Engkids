@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Lock, Check, Sparkles, Star, Loader2, MessageCircle, Mic, PenLine } from 'lucide-react';
+import { ArrowRight, Lock, Check, Sparkles, ChevronDown, Loader2, MessageCircle, Mic, PenLine } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import UiIcon, { type UiIconName } from '@/components/common/UiIcon';
 import { useAppStore } from '@/store/useAppStore';
@@ -314,65 +314,97 @@ function JourneyHero({
 function StageWorld({ stageModel, currentLessonId }: { stageModel: LessonRoadmapStage; currentLessonId: string | null }) {
   const theme = themeFor(stageModel.stage.id);
   const locked = stageModel.status === 'locked';
+  const hasCurrent = stageModel.units.some((u) => u.nodes.some((n) => n.lessonId === currentLessonId));
+  // Open by default only the stage the learner is on; collapse the rest so the
+  // page stays short (40 lessons/stage would otherwise be ~8 screens tall).
+  const [open, setOpen] = useState(stageModel.status === 'current' || hasCurrent);
+  const percent = stageModel.percent;
 
   return (
-    <section className="relative mt-10 first:mt-8">
-      {/* Stage banner */}
-      <div className={`sticky top-2 z-10 mb-2 rounded-2xl border bg-white/90 px-4 py-3 shadow-sm backdrop-blur ${theme.ring} ring-1`}>
-        <div className="flex items-center gap-3">
-          <span className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${theme.from} ${theme.to} text-white shadow`}>
-            {stageModel.status === 'done' ? (
-              <Check className="h-6 w-6" aria-hidden="true" />
-            ) : locked ? (
-              <Lock className="h-5 w-5" aria-hidden="true" />
-            ) : (
-              <span className="text-lg font-black">{stageModel.index + 1}</span>
-            )}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className={`text-[11px] font-black uppercase tracking-wide ${theme.text}`}>{stageModel.stage.cefr}</p>
-            <h2 className="truncate text-base font-black text-slate-900">{stageModel.stage.titleVi}</h2>
-          </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-black ${theme.soft} ${theme.text}`}>
-            {stageModel.doneCount}/{stageModel.totalCount}
-          </span>
+    <section className="mt-3 first:mt-4">
+      {/* Stage banner — tap to expand/collapse */}
+      <button
+        type="button"
+        onClick={() => !locked && setOpen((v) => !v)}
+        aria-expanded={open}
+        disabled={locked}
+        className={`flex w-full items-center gap-3 rounded-2xl border bg-white px-3 py-3 text-left shadow-sm transition ${theme.ring} ring-1 ${locked ? 'opacity-70' : 'hover:shadow-md'}`}
+      >
+        <span className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${theme.from} ${theme.to} text-white shadow`}>
+          {stageModel.status === 'done' ? (
+            <Check className="h-6 w-6" aria-hidden="true" />
+          ) : locked ? (
+            <Lock className="h-5 w-5" aria-hidden="true" />
+          ) : (
+            <span className="text-lg font-black">{stageModel.index + 1}</span>
+          )}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className={`text-[11px] font-black uppercase tracking-wide ${theme.text}`}>{stageModel.stage.cefr}</p>
+          <h2 className="truncate text-sm font-black text-slate-900">{stageModel.stage.titleVi}</h2>
+          {!locked && (
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className={`h-full rounded-full bg-gradient-to-r ${theme.from} ${theme.to}`} style={{ width: `${Math.max(percent, 3)}%` }} />
+            </div>
+          )}
         </div>
-      </div>
+        <span className={`flex-shrink-0 rounded-full px-2.5 py-1 text-xs font-black ${theme.soft} ${theme.text}`}>
+          {stageModel.doneCount}/{stageModel.totalCount}
+        </span>
+        {!locked && (
+          <ChevronDown className={`h-5 w-5 flex-shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+        )}
+      </button>
 
-      {locked ? (
-        <div className="mx-2 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-4 py-6 text-center text-sm font-bold text-slate-400">
-          <Lock className="mx-auto mb-2 h-6 w-6" aria-hidden="true" />
-          Hoàn thành chặng trước hoặc làm bài kiểm tra để mở khóa.
+      {open && !locked && (
+        <div className="mt-2">
+          {stageModel.units.map((unit) => (
+            <UnitSection key={unit.unitId} unit={unit} theme={theme} currentLessonId={currentLessonId} />
+          ))}
         </div>
-      ) : (
-        stageModel.units.map((unit) => <UnitSection key={unit.unitId} unit={unit} theme={theme} currentLessonId={currentLessonId} />)
       )}
     </section>
   );
 }
 
 function UnitSection({ unit, theme, currentLessonId }: { unit: LessonRoadmapUnit; theme: ReturnType<typeof themeFor>; currentLessonId: string | null }) {
+  const hasCurrent = unit.nodes.some((n) => n.lessonId === currentLessonId);
+  const finished = unit.totalCount > 0 && unit.doneCount === unit.totalCount;
+  // Open the unit the learner is on; collapse finished/upcoming units to keep
+  // the list short. A finished unit stays closed (it's just a checkmark).
+  const [open, setOpen] = useState(hasCurrent || (!finished && unit.doneCount > 0));
   if (unit.nodes.length === 0) return null;
+
   return (
-    <div className="mt-6 first:mt-4">
-      <div className="mb-3 flex items-center justify-between gap-3 px-1">
+    <div className="mt-2 first:mt-0 overflow-hidden rounded-2xl border border-slate-100 bg-white/70">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition hover:bg-slate-50"
+      >
         <div className="flex min-w-0 items-center gap-2">
-          <span className={`flex-shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-black uppercase ${theme.soft} ${theme.text}`}>{unit.theme}</span>
+          <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${theme.soft} ${theme.text}`}>{unit.theme}</span>
           <span className="truncate text-sm font-black text-slate-700">{unit.titleVi}</span>
         </div>
-        <span className="flex-shrink-0 text-xs font-bold text-slate-400">{unit.doneCount}/{unit.totalCount}</span>
-      </div>
-      <div className="relative pl-1">
-        {unit.nodes.map((node, i) => (
-          <PathNode
-            key={node.lessonId}
-            node={node}
-            isLast={i === unit.nodes.length - 1}
-            theme={theme}
-            isCurrent={node.lessonId === currentLessonId}
-          />
-        ))}
-      </div>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <span className={`text-xs font-black ${finished ? 'text-emerald-600' : 'text-slate-400'}`}>{unit.doneCount}/{unit.totalCount}</span>
+          <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+        </div>
+      </button>
+      {open && (
+        <div className="relative px-3 pb-3 pt-1">
+          {unit.nodes.map((node, i) => (
+            <PathNode
+              key={node.lessonId}
+              node={node}
+              isLast={i === unit.nodes.length - 1}
+              theme={theme}
+              isCurrent={node.lessonId === currentLessonId}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -397,69 +429,56 @@ function PathNode({
       href={locked ? '#' : node.href}
       aria-disabled={locked}
       tabIndex={locked ? -1 : 0}
-      className={`group relative flex gap-4 ${locked ? 'pointer-events-none' : ''}`}
+      className={`group relative flex items-center gap-3 rounded-xl px-1.5 py-1.5 transition ${
+        locked ? 'pointer-events-none' : 'hover:bg-slate-50'
+      } ${active ? `${theme.soft} ring-1 ${theme.ring}` : ''}`}
     >
-      {/* Left rail: bead + connector line, both centered on the same axis */}
-      <div className="relative flex w-[64px] flex-shrink-0 flex-col items-center">
+      {/* Left rail: compact bead + connector line on the same axis */}
+      <div className="relative flex w-10 flex-shrink-0 flex-col items-center self-stretch">
         <span
           className={[
-            'relative z-10 flex h-16 w-16 items-center justify-center rounded-full transition',
+            'relative z-10 flex h-10 w-10 items-center justify-center rounded-full transition',
             done
               ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
               : locked
                 ? 'bg-slate-200'
                 : `bg-gradient-to-br ${theme.from} ${theme.to}`,
-            active ? 'ring-4 ring-yellow-300 ring-offset-2' : '',
-            !locked ? 'group-hover:-translate-y-0.5' : '',
+            active ? 'ring-2 ring-yellow-300 ring-offset-1' : '',
           ].join(' ')}
-          style={{ boxShadow: locked ? undefined : '0 5px 0 rgba(0,0,0,0.12)' }}
+          style={{ boxShadow: locked ? undefined : '0 3px 0 rgba(0,0,0,0.10)' }}
         >
           {locked ? (
-            <Lock className="h-6 w-6 text-slate-400" aria-hidden="true" />
+            <Lock className="h-4 w-4 text-slate-400" aria-hidden="true" />
           ) : done ? (
-            <Check className="h-8 w-8 text-white" aria-hidden="true" />
+            <Check className="h-5 w-5 text-white" aria-hidden="true" />
           ) : (
-            <UiIcon name={iconForNode(node)} size={32} />
-          )}
-          {done && (
-            <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400 text-white shadow ring-2 ring-white">
-              <Star className="h-3.5 w-3.5 fill-white" aria-hidden="true" />
-            </span>
+            <UiIcon name={iconForNode(node)} size={20} />
           )}
         </span>
-        {/* Connector grows to fill the row height so spacing stays even */}
         {!isLast && (
           <span
-            className={`absolute top-16 bottom-0 w-1.5 rounded-full ${done ? 'bg-emerald-300' : locked ? 'bg-slate-200' : theme.dot} opacity-50`}
+            className={`absolute top-10 bottom-0 w-1 rounded-full ${done ? 'bg-emerald-300' : locked ? 'bg-slate-200' : theme.dot} opacity-40`}
             aria-hidden="true"
           />
         )}
       </div>
 
-      {/* Right: label card */}
-      <div className={`min-w-0 flex-1 ${isLast ? 'pb-1' : 'pb-7'}`}>
-        <div
-          className={`rounded-2xl border bg-white px-4 py-3 shadow-sm transition group-hover:shadow-md ${
-            active ? `${theme.ring} ring-2` : 'border-slate-100'
-          }`}
-        >
-          {active && (
-            <span className={`mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${theme.soft} ${theme.text}`}>
-              Bắt đầu tại đây
-            </span>
+      {/* Right: single-line title + meta */}
+      <div className={`min-w-0 flex-1 ${isLast ? '' : 'pb-3'}`}>
+        <div className="flex items-center gap-2">
+          <p className={`truncate text-sm font-black leading-snug ${locked ? 'text-slate-400' : 'text-slate-900'}`}>{node.titleVi}</p>
+          {!locked && node.estimatedMinutes > 0 && (
+            <span className="flex-shrink-0 text-[11px] font-bold text-slate-400">{node.estimatedMinutes}&apos;</span>
           )}
-          <p className={`text-sm font-black leading-snug ${locked ? 'text-slate-400' : 'text-slate-900'}`}>{node.titleVi}</p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            {!locked && node.estimatedMinutes > 0 && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{node.estimatedMinutes} phút</span>
-            )}
-            {!locked && node.skillFocus.slice(0, 3).map((skill) => (
-              <span key={skill} className={`rounded-full px-2 py-0.5 text-[10px] font-black ${theme.soft} ${theme.text}`}>{skill}</span>
-            ))}
-            {locked && <span className="text-[11px] font-bold text-slate-400">Hoàn thành bài trước để mở khóa</span>}
-          </div>
         </div>
+        {active && (
+          <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${theme.soft} ${theme.text}`}>
+            Bắt đầu tại đây
+          </span>
+        )}
       </div>
+
+      {!locked && <ArrowRight className="h-4 w-4 flex-shrink-0 text-slate-300 group-hover:text-slate-500" aria-hidden="true" />}
     </Link>
   );
 }
