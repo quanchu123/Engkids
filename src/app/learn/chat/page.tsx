@@ -92,12 +92,12 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-violet-50 to-amber-50">
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 via-emerald-50 to-cyan-50">
       <Header />
       <main className="mx-auto flex h-[calc(100vh-64px)] max-w-3xl flex-col px-4 pb-4 pt-4">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <Link href="/learn/today" className="inline-flex items-center gap-2 text-sm font-black text-violet-700">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Today Plan
+          <Link href="/roadmap" className="inline-flex items-center gap-2 text-sm font-black text-emerald-700">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Bản đồ
           </Link>
           <button
             type="button"
@@ -110,7 +110,7 @@ export default function ChatPage() {
 
         <div className="flex flex-1 flex-col overflow-hidden rounded-3xl border border-white/40 bg-white shadow-xl">
           {/* Header bar */}
-          <div className="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-400 px-4 py-3 text-white">
+          <div className="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-500 px-4 py-3 text-white">
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20">
               <Bot className="h-6 w-6" aria-hidden="true" />
             </span>
@@ -145,7 +145,7 @@ export default function ChatPage() {
                   key={s}
                   type="button"
                   onClick={() => send(s)}
-                  className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700 ring-1 ring-violet-100 transition hover:bg-violet-100"
+                  className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 ring-1 ring-emerald-100 transition hover:bg-emerald-100"
                 >
                   {s}
                 </button>
@@ -167,12 +167,12 @@ export default function ChatPage() {
               placeholder="Type in English... (Gõ tiếng Anh nhé)"
               maxLength={800}
               disabled={sending}
-              className="min-h-[48px] flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-violet-300 focus:bg-white"
+              className="min-h-[48px] flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-300 focus:bg-white"
             />
             <button
               type="submit"
               disabled={sending || !input.trim()}
-              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-violet-600 text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
+              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
               aria-label="Gửi"
             >
               <Send className="h-5 w-5" aria-hidden="true" />
@@ -191,7 +191,7 @@ function ChatBubble({ turn }: { turn: ChatTurn }) {
       <div
         className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm font-semibold leading-relaxed shadow-sm ${
           isUser
-            ? 'bg-violet-600 text-white'
+            ? 'bg-emerald-600 text-white'
             : 'bg-slate-100 text-slate-800 ring-1 ring-slate-200'
         }`}
       >

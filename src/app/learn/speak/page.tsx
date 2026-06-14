@@ -220,15 +220,15 @@ export default function SpeakPage() {
   const lastAssistant = [...turns].reverse().find((t) => t.role === 'assistant');
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-violet-50 to-amber-50">
+    <div className="min-h-screen bg-gradient-to-b from-fuchsia-50 via-pink-50 to-rose-50">
       <Header />
       <main className="mx-auto flex h-[calc(100vh-64px)] max-w-3xl flex-col px-4 pb-4 pt-4">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <Link href="/learn/today" className="inline-flex items-center gap-2 text-sm font-black text-violet-700">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Today Plan
+          <Link href="/roadmap" className="inline-flex items-center gap-2 text-sm font-black text-fuchsia-700">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Bản đồ
           </Link>
           <div className="flex items-center gap-2">
-            <Link href="/learn/chat" className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-violet-700 shadow-sm ring-1 ring-violet-100">
+            <Link href="/learn/chat" className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-fuchsia-700 shadow-sm ring-1 ring-fuchsia-100">
               Chat gõ phím
             </Link>
             <button
@@ -242,7 +242,7 @@ export default function SpeakPage() {
         </div>
 
         <div className="flex flex-1 flex-col overflow-hidden rounded-3xl border border-white/40 bg-white shadow-xl">
-          <div className="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-orange-400 px-4 py-3 text-white">
+          <div className="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 px-4 py-3 text-white">
             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20">
               <Bot className="h-6 w-6" aria-hidden="true" />
             </span>
@@ -265,7 +265,7 @@ export default function SpeakPage() {
             ))}
             {interim && (
               <div className="flex justify-end">
-                <div className="max-w-[80%] rounded-2xl bg-violet-200 px-4 py-2.5 text-sm font-semibold italic text-violet-800">
+                <div className="max-w-[80%] rounded-2xl bg-fuchsia-200 px-4 py-2.5 text-sm font-semibold italic text-fuchsia-800">
                   {interim}
                 </div>
               </div>
@@ -293,7 +293,7 @@ export default function SpeakPage() {
                   onClick={toggleMic}
                   disabled={thinking}
                   className={`flex h-20 w-20 items-center justify-center rounded-full text-white shadow-lg transition disabled:opacity-50 ${
-                    listening ? 'animate-pulse bg-rose-500 ring-4 ring-rose-200' : 'bg-violet-600 hover:bg-violet-700 hover:-translate-y-0.5'
+                    listening ? 'animate-pulse bg-rose-500 ring-4 ring-rose-200' : 'bg-fuchsia-600 hover:bg-fuchsia-700 hover:-translate-y-0.5'
                   }`}
                   style={{ boxShadow: '0 6px 0 rgba(0,0,0,0.12)' }}
                   aria-label={listening ? 'Dừng nói' : 'Bắt đầu nói'}
@@ -327,7 +327,7 @@ function Bubble({ turn, onReplay }: { turn: Turn; onReplay?: () => void }) {
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
         className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm font-semibold leading-relaxed shadow-sm ${
-          isUser ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-800 ring-1 ring-slate-200'
+          isUser ? 'bg-fuchsia-600 text-white' : 'bg-slate-100 text-slate-800 ring-1 ring-slate-200'
         }`}
       >
         {turn.content}
@@ -335,7 +335,7 @@ function Bubble({ turn, onReplay }: { turn: Turn; onReplay?: () => void }) {
           <button
             type="button"
             onClick={onReplay}
-            className="mt-1.5 flex items-center gap-1 text-xs font-black text-violet-600"
+            className="mt-1.5 flex items-center gap-1 text-xs font-black text-fuchsia-600"
             aria-label="Nghe lại câu này"
           >
             <Volume2 className="h-3.5 w-3.5" aria-hidden="true" /> Nghe

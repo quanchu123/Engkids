@@ -119,12 +119,12 @@ export default function WritePage() {
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50 via-violet-50 to-amber-50">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-rose-50">
       <Header />
       <main className="mx-auto max-w-3xl px-4 pb-20 pt-4">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <Link href="/learn/today" className="inline-flex items-center gap-2 text-sm font-black text-violet-700">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Today Plan
+          <Link href="/roadmap" className="inline-flex items-center gap-2 text-sm font-black text-orange-700">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Bản đồ
           </Link>
           <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-500 ring-1 ring-slate-200">
             {level.toUpperCase()}
@@ -132,7 +132,7 @@ export default function WritePage() {
         </div>
 
         {/* Hero */}
-        <div className="overflow-hidden rounded-3xl border border-white/40 bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 p-5 text-white shadow-xl md:p-6">
+        <div className="overflow-hidden rounded-3xl border border-white/40 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 p-5 text-white shadow-xl md:p-6">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 text-xs font-black uppercase backdrop-blur-sm">
             <PenLine className="h-4 w-4" aria-hidden="true" /> Luyện viết
           </span>
@@ -142,7 +142,7 @@ export default function WritePage() {
 
         {/* Prompt picker */}
         <section className="mt-5">
-          <p className="mb-2 text-xs font-black uppercase tracking-wide text-violet-500">Chọn đề</p>
+          <p className="mb-2 text-xs font-black uppercase tracking-wide text-orange-500">Chọn đề</p>
           <div className="flex flex-wrap gap-2">
             {prompts.map((p) => (
               <button
@@ -151,7 +151,7 @@ export default function WritePage() {
                 onClick={() => setPrompt(p)}
                 className={`rounded-2xl px-3 py-2 text-xs font-black ring-1 transition ${
                   prompt === p
-                    ? 'bg-violet-600 text-white ring-violet-600'
+                    ? 'bg-orange-500 text-white ring-orange-500'
                     : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -170,7 +170,7 @@ export default function WritePage() {
             placeholder="Write your answer in English here... (Viết câu trả lời bằng tiếng Anh)"
             maxLength={1500}
             rows={6}
-            className="mt-3 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold leading-relaxed text-slate-900 outline-none focus:border-violet-300 focus:bg-white"
+            className="mt-3 w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold leading-relaxed text-slate-900 outline-none focus:border-orange-300 focus:bg-white"
           />
           <div className="mt-3 flex items-center justify-between gap-3">
             <span className="text-xs font-bold text-slate-400">{wordCount} từ</span>
@@ -188,7 +188,7 @@ export default function WritePage() {
                 type="button"
                 onClick={submit}
                 disabled={loading || text.trim().length < 3}
-                className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-orange-600 disabled:opacity-50"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Sparkles className="h-4 w-4" aria-hidden="true" />}
                 {loading ? 'Đang chấm...' : 'Gửi bài'}
@@ -227,7 +227,7 @@ function FeedbackPanel({ feedback }: { feedback: WritingFeedback }) {
       {/* Corrections */}
       {feedback.corrections.length > 0 && (
         <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="mb-3 text-xs font-black uppercase tracking-wide text-violet-500">Chỗ cần sửa</p>
+          <p className="mb-3 text-xs font-black uppercase tracking-wide text-amber-600">Chỗ cần sửa</p>
           <div className="space-y-3">
             {feedback.corrections.map((c, i) => (
               <div key={i} className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-100">

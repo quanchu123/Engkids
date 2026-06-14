@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Lock, Check, Sparkles, Star, Loader2 } from 'lucide-react';
+import { ArrowRight, Lock, Check, Sparkles, Star, Loader2, MessageCircle, Mic, PenLine } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import UiIcon, { type UiIconName } from '@/components/common/UiIcon';
 import { useAppStore } from '@/store/useAppStore';
@@ -141,8 +141,104 @@ export default function RoadmapPage() {
             <FinishFlag done={model.finished} />
           </>
         )}
+
+        <PracticeRooms />
       </main>
     </div>
+  );
+}
+
+const PRACTICE_ROOMS: Array<{
+  href: string;
+  title: string;
+  subtitle: string;
+  cta: string;
+  icon: typeof MessageCircle;
+  from: string;
+  via: string;
+  to: string;
+  glow: string;
+  blob: string;
+}> = [
+  {
+    href: '/learn/chat',
+    title: 'Trò chuyện',
+    subtitle: 'Nhắn tin tiếng Anh với Buddy, học cách trả lời tự nhiên.',
+    cta: 'Bắt đầu chat',
+    icon: MessageCircle,
+    from: 'from-teal-400',
+    via: 'via-emerald-400',
+    to: 'to-cyan-500',
+    glow: 'rgba(16,185,129,0.45)',
+    blob: 'bg-emerald-300/40',
+  },
+  {
+    href: '/learn/speak',
+    title: 'Luyện nói',
+    subtitle: 'Chạm micro, nói tiếng Anh và nghe Buddy đáp lại.',
+    cta: 'Tập nói ngay',
+    icon: Mic,
+    from: 'from-fuchsia-400',
+    via: 'via-pink-400',
+    to: 'to-rose-500',
+    glow: 'rgba(217,70,239,0.45)',
+    blob: 'bg-pink-300/40',
+  },
+  {
+    href: '/learn/write',
+    title: 'Luyện viết',
+    subtitle: 'Viết câu theo đề, được Buddy chấm và chữa nhẹ nhàng.',
+    cta: 'Viết thử',
+    icon: PenLine,
+    from: 'from-amber-400',
+    via: 'via-orange-400',
+    to: 'to-rose-400',
+    glow: 'rgba(251,146,60,0.45)',
+    blob: 'bg-amber-300/40',
+  },
+];
+
+function PracticeRooms() {
+  return (
+    <section className="mt-14">
+      <div className="mb-4 flex flex-col items-center text-center">
+        <span className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-xs font-black uppercase tracking-wide text-violet-600 shadow-sm ring-1 ring-violet-100">
+          <Sparkles className="h-4 w-4" aria-hidden="true" /> Phòng luyện tập
+        </span>
+        <h2 className="mt-3 text-2xl font-black text-slate-900">Luyện nói, viết &amp; trò chuyện</h2>
+        <p className="mt-1 max-w-md text-sm font-bold text-slate-500">
+          Sau khi đi bản đồ, ghé các phòng này để luyện cùng Buddy nhé!
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        {PRACTICE_ROOMS.map((room) => {
+          const Icon = room.icon;
+          return (
+            <Link
+              key={room.href}
+              href={room.href}
+              className={`group relative flex flex-col overflow-hidden rounded-3xl bg-gradient-to-br ${room.from} ${room.via} ${room.to} p-5 text-white shadow-xl transition duration-300 hover:-translate-y-1.5`}
+              style={{ boxShadow: `0 10px 0 rgba(0,0,0,0.10), 0 18px 40px ${room.glow}` }}
+            >
+              {/* Soft decorative blob */}
+              <span
+                className={`pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full ${room.blob} blur-2xl transition-transform duration-500 group-hover:scale-125`}
+                aria-hidden="true"
+              />
+              <span className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-white/25 backdrop-blur-sm ring-1 ring-white/40 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110">
+                <Icon className="h-8 w-8" aria-hidden="true" />
+              </span>
+              <h3 className="relative mt-4 text-lg font-black leading-tight drop-shadow-sm">{room.title}</h3>
+              <p className="relative mt-1 text-[13px] font-bold leading-snug text-white/90">{room.subtitle}</p>
+              <span className="relative mt-4 inline-flex items-center gap-1.5 self-start rounded-full bg-white/90 px-4 py-2 text-xs font-black text-slate-900 shadow-sm transition-transform duration-300 group-hover:translate-x-1">
+                {room.cta} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
