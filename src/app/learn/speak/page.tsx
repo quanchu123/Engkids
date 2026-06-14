@@ -69,6 +69,7 @@ export default function SpeakPage() {
   const finalTextRef = useRef('');
   const levelRef = useRef(level);
   const turnsRef = useRef(turns);
+  const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   levelRef.current = level;
   turnsRef.current = turns;
@@ -94,6 +95,26 @@ export default function SpeakPage() {
     setSupported(Boolean(getRecognitionCtor()) && typeof window !== 'undefined' && 'speechSynthesis' in window);
   }, []);
 
+  // Preload + cache the best English voice. Browsers populate getVoices()
+  // asynchronously, so the first utterance often sees an empty list; listening
+  // to `voiceschanged` makes sure we pick a clear female voice from turn one.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    const synth = window.speechSynthesis;
+    const pickVoice = () => {
+      const voices = synth.getVoices();
+      if (voices.length === 0) return;
+      voiceRef.current =
+        voices.find((v) => /en[-_]US/i.test(v.lang) && /female|samantha|zira|google|aria|jenny/i.test(v.name)) ||
+        voices.find((v) => /en[-_]US/i.test(v.lang)) ||
+        voices.find((v) => /^en/i.test(v.lang)) ||
+        null;
+    };
+    pickVoice();
+    synth.addEventListener('voiceschanged', pickVoice);
+    return () => synth.removeEventListener('voiceschanged', pickVoice);
+  }, []);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [turns, thinking, interim]);
@@ -106,9 +127,7 @@ export default function SpeakPage() {
     utter.lang = 'en-US';
     utter.rate = 0.92;
     utter.pitch = 1.05;
-    const voice = synth.getVoices().find((v) => /en[-_]US/i.test(v.lang) && /female|samantha|zira|google/i.test(v.name))
-      || synth.getVoices().find((v) => /^en/i.test(v.lang));
-    if (voice) utter.voice = voice;
+    if (voiceRef.current) utter.voice = voiceRef.current;
     utter.onstart = () => setSpeaking(true);
     utter.onend = () => setSpeaking(false);
     utter.onerror = () => setSpeaking(false);
