@@ -354,20 +354,19 @@ function StageWorld({ stageModel, currentLessonId }: { stageModel: LessonRoadmap
 function UnitSection({ unit, theme, currentLessonId }: { unit: LessonRoadmapUnit; theme: ReturnType<typeof themeFor>; currentLessonId: string | null }) {
   if (unit.nodes.length === 0) return null;
   return (
-    <div className="mb-4 mt-3">
-      <div className="mb-1 flex items-center justify-between gap-3 px-3">
-        <div className="flex items-center gap-2">
-          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-black uppercase ${theme.soft} ${theme.text}`}>{unit.theme}</span>
-          <span className="text-sm font-black text-slate-700">{unit.titleVi}</span>
+    <div className="mt-6 first:mt-4">
+      <div className="mb-3 flex items-center justify-between gap-3 px-1">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className={`flex-shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-black uppercase ${theme.soft} ${theme.text}`}>{unit.theme}</span>
+          <span className="truncate text-sm font-black text-slate-700">{unit.titleVi}</span>
         </div>
-        <span className="text-xs font-bold text-slate-400">{unit.doneCount}/{unit.totalCount}</span>
+        <span className="flex-shrink-0 text-xs font-bold text-slate-400">{unit.doneCount}/{unit.totalCount}</span>
       </div>
-      <div className="relative px-2 py-2">
+      <div className="relative pl-1">
         {unit.nodes.map((node, i) => (
           <PathNode
             key={node.lessonId}
             node={node}
-            align={i % 2 === 0 ? 'left' : 'right'}
             isLast={i === unit.nodes.length - 1}
             theme={theme}
             isCurrent={node.lessonId === currentLessonId}
@@ -380,13 +379,11 @@ function UnitSection({ unit, theme, currentLessonId }: { unit: LessonRoadmapUnit
 
 function PathNode({
   node,
-  align,
   isLast,
   theme,
   isCurrent,
 }: {
   node: LessonRoadmapNode;
-  align: 'left' | 'right';
   isLast: boolean;
   theme: ReturnType<typeof themeFor>;
   isCurrent: boolean;
@@ -395,76 +392,75 @@ function PathNode({
   const done = node.status === 'done';
   const active = node.status === 'current' || isCurrent;
 
-  const circle = (
+  return (
     <Link
       href={locked ? '#' : node.href}
       aria-disabled={locked}
       tabIndex={locked ? -1 : 0}
-      className={`group relative flex flex-col items-center ${locked ? 'pointer-events-none' : ''}`}
+      className={`group relative flex gap-4 ${locked ? 'pointer-events-none' : ''}`}
     >
-      {active && (
-        <span className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900 px-3 py-1 text-[11px] font-black text-white shadow-lg">
-          BẮT ĐẦU
-          <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+      {/* Left rail: bead + connector line, both centered on the same axis */}
+      <div className="relative flex w-[64px] flex-shrink-0 flex-col items-center">
+        <span
+          className={[
+            'relative z-10 flex h-16 w-16 items-center justify-center rounded-full transition',
+            done
+              ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
+              : locked
+                ? 'bg-slate-200'
+                : `bg-gradient-to-br ${theme.from} ${theme.to}`,
+            active ? 'ring-4 ring-yellow-300 ring-offset-2' : '',
+            !locked ? 'group-hover:-translate-y-0.5' : '',
+          ].join(' ')}
+          style={{ boxShadow: locked ? undefined : '0 5px 0 rgba(0,0,0,0.12)' }}
+        >
+          {locked ? (
+            <Lock className="h-6 w-6 text-slate-400" aria-hidden="true" />
+          ) : done ? (
+            <Check className="h-8 w-8 text-white" aria-hidden="true" />
+          ) : (
+            <UiIcon name={iconForNode(node)} size={32} />
+          )}
+          {done && (
+            <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-400 text-white shadow ring-2 ring-white">
+              <Star className="h-3.5 w-3.5 fill-white" aria-hidden="true" />
+            </span>
+          )}
         </span>
-      )}
-      <span
-        className={[
-          'relative flex h-[72px] w-[72px] items-center justify-center rounded-full shadow-lg transition',
-          done
-            ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
-            : locked
-              ? 'bg-slate-200'
-              : `bg-gradient-to-br ${theme.from} ${theme.to}`,
-          active ? 'ring-4 ring-yellow-300 ring-offset-2 animate-pulse' : '',
-          !locked ? 'group-hover:-translate-y-1' : '',
-        ].join(' ')}
-        style={{ boxShadow: locked ? undefined : '0 6px 0 rgba(0,0,0,0.12)' }}
-      >
-        {locked ? (
-          <Lock className="h-7 w-7 text-slate-400" aria-hidden="true" />
-        ) : done ? (
-          <Check className="h-9 w-9 text-white" aria-hidden="true" />
-        ) : (
-          <UiIcon name={iconForNode(node)} size={36} />
+        {/* Connector grows to fill the row height so spacing stays even */}
+        {!isLast && (
+          <span
+            className={`absolute top-16 bottom-0 w-1.5 rounded-full ${done ? 'bg-emerald-300' : locked ? 'bg-slate-200' : theme.dot} opacity-50`}
+            aria-hidden="true"
+          />
         )}
-        {done && (
-          <span className="absolute -right-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-yellow-400 text-white shadow ring-2 ring-white">
-            <Star className="h-4 w-4 fill-white" aria-hidden="true" />
-          </span>
-        )}
-      </span>
-    </Link>
-  );
-
-  const label = (
-    <div className={`max-w-[210px] ${align === 'left' ? 'text-left' : 'text-right'}`}>
-      <p className={`text-sm font-black leading-snug ${locked ? 'text-slate-400' : 'text-slate-900'}`}>{node.titleVi}</p>
-      {!locked && node.estimatedMinutes > 0 && (
-        <p className="text-xs font-bold text-slate-500">{node.estimatedMinutes} phút</p>
-      )}
-      {!locked && node.skillFocus.length > 0 && (
-        <div className={`mt-1 flex flex-wrap gap-1 ${align === 'right' ? 'justify-end' : ''}`}>
-          {node.skillFocus.slice(0, 3).map((skill) => (
-            <span key={skill} className={`rounded-full px-2 py-0.5 text-[10px] font-black ${theme.soft} ${theme.text}`}>{skill}</span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="relative">
-      <div className={`flex items-center gap-4 ${align === 'left' ? 'justify-start pr-10' : 'flex-row-reverse justify-start pl-10'}`}>
-        {circle}
-        {label}
       </div>
-      {!isLast && (
-        <div className="flex justify-center py-1" aria-hidden="true">
-          <span className={`h-7 w-1.5 rounded-full ${done ? 'bg-emerald-300' : locked ? 'bg-slate-200' : theme.dot} opacity-60`} />
+
+      {/* Right: label card */}
+      <div className={`min-w-0 flex-1 ${isLast ? 'pb-1' : 'pb-7'}`}>
+        <div
+          className={`rounded-2xl border bg-white px-4 py-3 shadow-sm transition group-hover:shadow-md ${
+            active ? `${theme.ring} ring-2` : 'border-slate-100'
+          }`}
+        >
+          {active && (
+            <span className={`mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${theme.soft} ${theme.text}`}>
+              Bắt đầu tại đây
+            </span>
+          )}
+          <p className={`text-sm font-black leading-snug ${locked ? 'text-slate-400' : 'text-slate-900'}`}>{node.titleVi}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {!locked && node.estimatedMinutes > 0 && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{node.estimatedMinutes} phút</span>
+            )}
+            {!locked && node.skillFocus.slice(0, 3).map((skill) => (
+              <span key={skill} className={`rounded-full px-2 py-0.5 text-[10px] font-black ${theme.soft} ${theme.text}`}>{skill}</span>
+            ))}
+            {locked && <span className="text-[11px] font-bold text-slate-400">Hoàn thành bài trước để mở khóa</span>}
+          </div>
         </div>
-      )}
-    </div>
+      </div>
+    </Link>
   );
 }
 
