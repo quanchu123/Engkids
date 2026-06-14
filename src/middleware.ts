@@ -150,19 +150,25 @@ export async function middleware(request: NextRequest) {
       }
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Only a few routes require login. Everything else (home, roadmap,
+    // stories, videos, music, games, learn surfaces, ...) is public so kids can
+    // browse freely. We use an explicit protected-route allowlist instead of
+    // protecting everything-by-default, which previously bounced every tab to
+    // /login.
+    // NOTE: /admin is intentionally NOT here — admin auth uses a legacy JWT in
+    // sessionStorage (not a Supabase cookie session), so the client-side
+    // AdminGuard handles that gate. Adding it here would bounce admins to
+    // /login even when correctly signed in.
+    const PROTECTED_PREFIXES = ['/progress', '/parent', '/profile'];
+    const isProtectedRoute = PROTECTED_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    );
 
-    // Define public routes
-    const isPublicRoute = 
-      pathname === '/' || 
-      pathname.startsWith('/login') || 
-      pathname.startsWith('/auth') || 
-      pathname.startsWith('/api') || // Allow API routes (they handle their own auth/rate limiting)
-      pathname.startsWith('/_next') ||
-      pathname.startsWith('/favicon');
-
-    if (!user && !isPublicRoute) {
-      return NextResponse.redirect(new URL('/login', request.url));
+    if (isProtectedRoute) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
     }
   }
 

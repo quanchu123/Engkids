@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { authConfig } from '@/config/auth';
 
 // Server-side OAuth callback handler
@@ -19,9 +19,29 @@ export async function GET(request: NextRequest) {
 
   // Exchange code for session
   if (code) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // The redirect response carries the auth cookies set during the exchange,
+    // so the session is shared with middleware + API routes.
+    const response = NextResponse.redirect(
+      new URL(authConfig.redirects.afterLogin, request.url)
+    );
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            response.cookies.set({ name, value, ...options });
+          },
+          remove(name: string, options: CookieOptions) {
+            response.cookies.set({ name, value: '', ...options });
+          },
+        },
+      }
+    );
 
     try {
       const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
@@ -33,10 +53,8 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Success - redirect to after login page
-      return NextResponse.redirect(
-        new URL(authConfig.redirects.afterLogin, request.url)
-      );
+      // Success - cookies are attached to `response`.
+      return response;
     } catch (err) {
       console.error('Unexpected error during code exchange:', err);
       return NextResponse.redirect(

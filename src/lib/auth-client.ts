@@ -5,17 +5,22 @@
 
 'use client';
 
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { authConfig } from '@/config/auth';
 
-// Client-side Supabase instance
-let supabaseClient: ReturnType<typeof createClient> | null = null;
+// Client-side Supabase instance.
+// Uses @supabase/ssr's browser client so the session is persisted in cookies
+// (not just localStorage). This lets the server middleware + API routes read
+// the same session via cookies; otherwise a logged-in user keeps getting
+// redirected back to /login.
+let supabaseClient: ReturnType<typeof createBrowserClient> | null = null;
 
 function getSupabase() {
   if (!supabaseClient) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    supabaseClient = createClient(supabaseUrl, supabaseKey);
+    supabaseClient = createBrowserClient(supabaseUrl, supabaseKey);
   }
   return supabaseClient;
 }
@@ -152,7 +157,7 @@ export function onAuthStateChange(callback: (user: User | null) => void) {
   const supabase = getSupabase();
   
   const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    async (event, session) => {
+    async (_event: AuthChangeEvent, session: Session | null) => {
       if (session?.user) {
         const user: User = {
           id: session.user.id,
