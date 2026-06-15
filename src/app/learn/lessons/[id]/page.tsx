@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
   Headphones,
   Lightbulb,
   Loader2,
+  LogIn,
   Mic,
   PartyPopper,
   PenLine,
@@ -20,7 +21,21 @@ import {
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useAppStore } from '@/store/useAppStore';
-import type { LessonDetailPublic, LessonStepPublic } from '@/services/lessons';
+import { enqueuePendingLesson } from '@/lib/pending-lessons';
+import { injectLessonWordsIntoSRS } from '@/services/vocabulary';
+import {
+  aggregateLessonScore,
+  type StepResult,
+  type WordOutcome,
+} from '@/lib/lesson-scoring';
+import MatchPairs from '@/components/lessons/MatchPairs';
+import ListenAndSelect from '@/components/lessons/ListenAndSelect';
+import FillBlank from '@/components/lessons/FillBlank';
+import WordBankBuild from '@/components/lessons/WordBankBuild';
+import SpeakingRepeat from '@/components/lessons/SpeakingRepeat';
+import WritingTask from '@/components/lessons/WritingTask';
+import { deriveBlank } from '@/lib/sentence-blank';
+import type { LessonDetailPublic, LessonStepPublic, LessonStepType } from '@/services/lessons';
 
 // ============================================================
 // LESSON PLAYER (kid-friendly, one step at a time)
@@ -97,7 +112,17 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
   const [stepIndex, setStepIndex] = useState(0);
   const [finished, setFinished] = useState(false);
   const [saving, setSaving] = useState(false);
+  // null = unknown/in-flight, true = saved to account, false = queued locally
+  // (guest) and will sync on login.
+  const [savedRemotely, setSavedRemotely] = useState<boolean | null>(null);
   const addMistake = useAppStore((state) => state.addMistake);
+  const saveWord = useAppStore((state) => state.saveWord);
+  // Per-step scoring results, keyed by stepId. Drives the honest lesson score
+  // and the lesson -> SRS bridge (every word the child actually practised).
+  const resultsRef = useRef<Record<string, StepResult>>({});
+  // Step ids that have reported a result. Gates the "next" button so the child
+  // finishes the active exercise before moving on (passive steps report on mount).
+  const [reportedSteps, setReportedSteps] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let active = true;
@@ -143,6 +168,18 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
     }).catch(() => undefined);
   };
 
+  // A step renderer reports its outcome here when the child finishes it. We
+  // stash the full result (for the lesson score + SRS bridge) and, for steps
+  // that actually tested the child, send a scored event so analytics reflects
+  // real accuracy instead of the old hardcoded 100.
+  const recordResult = (step: LessonStepPublic, r: Omit<StepResult, 'stepId' | 'stepType'>) => {
+    resultsRef.current[step.id] = { stepId: step.id, stepType: step.stepType, ...r };
+    setReportedSteps((prev) => (prev[step.id] ? prev : { ...prev, [step.id]: true }));
+    if (r.total > 0) {
+      saveEvent('quiz-result', step, r.scorePercent);
+    }
+  };
+
   const goNext = () => {
     if (!activeStep) return;
     saveEvent('step-complete', activeStep);
@@ -161,31 +198,88 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
     }
   };
 
+  // Guest fallback for the lesson -> review bridge: seed practised words into
+  // the local savedWords list (deduped by saveWord itself), so the guest review
+  // mode has them and they sync to the server SRS on the next login.
+  const seedGuestWords = (words: WordOutcome[]) => {
+    const seen = new Set<string>();
+    for (const w of words) {
+      const key = w.en.trim().toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      saveWord(w.en, w.vi || '', false, '', '', w.example || '');
+    }
+  };
+
   const completeLesson = async () => {
     if (!lesson) return;
     setSaving(true);
     setFinished(true);
+    // Honest score from the steps that actually tested the child (quiz, match,
+    // fill-blank, speaking, writing). A lesson with no scored steps falls back
+    // to 100 inside aggregateLessonScore.
+    const allResults = Object.values(resultsRef.current);
+    const scorePercent = aggregateLessonScore(allResults);
+    // Every word the child practised across all steps, for the SRS bridge.
+    const practisedWords = allResults.flatMap((r) => r.words);
+    const payload = {
+      status: 'done' as const,
+      completedSteps: totalSteps,
+      totalSteps,
+      scorePercent,
+      lastStepId: activeStep?.id,
+    };
     try {
-      await fetch(`/api/lessons/${encodeURIComponent(lesson.id)}/progress`, {
+      const res = await fetch(`/api/lessons/${encodeURIComponent(lesson.id)}/progress`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: 'done',
-          completedSteps: totalSteps,
-          totalSteps,
-          scorePercent: 100,
-          lastStepId: activeStep?.id,
-        }),
+        body: JSON.stringify(payload),
       });
+      if (res.ok) {
+        setSavedRemotely(true);
+        // Logged in: push every practised word into the personalised SM-2 review
+        // queue. Fire-and-forget so it never blocks the celebration card.
+        void injectLessonWordsIntoSRS(practisedWords, lesson.id);
+      } else {
+        // 401 (guest) or any other failure: queue locally so the completion
+        // syncs to the account the moment the child logs in. Never pretend it
+        // was saved when it wasn't.
+        enqueuePendingLesson({
+          lessonId: lesson.id,
+          completedSteps: payload.completedSteps,
+          totalSteps: payload.totalSteps,
+          scorePercent: payload.scorePercent,
+          lastStepId: payload.lastStepId,
+          finishedAt: new Date().toISOString(),
+        });
+        // Guests have no server SRS, so seed local savedWords instead. These
+        // feed the local-mode review queue and sync up on the next login.
+        seedGuestWords(practisedWords);
+        setSavedRemotely(false);
+      }
     } catch {
-      /* guests / offline: still show the celebration locally */
+      // Offline / network error: queue locally and retry on next login/sync.
+      enqueuePendingLesson({
+        lessonId: lesson.id,
+        completedSteps: payload.completedSteps,
+        totalSteps: payload.totalSteps,
+        scorePercent: payload.scorePercent,
+        lastStepId: payload.lastStepId,
+        finishedAt: new Date().toISOString(),
+      });
+      seedGuestWords(practisedWords);
+      setSavedRemotely(false);
     } finally {
       setSaving(false);
     }
   };
 
   const activeMeta = metaFor(activeStep?.stepType ?? 'warmup');
+  // The "next" button stays locked until the active step reports a result.
+  // Passive steps report on mount, so they unlock almost immediately; active
+  // exercises unlock only once the child has actually finished them.
+  const canAdvance = activeStep ? Boolean(reportedSteps[activeStep.id]) : false;
   const pageBg = finished
     ? 'from-emerald-50 via-teal-50 to-sky-50'
     : lesson
@@ -214,7 +308,7 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
             </div>
           </div>
         ) : finished ? (
-          <CelebrationCard lesson={lesson} saving={saving} totalSteps={totalSteps} />
+          <CelebrationCard lesson={lesson} saving={saving} totalSteps={totalSteps} savedRemotely={savedRemotely} />
         ) : (
           <>
             {/* Lesson title + progress — adopts the active step's color world */}
@@ -276,7 +370,13 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
             {/* Active step */}
             {activeStep && (
               <div className="mt-5">
-                <StepRenderer key={activeStep.id} step={activeStep} onMistake={addMistake} stageId={lesson.stageId} />
+                <StepRenderer
+                  key={activeStep.id}
+                  step={activeStep}
+                  onMistake={addMistake}
+                  onComplete={(r) => recordResult(activeStep, r)}
+                  stageId={lesson.stageId}
+                />
               </div>
             )}
 
@@ -293,7 +393,8 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
               <button
                 type="button"
                 onClick={goNext}
-                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br ${activeMeta.from} ${activeMeta.to} px-5 py-3.5 text-sm font-black text-white transition hover:-translate-y-0.5`}
+                disabled={!canAdvance}
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br ${activeMeta.from} ${activeMeta.to} px-5 py-3.5 text-sm font-black text-white transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-40`}
                 style={{ boxShadow: `0 6px 0 rgba(0,0,0,0.12), 0 12px 24px ${activeMeta.glow}` }}
               >
                 {stepIndex < totalSteps - 1 ? (
@@ -312,16 +413,84 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
 
 // ── Step renderer ──────────────────────────────────────────────────────────
 
+// Step types that don't actively test the child. They auto-report a passing
+// result on mount so the lesson score isn't dragged down and the "next" gate
+// never blocks. The words shown are still threaded into the SRS bridge at a
+// neutral quality.
+const PASSIVE_STEP_TYPES: ReadonlySet<LessonStepType> = new Set([
+  'warmup',
+  'vocab',
+  'reading',
+  'listening',
+  'grammar',
+  'review',
+]);
+
+function passiveWords(step: LessonStepPublic): WordOutcome[] {
+  const items = asItems(step.payload);
+  if (items.length > 0) {
+    return items.map((it) => ({ en: it.en, vi: it.vi, pos: it.pos, example: it.example, correct: true, passive: true }));
+  }
+  return asWords(step.payload).map((w) => ({ en: w, vi: '', correct: true, passive: true }));
+}
+
 function StepRenderer({
   step,
   onMistake,
+  onComplete,
   stageId,
 }: {
   step: LessonStepPublic;
   onMistake: ReturnType<typeof useAppStore.getState>['addMistake'];
+  onComplete: (r: Omit<StepResult, 'stepId' | 'stepType'>) => void;
   stageId: string;
 }) {
   const meta = metaFor(step.stepType);
+  const isPassive = PASSIVE_STEP_TYPES.has(step.stepType);
+
+  // Decide whether this step can run an active exercise from its payload. When
+  // the payload is too thin (e.g. no example sentences), we gracefully fall back
+  // to the old passive renderer so a step is never a dead end.
+  const items = asItems(step.payload);
+  const warmupWords = asWords(step.payload);
+  const sentencesText = asSentences(step.payload).map((s) => s.text);
+  const focusWords = asWords({ words: step.payload.focusWords });
+  const requiredWords = asWords({ words: step.payload.requiredWords });
+  const prompt = String(step.payload.prompt || '');
+  // Optional precomputed token list from the generator (payload.build.tokens).
+  const buildTokens = (() => {
+    const b = step.payload.build as Record<string, unknown> | null | undefined;
+    if (!b || !Array.isArray(b.tokens)) return undefined;
+    const toks = (b.tokens as unknown[]).filter((t): t is string => typeof t === 'string');
+    return toks.length >= 3 && toks.length <= 8 ? toks : undefined;
+  })();
+
+  const hasFill = sentencesText.some((s) => deriveBlank(s, focusWords) !== null);
+  const hasBuild = Boolean(buildTokens) || sentencesText.some((s) => {
+    const t = s.trim().split(/\s+/).filter(Boolean);
+    return t.length >= 3 && t.length <= 8;
+  });
+
+  let activeMode: 'match' | 'listen' | 'fill' | 'build' | 'speak' | 'write' | null = null;
+  if ((step.stepType === 'vocab' || step.stepType === 'review') && items.length >= 2) activeMode = 'match';
+  else if (step.stepType === 'warmup' && warmupWords.length >= 4) activeMode = 'listen';
+  else if (step.stepType === 'grammar' && hasFill) activeMode = 'fill';
+  else if ((step.stepType === 'reading' || step.stepType === 'listening') && hasBuild) activeMode = 'build';
+  else if (step.stepType === 'speaking' && requiredWords.length >= 1) activeMode = 'speak';
+  else if (step.stepType === 'writing') activeMode = 'write';
+
+  // Steps that don't report a result themselves (passive fallbacks + the
+  // speaking stub when there are no required words) auto-report a neutral pass
+  // on mount so the lesson score isn't dragged down and the gate opens.
+  const reportsOnMount =
+    !activeMode && (isPassive || step.stepType === 'speaking' || step.stepType === 'writing');
+  useEffect(() => {
+    if (reportsOnMount) {
+      onComplete({ correct: 0, total: 0, scorePercent: 100, words: passiveWords(step) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step.id]);
+
   return (
     <section className={`rounded-[28px] border-2 border-white bg-white p-5 shadow-lg ring-1 md:p-6 ${meta.ring}`}>
       <div className="flex items-center gap-3">
@@ -339,13 +508,29 @@ function StepRenderer({
       {step.instructionVi && <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{step.instructionVi}</p>}
 
       <div className="mt-4">
-        {step.stepType === 'warmup' && <WarmupStep payload={step.payload} />}
-        {step.stepType === 'vocab' && <VocabStep payload={step.payload} />}
-        {(step.stepType === 'reading' || step.stepType === 'listening') && <ReadingStep payload={step.payload} />}
-        {step.stepType === 'grammar' && <GrammarStep payload={step.payload} />}
-        {(step.stepType === 'speaking' || step.stepType === 'writing') && <OutputStep payload={step.payload} kind={step.stepType} />}
-        {step.stepType === 'quiz' && <QuizStep payload={step.payload} stageId={stageId} onMistake={onMistake} />}
-        {step.stepType === 'review' && <VocabStep payload={step.payload} />}
+        {activeMode === 'match' && <MatchPairs items={items} onComplete={onComplete} />}
+        {activeMode === 'listen' && (
+          <ListenAndSelect items={warmupWords.map((w) => ({ en: w, vi: '' }))} onComplete={onComplete} />
+        )}
+        {activeMode === 'fill' && (
+          <FillBlank sentences={sentencesText} targetWords={focusWords} onComplete={onComplete} />
+        )}
+        {activeMode === 'build' && <WordBankBuild sentences={sentencesText} tokens={buildTokens} onComplete={onComplete} />}
+        {activeMode === 'speak' && <SpeakingRepeat prompt={prompt} words={requiredWords} onComplete={onComplete} />}
+        {activeMode === 'write' && (
+          <WritingTask prompt={prompt} level={stageId} requiredWords={requiredWords} onComplete={onComplete} />
+        )}
+        {!activeMode && (
+          <>
+            {step.stepType === 'warmup' && <WarmupStep payload={step.payload} />}
+            {step.stepType === 'vocab' && <VocabStep payload={step.payload} />}
+            {(step.stepType === 'reading' || step.stepType === 'listening') && <ReadingStep payload={step.payload} />}
+            {step.stepType === 'grammar' && <GrammarStep payload={step.payload} />}
+            {(step.stepType === 'speaking' || step.stepType === 'writing') && <OutputStep payload={step.payload} kind={step.stepType} />}
+            {step.stepType === 'quiz' && <QuizStep payload={step.payload} stageId={stageId} onMistake={onMistake} onComplete={onComplete} />}
+            {step.stepType === 'review' && <VocabStep payload={step.payload} />}
+          </>
+        )}
       </div>
     </section>
   );
@@ -516,10 +701,12 @@ function QuizStep({
   payload,
   stageId,
   onMistake,
+  onComplete,
 }: {
   payload: Record<string, unknown>;
   stageId: string;
   onMistake: ReturnType<typeof useAppStore.getState>['addMistake'];
+  onComplete: (r: Omit<StepResult, 'stepId' | 'stepType'>) => void;
 }) {
   const questions: QuizQuestion[] = useMemo(
     () =>
@@ -551,10 +738,12 @@ function QuizStep({
   }, [questions]);
 
   const [picked, setPicked] = useState<Record<number, string>>({});
+  const reportedRef = useRef(false);
 
   const choose = (qi: number, choice: string) => {
     if (picked[qi]) return; // lock after first pick
-    setPicked((p) => ({ ...p, [qi]: choice }));
+    const next = { ...picked, [qi]: choice };
+    setPicked(next);
     const q = questions[qi];
     if (choice !== q.answer) {
       onMistake({
@@ -565,6 +754,23 @@ function QuizStep({
         correctAnswer: q.answer,
         skillId: 'vocabulary',
         stageId,
+      });
+    }
+    // Once every question has been answered, report the honest score up.
+    if (!reportedRef.current && Object.keys(next).length === questions.length) {
+      reportedRef.current = true;
+      const words: WordOutcome[] = questions.map((qq) => ({
+        en: qq.word,
+        vi: qq.answer,
+        correct: next[questions.indexOf(qq)] === qq.answer,
+        attempts: 1,
+      }));
+      const correct = words.filter((w) => w.correct).length;
+      onComplete({
+        correct,
+        total: questions.length,
+        scorePercent: Math.round((correct / questions.length) * 100),
+        words,
       });
     }
   };
@@ -620,7 +826,7 @@ function QuizStep({
   );
 }
 
-function CelebrationCard({ lesson, saving, totalSteps }: { lesson: LessonDetailPublic; saving: boolean; totalSteps: number }) {
+function CelebrationCard({ lesson, saving, totalSteps, savedRemotely }: { lesson: LessonDetailPublic; saving: boolean; totalSteps: number; savedRemotely: boolean | null }) {
   return (
     <div
       className="relative mt-8 overflow-hidden rounded-[32px] bg-gradient-to-br from-emerald-400 via-teal-500 to-sky-500 p-8 text-center text-white"
@@ -658,6 +864,20 @@ function CelebrationCard({ lesson, saving, totalSteps }: { lesson: LessonDetailP
         <p className="relative mt-3 flex items-center justify-center gap-2 text-xs font-bold text-white/80">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Đang lưu tiến trình...
         </p>
+      )}
+
+      {!saving && savedRemotely === false && (
+        <div className="relative mx-auto mt-4 max-w-sm rounded-2xl bg-white/20 px-4 py-3 backdrop-blur-sm">
+          <p className="text-xs font-bold text-white/95">
+            Tiến độ đang lưu tạm trên máy này. Đăng nhập để giữ lại và đồng bộ trên mọi thiết bị nhé!
+          </p>
+          <Link
+            href="/login"
+            className="mt-2.5 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-black text-emerald-700 shadow-md transition hover:-translate-y-0.5"
+          >
+            <LogIn className="h-3.5 w-3.5" aria-hidden="true" /> Đăng nhập để lưu
+          </Link>
+        </div>
       )}
 
       <div className="relative mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">

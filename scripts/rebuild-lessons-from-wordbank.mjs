@@ -109,6 +109,51 @@ function skillForStep(stepType) {
   return 'vocabulary';
 }
 
+// Pure helpers that MUST stay in lock-step with the client-side contract in
+// src/lib/sentence-blank.ts (deriveBlank) and src/components/lessons/
+// WordBankBuild.tsx (pickSentence). Scripts can't import the TS modules, so the
+// logic is duplicated here and guarded by the shared test contract. The
+// renderers tolerate BOTH precomputed payloads (preferred) and deriving these
+// client-side from the raw sentences, so a generator run is decoupled from
+// deploy and never required.
+function normalizeBlankWord(word) {
+  return String(word)
+    .toLowerCase()
+    .replace(/^[^\p{L}\p{N}'-]+|[^\p{L}\p{N}'-]+$/gu, '')
+    .trim();
+}
+
+function deriveBlankForGen(sentence, targetWords) {
+  const text = String(sentence).trim();
+  if (!text) return null;
+  const targets = new Set(
+    targetWords.map((w) => normalizeBlankWord(w)).filter((w) => w.length >= 3),
+  );
+  if (targets.size === 0) return null;
+  const tokens = text.split(/(\s+)/);
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (/^\s+$/.test(token) || token === '') continue;
+    const key = normalizeBlankWord(token);
+    if (key && targets.has(key)) {
+      return {
+        before: tokens.slice(0, i).join('').trimEnd(),
+        after: tokens.slice(i + 1).join('').trimStart(),
+        answer: key,
+      };
+    }
+  }
+  return null;
+}
+
+function pickBuildSentence(sentences) {
+  for (const s of sentences) {
+    const tokens = String(s).trim().replace(/\s+/g, ' ').split(' ').filter(Boolean);
+    if (tokens.length >= 3 && tokens.length <= 8) return tokens;
+  }
+  return null;
+}
+
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -299,11 +344,24 @@ async function main() {
 
         const attribution = [...new Set(['CEFR-J / Octanove vocabulary profiles.', ...sentPack.map((s) => s.attribution), passage ? 'Project Gutenberg.' : null].filter(Boolean))];
         const base = { stageId: stage.id, topic, attribution, license: 'CEFR-rated rows approved in Engkids source review.' };
+        // Precompute the active-exercise data so the client doesn't have to
+        // derive it (renderers still fall back to deriving from `sentences` when
+        // these are absent). grammar -> fill-in-the-blank; reading -> word-build.
+        const grammarFocus = pack.slice(0, 4).map((w) => w.en);
+        const grammarSentences = sentPack.map((s) => s.text);
+        const blanks = grammarSentences
+          .map((text) => {
+            const b = deriveBlankForGen(text, grammarFocus);
+            return b ? { sentence: text, before: b.before, after: b.after, answer: b.answer } : null;
+          })
+          .filter(Boolean)
+          .slice(0, 5);
+        const buildTokens = pickBuildSentence(sentPack.map((s) => s.text));
         const stepRows = [
           ['warmup', 'Khoi dong tu khoa', 'Doc nhanh cac tu va chon tu da biet.', { ...base, words: pack.slice(0, 5).map((w) => w.en) }],
           ['vocab', 'Tu vung CEFR', 'Ghep tu voi nghia tieng Viet va chu y loai tu.', { ...base, items: pack.map((w) => ({ en: w.en, vi: w.vi, pos: w.part_of_speech, example: exampleMap.get(w.en.toLowerCase())?.text || w.example || '' })) }],
-          ['reading', passage ? 'Doc doan van mien phi ban quyen' : 'Doc cau vi du Tatoeba', 'Tim y chinh va tu khoa trong ngu lieu.', { ...base, passage: passage ? { title: passage.title, author: passage.author, text: passage.text, sourceUrl: passage.source_url } : null, sentences: sentPack.map((s) => ({ text: s.text, sourceUrl: s.source_url })) }],
-          ['grammar', 'Mau cau va cach noi', 'Quan sat cach tu duoc dung trong cau va tao mot cau moi.', { ...base, focusWords: pack.slice(0, 4).map((w) => w.en), sentences: sentPack.map((s) => s.text) }],
+          ['reading', passage ? 'Doc doan van mien phi ban quyen' : 'Doc cau vi du Tatoeba', 'Tim y chinh va tu khoa trong ngu lieu.', { ...base, passage: passage ? { title: passage.title, author: passage.author, text: passage.text, sourceUrl: passage.source_url } : null, sentences: sentPack.map((s) => ({ text: s.text, sourceUrl: s.source_url })), build: buildTokens ? { tokens: buildTokens } : null }],
+          ['grammar', 'Mau cau va cach noi', 'Quan sat cach tu duoc dung trong cau va tao mot cau moi.', { ...base, focusWords: grammarFocus, sentences: grammarSentences, blanks }],
           [lessonNum % 2 === 0 ? 'writing' : 'speaking', lessonNum % 2 === 0 ? 'Viet output ngan' : 'Noi output ngan', 'Dung tu da hoc de tao output phu hop level.', { ...base, prompt: `Use at least three words from this ${stage.label} pack to talk about ${topic}.`, requiredWords: pack.slice(0, 6).map((w) => w.en) }],
           ['quiz', 'Mini checkpoint', 'Tra loi nhanh de kiem tra tu va nghia.', { ...base, questions: pack.slice(0, 5).map((w) => ({ type: 'meaning-check', word: w.en, answer: w.vi })) }],
         ];

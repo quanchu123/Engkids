@@ -6,6 +6,7 @@
 
 import { getSupabaseClient } from '@/lib/auth-client';
 import { calculateNextReview, calculateMasteryLevel } from '@/lib/srs';
+import { qualityFromAccuracy, PASSIVE_QUALITY, type WordOutcome } from '@/lib/lesson-scoring';
 
 // Types
 export interface VocabularyItem {
@@ -117,6 +118,71 @@ export async function addVocabulary(input: AddVocabularyInput): Promise<Vocabula
  */
 export function syncSavedWordToSRS(input: AddVocabularyInput): void {
   void addVocabulary(input).catch((e) => console.warn('SRS sync skipped:', e));
+}
+
+/**
+ * Bridge a finished lesson's practised words into the SM-2 review schedule.
+ *
+ * For each unique word the child interacted with, this upserts a
+ * `vocabulary_items` row (no duplicate/reset thanks to the
+ * `(user_profile_id, word_lower)` upsert) and then submits one review whose
+ * quality reflects how the child actually did:
+ *   - actively tested  -> qualityFromAccuracy(correct, attempts)
+ *   - only seen passively -> PASSIVE_QUALITY (enters the queue, not over-promoted)
+ *
+ * This is what makes lessons feed each user's personalised review queue — the
+ * gap the SRS had before (words only entered when manually saved from a story).
+ *
+ * Returns the number of words successfully scheduled. Safe no-op for guests
+ * (addVocabulary resolves null with no auth); callers handle the guest path by
+ * seeding local savedWords instead. Never throws.
+ */
+export async function injectLessonWordsIntoSRS(
+  words: WordOutcome[],
+  lessonId: string,
+): Promise<number> {
+  // De-duplicate by lowercased English word; keep the best (most-correct,
+  // fewest-attempts) outcome so a word practised in several steps is scheduled
+  // on its strongest evidence.
+  const byWord = new Map<string, WordOutcome>();
+  for (const w of words) {
+    const key = w.en.trim().toLowerCase();
+    if (!key) continue;
+    const existing = byWord.get(key);
+    if (!existing) {
+      byWord.set(key, w);
+      continue;
+    }
+    const better =
+      (Number(w.correct) > Number(existing.correct)) ||
+      (w.correct === existing.correct && (w.attempts ?? 1) < (existing.attempts ?? 1));
+    if (better) byWord.set(key, w);
+  }
+
+  let scheduled = 0;
+  for (const w of byWord.values()) {
+    try {
+      const item = await addVocabulary({
+        word: w.en,
+        meaningVi: w.vi || '',
+        partOfSpeech: undefined,
+        exampleSentence: w.example,
+        sourceType: 'manual',
+        sourceId: lessonId,
+      });
+      // Guest / unauthenticated: addVocabulary returns null — stop early, the
+      // caller handles the local seeding path.
+      if (!item) return scheduled;
+      const quality = w.passive
+        ? PASSIVE_QUALITY
+        : qualityFromAccuracy(w.correct, w.attempts ?? 1);
+      await submitReview(item.id, quality);
+      scheduled += 1;
+    } catch (e) {
+      console.warn('Lesson SRS inject skipped for word:', w.en, e);
+    }
+  }
+  return scheduled;
 }
 
 /**

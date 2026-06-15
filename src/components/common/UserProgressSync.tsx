@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getCurrentUser, onAuthStateChange } from '@/lib/auth-client';
-import { createDefaultProgress, DEFAULT_SETTINGS } from '@/lib/progress';
+import { createDefaultProgress, DEFAULT_SETTINGS, mergeProgressSnapshots } from '@/lib/progress';
 import { getDefaultEquipped } from '@/lib/avatar';
+import { flushPendingLessons } from '@/lib/pending-lessons';
 import { useAppStore } from '@/store/useAppStore';
 import {
   loadRemoteProgressSnapshot,
@@ -96,9 +97,15 @@ export default function UserProgressSync() {
       const cachedOwnerId = window.localStorage.getItem(PROGRESS_OWNER_KEY);
       const isSwitchingAccount = cachedOwnerId && cachedOwnerId !== userId;
 
-      // Capture the local economy BEFORE any reset so we can preserve coins/pet
-      // that were earned before this account ever synced (same-account first run).
+      // Capture the local economy AND learning progress BEFORE any reset so we
+      // can preserve coins/pet/stories/words earned before this account ever
+      // synced (same-account first run, or guest play before logging in).
       const localEconomy = readEconomy();
+      const localState = useAppStore.getState();
+      const localSnapshot = {
+        progress: localState.progress,
+        settings: localState.settings,
+      };
 
       if (isSwitchingAccount) {
         window.localStorage.removeItem('kids.progress.v2');
@@ -124,15 +131,31 @@ export default function UserProgressSync() {
       if (cancelled) return;
 
       if (!remoteSnapshot) {
+        // New account (no remote row yet). Keep whatever the child did locally —
+        // guest stories/words/stars — instead of the default reset above, unless
+        // we're switching accounts (then local belongs to the previous user).
+        if (!isSwitchingAccount) {
+          useAppStore.setState({
+            progress: localSnapshot.progress,
+            settings: localSnapshot.settings,
+          });
+        }
         applyingRemoteRef.current = false;
         readyToSaveRef.current = true;
         initializedUserIdRef.current = userId;
         return;
       }
 
+      // Merge guest/local progress into the remote snapshot so logging in never
+      // wipes work done before sync. On account switch we discard local (it
+      // belongs to the previous user) and adopt remote as-is.
+      const mergedSnapshot = isSwitchingAccount
+        ? remoteSnapshot
+        : mergeProgressSnapshots(localSnapshot, remoteSnapshot);
+
       useAppStore.setState({
-        progress: remoteSnapshot.progress,
-        settings: remoteSnapshot.settings,
+        progress: mergedSnapshot.progress,
+        settings: mergedSnapshot.settings,
       });
 
       // Economy: adopt remote when it has data; otherwise keep the local values
@@ -154,12 +177,21 @@ export default function UserProgressSync() {
       initializedUserIdRef.current = userId;
     };
 
-    initialize().catch((error) => {
-      console.error('Failed to initialize progress sync:', error);
-      applyingRemoteRef.current = false;
-      readyToSaveRef.current = false;
-      initializedUserIdRef.current = null;
-    });
+    initialize()
+      .then(() => {
+        if (cancelled) return;
+        // Now that we're signed in, push any lessons the child finished as a
+        // guest up to their account. Failures stay queued for the next attempt.
+        flushPendingLessons().catch((error) => {
+          console.error('Failed to flush pending lessons:', error);
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to initialize progress sync:', error);
+        applyingRemoteRef.current = false;
+        readyToSaveRef.current = false;
+        initializedUserIdRef.current = null;
+      });
 
     return () => {
       cancelled = true;
