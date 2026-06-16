@@ -23,7 +23,7 @@ ComicLingua Kids is an interactive web platform for children (ages 5-10) to lear
 ✅ **Vocabulary System** - Save words & flashcards  
 ✅ **Mini Games** - Memory match & quiz games  
 ✅ **Admin Panel** - Content management for stories & videos  
-✅ **Bunny.net Stream** - Professional video hosting with TUS upload  
+✅ **DigitalOcean Spaces** - Video hosting and streaming  
 
 ---
 
@@ -38,10 +38,9 @@ ComicLingua Kids is an interactive web platform for children (ages 5-10) to lear
 
 ### Backend & Services
 - **Supabase** - PostgreSQL database & authentication
-- **Bunny.net Stream** - Video hosting & streaming
+- **DigitalOcean Spaces** - Object storage for videos and assets
 - **Dictionary API** - Word definitions
 - **MyMemory Translation API** - English-Vietnamese translation
-- **TUS Protocol** - Resumable video uploads
 
 ### Architecture
 - Server-side rendering (SSR) for SEO
@@ -84,11 +83,11 @@ comic-lingua-kids/
 │   │   │   ├── Header.tsx       # Main navigation
 │   │   │   └── AdminSidebar.tsx # Admin sidebar
 │   │   └── video/               # Video components
-│   │       ├── VideoUploader.tsx       # TUS upload
+│   │       ├── VideoUploader.tsx       # Upload to DO Spaces
 │   │       ├── SubtitleEditor.tsx      # Subtitle editor
 │   │       └── VideoLearningPlayer.tsx # Video player
 │   ├── services/                # External services
-  │   ├── bunny.ts            # Bunny.net Stream API
+│   │   ├── storage.ts          # DigitalOcean Spaces API
 │   │   ├── dictionary.ts       # Dictionary API
 │   │   ├── translate.ts        # Translation API
 │   │   ├── image.ts            # Image generation
@@ -117,7 +116,7 @@ comic-lingua-kids/
 - Node.js 18+ 
 - npm or yarn
 - Supabase account
-- Bunny.net Stream account
+- DigitalOcean Spaces account
 
 ### 1. Clone Repository
 ```bash
@@ -137,11 +136,12 @@ Create `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# Bunny.net Stream
-BUNNY_API_KEY=your_bunny_api_key
-BUNNY_LIBRARY_ID=your_library_id
-NEXT_PUBLIC_BUNNY_LIBRARY_ID=your_library_id
-BUNNY_CDN_HOSTNAME=your_cdn_hostname.b-cdn.net
+# DigitalOcean Spaces
+DO_SPACES_KEY=your_do_spaces_key
+DO_SPACES_SECRET=your_do_spaces_secret
+DO_SPACES_ENDPOINT=your_do_spaces_endpoint
+DO_SPACES_BUCKET=your_do_spaces_bucket
+NEXT_PUBLIC_DO_CDN_URL=your_do_cdn_url
 
 # Optional: Image Generation
 OPENAI_API_KEY=your_openai_key
@@ -179,7 +179,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ### 2. Video Learning Platform
 - **Netflix-style UI** with featured hero section
 - **Category rows** by difficulty level
-- **Bunny.net Stream** video hosting
+- **DigitalOcean Spaces** video hosting
 - **Interactive subtitles:**
   - Click any English word in subtitles
   - Get instant definitions & translations
@@ -213,7 +213,7 @@ Open [http://localhost:3000](http://localhost:3000)
   - Add vocabulary with translations
   - Preview before publishing
 - **Video Management:**
-  - Upload videos to Bunny.net Stream
+  - Upload videos to DigitalOcean Spaces
   - Edit bilingual subtitles (VTT/SRT)
   - Set difficulty levels
   - Manage thumbnails
@@ -323,15 +323,14 @@ Open [http://localhost:3000](http://localhost:3000)
 - Vietnamese translation
 - Match quality score
 
-### Bunny.net Stream API
-**Base URL:** `https://video.bunnycdn.com/library/{library_id}`
+### DigitalOcean Spaces API
+**Endpoint:** Managed via AWS S3 SDK compatible client.
 
 **Operations:**
-- Create video
-- Get video status
-- Delete video
-- TUS upload for large files
-- HLS/DASH streaming
+- Upload object
+- Delete object
+- Generate pre-signed URLs
+- Serve via DO CDN
 
 ---
 
@@ -394,8 +393,7 @@ vercel --prod
 - ✅ WebP format for images
 - ✅ Code splitting with Next.js
 - ✅ Server-side rendering for SEO
-- ✅ Bunny.net CDN for videos
-- ✅ TUS resumable uploads
+- ✅ DigitalOcean Spaces CDN for videos
 
 ### Recommended
 - [ ] Implement service worker for offline
@@ -411,9 +409,9 @@ vercel --prod
 ### Common Issues
 
 #### Videos not loading
-- Check Bunny.net API Key in `.env.local`
-- Verify Library ID is correct
-- Check video status in Bunny.net dashboard
+- Check DO Spaces credentials in `.env.local`
+- Verify bucket name and region
+- Check object permissions and CDN cache
 
 #### Dictionary API fails
 - API has rate limits (free tier)
@@ -425,11 +423,10 @@ vercel --prod
 - Consider caching translations
 - Add loading states
 
-#### TUS upload fails
-- Check file size < 5GB
-- Verify Bunny.net API key
+#### Upload fails
+- Check file size limits
+- Verify DO Spaces keys
 - Check network connection
-- Upload resumes automatically
 
 ---
 
