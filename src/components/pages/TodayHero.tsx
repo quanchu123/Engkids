@@ -74,7 +74,7 @@ export default function TodayHero() {
 
               <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
                 <Link
-                  href="/learn/today"
+                  href="/roadmap"
                   className="rounded-2xl bg-white px-5 py-2.5 text-sm font-black text-violet-600 shadow-md transition-transform hover:scale-105"
                 >
                   Tiếp tục học →

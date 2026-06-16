@@ -28,7 +28,7 @@ export default function LevelOnboardingGate() {
         .then((response) => (response.ok ? response.json() : null))
         .then((data) => {
           if (!cancelled && data?.needsSelection) {
-            router.replace(`/onboarding/level?next=${encodeURIComponent(pathname || '/learn/today')}`);
+            router.replace(`/onboarding/level?next=${encodeURIComponent(pathname || '/roadmap')}`);
           }
         })
         .catch(() => {});

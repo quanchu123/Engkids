@@ -74,7 +74,7 @@ const SKILL_COLORS: Record<string, string> = {
 
 const ANSWER_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-export default function AssessmentRunner({ kind, stageId, titleVi, subtitleVi, backHref = '/learn/today' }: AssessmentRunnerProps) {
+export default function AssessmentRunner({ kind, stageId, titleVi, subtitleVi, backHref = '/roadmap' }: AssessmentRunnerProps) {
   const addMistake = useAppStore((state) => state.addMistake);
   const [payload, setPayload] = useState<AssessmentPayload | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -128,7 +128,7 @@ export default function AssessmentRunner({ kind, stageId, titleVi, subtitleVi, b
 
   const primaryAction = useMemo(() => {
     if (!result) return null;
-    if (result.passed) return { href: '/learn/today', label: 'Về Today Plan' };
+    if (result.passed) return { href: '/roadmap', label: 'Về lộ trình' };
     return { href: '/progress/review', label: 'Ôn kỹ năng yếu' };
   }, [result]);
 

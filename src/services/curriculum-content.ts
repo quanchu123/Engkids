@@ -522,7 +522,7 @@ export async function setLearnerLevel(
     level_source: normalizeLevelSource(source),
     selected_level_at: ((existing as { selected_level_at?: string | null } | null)?.selected_level_at) || now,
     level_changed_at: ((existing as { selected_level_at?: string | null } | null)?.selected_level_at) ? now : null,
-    recommended_task: { kind: 'today', href: '/learn/today' },
+    recommended_task: { kind: 'roadmap', href: '/roadmap' },
     updated_at: now,
   }, { onConflict: 'user_profile_id' });
 
@@ -858,7 +858,7 @@ export async function saveAssessmentAttempt(profileId: string | null, input: Ass
     current_stage_id: recommendedStageId,
     unlocked_stage_ids: unlocked,
     recommended_task: passed
-      ? { kind: 'today', href: '/learn/today' }
+      ? { kind: 'roadmap', href: '/roadmap' }
       : { kind: 'review', href: '/progress/review' },
     updated_at: new Date().toISOString(),
   };

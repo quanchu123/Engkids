@@ -77,7 +77,7 @@ function milestone(current: number, target: number): RoadmapMilestoneProgress {
 
 // Node href targets reuse the existing learning surfaces.
 const NODE_HREF: Record<RoadmapNodeKind, string> = {
-  words: '/learn/today',
+  words: '/roadmap',
   story: '/stories',
   game: '/games',
   checkpoint: '/learn/checkpoint',

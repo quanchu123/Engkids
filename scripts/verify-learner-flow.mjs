@@ -8,7 +8,6 @@ const OUT_DIR = path.join('output', 'playwright', 'ux-learner-flow');
 const ROUTES = [
   '/',
   '/roadmap',
-  '/learn/today',
   '/learn/placement',
   '/learn/checkpoint?stage=a2-key',
   '/parent',

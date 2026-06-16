@@ -19,7 +19,7 @@ export default function LevelOnboardingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [nextHref, setNextHref] = useState('/learn/today');
+  const [nextHref, setNextHref] = useState('/roadmap');
 
   useEffect(() => {
     try {
@@ -27,7 +27,7 @@ export default function LevelOnboardingPage() {
       const next = params.get('next');
       if (next?.startsWith('/') && !next.startsWith('//')) setNextHref(next);
     } catch {
-      setNextHref('/learn/today');
+      setNextHref('/roadmap');
     }
   }, []);
 
@@ -46,7 +46,7 @@ export default function LevelOnboardingPage() {
           return;
         }
         if (!data.needsSelection && data.learnerState?.selectedLevelAt) {
-          router.replace(nextHref || '/learn/today');
+          router.replace(nextHref || '/roadmap');
           return;
         }
         if (data.learnerState?.currentStageId) setSelectedStageId(data.learnerState.currentStageId);
@@ -82,7 +82,7 @@ export default function LevelOnboardingPage() {
         const data = await response.json().catch(() => ({}));
         throw new Error(data?.error || 'Không lưu được level.');
       }
-      router.replace('/learn/today');
+      router.replace('/roadmap');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không lưu được level.');
     } finally {

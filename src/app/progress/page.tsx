@@ -287,8 +287,8 @@ export default function ProgressPage() {
                   <Link href="/roadmap" className="kid-chip flex items-center gap-2 px-4 py-2 text-sm font-black text-violet-700">
                     <UiIcon name="goal" size={20} /> Lộ trình học
                   </Link>
-                  <Link href="/learn/today" className="kid-chip flex items-center gap-2 px-4 py-2 text-sm font-black text-violet-700">
-                    <UiIcon name="calendar" size={20} /> Hôm nay học gì
+                  <Link href="/roadmap" className="kid-chip flex items-center gap-2 px-4 py-2 text-sm font-black text-violet-700">
+                    <UiIcon name="calendar" size={20} /> Học tiếp
                   </Link>
                   <Link href="/shop" className="kid-chip flex items-center gap-2 px-4 py-2 text-sm font-black text-violet-700">
                     <UiIcon name="gift" size={20} /> Cửa hàng

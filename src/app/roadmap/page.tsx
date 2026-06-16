@@ -87,17 +87,34 @@ export default function RoadmapPage() {
   const learnerState = catalog?.learnerState || null;
   const isAuthenticated = Boolean(learnerState);
 
+  // Lessons the child finished locally (guest play, or before a DB sync). The
+  // server lesson_progress table is the source of truth once signed in, but
+  // merging these guarantees the path advances and old lessons aren't replayed
+  // even when the completion never reached the DB (401 guest / offline).
+  const completedLessonIds = useAppStore((state) => state.completedLessonIds);
+
+  const lessonsWithLocal = useMemo(() => {
+    const lessons = lessonData?.lessons ?? [];
+    if (completedLessonIds.length === 0) return lessons;
+    const done = new Set(completedLessonIds);
+    return lessons.map((l) =>
+      done.has(l.id) && l.progress?.status !== 'done'
+        ? { ...l, progress: { ...(l.progress ?? {}), status: 'done' as const } }
+        : l,
+    );
+  }, [lessonData, completedLessonIds]);
+
   const model = useMemo(
     () =>
       buildLessonRoadmap({
         stages,
         units: lessonData?.units ?? [],
-        lessons: lessonData?.lessons ?? [],
+        lessons: lessonsWithLocal,
         unlockedStageIds: learnerState?.unlockedStageIds ?? null,
         currentStageId: learnerState?.currentStageId ?? fallbackLearner.stage.id,
         isAuthenticated,
       }),
-    [stages, lessonData, learnerState, fallbackLearner, isAuthenticated],
+    [stages, lessonsWithLocal, lessonData, learnerState, fallbackLearner, isAuthenticated],
   );
 
   // Current stage = earliest open+incomplete, else first.
@@ -116,6 +133,7 @@ export default function RoadmapPage() {
         overallPercent={model.overallPercent}
         doneLessons={model.doneLessons}
         totalLessons={model.totalLessons}
+        currentLessonId={model.currentLessonId}
         synced={isAuthenticated}
       />
 
@@ -248,6 +266,7 @@ function JourneyHero({
   overallPercent,
   doneLessons,
   totalLessons,
+  currentLessonId,
   synced,
 }: {
   stageCefr: string;
@@ -255,6 +274,7 @@ function JourneyHero({
   overallPercent: number;
   doneLessons: number;
   totalLessons: number;
+  currentLessonId: string | null;
   synced: boolean;
 }) {
   return (
@@ -294,7 +314,7 @@ function JourneyHero({
 
         <div className="mt-5 flex flex-wrap gap-3">
           <Link
-            href="/learn/today"
+            href={currentLessonId ? `/learn/lessons/${currentLessonId}` : '/roadmap'}
             className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-violet-700 shadow-lg transition hover:-translate-y-0.5"
           >
             Học tiếp <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -321,14 +341,14 @@ function StageWorld({ stageModel, currentLessonId }: { stageModel: LessonRoadmap
   const percent = stageModel.percent;
 
   return (
-    <section className="mt-3 first:mt-4">
+    <section className="mt-5 first:mt-6">
       {/* Stage banner — tap to expand/collapse */}
       <button
         type="button"
         onClick={() => !locked && setOpen((v) => !v)}
         aria-expanded={open}
         disabled={locked}
-        className={`flex w-full items-center gap-3 rounded-2xl border bg-white px-3 py-3 text-left shadow-sm transition ${theme.ring} ring-1 ${locked ? 'opacity-70' : 'hover:shadow-md'}`}
+        className={`flex w-full items-center gap-3 rounded-2xl border bg-white px-4 py-3.5 text-left shadow-sm transition ${theme.ring} ring-1 ${locked ? 'opacity-70' : 'hover:shadow-md'}`}
       >
         <span className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${theme.from} ${theme.to} text-white shadow`}>
           {stageModel.status === 'done' ? (
@@ -357,7 +377,7 @@ function StageWorld({ stageModel, currentLessonId }: { stageModel: LessonRoadmap
       </button>
 
       {open && !locked && (
-        <div className="mt-2">
+        <div className="mt-3 space-y-3">
           {stageModel.units.map((unit) => (
             <UnitSection key={unit.unitId} unit={unit} theme={theme} currentLessonId={currentLessonId} />
           ))}
@@ -429,11 +449,11 @@ function PathNode({
       href={locked ? '#' : node.href}
       aria-disabled={locked}
       tabIndex={locked ? -1 : 0}
-      className={`group relative flex items-center gap-3 rounded-xl px-1.5 py-1.5 transition ${
+      className={`group relative flex items-start gap-3 rounded-xl px-2 py-2 transition ${
         locked ? 'pointer-events-none' : 'hover:bg-slate-50'
       } ${active ? `${theme.soft} ring-1 ${theme.ring}` : ''}`}
     >
-      {/* Left rail: compact bead + connector line on the same axis */}
+      {/* Left rail: compact bead + continuous connector on the same axis */}
       <div className="relative flex w-10 flex-shrink-0 flex-col items-center self-stretch">
         <span
           className={[
@@ -457,14 +477,15 @@ function PathNode({
         </span>
         {!isLast && (
           <span
-            className={`absolute top-10 bottom-0 w-1 rounded-full ${done ? 'bg-emerald-300' : locked ? 'bg-slate-200' : theme.dot} opacity-40`}
+            className={`absolute top-10 -bottom-2 w-1 rounded-full ${done ? 'bg-emerald-300' : locked ? 'bg-slate-200' : theme.dot} opacity-50`}
             aria-hidden="true"
           />
         )}
       </div>
 
-      {/* Right: single-line title + meta */}
-      <div className={`min-w-0 flex-1 ${isLast ? '' : 'pb-3'}`}>
+      {/* Right: title centered against the bead + meta. min-h matches the bead
+          so a single-line title sits at the bead's center instead of its top. */}
+      <div className={`flex min-h-10 min-w-0 flex-1 flex-col justify-center ${isLast ? '' : 'pb-2'}`}>
         <div className="flex items-center gap-2">
           <p className={`truncate text-sm font-black leading-snug ${locked ? 'text-slate-400' : 'text-slate-900'}`}>{node.titleVi}</p>
           {!locked && node.estimatedMinutes > 0 && (
@@ -472,13 +493,13 @@ function PathNode({
           )}
         </div>
         {active && (
-          <span className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${theme.soft} ${theme.text}`}>
+          <span className={`mt-1 inline-block w-fit rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${theme.soft} ${theme.text}`}>
             Bắt đầu tại đây
           </span>
         )}
       </div>
 
-      {!locked && <ArrowRight className="h-4 w-4 flex-shrink-0 text-slate-300 group-hover:text-slate-500" aria-hidden="true" />}
+      {!locked && <ArrowRight className="mt-3 h-4 w-4 flex-shrink-0 text-slate-300 group-hover:text-slate-500" aria-hidden="true" />}
     </Link>
   );
 }

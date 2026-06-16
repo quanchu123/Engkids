@@ -117,6 +117,7 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
   const [savedRemotely, setSavedRemotely] = useState<boolean | null>(null);
   const addMistake = useAppStore((state) => state.addMistake);
   const saveWord = useAppStore((state) => state.saveWord);
+  const markLessonCompleted = useAppStore((state) => state.markLessonCompleted);
   // Per-step scoring results, keyed by stepId. Drives the honest lesson score
   // and the lesson -> SRS bridge (every word the child actually practised).
   const resultsRef = useRef<Record<string, StepResult>>({});
@@ -215,6 +216,9 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
     if (!lesson) return;
     setSaving(true);
     setFinished(true);
+    // Record completion locally first so the roadmap frontier advances even for
+    // guests or when the DB is offline — the child never replays this lesson.
+    markLessonCompleted(lesson.id);
     // Honest score from the steps that actually tested the child (quiz, match,
     // fill-blank, speaking, writing). A lesson with no scored steps falls back
     // to 100 inside aggregateLessonScore.
@@ -884,8 +888,8 @@ function CelebrationCard({ lesson, saving, totalSteps, savedRemotely }: { lesson
         <Link href="/roadmap" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-sm font-black text-emerald-700 shadow-lg transition hover:-translate-y-0.5">
           Về bản đồ <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
-        <Link href="/learn/today" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/20 px-5 py-3.5 text-sm font-black text-white backdrop-blur-sm transition hover:bg-white/30">
-          Nhiệm vụ hôm nay
+        <Link href="/progress" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/20 px-5 py-3.5 text-sm font-black text-white backdrop-blur-sm transition hover:bg-white/30">
+          Xem tiến độ
         </Link>
       </div>
     </div>

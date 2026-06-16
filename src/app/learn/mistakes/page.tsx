@@ -75,8 +75,8 @@ export default function MistakesPage() {
       <Header />
       <main className="mx-auto max-w-2xl px-4 pb-20 pt-6">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <Link href="/learn/today" className="inline-flex items-center gap-2 text-sm font-black text-violet-700">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Today Plan
+          <Link href="/roadmap" className="inline-flex items-center gap-2 text-sm font-black text-violet-700">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Lộ trình
           </Link>
           {summary.resolved > 0 && (
             <button
@@ -157,10 +157,10 @@ export default function MistakesPage() {
                 </button>
               )}
               <Link
-                href="/learn/today"
+                href="/roadmap"
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-violet-700 shadow-sm ring-1 ring-violet-100"
               >
-                Về Today Plan
+                Về lộ trình
               </Link>
             </div>
           </div>
