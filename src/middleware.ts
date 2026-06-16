@@ -150,19 +150,24 @@ export async function middleware(request: NextRequest) {
       }
     );
 
-    // Login is required to use ANY feature. Every page route is gated except a
-    // small public allowlist needed to actually sign in. We exclude:
+    // Login is required to use the learning features (roadmap, lessons, games,
+    // progress, ...). Browsing content is free so kids can preview without an
+    // account. The public allowlist:
     //   - /login and /auth/* : the sign-in pages + OAuth callback (gating these
     //     would create a redirect loop).
+    //   - / : the home/landing page.
+    //   - /stories, /videos, /music : read-only content browsing.
     //   - /admin : admin auth uses a legacy JWT in sessionStorage (not a
     //     Supabase cookie session); the client-side AdminGuard handles it.
     //     Gating it here would bounce signed-in admins to /login.
     //   - /api/* : API routes authenticate themselves (see lib/api-auth.ts) and
     //     return 401 rather than an HTML redirect, so they must not be bounced.
-    const PUBLIC_PREFIXES = ['/login', '/auth'];
-    const isPublicRoute = PUBLIC_PREFIXES.some(
-      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-    );
+    const PUBLIC_PREFIXES = ['/login', '/auth', '/stories', '/videos', '/music'];
+    const isPublicRoute =
+      pathname === '/' ||
+      PUBLIC_PREFIXES.some(
+        (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+      );
     const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
     const isApiRoute = pathname.startsWith('/api/');
 
