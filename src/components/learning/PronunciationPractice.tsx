@@ -8,11 +8,12 @@
  * `@/lib/pronunciation`, and a friendly 0..100 score + stars + message is shown.
  *
  * Fully client-side and SSR-safe: all browser access is feature-detected and
- * guarded. If speech recognition is unsupported, only the "Nghe 🔊" button is
+ * guarded. If speech recognition is unsupported, only the listen button is
  * offered with a friendly note. Recognition errors never crash the UI.
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { Volume2, Mic, Ear, Star, PartyPopper, RotateCcw } from 'lucide-react';
 import { speakWord } from '@/services/dictionary';
 import { scorePronunciation, PASS_THRESHOLD } from '@/lib/pronunciation';
 import {
@@ -142,13 +143,13 @@ export default function PronunciationPractice({
           onClick={handleListen}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-orange-600 font-bold border-2 border-orange-200 hover:bg-orange-50 hover:scale-105 active:scale-95 transition-transform shadow-sm"
         >
-          Nghe 🔊
+          <Volume2 className="h-4 w-4" aria-hidden="true" /> Nghe
         </button>
       </div>
 
       {phase === 'unsupported' ? (
         <p className="text-center text-sm text-gray-500 bg-white/70 rounded-xl px-4 py-3 border border-orange-100">
-          Trình duyệt này chưa hỗ trợ luyện nói — hãy dùng Chrome trên máy tính/Android nhé 😊
+          Trình duyệt này chưa hỗ trợ luyện nói — hãy dùng Chrome trên máy tính/Android nhé.
         </p>
       ) : (
         <>
@@ -169,13 +170,25 @@ export default function PronunciationPractice({
                 {phase === 'listening' && (
                   <span className="absolute inset-0 rounded-full bg-pink-400 opacity-60 animate-ping" />
                 )}
-                <span className="relative">🎤</span>
+                <Mic className="relative h-9 w-9" aria-hidden="true" />
               </button>
 
-              <p className="text-sm font-medium text-gray-600 min-h-[1.25rem]">
-                {phase === 'listening' && 'Đang nghe... nói "' + word + '" nào! 👂'}
-                {phase === 'scoring' && 'Đang chấm điểm... ⭐'}
-                {phase === 'idle' && 'Nhấn micro rồi nói thử 🎤'}
+              <p className="flex items-center justify-center gap-1.5 text-sm font-medium text-gray-600 min-h-[1.25rem]">
+                {phase === 'listening' && (
+                  <>
+                    <Ear className="h-4 w-4 text-pink-500" aria-hidden="true" /> Đang nghe... nói &quot;{word}&quot; nào!
+                  </>
+                )}
+                {phase === 'scoring' && (
+                  <>
+                    <Star className="h-4 w-4 text-amber-400" aria-hidden="true" /> Đang chấm điểm...
+                  </>
+                )}
+                {phase === 'idle' && (
+                  <>
+                    <Mic className="h-4 w-4 text-purple-500" aria-hidden="true" /> Nhấn micro rồi nói thử
+                  </>
+                )}
               </p>
 
               {errorMsg && (
@@ -189,11 +202,13 @@ export default function PronunciationPractice({
           {/* Result */}
           {phase === 'result' && result && (
             <div className="flex flex-col items-center gap-3 text-center">
-              <div className="flex items-center gap-1 text-3xl">
+              <div className="flex items-center gap-1">
                 {[1, 2, 3].map((n) => (
-                  <span key={n} className={n <= starsForScore(result.score) ? '' : 'opacity-25'}>
-                    ⭐
-                  </span>
+                  <Star
+                    key={n}
+                    className={`h-8 w-8 ${n <= starsForScore(result.score) ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`}
+                    aria-hidden="true"
+                  />
                 ))}
               </div>
 
@@ -201,11 +216,17 @@ export default function PronunciationPractice({
               <div className="text-xs text-gray-400 -mt-2">/ 100 điểm</div>
 
               <p
-                className={`text-lg font-bold ${
+                className={`flex items-center gap-1.5 text-lg font-bold ${
                   result.correct ? 'text-green-600' : 'text-orange-500'
                 }`}
               >
-                {result.correct ? 'Tuyệt vời! 🎉' : 'Gần đúng rồi, thử lại nhé!'}
+                {result.correct ? (
+                  <>
+                    <PartyPopper className="h-5 w-5" aria-hidden="true" /> Tuyệt vời!
+                  </>
+                ) : (
+                  'Gần đúng rồi, thử lại nhé!'
+                )}
               </p>
 
               {result.heard && (
@@ -219,7 +240,7 @@ export default function PronunciationPractice({
                 onClick={handleRetry}
                 className="mt-1 inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white font-bold hover:scale-105 active:scale-95 transition-transform shadow-md"
               >
-                Thử lại 🔁
+                <RotateCcw className="h-4 w-4" aria-hidden="true" /> Thử lại
               </button>
             </div>
           )}

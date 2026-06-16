@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Bot, Loader2, Mic, MicOff, RotateCcw, Sparkles, Volume2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Bot, Loader2, Mic, MicOff, RotateCcw, Sparkles, User, Volume2 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useAppStore } from '@/store/useAppStore';
 import { getLearnerStageProgress } from '@/lib/curriculum';
@@ -212,6 +213,7 @@ export default function SpeakPage() {
       setListening(true);
     } catch {
       setListening(false);
+      setError('Không mở được micro. Bé kiểm tra quyền micro của trình duyệt rồi thử lại nhé.');
     }
   }, [sendToBuddy]);
 
@@ -260,9 +262,9 @@ export default function SpeakPage() {
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col overflow-hidden rounded-3xl border border-white/40 bg-white shadow-xl">
-          <div className="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 px-4 py-3 text-white">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20">
+        <div className="toy-panel flex flex-1 flex-col overflow-hidden">
+          <div className="flex items-center gap-3 border-b border-white/40 bg-gradient-to-r from-fuchsia-500 via-pink-500 to-rose-500 px-4 py-3 text-white">
+            <span className="deco-float flex h-11 w-11 items-center justify-center rounded-2xl bg-white/25 shadow-inner">
               <Bot className="h-6 w-6" aria-hidden="true" />
             </span>
             <div className="min-w-0">
@@ -279,20 +281,26 @@ export default function SpeakPage() {
           </div>
 
           <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-            {turns.map((turn, i) => (
-              <Bubble key={i} turn={turn} onReplay={turn.role === 'assistant' ? () => speak(turn.content) : undefined} />
-            ))}
+            <AnimatePresence initial={false}>
+              {turns.map((turn, i) => (
+                <Bubble key={i} turn={turn} onReplay={turn.role === 'assistant' ? () => speak(turn.content) : undefined} />
+              ))}
+            </AnimatePresence>
             {interim && (
               <div className="flex justify-end">
-                <div className="max-w-[80%] rounded-2xl bg-fuchsia-200 px-4 py-2.5 text-sm font-semibold italic text-fuchsia-800">
+                <div className="max-w-[80%] rounded-3xl rounded-tr-md bg-fuchsia-200 px-4 py-2.5 text-sm font-semibold italic text-fuchsia-800">
                   {interim}
                 </div>
               </div>
             )}
             {thinking && (
-              <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 pl-11 text-sm font-bold text-fuchsia-500"
+              >
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Buddy đang nghĩ...
-              </div>
+              </motion.div>
             )}
             {error && (
               <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 ring-1 ring-rose-100">{error}</div>
@@ -300,25 +308,36 @@ export default function SpeakPage() {
           </div>
 
           {/* Mic control */}
-          <div className="flex flex-col items-center gap-2 border-t border-slate-100 px-4 py-5">
+          <div className="flex flex-col items-center gap-2 border-t border-white/40 px-4 py-5">
             {!supported ? (
               <p className="rounded-2xl bg-amber-50 px-4 py-3 text-center text-sm font-bold text-amber-800 ring-1 ring-amber-100">
                 Trình duyệt này chưa hỗ trợ luyện nói. Bé hãy dùng Chrome hoặc Edge trên máy tính nhé. (Hoặc dùng Chat gõ phím.)
               </p>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={toggleMic}
-                  disabled={thinking}
-                  className={`flex h-20 w-20 items-center justify-center rounded-full text-white shadow-lg transition disabled:opacity-50 ${
-                    listening ? 'animate-pulse bg-rose-500 ring-4 ring-rose-200' : 'bg-fuchsia-600 hover:bg-fuchsia-700 hover:-translate-y-0.5'
-                  }`}
-                  style={{ boxShadow: '0 6px 0 rgba(0,0,0,0.12)' }}
-                  aria-label={listening ? 'Dừng nói' : 'Bắt đầu nói'}
-                >
-                  {listening ? <MicOff className="h-9 w-9" aria-hidden="true" /> : <Mic className="h-9 w-9" aria-hidden="true" />}
-                </button>
+                <div className="relative flex h-24 w-24 items-center justify-center">
+                  {listening && (
+                    <motion.span
+                      className="absolute inset-0 rounded-full bg-rose-400/40"
+                      animate={{ scale: [1, 1.35, 1], opacity: [0.6, 0, 0.6] }}
+                      transition={{ duration: 1.4, repeat: Infinity, ease: 'easeOut' }}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <motion.button
+                    type="button"
+                    onClick={toggleMic}
+                    disabled={thinking}
+                    whileTap={{ scale: 0.92 }}
+                    className={`relative flex h-20 w-20 items-center justify-center rounded-full text-white shadow-lg transition disabled:opacity-50 ${
+                      listening ? 'bg-rose-500 ring-4 ring-rose-200' : 'bg-gradient-to-br from-fuchsia-500 to-rose-500 hover:-translate-y-0.5'
+                    }`}
+                    style={{ boxShadow: '0 6px 0 rgba(0,0,0,0.12)' }}
+                    aria-label={listening ? 'Dừng nói' : 'Bắt đầu nói'}
+                  >
+                    {listening ? <MicOff className="h-9 w-9" aria-hidden="true" /> : <Mic className="h-9 w-9" aria-hidden="true" />}
+                  </motion.button>
+                </div>
                 <p className="text-sm font-black text-slate-600">
                   {listening ? 'Đang nghe... nói tiếng Anh nhé!' : thinking ? 'Chờ Buddy một chút...' : 'Chạm để nói'}
                 </p>
@@ -343,10 +362,23 @@ export default function SpeakPage() {
 function Bubble({ turn, onReplay }: { turn: Turn; onReplay?: () => void }) {
   const isUser = turn.role === 'user';
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+      className={`flex items-end gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}
+    >
+      {!isUser && (
+        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-rose-500 text-white shadow-sm">
+          <Bot className="h-5 w-5" aria-hidden="true" />
+        </span>
+      )}
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm font-semibold leading-relaxed shadow-sm ${
-          isUser ? 'bg-fuchsia-600 text-white' : 'bg-slate-100 text-slate-800 ring-1 ring-slate-200'
+        className={`max-w-[78%] px-4 py-2.5 text-sm font-semibold leading-relaxed shadow-sm ${
+          isUser
+            ? 'rounded-[20px] rounded-br-md bg-gradient-to-br from-fuchsia-500 to-rose-500 text-white'
+            : 'rounded-[20px] rounded-bl-md bg-white text-slate-800 ring-1 ring-fuchsia-100'
         }`}
       >
         {turn.content}
@@ -361,6 +393,11 @@ function Bubble({ turn, onReplay }: { turn: Turn; onReplay?: () => void }) {
           </button>
         )}
       </div>
-    </div>
+      {isUser && (
+        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl bg-fuchsia-100 text-fuchsia-600 shadow-sm">
+          <User className="h-5 w-5" aria-hidden="true" />
+        </span>
+      )}
+    </motion.div>
   );
 }

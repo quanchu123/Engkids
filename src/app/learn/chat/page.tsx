@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Send, Loader2, Sparkles, Bot, RotateCcw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Send, Loader2, Sparkles, Bot, RotateCcw, User } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useAppStore } from '@/store/useAppStore';
 import { getLearnerStageProgress } from '@/lib/curriculum';
@@ -108,10 +109,10 @@ export default function ChatPage() {
           </button>
         </div>
 
-        <div className="flex flex-1 flex-col overflow-hidden rounded-3xl border border-white/40 bg-white shadow-xl">
+        <div className="toy-panel flex flex-1 flex-col overflow-hidden">
           {/* Header bar */}
-          <div className="flex items-center gap-3 border-b border-slate-100 bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-500 px-4 py-3 text-white">
-            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20">
+          <div className="relative flex items-center gap-3 border-b border-white/40 bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-500 px-4 py-3 text-white">
+            <span className="deco-float flex h-11 w-11 items-center justify-center rounded-2xl bg-white/25 shadow-inner">
               <Bot className="h-6 w-6" aria-hidden="true" />
             </span>
             <div className="min-w-0">
@@ -123,14 +124,20 @@ export default function ChatPage() {
           </div>
 
           {/* Messages */}
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-            {turns.map((turn, i) => (
-              <ChatBubble key={i} turn={turn} />
-            ))}
+          <div ref={scrollRef} className="relative flex-1 space-y-3 overflow-y-auto px-4 py-4">
+            <AnimatePresence initial={false}>
+              {turns.map((turn, i) => (
+                <ChatBubble key={i} turn={turn} />
+              ))}
+            </AnimatePresence>
             {sending && (
-              <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 pl-11 text-sm font-bold text-emerald-500"
+              >
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Buddy đang trả lời...
-              </div>
+              </motion.div>
             )}
             {error && (
               <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 ring-1 ring-rose-100">{error}</div>
@@ -139,16 +146,18 @@ export default function ChatPage() {
 
           {/* Starters (only before the child has spoken) */}
           {turns.length === 1 && (
-            <div className="flex flex-wrap gap-2 border-t border-slate-100 px-4 py-3">
+            <div className="flex flex-wrap gap-2 border-t border-white/40 px-4 py-3">
               {STARTERS.map((s) => (
-                <button
+                <motion.button
                   key={s}
                   type="button"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => send(s)}
                   className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700 ring-1 ring-emerald-100 transition hover:bg-emerald-100"
                 >
                   {s}
-                </button>
+                </motion.button>
               ))}
             </div>
           )}
@@ -159,7 +168,7 @@ export default function ChatPage() {
               e.preventDefault();
               send(input);
             }}
-            className="flex items-center gap-2 border-t border-slate-100 px-3 py-3"
+            className="flex items-center gap-2 border-t border-white/40 px-3 py-3"
           >
             <input
               value={input}
@@ -169,14 +178,16 @@ export default function ChatPage() {
               disabled={sending}
               className="min-h-[48px] flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-300 focus:bg-white"
             />
-            <button
+            <motion.button
               type="submit"
+              whileHover={{ scale: 1.06 }}
+              whileTap={{ scale: 0.92 }}
               disabled={sending || !input.trim()}
               className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
               aria-label="Gửi"
             >
               <Send className="h-5 w-5" aria-hidden="true" />
-            </button>
+            </motion.button>
           </form>
         </div>
       </main>
@@ -187,16 +198,29 @@ export default function ChatPage() {
 function ChatBubble({ turn }: { turn: ChatTurn }) {
   const isUser = turn.role === 'user';
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+      className={`flex items-end gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+    >
+      <span
+        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full shadow-sm ${
+          isUser ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-500 ring-1 ring-emerald-100'
+        }`}
+      >
+        {isUser ? <User className="h-4 w-4" aria-hidden="true" /> : <Bot className="h-4 w-4" aria-hidden="true" />}
+      </span>
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm font-semibold leading-relaxed shadow-sm ${
+        className={`max-w-[78%] px-4 py-2.5 text-sm font-semibold leading-relaxed shadow-sm ${
           isUser
-            ? 'bg-emerald-600 text-white'
-            : 'bg-slate-100 text-slate-800 ring-1 ring-slate-200'
+            ? 'rounded-2xl rounded-br-md bg-emerald-600 text-white'
+            : 'rounded-2xl rounded-bl-md bg-white text-slate-800 ring-1 ring-slate-200'
         }`}
       >
         {turn.content}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { ArrowLeft, Loader2, Sparkles, PenLine, CheckCircle2, Lightbulb, RotateCcw } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { useAppStore } from '@/store/useAppStore';
@@ -132,12 +133,15 @@ export default function WritePage() {
         </div>
 
         {/* Hero */}
-        <div className="overflow-hidden rounded-3xl border border-white/40 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 p-5 text-white shadow-xl md:p-6">
+        <div className="relative overflow-hidden rounded-3xl border border-white/40 bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 p-5 text-white shadow-xl md:p-6">
+          <span className="deco-float pointer-events-none absolute -right-6 -top-6 flex h-20 w-20 items-center justify-center rounded-full bg-white/15" aria-hidden="true">
+            <PenLine className="h-9 w-9 text-white/70" aria-hidden="true" />
+          </span>
           <span className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 text-xs font-black uppercase backdrop-blur-sm">
             <PenLine className="h-4 w-4" aria-hidden="true" /> Luyện viết
           </span>
-          <h1 className="mt-3 text-2xl font-black md:text-3xl">Viết tiếng Anh & nhận góp ý</h1>
-          <p className="mt-1 text-sm font-bold text-white/90">Viết theo đề rồi gửi cho trợ lý AI chấm và sửa lỗi nhẹ nhàng.</p>
+          <h1 className="relative mt-3 text-2xl font-black md:text-3xl">Viết tiếng Anh & nhận góp ý</h1>
+          <p className="relative mt-1 text-sm font-bold text-white/90">Viết theo đề rồi gửi cho trợ lý AI chấm và sửa lỗi nhẹ nhàng.</p>
         </div>
 
         {/* Prompt picker */}
@@ -162,7 +166,7 @@ export default function WritePage() {
         </section>
 
         {/* Composer */}
-        <section className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="toy-panel mt-4 p-4">
           <p className="text-sm font-black text-slate-900">{prompt}</p>
           <textarea
             value={text}
@@ -184,15 +188,17 @@ export default function WritePage() {
                   <RotateCcw className="h-4 w-4" aria-hidden="true" /> Viết lại
                 </button>
               )}
-              <button
+              <motion.button
                 type="button"
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={submit}
                 disabled={loading || text.trim().length < 3}
                 className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-orange-600 disabled:opacity-50"
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Sparkles className="h-4 w-4" aria-hidden="true" />}
                 {loading ? 'Đang chấm...' : 'Gửi bài'}
-              </button>
+              </motion.button>
             </div>
           </div>
           {error && (
@@ -206,11 +212,21 @@ export default function WritePage() {
   );
 }
 
+const REVEAL = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0 },
+};
+
 function FeedbackPanel({ feedback }: { feedback: WritingFeedback }) {
   return (
-    <section className="mt-5 space-y-4">
+    <motion.section
+      className="mt-5 space-y-4"
+      initial="hidden"
+      animate="show"
+      variants={{ show: { transition: { staggerChildren: 0.1 } } }}
+    >
       {/* Score + praise */}
-      <div className="flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <motion.div variants={REVEAL} className="card-bouncy flex items-center gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
         {feedback.score !== null && (
           <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-2xl font-black text-emerald-700 ring-1 ring-emerald-100">
             {feedback.score}
@@ -222,11 +238,11 @@ function FeedbackPanel({ feedback }: { feedback: WritingFeedback }) {
             {feedback.praise || 'Bé đã hoàn thành bài viết. Cùng xem góp ý nhé!'}
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* Corrections */}
       {feedback.corrections.length > 0 && (
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <motion.div variants={REVEAL} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="mb-3 text-xs font-black uppercase tracking-wide text-amber-600">Chỗ cần sửa</p>
           <div className="space-y-3">
             {feedback.corrections.map((c, i) => (
@@ -240,29 +256,29 @@ function FeedbackPanel({ feedback }: { feedback: WritingFeedback }) {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Improved version */}
       {feedback.improved && (
-        <div className="rounded-3xl border border-sky-200 bg-sky-50 p-5 shadow-sm">
+        <motion.div variants={REVEAL} className="rounded-3xl border border-sky-200 bg-sky-50 p-5 shadow-sm">
           <p className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wide text-sky-600">
             <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Bản viết hay hơn
           </p>
           <p className="text-sm font-semibold leading-relaxed text-slate-800">{feedback.improved}</p>
-        </div>
+        </motion.div>
       )}
 
       {/* Tip */}
       {feedback.tip && (
-        <div className="flex items-start gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+        <motion.div variants={REVEAL} className="flex items-start gap-3 rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
           <Lightbulb className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" aria-hidden="true" />
           <div>
             <p className="text-xs font-black uppercase tracking-wide text-amber-600">Mẹo lần sau</p>
             <p className="mt-1 text-sm font-bold leading-relaxed text-slate-700">{feedback.tip}</p>
           </div>
-        </div>
+        </motion.div>
       )}
-    </section>
+    </motion.section>
   );
 }
