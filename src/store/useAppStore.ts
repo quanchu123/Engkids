@@ -51,6 +51,11 @@ export interface WordInteraction {
 interface AppState {
   progress: UserProgress;
   hydrated: boolean;
+  // Lessons the child has finished, kept locally so the roadmap advances even
+  // for guests or when the DB is offline (the server lesson_progress table is
+  // the source of truth once signed in, but this guarantees the frontier moves
+  // forward and old lessons aren't replayed). Keyed by lessonId.
+  completedLessonIds: string[];
   wordInteractions: Map<string, WordInteraction>;
   settings: UserSettings;
   equippedAvatar: EquippedAvatar;
@@ -73,6 +78,8 @@ interface AppState {
   isAvatarItemOwned: (itemId: string) => boolean;
   markPanelViewed: (storyId: string, panelId: number) => void;
   completeStory: (storyId: string, stars: number) => void;
+  // Record a finished lesson locally (idempotent). Drives roadmap progress.
+  markLessonCompleted: (lessonId: string) => void;
   saveWord: (word: string, vi: string, isFavorite?: boolean, ipa?: string, storyId?: string, exampleSentence?: string) => void;
   unsaveWord: (wordText: string) => void;
   toggleWordFavorite: (wordText: string) => void;
@@ -146,6 +153,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       progress: createDefaultProgress(),
       hydrated: false,
+      completedLessonIds: [],
       settings: DEFAULT_SETTINGS,
       wordInteractions: new Map(),
       equippedAvatar: getDefaultEquipped(),
@@ -346,6 +354,16 @@ export const useAppStore = create<AppState>()(
             ...(gained > 0 ? { rewardEvent: { id: Date.now(), stars: gained, coins: gained } } : {}),
           };
         });
+      },
+
+      markLessonCompleted: (lessonId) => {
+        const id = lessonId.trim();
+        if (!id) return;
+        set((state) =>
+          state.completedLessonIds.includes(id)
+            ? state
+            : { completedLessonIds: [...state.completedLessonIds, id] },
+        );
       },
 
       saveWord: (word, vi, isFavorite = false, ipa = '', storyId = '', exampleSentence = '') => {
@@ -716,6 +734,7 @@ export const useAppStore = create<AppState>()(
         streakFreezes: state.streakFreezes,
         lastSpinDate: state.lastSpinDate,
         pet: state.pet,
+        completedLessonIds: state.completedLessonIds,
       }),
       merge: (persistedState: unknown, currentState) => {
         const persisted = (persistedState ?? {}) as Partial<AppState & { wordInteractions: [string, WordInteraction][] }>;
@@ -737,6 +756,7 @@ export const useAppStore = create<AppState>()(
           streakFreezes: typeof persisted.streakFreezes === 'number' ? persisted.streakFreezes : 0,
           lastSpinDate: persisted.lastSpinDate ?? null,
           pet: persisted.pet ?? null,
+          completedLessonIds: Array.isArray(persisted.completedLessonIds) ? persisted.completedLessonIds : [],
           rewardEvent: null,
         };
       },
