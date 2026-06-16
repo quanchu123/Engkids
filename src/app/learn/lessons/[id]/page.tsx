@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowLeft,
   ArrowRight,
@@ -35,6 +36,7 @@ import WordBankBuild from '@/components/lessons/WordBankBuild';
 import SpeakingRepeat from '@/components/lessons/SpeakingRepeat';
 import WritingTask from '@/components/lessons/WritingTask';
 import { deriveBlank } from '@/lib/sentence-blank';
+import { illustrationForTopic } from '@/lib/topic-illustration';
 import type { LessonDetailPublic, LessonStepPublic, LessonStepType } from '@/services/lessons';
 
 // ============================================================
@@ -329,7 +331,19 @@ export default function LessonRunnerPage({ params }: { params: { id: string } })
                   {lesson.cefr} · {lesson.estimatedMinutes} phút
                 </span>
               </div>
-              <h1 className="relative mt-3 text-xl font-black leading-tight drop-shadow-sm md:text-2xl">{lesson.titleVi}</h1>
+              <div className="relative mt-3 flex items-center gap-3">
+                <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-white/25 shadow-inner backdrop-blur-sm">
+                  <Image
+                    src={illustrationForTopic(lesson.unit?.theme)}
+                    alt=""
+                    width={32}
+                    height={32}
+                    unoptimized
+                    aria-hidden="true"
+                  />
+                </span>
+                <h1 className="text-xl font-black leading-tight drop-shadow-sm md:text-2xl">{lesson.titleVi}</h1>
+              </div>
               <div className="relative mt-4 flex items-center gap-3">
                 <div className="h-3.5 flex-1 overflow-hidden rounded-full bg-black/15">
                   <div

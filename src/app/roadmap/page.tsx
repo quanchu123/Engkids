@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Lock, Check, Sparkles, ChevronDown, Loader2, MessageCircle, Mic, PenLine } from 'lucide-react';
 import Header from '@/components/layout/Header';
+import Image from 'next/image';
 import UiIcon, { type UiIconName } from '@/components/common/UiIcon';
+import { illustrationForTopic } from '@/lib/topic-illustration';
 import { useAppStore } from '@/store/useAppStore';
 import { getLearnerStageProgress, CURRICULUM_STAGES, getStageById } from '@/lib/curriculum';
 import {
@@ -403,8 +405,18 @@ function UnitSection({ unit, theme, currentLessonId }: { unit: LessonRoadmapUnit
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition hover:bg-slate-50"
       >
-        <div className="flex min-w-0 items-center gap-2">
-          <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${theme.soft} ${theme.text}`}>{unit.theme}</span>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl ${theme.soft} ring-1 ${theme.ring}`}>
+            <Image
+              src={illustrationForTopic(unit.theme)}
+              alt=""
+              aria-hidden="true"
+              width={28}
+              height={28}
+              style={{ width: 28, height: 28, objectFit: 'contain' }}
+              unoptimized
+            />
+          </span>
           <span className="truncate text-sm font-black text-slate-700">{unit.titleVi}</span>
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
