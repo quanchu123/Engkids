@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import LoginForm from '@/components/auth/LoginForm';
 import Header from '@/components/layout/Header';
@@ -15,7 +16,9 @@ export default function LoginPage() {
             <p className="text-gray-400 text-lg">Học tiếng Anh qua video và truyện tranh vui nhộn</p>
           </div>
 
-          <LoginForm />
+          <Suspense fallback={<div className="text-gray-400">Đang tải...</div>}>
+            <LoginForm />
+          </Suspense>
 
           <div className="mt-8 text-center space-y-3">
             <Link href="/" className="block text-gray-400 hover:text-white text-sm transition">

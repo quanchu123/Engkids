@@ -150,24 +150,29 @@ export async function middleware(request: NextRequest) {
       }
     );
 
-    // Only a few routes require login. Everything else (home, roadmap,
-    // stories, videos, music, games, learn surfaces, ...) is public so kids can
-    // browse freely. We use an explicit protected-route allowlist instead of
-    // protecting everything-by-default, which previously bounced every tab to
-    // /login.
-    // NOTE: /admin is intentionally NOT here — admin auth uses a legacy JWT in
-    // sessionStorage (not a Supabase cookie session), so the client-side
-    // AdminGuard handles that gate. Adding it here would bounce admins to
-    // /login even when correctly signed in.
-    const PROTECTED_PREFIXES = ['/progress', '/parent', '/profile'];
-    const isProtectedRoute = PROTECTED_PREFIXES.some(
+    // Login is required to use ANY feature. Every page route is gated except a
+    // small public allowlist needed to actually sign in. We exclude:
+    //   - /login and /auth/* : the sign-in pages + OAuth callback (gating these
+    //     would create a redirect loop).
+    //   - /admin : admin auth uses a legacy JWT in sessionStorage (not a
+    //     Supabase cookie session); the client-side AdminGuard handles it.
+    //     Gating it here would bounce signed-in admins to /login.
+    //   - /api/* : API routes authenticate themselves (see lib/api-auth.ts) and
+    //     return 401 rather than an HTML redirect, so they must not be bounced.
+    const PUBLIC_PREFIXES = ['/login', '/auth'];
+    const isPublicRoute = PUBLIC_PREFIXES.some(
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
     );
+    const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+    const isApiRoute = pathname.startsWith('/api/');
 
-    if (isProtectedRoute) {
+    if (!isPublicRoute && !isAdminRoute && !isApiRoute) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        return NextResponse.redirect(new URL('/login', request.url));
+        const loginUrl = new URL('/login', request.url);
+        // Preserve where the user was heading so we can send them back after login.
+        loginUrl.searchParams.set('next', pathname);
+        return NextResponse.redirect(loginUrl);
       }
     }
   }

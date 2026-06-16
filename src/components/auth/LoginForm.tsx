@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn, signUp } from '@/lib/auth-client';
 import { adminLogin, isAdminAuthenticated } from '@/lib/admin-auth-client';
 import { authConfig } from '@/config/auth';
@@ -26,6 +26,13 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
   const [isSignup, setIsSignup] = useState(mode === 'signup');
   const [info, setInfo] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Where to send a regular user after login. Honor ?next= but only for
+  // same-site absolute paths (must start with a single "/"), so a crafted
+  // ?next=//evil.com or ?next=https://evil.com can't turn this into an
+  // open redirect. Anything else falls back to the home page.
+  const nextParam = searchParams?.get('next') || '';
+  const safeNext = /^\/(?!\/)/.test(nextParam) ? nextParam : '/';
 
   // Translate common Supabase auth errors to friendly Vietnamese messages.
   const translateError = (raw: string): string => {
@@ -73,14 +80,14 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
 
         if (data?.user) {
           if (data.session) {
-            router.push('/');
+            router.push(safeNext);
             return;
           }
 
           // Try to sign in manually if session is missing (in case of specific Supabase settings)
           try {
             await signIn(email, password);
-            router.push('/');
+            router.push(safeNext);
             return;
           } catch (err) {
             // If it fails, it usually means email confirmation is required by Supabase
@@ -121,7 +128,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
           return;
         }
 
-        router.push('/');
+        router.push(safeNext);
       }
 
       onSuccess?.();
