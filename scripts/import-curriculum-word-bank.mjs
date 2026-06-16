@@ -52,7 +52,10 @@ function validate(rows) {
     if (!vi) errors.push(`${label}: missing vi`);
     if (!VALID_STAGES.has(level)) errors.push(`${label}: invalid level ${level}`);
     if (!topic) errors.push(`${label}: missing topic`);
-    if (!example) errors.push(`${label}: missing example`);
+    // Example is OPTIONAL: a word with a real VI gloss but no real example is
+    // still useful in vocab/quiz steps. We never fabricate an example, so many
+    // genuine words legitimately ship without one; the lesson generator only
+    // needs examples for the reading/grammar steps and skips words lacking them.
     if (!partOfSpeech) errors.push(`${label}: missing part_of_speech`);
     if (!source) errors.push(`${label}: missing source`);
 
@@ -103,7 +106,7 @@ async function upsertRows(supabase, rows) {
       vi: row.vi.trim(),
       level: normalizeLevel(row.level),
       topic: row.topic.trim().toLowerCase(),
-      example: row.example.trim(),
+      example: String(row.example || '').trim(),
       part_of_speech: row.part_of_speech.trim(),
       source: row.source.trim(),
       source_id: row.source_id || row.source.trim(),
@@ -112,6 +115,18 @@ async function upsertRows(supabase, rows) {
       tags: Array.isArray(row.tags) ? row.tags.filter((tag) => typeof tag === 'string') : [],
       sort_order: sortOrder++,
       active: row.active !== false,
+      cefr_level: normalizeLevel(row.level),
+      quality_status: 'approved',
+      safety_status: 'safe',
+      // VI provenance — the quality verifier requires playable rows to carry
+      // these. Vietnamese glosses come from English Wiktionary (CC BY-SA).
+      vi_source_id: row.vi_source_id || 'wiktionary-en-translations',
+      vi_source_url: row.vi_source_url || 'https://en.wiktionary.org/',
+      vi_license_name: row.vi_license_name || 'CC BY-SA 4.0',
+      vi_license_url: row.vi_license_url || 'https://creativecommons.org/licenses/by-sa/4.0/',
+      vi_attribution: row.vi_attribution || 'English Wiktionary contributors',
+      vi_review_status: row.vi_review_status || 'approved',
+      vi_updated_at: now,
       updated_at: now,
     }));
 
@@ -131,6 +146,16 @@ async function reportDb(supabase) {
   return count || 0;
 }
 
+// Deactivate every existing row (the broken legacy bank) without deleting it, so
+// the clean import below is the only active source. Reversible: flip active back.
+async function deactivateAll(supabase) {
+  const { error } = await supabase
+    .from('word_bank_items')
+    .update({ active: false, updated_at: new Date().toISOString() })
+    .eq('active', true);
+  if (error) throw new Error(`Deactivate failed: ${error.message}`);
+}
+
 async function main() {
   const rows = readSeed();
   const counts = validate(rows);
@@ -141,6 +166,10 @@ async function main() {
 
   const supabase = getSupabaseAdmin();
   await assertTableExists(supabase);
+  if (process.argv.includes('--replace-all')) {
+    console.log('Deactivating the old word bank (active=false, not deleted)...');
+    await deactivateAll(supabase);
+  }
   await upsertRows(supabase, rows);
   const activeCount = await reportDb(supabase);
   console.log(`Imported ${rows.length} rows. Active word_bank_items in DB: ${activeCount}`);

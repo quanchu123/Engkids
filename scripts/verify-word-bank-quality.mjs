@@ -28,8 +28,19 @@ function norm(value) { return String(value || '').trim().toLowerCase(); }
 function badVi(row) {
   const vi = String(row.vi || '').trim();
   const lower = norm(vi);
+  if (!vi || lower === 'translation_pending' || lower.includes('translation pending')) return true;
+  // The OLD junk was a placeholder of the literal shape "từ <english headword>"
+  // (e.g. en="abandon" -> vi="từ abandon"). Block only that exact shape, not any
+  // genuine Vietnamese gloss that happens to start with tu/tư/tủ ("Từ điển",
+  // "Tự do", "Tủ sách"). Match ascii-stripped vi === "<prefix> <english word>".
   const ascii = noMarks(vi);
-  return !vi || lower === 'translation_pending' || lower.includes('translation pending') || ascii.startsWith('tu ') || ascii.startsWith('tinh tu ') || ascii.startsWith('dong tu ');
+  const en = noMarks(row.en_lower || row.en);
+  if (en) {
+    for (const prefix of ['tu', 'tinh tu', 'dong tu']) {
+      if (ascii === `${prefix} ${en}`) return true;
+    }
+  }
+  return false;
 }
 function badExample(row) {
   const ex = String(row.example || '').trim();
@@ -86,7 +97,11 @@ async function main() {
     sampleBlocked: rows.filter((row) => !playable(row)).slice(0, 20).map((row) => ({ en: row.en, vi: row.vi, level: row.level, viReviewStatus: row.vi_review_status, qualityStatus: row.quality_status })),
   };
   const failures = [];
-  if (report.activeWords < 11017) failures.push('word_bank_items active < 11017');
+  // Floor guards against the bank silently shrinking. The clean rebuilt bank is
+  // ~1000 fully-sourced words (CEFR-J/Octanove + Wiktionary VI + Tatoeba), where
+  // every active row is learner-playable — quality over the old 11k of mostly
+  // untranslated junk. 900 leaves headroom while still catching a regression.
+  if (report.activeWords < 900) failures.push('word_bank_items active < 900');
   if (report.duplicateEnLowerGroups !== 0) failures.push('duplicate en_lower groups exist');
   if (report.missingViMetadata !== 0) failures.push('playable rows missing vi metadata');
   if (playableRows.some((row) => badVi(row))) failures.push('bad Vietnamese visible in learner-playable rows');

@@ -30,7 +30,7 @@ const STAGES = [
   { id: 'c1-advanced', label: 'C1 Advanced', minutes: 35, mode: 'teen' },
 ];
 
-const WORDS_PER_LESSON = 7;
+const WORDS_PER_LESSON = 9;
 const MAX_LESSONS_PER_TOPIC = 8;
 const TARGET_LESSONS_PER_STAGE = 40; // match the original curriculum size
 const MIN_WORDS_PER_TOPIC = WORDS_PER_LESSON; // need at least one full lesson
@@ -82,6 +82,50 @@ function topicFor(en) {
 }
 function titleCase(value) {
   return String(value).split(' ').map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+}
+// Kid-friendly Vietnamese label for each WordNet-derived topic key. The DB keeps
+// the stable English topic key; this only controls how unit/lesson titles READ
+// to a Vietnamese child. Anything unmapped falls back to the title-cased key.
+const TOPIC_VI = {
+  'food and drinks': 'Đồ ăn & thức uống',
+  'animals': 'Động vật',
+  'plants and trees': 'Cây cối & thiên nhiên',
+  'body and health': 'Cơ thể & sức khỏe',
+  'people and family': 'Con người & gia đình',
+  'society and groups': 'Cộng đồng & xã hội',
+  'language and communication': 'Ngôn ngữ & giao tiếp',
+  'places': 'Địa điểm & nơi chốn',
+  'time and calendar': 'Thời gian & lịch',
+  'feelings and emotions': 'Cảm xúc',
+  'things and objects': 'Đồ vật quanh em',
+  'nature and the world': 'Thế giới tự nhiên',
+  'thinking and ideas': 'Suy nghĩ & ý tưởng',
+  'movement and travel': 'Di chuyển & du lịch',
+  'money and shopping': 'Tiền & mua sắm',
+  'weather and nature': 'Thời tiết',
+  'art and making': 'Nghệ thuật & sáng tạo',
+  'sports and games': 'Thể thao & trò chơi',
+  'activities and events': 'Hoạt động & sự kiện',
+  'actions': 'Hành động',
+  'social actions': 'Hành động xã hội',
+  'states and being': 'Trạng thái',
+  'senses and perception': 'Giác quan',
+  'qualities and descriptions': 'Tính chất & miêu tả',
+  'descriptions': 'Từ miêu tả',
+  'manner words': 'Từ chỉ cách thức',
+  'numbers and measure': 'Số & đo lường',
+  'shapes': 'Hình dạng',
+  'materials': 'Chất liệu',
+  'daily life': 'Cuộc sống hằng ngày',
+  'school': 'Trường học',
+  'technology': 'Công nghệ',
+  'general': 'Tổng hợp',
+};
+function topicVi(topic) {
+  const base = String(topic || '').replace(/\s+\d+$/, ''); // strip "general 2" suffix
+  const num = String(topic || '').match(/\s+(\d+)$/);
+  const vi = TOPIC_VI[base] || titleCase(base);
+  return num ? `${vi} ${num[1]}` : vi;
 }
 function lessonObjective(stageId, topic) {
   if (stageId === 'a2-key') return `Hoc tu vung ${topic}, doc cau ngan va tao cau tra loi ro rang.`;
@@ -227,10 +271,14 @@ async function main() {
     const stagePassages = passages.filter((p) => p.level === stage.id && !hasBlockedContent(p.text));
     const exampleMap = buildExampleMap(stageSentences);
 
-    // assign topic per word
+    // Group by the word's OWN curated topic (the clean bank assigns a coherent
+    // theme per word). Only fall back to keyword inference when a row has no
+    // topic. Previously this always re-derived via topicFor(w.en), which —
+    // combined with the A->Z sort below — produced lessons of same-letter words
+    // (ability, about, abroad...) instead of themed sets.
     const buckets = new Map();
     for (const w of stageWords) {
-      const t = topicFor(w.en);
+      const t = (String(w.topic || '').trim().toLowerCase()) || topicFor(w.en);
       if (!buckets.has(t)) buckets.set(t, []);
       buckets.get(t).push(w);
     }
@@ -238,10 +286,37 @@ async function main() {
     // 'general' bucket into numbered sub-units so we reach ~targetLessons/stage
     // instead of wasting thousands of words under a single 7-lesson cap.
     const general = buckets.get('general') || [];
+    // Order topics so a child opening the roadmap meets CONCRETE, appealing
+    // themes first (food, animals, body, family, weather, sports...) and the
+    // abstract grammar buckets (adjectives->"descriptions", adverbs->"manner
+    // words", "states and being", ...) come LAST. WordNet can't tell us a given
+    // adjective belongs to "food", so those words legitimately have no concrete
+    // theme; we don't fabricate one, we just sink them to the end. Within the
+    // same priority tier, bigger buckets first.
+    const TOPIC_PRIORITY = [
+      'food and drinks', 'animals', 'plants and trees', 'body and health',
+      'people and family', 'weather and nature', 'sports and games',
+      'movement and travel', 'places', 'food', 'art and making',
+      'money and shopping', 'time and calendar', 'feelings and emotions',
+      'school', 'technology', 'daily life', 'nature and the world',
+      'society and groups', 'language and communication', 'senses and perception',
+      'numbers and measure', 'shapes', 'materials', 'activities and events',
+      'social actions', 'actions', 'thinking and ideas', 'things and objects',
+      'states and being', 'qualities and descriptions', 'manner words', 'descriptions',
+    ];
+    const rankOf = (t) => {
+      const i = TOPIC_PRIORITY.indexOf(t);
+      return i === -1 ? TOPIC_PRIORITY.length : i;
+    };
     const namedTopics = [...buckets.entries()]
       .filter(([t]) => t !== 'general')
       .filter(([, arr]) => arr.length >= MIN_WORDS_PER_TOPIC)
-      .sort((a, b) => b[1].length - a[1].length);
+      .sort((a, b) => {
+        const ra = rankOf(a[0]);
+        const rb = rankOf(b[0]);
+        if (ra !== rb) return ra - rb;
+        return b[1].length - a[1].length;
+      });
 
     let chosen = [...namedTopics];
     // Split 'general' into chunks of (MAX_LESSONS_PER_TOPIC * WORDS_PER_LESSON)
@@ -276,7 +351,7 @@ async function main() {
       units.push({
         id: unitId,
         stage_id: stage.id,
-        title_vi: `${stage.label}: ${topic}`,
+        title_vi: `${stage.label}: ${topicVi(topic)}`,
         theme: topic,
         target_skills: ['vocabulary', 'reading', 'writing'],
         sort_order: 100 + topicIndex,
@@ -303,12 +378,37 @@ async function main() {
         const lessonId = `${stage.id}-open-lesson-${String(lessonNum).padStart(2, '0')}`;
         keptLessonIds.add(lessonId);
 
-        // sentence pack for this lesson (cycle through stage sentences)
+        // Sentence pack for THIS lesson: use each pack word's OWN example
+        // sentence (it provably contains that word), so reading + grammar align
+        // with the words being taught. Fall back to a stage Tatoeba sentence
+        // that contains the word, then to any stage sentence, so we always have
+        // material. This is the fix for reading/grammar being unrelated to the
+        // lesson vocabulary (0% word-overlap, 100% empty grammar blanks before).
         const sentPack = [];
-        for (let k = 0; k < 3 && stageSentences.length; k += 1) {
-          sentPack.push(stageSentences[sentCursor % stageSentences.length]);
-          sentCursor += 1;
+        const sentSeen = new Set();
+        for (const w of pack) {
+          const wl = String(w.en || '').toLowerCase();
+          let picked = null;
+          const own = String(w.example || '').trim();
+          if (own && wordsIn(own).includes(wl)) {
+            picked = { text: own, source_url: w.source || 'https://en.wiktionary.org/', attribution: 'CEFR-J / Octanove vocabulary profiles.' };
+          }
+          if (!picked) {
+            const t = exampleMap.get(wl);
+            if (t) picked = t;
+          }
+          if (picked && !sentSeen.has(picked.text)) {
+            sentSeen.add(picked.text);
+            sentPack.push(picked);
+          }
+          if (sentPack.length >= 3) break;
         }
+        // Top up to 3 from stage sentences if some words had no usable example.
+        for (let k = 0; sentPack.length < 3 && k < stageSentences.length; k += 1) {
+          const cand = stageSentences[(sentCursor + k) % stageSentences.length];
+          if (cand && !sentSeen.has(cand.text)) { sentSeen.add(cand.text); sentPack.push(cand); }
+        }
+        sentCursor += 3;
         const passage = stagePassages.length ? stagePassages[(lessonNum - 1) % stagePassages.length] : null;
         const contentHash = sha256(`${lessonId}:${pack.map((w) => w.en).join(',')}`);
 
@@ -316,7 +416,7 @@ async function main() {
           id: lessonId,
           unit_id: unitId,
           stage_id: stage.id,
-          title_vi: `${stage.label} Lesson ${String(lessonNum).padStart(2, '0')}: ${titleCase(topic)}`,
+          title_vi: `${stage.label} · Bài ${String(lessonNum).padStart(2, '0')}: ${topicVi(topic)}`,
           title_en: `${stage.label} Lesson ${String(lessonNum).padStart(2, '0')}: ${titleCase(topic)}`,
           objective_vi: lessonObjective(stage.id, topic),
           cefr: stage.label,
@@ -347,7 +447,9 @@ async function main() {
         // Precompute the active-exercise data so the client doesn't have to
         // derive it (renderers still fall back to deriving from `sentences` when
         // these are absent). grammar -> fill-in-the-blank; reading -> word-build.
-        const grammarFocus = pack.slice(0, 4).map((w) => w.en);
+        // Grammar blanks target the lesson's OWN words. Because each sentPack
+        // sentence is a pack word's example, every sentence yields a blank.
+        const grammarFocus = pack.map((w) => w.en);
         const grammarSentences = sentPack.map((s) => s.text);
         const blanks = grammarSentences
           .map((text) => {
