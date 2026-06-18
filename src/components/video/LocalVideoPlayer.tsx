@@ -324,6 +324,27 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
                   </div>
                 </div>
               )}
+
+              {/* Subtitle overlay on video (YouTube-style softsub) */}
+              {currentCue && (showEn || showVi) && resumeSeconds === 0 && (
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-[12%] flex justify-center px-4 transition-opacity duration-300"
+                  style={{ opacity: currentCue ? 1 : 0 }}
+                >
+                  <div className="pointer-events-auto inline-block max-w-[90%] rounded-lg bg-black/75 px-5 py-3 text-center backdrop-blur-sm">
+                    {showEn && (
+                      <div className="text-base font-bold leading-relaxed text-white drop-shadow-md sm:text-lg md:text-xl">
+                        {renderClickableText(currentCue.textEn, activeWordIndex)}
+                      </div>
+                    )}
+                    {showVi && currentCue.textVi && (
+                      <div className="mt-1 text-sm text-white/85 sm:text-base">
+                        {currentCue.textVi}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Integrated learning control bar, attached under the video. */}
