@@ -31,7 +31,9 @@ export function formatTimestamp(totalSeconds: number): string {
  * Supports both standard VTT and bilingual format with [VI] marker
  */
 export function parseVTT(vttContent: string): SubtitleCue[] {
-  const lines = vttContent.split('\n');
+  // Strip BOM and normalize line endings (Windows \r\n → \n)
+  const normalized = vttContent.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = normalized.split('\n');
   const cues: SubtitleCue[] = [];
   let currentCue: Partial<SubtitleCue> | null = null;
   let textLines: string[] = [];
@@ -199,7 +201,9 @@ export function findCurrentCueIndex(cues: SubtitleCue[], currentTime: number): n
  * Parse SRT format and convert to SubtitleCue array
  */
 export function parseSRT(srtContent: string): SubtitleCue[] {
-  const blocks = srtContent.trim().split(/\n\n+/);
+  // Strip BOM and normalize line endings (Windows \r\n → \n)
+  const normalized = srtContent.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const blocks = normalized.trim().split(/\n\n+/);
   const cues: SubtitleCue[] = [];
   
   for (const block of blocks) {

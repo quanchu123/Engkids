@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { SubtitleCue } from '@/types';
-import { parseVTT, parseSRT, generateVTT } from '@/lib/vtt-parser';
+import { parseVTT, parseSRT } from '@/lib/vtt-parser';
 import { videoApi } from '@/services/api';
-import { speakWord } from '@/services/dictionary';
 import { broadcastContentChange } from '@/lib/content-sync';
 
 interface SubtitleEditorProps {
@@ -17,18 +16,89 @@ interface SubtitleEditorProps {
 export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave }: SubtitleEditorProps) {
   const router = useRouter();
   const [subtitles, setSubtitles] = useState<SubtitleCue[]>(initialSubtitles);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [message, setMessage] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-translate all English lines to Vietnamese via AI. Fills empty textVi
-  // (and overwrites existing ones) for review; admin still presses "Save All".
+  // Format time for display (seconds to mm:ss)
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Parse uploaded subtitle file
+  const parseSubtitleFile = useCallback(async (file: File) => {
+    try {
+      const text = await file.text();
+      let parsed: SubtitleCue[];
+
+      if (file.name.toLowerCase().endsWith('.vtt')) {
+        parsed = parseVTT(text);
+      } else if (file.name.toLowerCase().endsWith('.srt')) {
+        parsed = parseSRT(text);
+      } else {
+        setMessage('❌ Chỉ hỗ trợ file .srt hoặc .vtt');
+        return;
+      }
+
+      if (parsed.length === 0) {
+        setMessage('❌ Không tìm thấy subtitle nào trong file. Kiểm tra lại định dạng file.');
+        return;
+      }
+
+      setSubtitles(parsed);
+      setMessage(`✅ Đã import ${parsed.length} subtitle từ "${file.name}"`);
+    } catch (error) {
+      console.error('Import error:', error);
+      setMessage('❌ Không thể đọc file subtitle. Kiểm tra lại định dạng.');
+    }
+  }, []);
+
+  // Handle file input change
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) parseSubtitleFile(file);
+    // Reset input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const ext = file.name.toLowerCase();
+      if (ext.endsWith('.srt') || ext.endsWith('.vtt')) {
+        parseSubtitleFile(file);
+      } else {
+        setMessage('❌ Chỉ hỗ trợ file .srt hoặc .vtt');
+      }
+    }
+  }, [parseSubtitleFile]);
+
+  // Auto-translate all English lines to Vietnamese via AI
   const handleTranslateAll = async () => {
     const lines = subtitles.map((s) => s.textEn?.trim() || '');
     if (lines.every((l) => !l)) {
-      setMessage('Chưa có nội dung tiếng Anh để dịch.');
+      setMessage('⚠️ Chưa có nội dung tiếng Anh để dịch.');
       return;
     }
     setTranslating(true);
@@ -39,72 +109,13 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
         prev.map((cue, i) => (translations[i] ? { ...cue, textVi: translations[i] } : cue)),
       );
       const done = translations.filter(Boolean).length;
-      setMessage(`Đã dịch ${done}/${lines.length} dòng sang tiếng Việt. Kiểm tra rồi bấm "Save All".`);
+      setMessage(`✅ Đã dịch ${done}/${lines.length} dòng sang tiếng Việt. Bấm "Lưu tất cả" để hoàn tất.`);
     } catch (error) {
       console.error('Translate error:', error);
       const msg = error instanceof Error ? error.message : 'Dịch tự động thất bại';
-      setMessage(msg);
+      setMessage(`❌ ${msg}`);
     } finally {
       setTranslating(false);
-    }
-  };
-
-  // Import subtitles from VTT/SRT file
-  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      let parsed: SubtitleCue[];
-
-      if (file.name.endsWith('.vtt')) {
-        parsed = parseVTT(text);
-      } else if (file.name.endsWith('.srt')) {
-        parsed = parseSRT(text);
-      } else {
-        setMessage('Please upload a .vtt or .srt file');
-        return;
-      }
-
-      setSubtitles(parsed);
-      setMessage(`Imported ${parsed.length} subtitles`);
-    } catch (error) {
-      console.error('Import error:', error);
-      setMessage('Failed to import subtitles');
-    }
-  };
-
-  // Add new subtitle
-  const addSubtitle = () => {
-    const lastCue = subtitles[subtitles.length - 1];
-    const newStartTime = lastCue ? lastCue.endTime + 0.5 : 0;
-    
-    const newCue: SubtitleCue = {
-      id: `cue-${Date.now()}`,
-      startTime: newStartTime,
-      endTime: newStartTime + 3,
-      textEn: '',
-      textVi: '',
-    };
-
-    setSubtitles([...subtitles, newCue]);
-    setSelectedIndex(subtitles.length);
-  };
-
-  // Update subtitle
-  const updateSubtitle = (index: number, updates: Partial<SubtitleCue>) => {
-    const updated = [...subtitles];
-    updated[index] = { ...updated[index], ...updates };
-    setSubtitles(updated);
-  };
-
-  // Delete subtitle
-  const deleteSubtitle = (index: number) => {
-    const updated = subtitles.filter((_, i) => i !== index);
-    setSubtitles(updated);
-    if (selectedIndex === index) {
-      setSelectedIndex(null);
     }
   };
 
@@ -114,7 +125,6 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
     setMessage('');
 
     try {
-      // Use API service - handles auth automatically
       await videoApi.saveSubtitles(videoId, subtitles.map(s => ({
         id: s.id,
         startTime: s.startTime,
@@ -123,217 +133,152 @@ export default function SubtitleEditor({ videoId, initialSubtitles = [], onSave 
         textVi: s.textVi,
       })));
 
-      setMessage('Subtitles saved successfully!');
+      setMessage('✅ Đã lưu subtitle thành công!');
       broadcastContentChange('videos');
       router.refresh();
       onSave?.(subtitles);
     } catch (error) {
       console.error('Save error:', error);
-      setMessage('Failed to save subtitles');
+      setMessage('❌ Lưu subtitle thất bại. Thử lại.');
     } finally {
       setSaving(false);
     }
   };
 
-  // Export as VTT
-  const handleExport = () => {
-    const vttContent = generateVTT(subtitles);
-    const blob = new Blob([vttContent], { type: 'text/vtt' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `subtitles-${videoId}.vtt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  // Clear all subtitles
+  const handleClearAll = () => {
+    setSubtitles([]);
+    setMessage('Đã xóa tất cả subtitle. Bấm "Lưu tất cả" để cập nhật.');
   };
 
-  // Format time for display (seconds to mm:ss.ms)
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = (seconds % 60).toFixed(2);
-    return `${mins.toString().padStart(2, '0')}:${secs.padStart(5, '0')}`;
-  };
+  const hasSubtitles = subtitles.length > 0;
+  const lastCueEnd = hasSubtitles ? subtitles[subtitles.length - 1]?.endTime || 0 : 0;
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Subtitle Editor</h2>
-        
-        {/* Actions */}
-        <div className="flex gap-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".vtt,.srt"
-            onChange={handleImportFile}
-            className="hidden"
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-          >
-            Import VTT/SRT
-          </button>
-          <button
-            onClick={handleTranslateAll}
-            disabled={translating || subtitles.length === 0}
-            className="px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 font-semibold"
-            title="Dùng AI dịch toàn bộ phụ đề tiếng Anh sang tiếng Việt"
-          >
-            {translating ? 'Đang dịch...' : '✨ Dịch tất cả (AI)'}
-          </button>
-          <button
-            onClick={handleExport}
-            disabled={subtitles.length === 0}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:bg-gray-300"
-          >
-            Export VTT
-          </button>
-          <button
-            onClick={addSubtitle}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-          >
-            + Add Subtitle
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || subtitles.length === 0}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-300 font-semibold"
-          >
-            {saving ? 'Saving...' : 'Save All'}
-          </button>
+    <div className="max-w-6xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-md">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-5">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">📝 Phụ đề (Subtitle)</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Upload file .srt hoặc .vtt để thêm phụ đề cho video
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          {hasSubtitles && (
+            <>
+              <button
+                onClick={handleTranslateAll}
+                disabled={translating}
+                className="px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 font-semibold text-sm"
+                title="Dùng AI dịch toàn bộ phụ đề tiếng Anh sang tiếng Việt"
+              >
+                {translating ? '⏳ Đang dịch...' : '✨ Dịch tất cả (AI)'}
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 font-semibold text-sm"
+              >
+                {saving ? '⏳ Đang lưu...' : '💾 Lưu tất cả'}
+              </button>
+              <button
+                onClick={handleClearAll}
+                className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+              >
+                🗑️ Xóa tất cả
+              </button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Status Message */}
       {message && (
-        <div className={`mb-4 p-3 rounded-md ${
-          message.includes('successfully') || message.includes('Đã dịch') || message.includes('Imported')
-            ? 'bg-green-50 text-green-700'
-            : 'bg-red-50 text-red-700'
+        <div className={`mb-4 p-3 rounded-lg text-sm font-medium ${
+          message.startsWith('✅') || message.startsWith('Đã')
+            ? 'bg-green-50 text-green-700 border border-green-200'
+            : message.startsWith('⚠️')
+            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+            : message.startsWith('❌')
+            ? 'bg-red-50 text-red-700 border border-red-200'
+            : 'bg-blue-50 text-blue-700 border border-blue-200'
         }`}>
           {message}
         </div>
       )}
 
-      {/* Subtitle List */}
-      <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-        {subtitles.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <p className="text-lg mb-2">No subtitles yet</p>
-            <p className="text-sm">Import a VTT/SRT file or add manually</p>
-          </div>
-        ) : (
-          subtitles.map((cue, index) => (
-            <div
-              key={cue.id}
-              className={`border rounded-lg p-4 transition-all ${
-                selectedIndex === index
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onClick={() => setSelectedIndex(index)}
-            >
-              <div className="flex items-start gap-4">
-                {/* Index */}
-                <div className="flex-shrink-0 w-12 text-center">
-                  <div className="text-lg font-bold text-gray-600">#{index + 1}</div>
-                </div>
-
-                {/* Timing */}
-                <div className="flex gap-2 items-center">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Start</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={cue.startTime}
-                      onChange={(e) => updateSubtitle(index, { startTime: parseFloat(e.target.value) })}
-                      className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <div className="text-xs text-gray-400 mt-0.5">{formatTime(cue.startTime)}</div>
-                  </div>
-                  <div className="text-gray-400 mt-5">→</div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">End</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={cue.endTime}
-                      onChange={(e) => updateSubtitle(index, { endTime: parseFloat(e.target.value) })}
-                      className="w-24 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <div className="text-xs text-gray-400 mt-0.5">{formatTime(cue.endTime)}</div>
-                  </div>
-                </div>
-
-                {/* Text Fields */}
-                <div className="flex-1 space-y-2">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">English</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={cue.textEn}
-                        onChange={(e) => updateSubtitle(index, { textEn: e.target.value })}
-                        placeholder="English subtitle text..."
-                        className="w-full px-3 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (cue.textEn?.trim()) speakWord(cue.textEn.trim());
-                        }}
-                        disabled={!cue.textEn?.trim()}
-                        className="flex-shrink-0 w-9 h-9 rounded-full bg-violet-100 text-violet-600 hover:bg-violet-200 transition-colors flex items-center justify-center disabled:opacity-40"
-                        title="Nghe phát âm tiếng Anh"
-                        aria-label="Nghe phát âm"
-                      >
-                        🔊
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Vietnamese</label>
-                    <input
-                      type="text"
-                      value={cue.textVi}
-                      onChange={(e) => updateSubtitle(index, { textVi: e.target.value })}
-                      placeholder="Vietnamese translation..."
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Delete Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteSubtitle(index);
-                  }}
-                  className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors flex items-center justify-center"
-                  title="Delete subtitle"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          ))
+      {/* Upload Zone */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`mb-6 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+          isDragOver
+            ? 'border-blue-500 bg-blue-50 scale-[1.01]'
+            : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".vtt,.srt"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        <div className="text-4xl mb-3">📄</div>
+        <p className="text-gray-700 font-semibold">
+          {isDragOver ? 'Thả file vào đây!' : 'Kéo thả file .srt / .vtt vào đây'}
+        </p>
+        <p className="text-gray-400 text-sm mt-1">
+          hoặc click để chọn file từ máy tính
+        </p>
+        {hasSubtitles && (
+          <p className="text-blue-500 text-xs mt-3 font-medium">
+            ⚠️ Upload file mới sẽ thay thế toàn bộ subtitle hiện tại
+          </p>
         )}
       </div>
 
-      {/* Summary */}
-      {subtitles.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-gray-200 text-center text-sm text-gray-600">
-          Total: <span className="font-semibold">{subtitles.length}</span> subtitles
-          {subtitles.length > 0 && (
-            <span className="ml-4">
-              Duration: <span className="font-semibold">
-                {formatTime(subtitles[subtitles.length - 1]?.endTime || 0)}
-              </span>
+      {/* Subtitle Preview Table */}
+      {hasSubtitles && (
+        <div className="overflow-hidden rounded-xl border border-gray-200">
+          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+            <span className="font-semibold text-gray-700 text-sm">
+              📋 Preview: {subtitles.length} subtitle
             </span>
-          )}
+            <span className="text-gray-400 text-sm ml-3">
+              Tổng thời lượng: {formatTime(lastCueEnd)}
+            </span>
+          </div>
+          <div className="max-h-[400px] overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 w-10">#</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 w-28">Thời gian</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">English</th>
+                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Tiếng Việt</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {subtitles.map((cue, index) => (
+                  <tr key={cue.id} className="hover:bg-blue-50/50 transition-colors">
+                    <td className="px-3 py-2 text-gray-400 font-mono text-xs">{index + 1}</td>
+                    <td className="px-3 py-2 text-gray-500 font-mono text-xs whitespace-nowrap">
+                      {formatTime(cue.startTime)} → {formatTime(cue.endTime)}
+                    </td>
+                    <td className="px-3 py-2 text-gray-800">{cue.textEn}</td>
+                    <td className="px-3 py-2 text-gray-600 italic">
+                      {cue.textVi || <span className="text-gray-300">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
