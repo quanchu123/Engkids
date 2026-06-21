@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, signUp } from '@/lib/auth-client';
+import { signIn, signUp, onAuthStateChange } from '@/lib/auth-client';
 import { adminLogin, isAdminAuthenticated } from '@/lib/admin-auth-client';
 import { authConfig } from '@/config/auth';
 
@@ -54,6 +54,15 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
     }
     return raw;
   };
+
+  useEffect(() => {
+    const subscription = onAuthStateChange((user) => {
+      if (user) {
+        router.push(safeNext);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [router, safeNext]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
