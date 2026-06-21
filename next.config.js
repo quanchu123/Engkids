@@ -22,6 +22,15 @@ const nextConfig = {
   // Enable React strict mode for better debugging
   reactStrictMode: true,
   
+  // Skip ESLint and TS checking during build to save RAM on the VPS. 
+  // We already check these locally before pushing.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  
   // Compiler options
   compiler: {
     // Remove console.log in production
