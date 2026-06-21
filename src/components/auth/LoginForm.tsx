@@ -66,16 +66,8 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
       }
     });
 
-    // Listen only for explicit SIGNED_IN events (like successful form submit or OAuth)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
-      if (event === 'SIGNED_IN' && session?.user && isMounted) {
-        window.location.href = safeNext;
-      }
-    });
-
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
     };
   }, [safeNext]);
 
