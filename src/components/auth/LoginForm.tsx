@@ -2,7 +2,7 @@
 
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, signUp, onAuthStateChange } from '@/lib/auth-client';
+import { signIn, signUp, onAuthStateChange, getSupabaseClient } from '@/lib/auth-client';
 import { adminLogin, isAdminAuthenticated } from '@/lib/admin-auth-client';
 import { authConfig } from '@/config/auth';
 
@@ -56,13 +56,28 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
   };
 
   useEffect(() => {
-    const subscription = onAuthStateChange((user) => {
-      if (user) {
-        router.push(safeNext);
+    let isMounted = true;
+    const supabase = getSupabaseClient();
+
+    // Verify token against server to avoid redirecting with expired cached token
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (isMounted && user) {
+        window.location.href = safeNext;
       }
     });
-    return () => subscription.unsubscribe();
-  }, [router, safeNext]);
+
+    // Listen only for explicit SIGNED_IN events (like successful form submit or OAuth)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user && isMounted) {
+        window.location.href = safeNext;
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [safeNext]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
