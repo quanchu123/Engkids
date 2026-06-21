@@ -1,0 +1,212 @@
+Original prompt: tiếp tục đi
+
+- Continued cleanup on remaining game pages with emoji-heavy HUD/status text.
+- Kept header and hero sections intact; only removed UI-only emoji from game states, buttons, score labels, and helper text.
+- Preserved gameplay logic; avoided stripping places where emoji was acting as core data until a safe text replacement was available.
+- Playwright/browser verification remains blocked in this environment by `spawn EPERM`, so validation here stays at static checks plus repo smoke tests.
+- Latest verified commands:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run test:features`
+- Additional pass completed on remaining game pages:
+  - cleaned UI-only emoji from `mario-word`, `memory-match`, `rpg-battle`, `tank-word`, `tower-climb`, `tower-word`, `word-collector`, and `word-puzzle`
+  - preserved hero/header areas and avoided touching game-critical visuals blindly
+- Final polish pass fixed mojibake on key user-facing routes:
+  - `src/app/loading.tsx`
+  - `src/app/stories/page.tsx`
+  - `src/app/stories/[id]/page.tsx`
+  - `src/app/stories/[id]/vocab/page.tsx`
+  - `src/app/stories/[id]/games/page.tsx`
+  - `src/app/progress/review/page.tsx`
+- Post-fix validation:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run test:features`
+  - regex scan for mojibake markers in `src/app`, `src/components`, and `progress.md`
+- Auth consolidation step 1 completed:
+  - added shared admin resolver in `src/lib/admin-access.ts`
+  - unified UI admin checks in `AdminGuard` and `LoginForm`
+  - updated `src/lib/api-auth.ts` and `src/app/api/admin/me/route.ts` to resolve admin via either Supabase session/bearer or legacy JWT
+  - centralized token lookup in `src/lib/admin-auth-client.ts`
+  - switched `src/services/api.ts` and `src/hooks/useTusUpload.ts` to use the shared token resolver
+- Auth step validation:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run test:features`
+- Progress sync step completed:
+  - added store hydration flag and remote replace actions in `src/store/useAppStore.ts`
+  - added `src/services/progress-sync.ts` to load/save `user_progress` + `vocabulary_items` for authenticated users
+  - added `src/components/common/UserProgressSync.tsx` to merge local progress with remote once, then sync changes in the background
+  - mounted sync bootstrap in `src/app/layout.tsx`
+- Progress sync validation:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run test:features`
+- Playwright follow-up:
+  - verified Playwright CLI can be invoked in this workspace via `npx.cmd` with local cache override (`.npm-cache`)
+  - browser E2E is still blocked here because `next dev` fails in sandbox with `spawn EPERM`
+  - confirmed blocker by running `npm run dev` directly
+- Additional cleanup after E2E blocker:
+  - fixed remaining mojibake in `src/app/progress/page.tsx`
+  - fixed remaining mojibake in `src/app/layout.tsx`
+  - regex scan for mojibake markers in `src/app` and `src/components` is now clean
+- Latest validation after cleanup:
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run test:features`
+
+- Pet game polish + Gemini/Veo asset pipeline:
+  - rebuilt `/games/pet` into a richer adoption/play UI with stage art, care actions, stats, and final evolution presentation
+  - fixed persisted-store hydration when no local snapshot exists, so the pet page no longer stays blank for fresh browsers
+  - replaced `scripts/gen-veo-evolve.mjs` with the official `@google/genai` SDK flow
+  - script now reads `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `gemini_key1`, `gemini_key2`, `GEMINI_KEY1`, and `GEMINI_KEY2` without printing secret values
+  - script uses existing final-stage PNG art as image-to-video input and saves clips to `public/games/pet/evolve/<pet-id>.mp4`
+  - added `npm run veo:evolve` as the safe generation command with `--skip-existing`
+  - Veo request shape was tested and unsupported Gemini Developer API params were removed
+  - current keys reached Gemini/Veo quota limit (`RESOURCE_EXHAUSTED` / HTTP 429), so no MP4 clips were generated in this pass
+  - added in-game fallback cinematic using the pet stage image, glow beams, and particles when the MP4 is missing or fails to load
+- Pet game validation:
+  - `node --check scripts/gen-veo-evolve.mjs`
+  - `npm run lint`
+  - `npm run type-check`
+  - `npm run build`
+  - local Playwright screenshot smoke test for `/games/pet` adoption and seeded main pet screen
+- Pet game viewport fit pass:
+  - compressed `/games/pet` adoption and main play layouts to fit a 1366x720 viewport without page scrolling
+  - changed the main game view to a fixed-height dashboard under the header, compacted stat bars and care buttons
+  - hides the nonessential helper note on short screens so all four care actions remain visible
+  - Playwright metrics confirmed `scrollHeight=720` for both adoption and seeded main pet screen at 1366x720
+  - validation: `npm run lint`, `npm run type-check`, `npm run build`
+- Pet game logic upgrade:
+  - added dynamic care effectiveness based on current need level, exhaustion, and repeated-action spam
+  - capped offline decay to avoid pets being fully wiped after long absences while still preserving real-time decay
+  - changed store care rewards to use dynamic EXP/coin outcomes from the pure pet logic
+  - added action readiness labels on care buttons and quality feedback in the quiz success modal
+  - validation: `npm run test:run -- src/lib/pet.test.ts`, `npm run type-check`, `npm run lint`, `npm run build`
+- English Farm usability pass:
+  - clarified the play loop in-game: till -> seed -> water -> next day -> harvest quiz
+  - changed the tool HUD from icon-only buttons to labeled tool buttons with a current-action hint
+  - reorganized the side controls into a compact guide/action panel
+  - simplified the farm shop into Buy/Sell tabs with clearer copy and no font-dependent coin emoji labels
+  - harvest vocabulary now maps fixed crop art to the admin `word_bank` list; crop visuals/economy stay stable, but quiz/collection words come from `word_bank` when loaded
+  - validation: `npm run type-check`, `npm run lint`, `npm run build`, Playwright screenshot smoke test for `/games/english-farm` main + shop
+- Farm + pet game logic pass:
+  - added predictable farm weather: clear days behave normally, rain days grow all planted crops, sunny days make watered crops grow 2 stages
+  - added an in-game weather badge and toast on special farm days so players can plan when to water/advance
+  - added pet care rhythm: alternating care actions builds a small effectiveness bonus, while repeated-action spam remains weak
+  - surfaced the rhythm bonus in the pet quiz success reward chips
+  - validation: `npm run test:run -- src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`, `npm run type-check`, `npm run lint`
+  - Playwright smoke: `/games/pet` loads adoption screen; `/games/english-farm` loads and renders canvas after first compile/wait (`output/web-game/pet/shot-1.png`, `output/web-game/farm/manual-wait.png`)
+- Gemini/Veo animation attempt:
+  - added npm commands `veo:farm` and `veo:all`; existing `veo:evolve` remains for pet final-evolution clips
+  - attempted farm cutscene generation with `.env.local` Gemini keys; `gemini_key1` returned quota exhausted (429), `gemini_key2` returned invalid auth (401)
+  - attempted one pet evolution clip (`thuy-long`) and hit the same key failures, so no MP4 assets were generated
+  - replaced the farm cutscene fallback with a smoother full-screen animated cinematic so milestones still feel polished while Gemini quota is blocked
+  - validation after fallback/script updates: `npm run test:run -- src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`, `npm run type-check`, `npm run lint`, `npm run build`
+- Pet runtime care animation pass:
+  - added action-specific care bursts after correct pet quiz answers: food arcs for feeding, toy bounces for play, bubbles for bath, and soft dream particles for sleep
+  - delayed the burst until the quiz modal closes so the animation is visible in the pet room
+  - scripted Playwright gameplay smoke captured `output/web-game/pet/care-burst.png` and confirmed `.pet-care-burst` renders with no console errors
+  - develop-web-game client smoke also ran on `/games/pet`
+  - validation: `npm run type-check`, `npm run lint`, `npm run test:run -- src/lib/pet.test.ts`
+- Gemini/Veo key expansion:
+  - updated farm/pet Veo scripts to read any `gemini_keyN` / `GEMINI_KEYN` entry and try higher-numbered keys first
+  - `.env.local` currently has `gemini_key5` through `gemini_key8`; a pet `thuy-long` test generation tried the new keys first
+  - `gemini_key8`, `gemini_key7`, `gemini_key6`, and `gemini_key5` all returned `429 RESOURCE_EXHAUSTED`, so no MP4 was generated
+  - validation: `node --check scripts/gen-veo-evolve.mjs`, `node --check scripts/gen-veo-farm.mjs`
+- Homepage lag investigation/fix:
+  - production home HTML measured at ~1.95 MB and 2.4s+ because the server payload included story `panels` and base64 `cover_image` values
+  - added lightweight `listStorySummaries()` for homepage/API summary use; it excludes panels/vocabulary/games and strips base64 covers so fallback artwork renders instead
+  - changed `/` to use summaries and changed homepage client refresh to call `/api/stories?summary=1`
+  - local dev after fix: `/api/stories?summary=1` dropped to 766 bytes, `/` dropped to ~94 KB
+  - droplet SSH on `168.144.128.38:22` still timed out, so remote SSD usage could not be measured from here
+  - validation: `npm run type-check`, `npm run lint`, `npm run build`
+- Server/game storage and lag pass:
+  - added `npm run server:audit` to report droplet disk/inode/RAM/load/PM2 plus top project/uploads/log files
+  - added `npm run server:cleanup-uploads`; dry-run by default, `-- --delete` removes unreferenced upload files after checking Supabase videos, background music, and story image refs
+  - changed `postbuild` to skip ffmpeg thumbnail backfill by default; run `npm run thumbnails:backfill` manually or set `BACKFILL_THUMBNAILS_ON_BUILD=1` when needed
+  - added `games:audit-assets` and `games:optimize-assets`; generated WebP variants for pet/farm PNG assets
+  - pet now uses WebP stage/action art; farm Phaser loader tries WebP first and falls back to PNG/iso art
+  - runtime game asset estimate after WebP: `pet` ~2.4 MB, `english-farm` ~4.0 MB; largest runtime game asset is under 1 MB
+  - validation: `npm run games:audit-assets`, `npm run server:cleanup-uploads`, `npm run type-check`, `npm run lint`, `npm run build`
+  - visual smoke: local prod `/games/pet` and `/games/english-farm` screenshots saved as `output/pet-webp-check.png` and `output/english-farm-webp-check.png`; images render with WebP and no blocking console errors
+
+TODOs / next suggestions:
+- When Gemini/Veo quota or billing is available, run `npm run veo:evolve` and commit generated files under `public/games/pet/evolve/`.
+- Next high-value step: add real browser E2E for login, stories, videos, and admin CRUD now that auth/progress flow is less fragmented.
+- For deeper confidence, run real browser E2E outside this sandbox, especially on Phaser-based game pages and Bunny/Supabase flows.
+- `next build` completed successfully in the latest pet-game pass.
+
+- Game effects + usability verification pass (2026-06-09):
+  - added Farm Phaser polish: tap rings by tool, soil crack feedback, water ripples, harvest beam, leaf/coin sparkle burst, floating +1 harvest label, and a `window.render_game_to_text` state hook from the Farm page for smoke tests
+  - tightened Farm mobile usability by hiding the long play-guide/source blocks on small screens; mobile now keeps only the key action buttons so the field is not buried
+  - added Pet polish: pet tap ripple, correct/combo/battle star bursts, pulsing combo ribbon, and action-button press glow while preserving reduced-motion support
+  - verified core static/data health: `npm run type-check`, `npm run lint`, `npm run test:run`, `npm run curriculum:verify-db`, `npm run curriculum:verify-open-content`, `npm run storage:audit`
+  - route smoke after dev-server restart: `/`, `/roadmap`, `/learn/today`, `/learn/lessons/a2-key-open-lesson-01`, `/parent`, `/games/english-farm`, `/games/pet`, `/learn/placement` all returned 200
+  - game visual artifacts: `output/web-game/farm-effects-final-slow/shot-0.png`, `output/playwright/game-effects/farm-mobile-compact.png`, `output/playwright/game-effects/pet-tap-effect.png`, `output/playwright/game-effects/pet-quiz-modal.png`
+  - known gap: some pet stage assets still contain a checkerboard preview background baked into the image; a quick flood-fill cleanup attempt was reverted because it damaged wing art, so this should be fixed with better source assets or a proper segmentation pass
+
+- Fuller Farm/Pet animation pack pass (2026-06-09):
+  - Farm: added clear/sunny/rain ambient loops, drifting motes, rain streaks, sunny ray rotation, tool swipe arcs, seed swirl, and water arc animation on top of existing tap rings/ripples/harvest bursts
+  - Pet: added quiz-result confetti burst inside the modal, animated checkmark pop, and PokiWar battle impact ring/slashes for correct/wrong answers; kept reduced-motion fallback updated
+  - validation: `npm run type-check`, `npm run lint`, `npm run test:run` all pass
+  - visual artifacts: `output/playwright/animation-pack/farm-animation-pack.png`, `output/playwright/animation-pack/pet-quiz-reward-animation.png`, `output/playwright/animation-pack/pet-room-after-reward.png`, `output/playwright/animation-pack/pet-battle-modal.png`
+  - browser smoke note: game pages still log guest `401` from learner-level/auth fetches, same as previous pass; UI renders and interactions continue normally
+
+- Curriculum + wordbank integration pass:
+  - added shared curriculum stages in `src/lib/curriculum.ts` with CEFR/Cambridge-style stages and progress derivation from mastered words, completed stories, and 70%+ game scores
+  - added `/roadmap` and connected roadmap links through header/home/games/progress earlier; updated roadmap/today/progress to show the learner's current stage from real progress
+  - expanded `src/lib/word-bank.ts` with metadata (`level`, `topic`, `example`), filters, and adapters for matching pairs, coin questions, RPG questions, fill blanks, and sentence scrambles
+  - admin word-bank editor now preserves/edits level/topic/example instead of stripping metadata on save
+  - migrated major hardcoded vocab games to shared wordbank with fallback: matching-pairs, word-collector, rpg-battle, fill-blanks, sentence-scramble, mario-word, candy-crush; existing wordbank games remain connected
+  - fixed sentence-scramble to shuffle words instead of characters, making it much easier to play
+  - fixed word-collector back-link text and forced Phaser Canvas renderer to avoid black WebGL captures/headless framebuffer failures
+- Curriculum/wordbank validation:
+  - `npm run test:run -- src/lib/curriculum.test.ts src/lib/word-bank.test.ts src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`
+  - `npm run type-check`
+  - `npm run lint`
+  - `npm run build`
+  - standalone smoke on `http://localhost:3003`: `/roadmap`, `/learn/today`, `/progress`, `/games/matching-pairs`, `/games/word-collector`; no app console errors
+  - develop-web-game client screenshots: `output/web-game/matching-pairs-3003-final/shot-0.png`, `output/web-game/word-collector-3003-after-canvas/shot-0.png`
+- Local standalone note:
+  - because Next is configured with `output: 'standalone'`, local standalone smoke requires copying `.next/static` and `public` into `.next/standalone` before running `node server.js`; this was done for the running test server on port 3003
+- Header/admin compactness pass:
+  - removed Progress and Shop from the main desktop/mobile nav list because progress already has the star pill
+  - added a compact Shop button beside the star/progress control on desktop and in the mobile menu action grid
+  - added collapsible admin sidebar state in the admin layout, with icon-only rail mode and matching content margin
+  - validation:
+    - `npm run type-check`
+    - `npm run lint`
+    - `npm run test:run -- src/lib/curriculum.test.ts src/lib/word-bank.test.ts src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`
+    - `npm run build`
+    - Playwright smoke on `http://127.0.0.1:3003` for desktop shop, mobile shop, and mocked admin sidebar collapse (`output/playwright/nav-admin-smoke/`)
+
+- Curriculum + word_bank design pass:
+  - rebuilt `DEFAULT_WORD_BANK` into a CEFR/Cambridge Young Learners inspired Engkids seed with 225 words, 5 curriculum stages, 26 topics, examples for every word, and 45 five-letter words for Word Puzzle
+  - added word-bank helpers for stats, stage counts, topics, and stronger built-in metadata inference
+  - expanded `CURRICULUM_STAGES` with objectives, daily loop, weekly plan, monthly assessment, exit criteria, and Engkids activity mapping
+  - rewrote `/roadmap` to read directly from `CURRICULUM_STAGES` instead of a duplicate local ROADMAP array
+  - added current-stage daily loop/topic chips on `/learn/today`
+  - upgraded `/admin/games/word-bank` with seed reload, level/topic/search filters, stats by stage/topic, and visible row counts
+  - validation:
+    - `npm run test:run -- src/lib/word-bank.test.ts src/lib/curriculum.test.ts`
+    - `npm run type-check`
+    - `npm run lint`
+    - `npm run test:run -- src/lib/curriculum.test.ts src/lib/word-bank.test.ts src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`
+    - `npm run build`
+    - Playwright smoke on `http://127.0.0.1:3003` for `/roadmap`, `/learn/today`, `/admin/games/word-bank` level filter, and `/games/matching-pairs` (`output/playwright/curriculum-wordbank-smoke/`)
+
+- DB-backed curriculum/assessment engine pass:
+  - added migration `020_curriculum_assessment_engine.sql` for curriculum stages, skills, normalized `word_bank_items`, assessment blueprints/items, learner curriculum state, skill mastery, assessment attempts/responses, and daily tasks
+  - changed word bank reads to prefer `word_bank_items`, with legacy `game_content` compatibility and admin save syncing both stores
+  - added `/api/curriculum` and `/api/assessments/[kind]` so placement/checkpoint/daily/stage-exit assessments generate from the DB-backed word bank and save results for logged-in users
+  - added `/learn/placement` and `/learn/checkpoint`, then changed `/learn/today` and `/roadmap` from text roadmap screens into functional learner-flow screens with placement, checkpoint, stage unlock, mastery, and next action states
+  - validation:
+    - `npm run type-check`
+    - `npm run lint`
+    - `npm run test:run -- src/lib/learning-path.test.ts src/lib/curriculum.test.ts src/lib/word-bank.test.ts src/lib/pet.test.ts src/game/farm/systems/farmingSystem.test.ts`
+    - `npm run build`
+    - Browser smoke on `http://127.0.0.1:3003` for `/roadmap`, `/learn/today`, `/learn/placement`
+    - Playwright submit smoke for placement with screenshots in `output/playwright/db-curriculum-smoke/`
+
+- Final animation sanity check (2026-06-09): fixed sunny Farm ambient to rotate rays around its own center instead of canvas origin; reran npm run type-check, npm run lint, npm run test:run; reran develop-web-game smoke for /games/english-farm and /games/pet; inspected farm-ready screenshot at output/playwright/final-animation-check/farm-ready.png and pet animation artifacts. Only known console noise remains guest auth 401.

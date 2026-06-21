@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.npm-cache
+npm-debug.log*
+.env*.local
+.env
+output
+tests
+playwright-report
+test-results
+*.md
+.vscode
+.qwen
+*.zip
+coverage

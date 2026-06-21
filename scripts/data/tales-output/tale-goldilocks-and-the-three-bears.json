@@ -1,0 +1,576 @@
+{
+  "id": "tale-goldilocks-and-the-three-bears",
+  "title_en": "Goldilocks and the Bears",
+  "title_vi": "Goldilocks và những con gấu",
+  "level": "Beginner",
+  "topics": [
+    "Animals",
+    "House"
+  ],
+  "cover_image": "🏰",
+  "estimated_minutes": 4,
+  "published": false,
+  "panels": [
+    {
+      "panel_id": 1,
+      "image": "🦊",
+      "image_alt": "Goldilocks and the Bears - panel 1",
+      "sentence_en": "A little girl is walking in the forest.",
+      "sentence_vi": "Một cô bé đang đi dạo trong rừng.",
+      "tokens": [
+        {
+          "display": "A",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "little",
+          "norm": "little",
+          "lemma": "little"
+        },
+        {
+          "display": "girl",
+          "norm": "girl",
+          "lemma": "girl",
+          "vi": "cô bé"
+        },
+        {
+          "display": "is",
+          "norm": "is",
+          "lemma": "i"
+        },
+        {
+          "display": "walking",
+          "norm": "walking",
+          "lemma": "walk"
+        },
+        {
+          "display": "in",
+          "norm": "in",
+          "lemma": "in"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "forest",
+          "norm": "forest",
+          "lemma": "forest",
+          "vi": "rừng"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 2,
+      "image": "🐻",
+      "image_alt": "Goldilocks and the Bears - panel 2",
+      "sentence_en": "She sees a house and knocks on the door.",
+      "sentence_vi": "Cô thấy một ngôi nhà và gõ cửa.",
+      "tokens": [
+        {
+          "display": "She",
+          "norm": "she",
+          "lemma": "she"
+        },
+        {
+          "display": "sees",
+          "norm": "sees",
+          "lemma": "see"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "house",
+          "norm": "house",
+          "lemma": "house",
+          "vi": "ngôi nhà"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "knocks",
+          "norm": "knocks",
+          "lemma": "knock"
+        },
+        {
+          "display": "on",
+          "norm": "on",
+          "lemma": "on"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "door",
+          "norm": "door",
+          "lemma": "door",
+          "vi": "cửa"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 3,
+      "image": "🐰",
+      "image_alt": "Goldilocks and the Bears - panel 3",
+      "sentence_en": "The bears are not home, so she goes inside.",
+      "sentence_vi": "Những con gấu không có ở nhà, vì vậy cô vào trong.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "bears",
+          "norm": "bears",
+          "lemma": "bear",
+          "vi": "những con gấu"
+        },
+        {
+          "display": "are",
+          "norm": "are",
+          "lemma": "are"
+        },
+        {
+          "display": "not",
+          "norm": "not",
+          "lemma": "not"
+        },
+        {
+          "display": "home",
+          "norm": "home",
+          "lemma": "home"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "so",
+          "norm": "so",
+          "lemma": "so"
+        },
+        {
+          "display": "she",
+          "norm": "she",
+          "lemma": "she"
+        },
+        {
+          "display": "goes",
+          "norm": "goes",
+          "lemma": "goe"
+        },
+        {
+          "display": "inside",
+          "norm": "inside",
+          "lemma": "inside"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 4,
+      "image": "🌳",
+      "image_alt": "Goldilocks and the Bears - panel 4",
+      "sentence_en": "She eats the bears' porridge for breakfast.",
+      "sentence_vi": "Cô ăn cháo của những con gấu để ăn sáng.",
+      "tokens": [
+        {
+          "display": "She",
+          "norm": "she",
+          "lemma": "she"
+        },
+        {
+          "display": "eats",
+          "norm": "eats",
+          "lemma": "eat"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "bears'",
+          "norm": "bears'",
+          "lemma": "bears'"
+        },
+        {
+          "display": "porridge",
+          "norm": "porridge",
+          "lemma": "porridge",
+          "vi": "cháo"
+        },
+        {
+          "display": "for",
+          "norm": "for",
+          "lemma": "for"
+        },
+        {
+          "display": "breakfast",
+          "norm": "breakfast",
+          "lemma": "breakfast"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 5,
+      "image": "🏰",
+      "image_alt": "Goldilocks and the Bears - panel 5",
+      "sentence_en": "Goldilocks sits in the bears' chairs and breaks one.",
+      "sentence_vi": "Goldilocks ngồi trên ghế của những con gấu và làm vỡ một chiếc.",
+      "tokens": [
+        {
+          "display": "Goldilocks",
+          "norm": "goldilocks",
+          "lemma": "goldilock"
+        },
+        {
+          "display": "sits",
+          "norm": "sits",
+          "lemma": "sit"
+        },
+        {
+          "display": "in",
+          "norm": "in",
+          "lemma": "in"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "bears'",
+          "norm": "bears'",
+          "lemma": "bears'"
+        },
+        {
+          "display": "chairs",
+          "norm": "chairs",
+          "lemma": "chair",
+          "vi": "ghế"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "breaks",
+          "norm": "breaks",
+          "lemma": "break"
+        },
+        {
+          "display": "one",
+          "norm": "one",
+          "lemma": "one"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 6,
+      "image": "🌟",
+      "image_alt": "Goldilocks and the Bears - panel 6",
+      "sentence_en": "The bears come home and find their porridge gone.",
+      "sentence_vi": "Những con gấu về nhà và thấy cháo của chúng đã mất.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "bears",
+          "norm": "bears",
+          "lemma": "bear",
+          "vi": "những con gấu"
+        },
+        {
+          "display": "come",
+          "norm": "come",
+          "lemma": "come"
+        },
+        {
+          "display": "home",
+          "norm": "home",
+          "lemma": "home"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "find",
+          "norm": "find",
+          "lemma": "find"
+        },
+        {
+          "display": "their",
+          "norm": "their",
+          "lemma": "their"
+        },
+        {
+          "display": "porridge",
+          "norm": "porridge",
+          "lemma": "porridge",
+          "vi": "cháo"
+        },
+        {
+          "display": "gone",
+          "norm": "gone",
+          "lemma": "gone"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 7,
+      "image": "🌈",
+      "image_alt": "Goldilocks and the Bears - panel 7",
+      "sentence_en": "They see Goldilocks sleeping in baby bear's bed.",
+      "sentence_vi": "Họ thấy Goldilocks đang ngủ trong giường của con gấu bé.",
+      "tokens": [
+        {
+          "display": "They",
+          "norm": "they",
+          "lemma": "they"
+        },
+        {
+          "display": "see",
+          "norm": "see",
+          "lemma": "see"
+        },
+        {
+          "display": "Goldilocks",
+          "norm": "goldilocks",
+          "lemma": "goldilock"
+        },
+        {
+          "display": "sleeping",
+          "norm": "sleeping",
+          "lemma": "sleep"
+        },
+        {
+          "display": "in",
+          "norm": "in",
+          "lemma": "in"
+        },
+        {
+          "display": "baby",
+          "norm": "baby",
+          "lemma": "baby"
+        },
+        {
+          "display": "bear's",
+          "norm": "bear's",
+          "lemma": "bear'"
+        },
+        {
+          "display": "bed",
+          "norm": "bed",
+          "lemma": "b",
+          "vi": "giường"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 8,
+      "image": "🦋",
+      "image_alt": "Goldilocks and the Bears - panel 8",
+      "sentence_en": "Goldilocks runs home to her mom and dad.",
+      "sentence_vi": "Goldilocks chạy về nhà với mẹ và bố của mình.",
+      "tokens": [
+        {
+          "display": "Goldilocks",
+          "norm": "goldilocks",
+          "lemma": "goldilock"
+        },
+        {
+          "display": "runs",
+          "norm": "runs",
+          "lemma": "run"
+        },
+        {
+          "display": "home",
+          "norm": "home",
+          "lemma": "home"
+        },
+        {
+          "display": "to",
+          "norm": "to",
+          "lemma": "to"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "mom",
+          "norm": "mom",
+          "lemma": "mom"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "dad",
+          "norm": "dad",
+          "lemma": "dad"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "word": "girl",
+      "vi": "cô bé",
+      "ipa": ""
+    },
+    {
+      "word": "forest",
+      "vi": "rừng",
+      "ipa": ""
+    },
+    {
+      "word": "house",
+      "vi": "ngôi nhà",
+      "ipa": ""
+    },
+    {
+      "word": "door",
+      "vi": "cửa",
+      "ipa": ""
+    },
+    {
+      "word": "bears",
+      "vi": "những con gấu",
+      "ipa": ""
+    },
+    {
+      "word": "porridge",
+      "vi": "cháo",
+      "ipa": ""
+    },
+    {
+      "word": "chairs",
+      "vi": "ghế",
+      "ipa": ""
+    },
+    {
+      "word": "bed",
+      "vi": "giường",
+      "ipa": ""
+    }
+  ],
+  "games": {
+    "match": [
+      {
+        "word": "girl",
+        "vi": "cô bé"
+      },
+      {
+        "word": "forest",
+        "vi": "rừng"
+      },
+      {
+        "word": "house",
+        "vi": "ngôi nhà"
+      },
+      {
+        "word": "door",
+        "vi": "cửa"
+      },
+      {
+        "word": "bears",
+        "vi": "những con gấu"
+      },
+      {
+        "word": "porridge",
+        "vi": "cháo"
+      }
+    ],
+    "fill_blank": [
+      {
+        "sentence_en": "A little girl is ___ in the forest.",
+        "answer": "walking",
+        "choices": [
+          "walking",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "She sees a house and ___ on the door.",
+        "answer": "knocks",
+        "choices": [
+          "knocks",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "The bears are not home, so she ___ inside.",
+        "answer": "goes",
+        "choices": [
+          "good",
+          "goes",
+          "happy"
+        ]
+      }
+    ]
+  }
+}

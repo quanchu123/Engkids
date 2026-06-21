@@ -1,0 +1,558 @@
+{
+  "id": "tale-little-red-riding-hood",
+  "title_en": "Little Red Riding Hood",
+  "title_vi": "Cô bé quàng khăn đỏ",
+  "level": "Beginner",
+  "topics": [
+    "Animals",
+    "Family"
+  ],
+  "cover_image": "🏰",
+  "estimated_minutes": 4,
+  "published": false,
+  "panels": [
+    {
+      "panel_id": 1,
+      "image": "🦊",
+      "image_alt": "Little Red Riding Hood - panel 1",
+      "sentence_en": "Little Red Riding Hood visits her grandma.",
+      "sentence_vi": "Cô bé quàng khăn đỏ đến thăm bà của mình.",
+      "tokens": [
+        {
+          "display": "Little",
+          "norm": "little",
+          "lemma": "little"
+        },
+        {
+          "display": "Red",
+          "norm": "red",
+          "lemma": "r"
+        },
+        {
+          "display": "Riding",
+          "norm": "riding",
+          "lemma": "rid"
+        },
+        {
+          "display": "Hood",
+          "norm": "hood",
+          "lemma": "hood"
+        },
+        {
+          "display": "visits",
+          "norm": "visits",
+          "lemma": "visit"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "grandma",
+          "norm": "grandma",
+          "lemma": "grandma",
+          "vi": "bà"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 2,
+      "image": "🐻",
+      "image_alt": "Little Red Riding Hood - panel 2",
+      "sentence_en": "She walks through a forest with big trees.",
+      "sentence_vi": "Cô đi qua một khu rừng với những cây lớn.",
+      "tokens": [
+        {
+          "display": "She",
+          "norm": "she",
+          "lemma": "she"
+        },
+        {
+          "display": "walks",
+          "norm": "walks",
+          "lemma": "walk"
+        },
+        {
+          "display": "through",
+          "norm": "through",
+          "lemma": "through"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "forest",
+          "norm": "forest",
+          "lemma": "forest",
+          "vi": "rừng"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "big",
+          "norm": "big",
+          "lemma": "big"
+        },
+        {
+          "display": "trees",
+          "norm": "trees",
+          "lemma": "tree"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 3,
+      "image": "🐰",
+      "image_alt": "Little Red Riding Hood - panel 3",
+      "sentence_en": "A friendly wolf says hello to her.",
+      "sentence_vi": "Một con sói thân thiện chào cô.",
+      "tokens": [
+        {
+          "display": "A",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "friendly",
+          "norm": "friendly",
+          "lemma": "friendly"
+        },
+        {
+          "display": "wolf",
+          "norm": "wolf",
+          "lemma": "wolf",
+          "vi": "sói"
+        },
+        {
+          "display": "says",
+          "norm": "says",
+          "lemma": "say"
+        },
+        {
+          "display": "hello",
+          "norm": "hello",
+          "lemma": "hello"
+        },
+        {
+          "display": "to",
+          "norm": "to",
+          "lemma": "to"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 4,
+      "image": "🌳",
+      "image_alt": "Little Red Riding Hood - panel 4",
+      "sentence_en": "The wolf runs to grandma's house quickly.",
+      "sentence_vi": "Con sói chạy đến nhà của bà một cách nhanh chóng.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "wolf",
+          "norm": "wolf",
+          "lemma": "wolf",
+          "vi": "sói"
+        },
+        {
+          "display": "runs",
+          "norm": "runs",
+          "lemma": "run"
+        },
+        {
+          "display": "to",
+          "norm": "to",
+          "lemma": "to"
+        },
+        {
+          "display": "grandma's",
+          "norm": "grandma's",
+          "lemma": "grandma'"
+        },
+        {
+          "display": "house",
+          "norm": "house",
+          "lemma": "house"
+        },
+        {
+          "display": "quickly",
+          "norm": "quickly",
+          "lemma": "quickly"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 5,
+      "image": "🏰",
+      "image_alt": "Little Red Riding Hood - panel 5",
+      "sentence_en": "Little Red Riding Hood meets her grandma and the wolf.",
+      "sentence_vi": "Cô bé quàng khăn đỏ gặp bà và con sói.",
+      "tokens": [
+        {
+          "display": "Little",
+          "norm": "little",
+          "lemma": "little"
+        },
+        {
+          "display": "Red",
+          "norm": "red",
+          "lemma": "r"
+        },
+        {
+          "display": "Riding",
+          "norm": "riding",
+          "lemma": "rid"
+        },
+        {
+          "display": "Hood",
+          "norm": "hood",
+          "lemma": "hood"
+        },
+        {
+          "display": "meets",
+          "norm": "meets",
+          "lemma": "meet"
+        },
+        {
+          "display": "her",
+          "norm": "her",
+          "lemma": "her"
+        },
+        {
+          "display": "grandma",
+          "norm": "grandma",
+          "lemma": "grandma",
+          "vi": "bà"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "wolf",
+          "norm": "wolf",
+          "lemma": "wolf",
+          "vi": "sói"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 6,
+      "image": "🌟",
+      "image_alt": "Little Red Riding Hood - panel 6",
+      "sentence_en": "A brave woodsman helps Little Red Riding Hood.",
+      "sentence_vi": "Một người thợ rừng dũng cảm giúp đỡ Cô bé quàng khăn đỏ.",
+      "tokens": [
+        {
+          "display": "A",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "brave",
+          "norm": "brave",
+          "lemma": "brave",
+          "vi": "dũng cảm"
+        },
+        {
+          "display": "woodsman",
+          "norm": "woodsman",
+          "lemma": "woodsman",
+          "vi": "người thợ rừng"
+        },
+        {
+          "display": "helps",
+          "norm": "helps",
+          "lemma": "help"
+        },
+        {
+          "display": "Little",
+          "norm": "little",
+          "lemma": "little"
+        },
+        {
+          "display": "Red",
+          "norm": "red",
+          "lemma": "r"
+        },
+        {
+          "display": "Riding",
+          "norm": "riding",
+          "lemma": "rid"
+        },
+        {
+          "display": "Hood",
+          "norm": "hood",
+          "lemma": "hood"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 7,
+      "image": "🌈",
+      "image_alt": "Little Red Riding Hood - panel 7",
+      "sentence_en": "Grandma and Little Red Riding Hood hug each other.",
+      "sentence_vi": "Bà và Cô bé quàng khăn đỏ ôm nhau.",
+      "tokens": [
+        {
+          "display": "Grandma",
+          "norm": "grandma",
+          "lemma": "grandma",
+          "vi": "bà"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "Little",
+          "norm": "little",
+          "lemma": "little"
+        },
+        {
+          "display": "Red",
+          "norm": "red",
+          "lemma": "r"
+        },
+        {
+          "display": "Riding",
+          "norm": "riding",
+          "lemma": "rid"
+        },
+        {
+          "display": "Hood",
+          "norm": "hood",
+          "lemma": "hood"
+        },
+        {
+          "display": "hug",
+          "norm": "hug",
+          "lemma": "hug",
+          "vi": "ôm"
+        },
+        {
+          "display": "each",
+          "norm": "each",
+          "lemma": "each"
+        },
+        {
+          "display": "other",
+          "norm": "other",
+          "lemma": "other"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 8,
+      "image": "🦋",
+      "image_alt": "Little Red Riding Hood - panel 8",
+      "sentence_en": "They have a nice cake together at home.",
+      "sentence_vi": "Họ cùng nhau thưởng thức một chiếc bánh ngon tại nhà.",
+      "tokens": [
+        {
+          "display": "They",
+          "norm": "they",
+          "lemma": "they"
+        },
+        {
+          "display": "have",
+          "norm": "have",
+          "lemma": "have"
+        },
+        {
+          "display": "a",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "nice",
+          "norm": "nice",
+          "lemma": "nice"
+        },
+        {
+          "display": "cake",
+          "norm": "cake",
+          "lemma": "cake",
+          "vi": "bánh"
+        },
+        {
+          "display": "together",
+          "norm": "together",
+          "lemma": "together"
+        },
+        {
+          "display": "at",
+          "norm": "at",
+          "lemma": "at"
+        },
+        {
+          "display": "home",
+          "norm": "home",
+          "lemma": "home",
+          "vi": "nhà"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "word": "grandma",
+      "vi": "bà",
+      "ipa": ""
+    },
+    {
+      "word": "wolf",
+      "vi": "sói",
+      "ipa": ""
+    },
+    {
+      "word": "forest",
+      "vi": "rừng",
+      "ipa": ""
+    },
+    {
+      "word": "home",
+      "vi": "nhà",
+      "ipa": ""
+    },
+    {
+      "word": "cake",
+      "vi": "bánh",
+      "ipa": ""
+    },
+    {
+      "word": "woodsman",
+      "vi": "người thợ rừng",
+      "ipa": ""
+    },
+    {
+      "word": "hug",
+      "vi": "ôm",
+      "ipa": ""
+    },
+    {
+      "word": "brave",
+      "vi": "dũng cảm",
+      "ipa": ""
+    }
+  ],
+  "games": {
+    "match": [
+      {
+        "word": "grandma",
+        "vi": "bà"
+      },
+      {
+        "word": "wolf",
+        "vi": "sói"
+      },
+      {
+        "word": "forest",
+        "vi": "rừng"
+      },
+      {
+        "word": "home",
+        "vi": "nhà"
+      },
+      {
+        "word": "cake",
+        "vi": "bánh"
+      },
+      {
+        "word": "woodsman",
+        "vi": "người thợ rừng"
+      }
+    ],
+    "fill_blank": [
+      {
+        "sentence_en": "Little Red Riding ___ visits her grandma.",
+        "answer": "Hood",
+        "choices": [
+          "happy",
+          "Hood",
+          "good"
+        ]
+      },
+      {
+        "sentence_en": "She walks through a ___ with big trees.",
+        "answer": "forest",
+        "choices": [
+          "forest",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "A friendly wolf ___ hello to her.",
+        "answer": "says",
+        "choices": [
+          "happy",
+          "good",
+          "says"
+        ]
+      }
+    ]
+  }
+}

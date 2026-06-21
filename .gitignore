@@ -1,0 +1,78 @@
+﻿# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Testing
+coverage/
+.playwright-cli/
+output/
+
+# Next.js
+.next/
+out/
+build/
+
+# Production
+dist/
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+
+.npm-cache/
+
+# Locally-uploaded videos (offline mode) - keep the folder, ignore the files
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Local DB recovery snapshots/scripts (may contain data dumps) - never commit
+recovery/
+
+# Local dev server logs
+output-dev.err.log
+output-dev.out.log
+
+# Licensed source files stay local; commit only manifests/examples
+data/licensed-curriculum/raw/*
+!data/licensed-curriculum/raw/.gitkeep
+data/licensed-curriculum/staging/*
+!data/licensed-curriculum/staging/.gitkeep
+
+# Generated source snapshots / droplet asset manifests
+data/open-curriculum/snapshots/*
+!data/open-curriculum/snapshots/.gitkeep
+data/open-curriculum/raw/*
+!data/open-curriculum/raw/.gitkeep
+data/open-curriculum/curated/*
+!data/open-curriculum/curated/.gitkeep
+data/static-assets/manifest.json
+

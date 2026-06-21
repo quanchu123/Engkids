@@ -1,0 +1,554 @@
+{
+  "id": "tale-the-ugly-duckling",
+  "title_en": "The Little Duckling",
+  "title_vi": "Chú Vịt Con",
+  "level": "Beginner",
+  "topics": [
+    "Animals",
+    "Emotions"
+  ],
+  "cover_image": "🏰",
+  "estimated_minutes": 4,
+  "published": false,
+  "panels": [
+    {
+      "panel_id": 1,
+      "image": "🦊",
+      "image_alt": "The Little Duckling - panel 1",
+      "sentence_en": "A mother duck has baby ducks.",
+      "sentence_vi": "Một mẹ vịt có những chú vịt con.",
+      "tokens": [
+        {
+          "display": "A",
+          "norm": "a",
+          "lemma": "a"
+        },
+        {
+          "display": "mother",
+          "norm": "mother",
+          "lemma": "mother"
+        },
+        {
+          "display": "duck",
+          "norm": "duck",
+          "lemma": "duck",
+          "vi": "vịt"
+        },
+        {
+          "display": "has",
+          "norm": "has",
+          "lemma": "ha"
+        },
+        {
+          "display": "baby",
+          "norm": "baby",
+          "lemma": "baby",
+          "vi": "trẻ sơ sinh"
+        },
+        {
+          "display": "ducks",
+          "norm": "ducks",
+          "lemma": "duck",
+          "vi": "vịt"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 2,
+      "image": "🐻",
+      "image_alt": "The Little Duckling - panel 2",
+      "sentence_en": "One duckling is different from the others.",
+      "sentence_vi": "Một trong những chú vịt con khác với những con khác.",
+      "tokens": [
+        {
+          "display": "One",
+          "norm": "one",
+          "lemma": "one"
+        },
+        {
+          "display": "duckling",
+          "norm": "duckling",
+          "lemma": "duckl"
+        },
+        {
+          "display": "is",
+          "norm": "is",
+          "lemma": "i"
+        },
+        {
+          "display": "different",
+          "norm": "different",
+          "lemma": "different"
+        },
+        {
+          "display": "from",
+          "norm": "from",
+          "lemma": "from"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "others",
+          "norm": "others",
+          "lemma": "other"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 3,
+      "image": "🐰",
+      "image_alt": "The Little Duckling - panel 3",
+      "sentence_en": "The little duckling is sad and alone.",
+      "sentence_vi": "Chú vịt con cảm thấy buồn và cô đơn.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "little",
+          "norm": "little",
+          "lemma": "little"
+        },
+        {
+          "display": "duckling",
+          "norm": "duckling",
+          "lemma": "duckl"
+        },
+        {
+          "display": "is",
+          "norm": "is",
+          "lemma": "i"
+        },
+        {
+          "display": "sad",
+          "norm": "sad",
+          "lemma": "sad",
+          "vi": "buồn"
+        },
+        {
+          "display": "and",
+          "norm": "and",
+          "lemma": "and"
+        },
+        {
+          "display": "alone",
+          "norm": "alone",
+          "lemma": "alone",
+          "vi": "cô đơn"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 4,
+      "image": "🌳",
+      "image_alt": "The Little Duckling - panel 4",
+      "sentence_en": "He meets new friends, the swans, in winter.",
+      "sentence_vi": "Nó gặp những người bạn mới, những con thiên nga, vào mùa đông.",
+      "tokens": [
+        {
+          "display": "He",
+          "norm": "he",
+          "lemma": "he"
+        },
+        {
+          "display": "meets",
+          "norm": "meets",
+          "lemma": "meet"
+        },
+        {
+          "display": "new",
+          "norm": "new",
+          "lemma": "new"
+        },
+        {
+          "display": "friends",
+          "norm": "friends",
+          "lemma": "friend",
+          "vi": "người bạn"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "swans",
+          "norm": "swans",
+          "lemma": "swan",
+          "vi": "thiên nga"
+        },
+        {
+          "display": ",",
+          "norm": "",
+          "lemma": ""
+        },
+        {
+          "display": "in",
+          "norm": "in",
+          "lemma": "in"
+        },
+        {
+          "display": "winter",
+          "norm": "winter",
+          "lemma": "winter",
+          "vi": "mùa đông"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 5,
+      "image": "🏰",
+      "image_alt": "The Little Duckling - panel 5",
+      "sentence_en": "The swans are kind to the little duckling.",
+      "sentence_vi": "Những con thiên nga rất tốt với chú vịt con.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "swans",
+          "norm": "swans",
+          "lemma": "swan",
+          "vi": "thiên nga"
+        },
+        {
+          "display": "are",
+          "norm": "are",
+          "lemma": "are"
+        },
+        {
+          "display": "kind",
+          "norm": "kind",
+          "lemma": "kind"
+        },
+        {
+          "display": "to",
+          "norm": "to",
+          "lemma": "to"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "little",
+          "norm": "little",
+          "lemma": "little"
+        },
+        {
+          "display": "duckling",
+          "norm": "duckling",
+          "lemma": "duckl"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 6,
+      "image": "🌟",
+      "image_alt": "The Little Duckling - panel 6",
+      "sentence_en": "The little duckling is happy with his friends.",
+      "sentence_vi": "Chú vịt con hạnh phúc với những người bạn của mình.",
+      "tokens": [
+        {
+          "display": "The",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "little",
+          "norm": "little",
+          "lemma": "little"
+        },
+        {
+          "display": "duckling",
+          "norm": "duckling",
+          "lemma": "duckl"
+        },
+        {
+          "display": "is",
+          "norm": "is",
+          "lemma": "i"
+        },
+        {
+          "display": "happy",
+          "norm": "happy",
+          "lemma": "happy"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "his",
+          "norm": "his",
+          "lemma": "hi"
+        },
+        {
+          "display": "friends",
+          "norm": "friends",
+          "lemma": "friend",
+          "vi": "người bạn"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 7,
+      "image": "🌈",
+      "image_alt": "The Little Duckling - panel 7",
+      "sentence_en": "He loves playing with the swans on the lake.",
+      "sentence_vi": "Nó yêu thích chơi đùa với những con thiên nga trên hồ.",
+      "tokens": [
+        {
+          "display": "He",
+          "norm": "he",
+          "lemma": "he"
+        },
+        {
+          "display": "loves",
+          "norm": "loves",
+          "lemma": "love"
+        },
+        {
+          "display": "playing",
+          "norm": "playing",
+          "lemma": "play"
+        },
+        {
+          "display": "with",
+          "norm": "with",
+          "lemma": "with"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "swans",
+          "norm": "swans",
+          "lemma": "swan",
+          "vi": "thiên nga"
+        },
+        {
+          "display": "on",
+          "norm": "on",
+          "lemma": "on"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "lake",
+          "norm": "lake",
+          "lemma": "lake",
+          "vi": "hồ"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    },
+    {
+      "panel_id": 8,
+      "image": "🦋",
+      "image_alt": "The Little Duckling - panel 8",
+      "sentence_en": "Now the little duckling is not sad anymore.",
+      "sentence_vi": "Bây giờ chú vịt con không còn buồn nữa.",
+      "tokens": [
+        {
+          "display": "Now",
+          "norm": "now",
+          "lemma": "now"
+        },
+        {
+          "display": "the",
+          "norm": "the",
+          "lemma": "the"
+        },
+        {
+          "display": "little",
+          "norm": "little",
+          "lemma": "little"
+        },
+        {
+          "display": "duckling",
+          "norm": "duckling",
+          "lemma": "duckl"
+        },
+        {
+          "display": "is",
+          "norm": "is",
+          "lemma": "i"
+        },
+        {
+          "display": "not",
+          "norm": "not",
+          "lemma": "not"
+        },
+        {
+          "display": "sad",
+          "norm": "sad",
+          "lemma": "sad",
+          "vi": "buồn"
+        },
+        {
+          "display": "anymore",
+          "norm": "anymore",
+          "lemma": "anymore"
+        },
+        {
+          "display": ".",
+          "norm": "",
+          "lemma": ""
+        }
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "word": "duck",
+      "vi": "vịt",
+      "ipa": ""
+    },
+    {
+      "word": "baby",
+      "vi": "trẻ sơ sinh",
+      "ipa": ""
+    },
+    {
+      "word": "sad",
+      "vi": "buồn",
+      "ipa": ""
+    },
+    {
+      "word": "alone",
+      "vi": "cô đơn",
+      "ipa": ""
+    },
+    {
+      "word": "swans",
+      "vi": "thiên nga",
+      "ipa": ""
+    },
+    {
+      "word": "winter",
+      "vi": "mùa đông",
+      "ipa": ""
+    },
+    {
+      "word": "friends",
+      "vi": "người bạn",
+      "ipa": ""
+    },
+    {
+      "word": "lake",
+      "vi": "hồ",
+      "ipa": ""
+    }
+  ],
+  "games": {
+    "match": [
+      {
+        "word": "duck",
+        "vi": "vịt"
+      },
+      {
+        "word": "baby",
+        "vi": "trẻ sơ sinh"
+      },
+      {
+        "word": "sad",
+        "vi": "buồn"
+      },
+      {
+        "word": "alone",
+        "vi": "cô đơn"
+      },
+      {
+        "word": "swans",
+        "vi": "thiên nga"
+      },
+      {
+        "word": "winter",
+        "vi": "mùa đông"
+      }
+    ],
+    "fill_blank": [
+      {
+        "sentence_en": "A mother duck has ___ ducks.",
+        "answer": "baby",
+        "choices": [
+          "happy",
+          "good",
+          "baby"
+        ]
+      },
+      {
+        "sentence_en": "One duckling is different ___ the others.",
+        "answer": "from",
+        "choices": [
+          "from",
+          "good",
+          "happy"
+        ]
+      },
+      {
+        "sentence_en": "The little ___ is sad and alone.",
+        "answer": "duckling",
+        "choices": [
+          "duckling",
+          "good",
+          "happy"
+        ]
+      }
+    ]
+  }
+}
