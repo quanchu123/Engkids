@@ -1,4 +1,4 @@
-import PayOS from '@payos/node';
+import { PayOS } from '@payos/node';
 
 // We ensure that we only initialize PayOS if the keys are present,
 // to avoid breaking the build if the user hasn't set them up yet.
