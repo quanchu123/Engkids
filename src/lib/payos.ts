@@ -28,12 +28,6 @@ export const SUBSCRIPTION_PLANS = {
     price: 259000,
     durationMonths: 6,
   },
-  '12_months': {
-    id: '12_months',
-    name: 'Gói 12 Tháng',
-    price: 399000,
-    durationMonths: 12,
-  },
 } as const;
 
 export type PlanId = keyof typeof SUBSCRIPTION_PLANS;
