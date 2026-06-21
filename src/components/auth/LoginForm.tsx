@@ -2,7 +2,7 @@
 
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, signUp, onAuthStateChange, getSupabaseClient } from '@/lib/auth-client';
+import { signIn, signUp, onAuthStateChange, getSupabaseClient, getCurrentUser } from '@/lib/auth-client';
 import { adminLogin, isAdminAuthenticated } from '@/lib/admin-auth-client';
 import { authConfig } from '@/config/auth';
 
@@ -60,7 +60,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
     const supabase = getSupabaseClient();
 
     // Verify token against server to avoid redirecting with expired cached token
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    getCurrentUser().then((user) => {
       if (isMounted && user) {
         window.location.href = safeNext;
       }
