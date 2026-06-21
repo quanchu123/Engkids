@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { payos, SUBSCRIPTION_PLANS, PlanId } from '@/lib/payos';
+import { getSupabaseClient } from '@/lib/auth-client';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
