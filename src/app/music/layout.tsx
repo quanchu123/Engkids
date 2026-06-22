@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import FreemiumGuard from '@/components/common/FreemiumGuard';
 
 export const metadata: Metadata = {
   title: 'Nhạc Tiếng Anh',
@@ -10,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function MusicLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <FreemiumGuard>{children}</FreemiumGuard>;
 }

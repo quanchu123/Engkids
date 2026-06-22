@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import FreemiumGuard from '@/components/common/FreemiumGuard';
 
 export const metadata: Metadata = {
   title: 'Kho Truyện',
@@ -10,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function StoriesLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <FreemiumGuard>{children}</FreemiumGuard>;
 }

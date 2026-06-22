@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { payos, SUBSCRIPTION_PLANS, PlanId } from '@/lib/payos';
-import { getSupabaseClient } from '@/lib/auth-client';
+import { SUBSCRIPTION_PLANS, PlanId, generateOrderCode, buildVietQrUrl, BANK_CONFIG } from '@/lib/payment';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
 export async function POST(req: Request) {
   try {
     const { planId } = await req.json();
-    
+
     if (!planId || !SUBSCRIPTION_PLANS[planId as PlanId]) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
     }
@@ -18,7 +17,7 @@ export async function POST(req: Request) {
     const cookieStore = cookies();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    
+
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         get(name: string) {
@@ -28,14 +27,13 @@ export async function POST(req: Request) {
     });
 
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Vui lòng đăng nhập trước khi mua gói.' }, { status: 401 });
     }
 
-    // Generate a unique order code (must be < 9007199254740991)
-    // We can use a timestamp + random 3 digits to ensure uniqueness
-    const orderCode = Number(String(Date.now()).slice(-9) + Math.floor(Math.random() * 1000));
+    // Generate a unique order code (e.g. EK1A2B3C)
+    const orderCode = generateOrderCode();
 
     // Create a transaction in the database
     const { data: transaction, error: dbError } = await supabase
@@ -45,7 +43,7 @@ export async function POST(req: Request) {
         order_code: orderCode,
         amount: plan.price,
         plan_id: planId,
-        status: 'PENDING'
+        status: 'PENDING',
       })
       .select()
       .single();
@@ -55,25 +53,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to create transaction' }, { status: 500 });
     }
 
-    // Call PayOS to create a payment link
-    const requestData = {
-      orderCode: orderCode,
+    // Build VietQR image URL
+    const qrUrl = buildVietQrUrl(plan.price, orderCode);
+
+    return NextResponse.json({
+      orderCode,
       amount: plan.price,
-      description: `EK${orderCode}`, // Concise description for VietQR
-      cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/pricing?cancel=true`,
-      returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout/${orderCode}?success=true`,
-    };
-
-    const paymentLinkData = await payos.paymentRequests.create(requestData);
-
-    return NextResponse.json({ 
-      checkoutUrl: paymentLinkData.checkoutUrl,
-      orderCode: orderCode,
-      qrCode: paymentLinkData.qrCode, // If you want to render it locally
-      paymentLinkData
+      planName: plan.name,
+      durationMonths: plan.durationMonths,
+      qrUrl,
+      bank: BANK_CONFIG,
+      transactionId: transaction.id,
     });
-  } catch (error: any) {
-    console.error('PayOS Create Payment Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  } catch (error: unknown) {
+    console.error('Create Payment Error:', error);
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -159,7 +159,7 @@ export async function middleware(request: NextRequest) {
     //     Gating it here would bounce signed-in admins to /login.
     //   - /api/* : API routes authenticate themselves (see lib/api-auth.ts) and
     //     return 401 rather than an HTML redirect, so they must not be bounced.
-    const PUBLIC_PREFIXES = ['/login', '/auth', '/stories', '/videos', '/music'];
+    const PUBLIC_PREFIXES = ['/login', '/auth', '/stories', '/videos', '/music', '/pricing', '/checkout'];
     const isPublicRoute =
       pathname === '/' ||
       PUBLIC_PREFIXES.some(
