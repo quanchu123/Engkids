@@ -23,6 +23,7 @@ jobs:
             git clean -fd
             rm -rf .next
             npm install
+            npm run db:push:supabase
             npm run build
             pm2 delete engkids || true
             pm2 start npm --name engkids -- start
