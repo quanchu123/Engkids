@@ -44,8 +44,12 @@ export default function PricingPage() {
         throw new Error(data.error || 'Có lỗi xảy ra. Vui lòng đăng nhập trước khi mua gói.');
       }
 
-      // Redirect to checkout page with the order code
-      router.push(`/checkout/${data.orderCode}`);
+      // Redirect to PayOS checkout page directly, with fallback to local checkout page
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        router.push(`/checkout/${data.orderCode}`);
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Có lỗi xảy ra. Vui lòng thử lại.';
       setError(message);

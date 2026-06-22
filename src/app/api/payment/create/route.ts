@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { SUBSCRIPTION_PLANS, PlanId, generateOrderCode, buildVietQrUrl, BANK_CONFIG } from '@/lib/payment';
+import { SUBSCRIPTION_PLANS, PlanId, generateOrderCode, BANK_CONFIG } from '@/lib/payment';
+import { payos } from '@/lib/payos';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Vui lòng đăng nhập trước khi mua gói.' }, { status: 401 });
     }
 
-    // Generate a unique order code (e.g. EK1A2B3C)
+    // Generate a unique numeric order code (less than 9007199254740991 to fit in BIGINT)
     const orderCode = generateOrderCode();
 
     // Create a transaction in the database
@@ -53,15 +54,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Failed to create transaction' }, { status: 500 });
     }
 
-    // Build VietQR image URL
-    const qrUrl = buildVietQrUrl(plan.price, orderCode);
+    // Call PayOS to create a payment link
+    const requestData = {
+      orderCode: Number(orderCode),
+      amount: plan.price,
+      description: `Mua ${plan.name}`.slice(0, 25), // PayOS allows max 25 chars (no special characters/diacritics recommended, but plain Vietnamese with spaces is generally ok or we can strip it)
+      cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/pricing?cancel=true`,
+      returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/checkout/${orderCode}?success=true`,
+    };
+
+    // Strip diacritics from description to be safe with PayOS requirements
+    const safeDesc = requestData.description
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[đĐ]/g, 'd');
+
+    const paymentLinkData = await payos.paymentRequests.create({
+      ...requestData,
+      description: safeDesc,
+    });
 
     return NextResponse.json({
       orderCode,
       amount: plan.price,
       planName: plan.name,
       durationMonths: plan.durationMonths,
-      qrUrl,
+      checkoutUrl: paymentLinkData.checkoutUrl,
       bank: BANK_CONFIG,
       transactionId: transaction.id,
     });
