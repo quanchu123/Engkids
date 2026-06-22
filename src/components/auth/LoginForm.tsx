@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, signUp } from '@/lib/auth-client';
+import { signIn, signUp, onAuthStateChange, getSupabaseClient, getCurrentUser } from '@/lib/auth-client';
 import { adminLogin, isAdminAuthenticated } from '@/lib/admin-auth-client';
 import { authConfig } from '@/config/auth';
 
@@ -55,6 +55,21 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
     return raw;
   };
 
+  useEffect(() => {
+    let isMounted = true;
+    const supabase = getSupabaseClient();
+
+    // Verify token against server to avoid redirecting with expired cached token
+    getCurrentUser().then((user) => {
+      if (isMounted && user) {
+        window.location.href = safeNext;
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [safeNext]);
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
