@@ -78,11 +78,28 @@ function getBirthDate(childAge) {
   return `${birthYear}-${monthStr}-${dayStr}`;
 }
 
-// Vietnamese addresses list
+// Vietnamese addresses list (Hanoi-centric, strictly Son Tay & Thach That)
 const addresses = [
-  'Hà Nội', 'Sơn Tây, Hà Nội', 'Hải Phòng', 'Bắc Ninh', 'Thanh Hóa',
-  'Vinh, Nghệ An', 'Đà Nẵng', 'Nha Trang, Khánh Hòa', 'Đà Lạt, Lâm Đồng', 'Biên Hòa, Đồng Nai',
-  'Quận 1, TP. Hồ Chí Minh', 'Quận 7, TP. Hồ Chí Minh', 'Cần Thơ', 'Vũng Tàu', 'Nam Định'
+  'Sơn Tây, Hà Nội',
+  'Thạch Thất, Hà Nội',
+  'TX. Sơn Tây, Hà Nội',
+  'H. Thạch Thất, Hà Nội',
+  'Phường Ngô Quyền, Sơn Tây, Hà Nội',
+  'Xã Bình Yên, Thạch Thất, Hà Nội',
+  'Phường Quang Trung, Sơn Tây, Hà Nội',
+  'Xã Liên Quan, Thạch Thất, Hà Nội',
+  'Phường Lê Lợi, Sơn Tây, Hà Nội',
+  'Xã Kim Quan, Thạch Thất, Hà Nội',
+  'Phường Sơn Lộc, Sơn Tây, Hà Nội',
+  'Xã Phùng Xá, Thạch Thất, Hà Nội',
+  'Phường Trung Hưng, Sơn Tây, Hà Nội',
+  'Xã Chàng Sơn, Thạch Thất, Hà Nội',
+  'Phường Viên Sơn, Sơn Tây, Hà Nội',
+  'Xã Canh Nậu, Thạch Thất, Hà Nội',
+  'Phường Trung Sơn Trầm, Sơn Tây, Hà Nội',
+  'Xã Hữu Bằng, Thạch Thất, Hà Nội',
+  'Xã Đường Lâm, Sơn Tây, Hà Nội',
+  'Xã Thạch Hòa, Thạch Thất, Hà Nội'
 ];
 
 // 35 Pairs of Child and Parent names
@@ -213,8 +230,11 @@ async function run() {
         'STT': i + 1,
         'Họ và Tên Bé': pair.child,
         'Tuổi Bé': childAge,
+        'Giới tính': gender === 'female' ? 'Nữ' : 'Nam',
+        'Ngày sinh': birthDateStr,
         'Họ và Tên Bố Mẹ': pair.parent,
         'Tuổi Bố Mẹ': parentAge,
+        'Địa chỉ': address,
         'Email': email,
         'Loại tài khoản': 'free',
         'Ngày tạo nick': createdDate.toLocaleString('vi-VN')
@@ -243,7 +263,7 @@ async function run() {
     const ws = XLSX.utils.json_to_sheet(createdUsers);
     
     // Set column widths
-    const max_len = [5, 25, 10, 25, 12, 30, 15, 25];
+    const max_len = [5, 25, 10, 12, 15, 25, 12, 35, 35, 15, 25];
     ws['!cols'] = max_len.map(w => ({ w }));
     
     XLSX.utils.book_append_sheet(wb, ws, 'Danh sách tài khoản');
