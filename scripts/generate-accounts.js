@@ -56,6 +56,35 @@ function generateSecurePassword() {
   return password.split('').sort(() => 0.5 - Math.random()).join('');
 }
 
+// Helper to deduce gender from Vietnamese child name
+function getGender(name) {
+  const femaleKeywords = ['thi', 'hoa', 'thao', 'hang', 'chi', 'ngoc', 'ly', 'han', 'linh', 'mai', 'nhung', 'trang'];
+  const cleanName = removeAccents(name.toLowerCase());
+  for (const kw of femaleKeywords) {
+    if (cleanName.includes(kw)) {
+      return 'female';
+    }
+  }
+  return 'male';
+}
+
+// Helper to generate birth date based on age
+function getBirthDate(childAge) {
+  const birthYear = 2026 - childAge;
+  const month = 1 + Math.floor(Math.random() * 12);
+  const day = 1 + Math.floor(Math.random() * 28);
+  const monthStr = month < 10 ? `0${month}` : `${month}`;
+  const dayStr = day < 10 ? `0${day}` : `${day}`;
+  return `${birthYear}-${monthStr}-${dayStr}`;
+}
+
+// Vietnamese addresses list
+const addresses = [
+  'Hà Nội', 'Sơn Tây, Hà Nội', 'Hải Phòng', 'Bắc Ninh', 'Thanh Hóa',
+  'Vinh, Nghệ An', 'Đà Nẵng', 'Nha Trang, Khánh Hòa', 'Đà Lạt, Lâm Đồng', 'Biên Hòa, Đồng Nai',
+  'Quận 1, TP. Hồ Chí Minh', 'Quận 7, TP. Hồ Chí Minh', 'Cần Thơ', 'Vũng Tàu', 'Nam Định'
+];
+
 // 35 Pairs of Child and Parent names
 const userPairs = [
   { child: 'Nguyễn Văn Nam', parent: 'Nguyễn Văn Hùng' },
@@ -113,14 +142,18 @@ async function run() {
     const domain = domains[i % domains.length];
     
     // Parent age: 35 to 40
-    const parentAge = 35 + (i % 6); // distributed between 35, 36, 37, 38, 39, 40
+    const parentAge = 35 + (i % 6);
     // Child age: 5 to 12
-    const childAge = 5 + (i % 8);   // distributed between 5, 6, 7, 8, 9, 10, 11, 12
+    const childAge = 5 + (i % 8);
+    
+    const gender = getGender(pair.child);
+    const birthDateStr = getBirthDate(childAge);
+    const address = addresses[i % addresses.length];
     
     const email = nameToEmail(pair.parent, parentAge, domain);
     const password = generateSecurePassword();
     
-    console.log(`[${i + 1}/${userPairs.length}] Creating auth user: ${pair.child} (Parent: ${pair.parent}, Parent Age: ${parentAge}, Child Age: ${childAge}, Email: ${email})...`);
+    console.log(`[${i + 1}/${userPairs.length}] Creating auth user: ${pair.child} (Parent: ${pair.parent}, Gender: ${gender}, Birth Date: ${birthDateStr}, Address: ${address}, Email: ${email})...`);
     
     try {
       // 1. Create Auth User
@@ -132,7 +165,10 @@ async function run() {
           name: pair.child,
           parent_name: pair.parent,
           child_age: childAge,
-          parent_age: parentAge
+          parent_age: parentAge,
+          gender: gender,
+          birth_date: birthDateStr,
+          address: address
         }
       });
       
@@ -143,7 +179,7 @@ async function run() {
       
       const authId = authData.user.id;
       
-      // 2. Create User Profile with child name, parent name, child age, parent age
+      // 2. Create User Profile with all fields populated
       const { error: profileError } = await supabase
         .from('user_profiles')
         .insert({
@@ -153,6 +189,9 @@ async function run() {
           parent_name: pair.parent,
           child_age: childAge,
           parent_age: parentAge,
+          gender: gender,
+          birth_date: birthDateStr,
+          address: address,
           account_type: 'free'
         });
         
@@ -164,7 +203,6 @@ async function run() {
       
       // Generate exact dates based on user requests: 30 days, 20 days, 10 days, 5 days ago
       const baseDays = daysAgoOptions[i % daysAgoOptions.length];
-      // Add a small random offset +/- 6 hours to keep individual times unique
       const randomOffsetMs = Math.floor(Math.random() * 12 * 3600 * 1000) - (6 * 3600 * 1000);
       const createdDate = new Date(Date.now() - baseDays * 24 * 3600 * 1000 + randomOffsetMs);
       const updatedDate = new Date(createdDate.getTime() + (Math.random() * 24 * 3600 * 1000) + 12 * 3600 * 1000);
@@ -187,7 +225,7 @@ async function run() {
       sqlStatements.push(`UPDATE public.user_profiles SET created_at = '${createdDate.toISOString()}', updated_at = '${updatedDate.toISOString()}' WHERE auth_id = '${authId}';`);
       
       // Save password backup separately
-      passwordBackup.push(`Họ và Tên Bé: ${pair.child}\nTuổi Bé: ${childAge}\nHọ và Tên Bố Mẹ: ${pair.parent}\nTuổi Bố Mẹ: ${parentAge}\nEmail: ${email}\nMật khẩu: ${password}\nAuth ID: ${authId}\n${'='.repeat(40)}\n`);
+      passwordBackup.push(`Họ và Tên Bé: ${pair.child}\nTuổi Bé: ${childAge}\nHọ và Tên Bố Mẹ: ${pair.parent}\nTuổi Bố Mẹ: ${parentAge}\nGiới tính: ${gender === 'female' ? 'Nữ' : 'Nam'}\nNgày sinh: ${birthDateStr}\nĐịa chỉ: ${address}\nEmail: ${email}\nMật khẩu: ${password}\nAuth ID: ${authId}\n${'='.repeat(40)}\n`);
     } catch (err) {
       console.error(`  ❌ System error for ${pair.child}:`, err.message);
     }
