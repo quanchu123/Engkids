@@ -1,4 +1,4 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 .pnp/
 .pnp.js
@@ -76,3 +76,7 @@ data/open-curriculum/curated/*
 !data/open-curriculum/curated/.gitkeep
 data/static-assets/manifest.json
 
+# Plaintext password backups and database update scripts
+backup_mat_khau_35_acc.txt
+new_users_updates.json
+new_users_updates.sql
