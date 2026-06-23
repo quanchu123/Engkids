@@ -156,6 +156,7 @@ export default function ProfileMenu({ user, onLogout }: ProfileMenuProps) {
 
           {/* Links */}
           <div className="grid gap-1 px-3 pb-2">
+            <ProfileLink href="/pricing" icon="crown" label="Mua Premium" onClick={() => setOpen(false)} />
             <ProfileLink href="/progress" icon="medal" label="Tiến trình của bé" onClick={() => setOpen(false)} />
             <ProfileLink href="/shop" icon="gift" label="Cửa hàng phần thưởng" onClick={() => setOpen(false)} />
             <ProfileLink href="/progress/certificate" icon="certificate" label="Giấy chứng nhận" onClick={() => setOpen(false)} />

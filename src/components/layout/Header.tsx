@@ -130,6 +130,16 @@ function Header() {
             <span className="hidden lg:inline">Cửa hàng</span>
           </Link>
 
+          <Link
+            href="/pricing"
+            className="flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-white px-3 text-sm font-black shadow-sm transition-all hover:scale-105 hover:shadow-lg"
+            aria-label="Mua Premium"
+            title="Mua Premium"
+          >
+            <Sparkles size={17} fill="currentColor" aria-hidden="true" />
+            <span>Premium</span>
+          </Link>
+
           {!user && (
             <Link
               href="/login"
@@ -198,6 +208,14 @@ function Header() {
             >
               <Gift size={17} strokeWidth={2.6} aria-hidden="true" />
               <span>Cửa hàng</span>
+            </Link>
+            <Link
+              href="/pricing"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-amber-100 bg-gradient-to-r from-amber-400 to-orange-500 px-4 text-sm font-black text-white"
+            >
+              <Sparkles size={17} fill="currentColor" aria-hidden="true" />
+              <span>Premium</span>
             </Link>
             {user ? (
               <button
