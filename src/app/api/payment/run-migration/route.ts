@@ -13,10 +13,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const dbUrl = process.env.SUPABASE_DB_URL;
-    if (!dbUrl) {
-      return NextResponse.json({ error: 'SUPABASE_DB_URL is not set on the server' }, { status: 500 });
-    }
+    // Attempt to load from env first, fallback to direct IPv6 string which resolves on the Droplet
+    const dbUrl = process.env.SUPABASE_DB_URL || 
+                  process.env.DATABASE_URL || 
+                  'postgresql://postgres:Toicungkhongbiet@db.nmsaxkusgrdjjaztfmie.supabase.co:5432/postgres';
 
     const client = new Client({
       connectionString: dbUrl,
