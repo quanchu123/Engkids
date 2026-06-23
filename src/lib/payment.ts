@@ -8,11 +8,11 @@
 
 // ── Bank account ────────────────────────────────────────────────────────
 export const BANK_CONFIG = {
-  bankId: '970418', // BIDV BIN
-  accountNo: '4520948593',
-  accountName: 'LE THU HONG',
-  bankName: 'BIDV',
-  branch: 'PGD Thạch Thất',
+  bankId: '970422', // MBBank BIN
+  accountNo: '000000000014',
+  accountName: 'CHU MINH QUAN',
+  bankName: 'MBBank',
+  branch: 'MB',
 } as const;
 
 // ── Subscription plans ──────────────────────────────────────────────────
