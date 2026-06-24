@@ -16,11 +16,12 @@ jobs:
           PAYOS_CLIENT_ID: ${{ secrets.PAYOS_CLIENT_ID }}
           PAYOS_API_KEY: ${{ secrets.PAYOS_API_KEY }}
           PAYOS_CHECKSUM_KEY: ${{ secrets.PAYOS_CHECKSUM_KEY }}
+          NEXT_PUBLIC_SITE_URL: https://engkidstienganhchobe.tech
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: PAYOS_CLIENT_ID,PAYOS_API_KEY,PAYOS_CHECKSUM_KEY
+          envs: PAYOS_CLIENT_ID,PAYOS_API_KEY,PAYOS_CHECKSUM_KEY,NEXT_PUBLIC_SITE_URL
           script: |
             cd /root/Engkids
             git fetch origin master
@@ -30,7 +31,7 @@ jobs:
             const fs = require('fs');
             const envPath = '.env.local';
             let content = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
-            for (const key of ['PAYOS_CLIENT_ID', 'PAYOS_API_KEY', 'PAYOS_CHECKSUM_KEY']) {
+            for (const key of ['PAYOS_CLIENT_ID', 'PAYOS_API_KEY', 'PAYOS_CHECKSUM_KEY', 'NEXT_PUBLIC_SITE_URL']) {
               const value = process.env[key];
               if (!value) throw new Error(`${key} is missing from GitHub Actions secrets`);
               const line = `${key}=${value}`;
