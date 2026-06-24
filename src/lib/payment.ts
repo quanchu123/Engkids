@@ -27,16 +27,16 @@ export const SUBSCRIPTION_PLANS = {
   '3_months': {
     id: '3_months',
     name: 'Gói 3 Tháng',
-    price: 124950,
+    price: 125000,
     durationMonths: 3,
-    pricePerMonth: 41650,
+    pricePerMonth: Math.round(125000 / 3),
   },
   '6_months': {
     id: '6_months',
     name: 'Gói 6 Tháng',
-    price: 188160,
+    price: 188000,
     durationMonths: 6,
-    pricePerMonth: 31360,
+    pricePerMonth: Math.round(188000 / 6),
   },
 } as const;
 
