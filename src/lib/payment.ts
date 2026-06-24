@@ -43,8 +43,8 @@ export const SUBSCRIPTION_PLANS = {
 export type PlanId = keyof typeof SUBSCRIPTION_PLANS;
 
 // ── Freemium config ─────────────────────────────────────────────────────
-/** Free users get 20 minutes of learning per day. */
-export const FREEMIUM_DAILY_MINUTES = 20;
+/** Free users get 10 minutes of learning per day. */
+export const FREEMIUM_DAILY_MINUTES = 10;
 
 // ── Order code generation ───────────────────────────────────────────────
 

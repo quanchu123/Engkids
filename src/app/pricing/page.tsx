@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { SUBSCRIPTION_PLANS } from '@/lib/payment';
+import { FREEMIUM_DAILY_MINUTES, SUBSCRIPTION_PLANS } from '@/lib/payment';
 import { Check, Star, Crown, Clock, Sparkles, Shield, X } from 'lucide-react';
 import Link from 'next/link';
 
@@ -11,7 +11,7 @@ const PLAN_ORDER: (keyof typeof SUBSCRIPTION_PLANS)[] = ['1_month', '3_months', 
 const FEATURES_FREE = [
   { text: 'Tất cả tính năng học tập', included: true },
   { text: 'Mini-games & trò chơi', included: true },
-  { text: 'Giới hạn 20 phút/ngày', included: true, highlight: true },
+  { text: `Giới hạn ${FREEMIUM_DAILY_MINUTES} phút/ngày`, included: true, highlight: true },
   { text: 'Học không giới hạn', included: false },
 ];
 
