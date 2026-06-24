@@ -9,15 +9,48 @@ import { DEFAULT_WORD_BANK, loadWordBank, toChoiceQuestions } from '@/lib/word-b
 let VOCAB_QUESTIONS = toChoiceQuestions(DEFAULT_WORD_BANK);
 
 const NPC_DIALOGUES = [
-  { name: 'Elder Oak', msg: 'Welcome, hero!\n"Forest" = Khu rừng\nBeware the monsters ahead!' },
-  { name: 'Merchant', msg: 'Buy a "Potion" = Thuốc hồi phục\nto survive the dungeon!' },
-  { name: 'Villager', msg: 'The "Dragon" = Con rồng\nlives in the dark cave\nto the east.' },
-  { name: 'Knight', msg: '"Armor" = Áo giáp\nand "Sword" = Thanh kiếm\nare your best friends!' },
-  { name: 'Wizard', msg: '"Magic" = Ma thuật\ncan defeat any monster.\nLearn your words!' },
+  { name: 'Trưởng lão Oak', msg: 'Chào mừng, dũng sĩ!\n"Dungeon" = Hầm ngục\nHãy cẩn thận với quái vật!' },
+  { name: 'Thương nhân', msg: '"Potion" = Thuốc hồi phục\nHọc đúng từ để giữ trọn sinh lực nhé!' },
+  { name: 'Người canh cửa', msg: '"Dragon" = Con rồng\nNó đang ngủ sau cánh cửa lớn phía bắc.' },
+  { name: 'Hiệp sĩ', msg: '"Armor" = Áo giáp\n"Sword" = Thanh kiếm\nĐó là hành trang của một anh hùng!' },
+  { name: 'Pháp sư', msg: '"Magic" = Ma thuật\nKiến thức chính là phép thuật mạnh nhất.' },
 ];
 
 const BASE = '/games/rpg-world';
 const SHEET = `${BASE}/spritesheets`;
+const MAP_SIZE = 1254;
+const MONSTERS_TO_WIN = 8;
+
+// Collision rectangles follow the major walls and props in dungeon-map-v2.png.
+// They intentionally leave the broad corridors and combat arenas open.
+const DUNGEON_WALLS = [
+  [0, 0, MAP_SIZE, 42], [0, MAP_SIZE - 42, MAP_SIZE, 42],
+  [0, 0, 42, MAP_SIZE], [MAP_SIZE - 42, 0, 42, MAP_SIZE],
+  [32, 405, 350, 54], [872, 405, 350, 54],
+  [32, 778, 350, 52], [872, 778, 350, 52],
+  [389, 35, 48, 330], [817, 35, 48, 330],
+  [388, 844, 48, 365], [818, 844, 48, 365],
+  [286, 452, 76, 174], [892, 452, 76, 174],
+  [454, 718, 346, 68],
+  [166, 204, 154, 170], [943, 211, 163, 124],
+  [168, 934, 188, 151], [939, 935, 178, 144],
+] as const;
+
+const TREANT_POSITIONS = [
+  { x: 238, y: 178 }, { x: 1008, y: 184 }, { x: 222, y: 581 }, { x: 1030, y: 584 },
+];
+const MOLE_POSITIONS = [
+  { x: 487, y: 330 }, { x: 768, y: 332 }, { x: 527, y: 910 }, { x: 746, y: 914 },
+];
+const NPC_POSITIONS = [
+  { x: 620, y: 1050 }, { x: 510, y: 532 }, { x: 748, y: 530 }, { x: 224, y: 690 }, { x: 1031, y: 690 },
+];
+
+const TORCH_POSITIONS = [
+  [157, 88], [326, 91], [532, 101], [716, 105], [925, 89], [1093, 88],
+  [341, 548], [515, 489], [735, 489], [915, 549],
+  [316, 655], [937, 653], [433, 972], [804, 970], [166, 1152], [1093, 1150],
+] as const;
 
 interface BattleState {
   active: boolean;
@@ -36,6 +69,7 @@ export default function RpgWorldPage() {
   const [battle, setBattle] = useState<BattleState | null>(null);
   const [gameOver, setGameOver] = useState<'win' | 'lose' | null>(null);
   const [npcMsg, setNpcMsg] = useState<string | null>(null);
+  const [defeated, setDefeated] = useState(0);
 
   const battleRef = useRef<BattleState | null>(null);
   const scoreRef = useRef(0);
@@ -57,6 +91,7 @@ export default function RpgWorldPage() {
   const cbRef = useRef({
     startBattle: (_state: BattleState) => {},
     showNpc: (_msg: string) => {},
+    progress: (_count: number) => {},
     win: () => {},
   });
 
@@ -108,16 +143,15 @@ export default function RpgWorldPage() {
           const cy = this.scale.height / 2;
           const pbar = this.add.rectangle(cx - 148, cy, 4, 20, 0x7c3aed);
           this.add.rectangle(cx, cy, 304, 24).setStrokeStyle(2, 0x7c3aed);
-          this.add.text(cx, cy - 40, 'Loading RPG World...', {
-            fontFamily: 'Arial', fontSize: '18px', color: '#a78bfa',
+          this.add.text(cx, cy - 40, 'Đang mở cổng hầm ngục...', {
+            fontFamily: 'Arial', fontSize: '18px', color: '#67e8f9',
           }).setOrigin(0.5);
           this.load.on('progress', (p: number) => {
             pbar.width = 4 + 296 * p;
             pbar.x = cx - 148 + pbar.width / 2 - 2;
           });
 
-          this.load.tilemapTiledJSON('map1', `${BASE}/tilemaps/tilemap.json`);
-          this.load.image('tiles', `${BASE}/tilemaps/tileset.png`);
+          this.load.image('dungeon-map', `${BASE}/dungeon-map-v2.png`);
           this.load.spritesheet('player-walk-down',   `${SHEET}/hero/walk/hero-walk-front.png`,     { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-walk-up',     `${SHEET}/hero/walk/hero-walk-back.png`,      { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-walk-side',   `${SHEET}/hero/walk/hero-walk-side.png`,      { frameWidth: 32, frameHeight: 32 });
@@ -171,6 +205,7 @@ export default function RpgWorldPage() {
         private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
         private monsters!: Phaser.Physics.Arcade.Group;
         private npcs!: Phaser.Physics.Arcade.Group;
+        private walls!: Phaser.Physics.Arcade.StaticGroup;
         private inBattle = false;
         private battleCooldownUntil = 0;
         private usedVocab = new Set<number>();
@@ -180,67 +215,62 @@ export default function RpgWorldPage() {
         constructor() { super({ key: 'GameScene' }); }
 
         create() {
-          // ── Tilemap ──
-          const map = this.make.tilemap({ key: 'map1' });
-          const tileset = map.addTilesetImage('tileset', 'tiles', 16, 16, 0, 0);
+          // ── Hand-painted dungeon environment ──
+          this.add.image(MAP_SIZE / 2, MAP_SIZE / 2, 'dungeon-map')
+            .setDisplaySize(MAP_SIZE, MAP_SIZE)
+            .setDepth(0);
+          this.physics.world.setBounds(0, 0, MAP_SIZE, MAP_SIZE);
 
-          let groundLayer: Phaser.Tilemaps.TilemapLayer | null = null;
-          let decoLayer:   Phaser.Tilemaps.TilemapLayer | null = null;
-
-          map.layers.forEach(layerData => {
-            const name = layerData.name.toLowerCase();
-            const layer = map.createLayer(layerData.name, tileset!, 0, 0);
-            if (!layer) return;
-            if (name.includes('terrain') || name.includes('background') || name.includes('ground')) {
-              groundLayer = layer;
-              layer.setCollisionByProperty({ collides: true });
-            } else if (name.includes('deco')) {
-              decoLayer = layer;
-              layer.setCollisionByProperty({ collides: true });
-            }
+          // The cyan rune and wall torches get a subtle animated glow so the
+          // generated map feels alive while keeping the canvas light-weight.
+          const runeGlow = this.add.circle(627, 625, 96, 0x22d3ee, 0.08)
+            .setBlendMode(Phaser.BlendModes.ADD).setDepth(2);
+          this.tweens.add({
+            targets: runeGlow, alpha: { from: 0.045, to: 0.14 }, scale: { from: 0.9, to: 1.12 },
+            duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+          });
+          TORCH_POSITIONS.forEach(([x, y], index) => {
+            const glow = this.add.circle(x, y, 34, 0xff9b35, 0.075)
+              .setBlendMode(Phaser.BlendModes.ADD).setDepth(2);
+            this.tweens.add({
+              targets: glow, alpha: { from: 0.035, to: 0.13 }, scale: { from: 0.82, to: 1.18 },
+              duration: 720 + (index % 5) * 110, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+            });
           });
 
-          this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+          // Invisible blockers match the large architectural silhouettes.
+          this.walls = this.physics.add.staticGroup();
+          DUNGEON_WALLS.forEach(([x, y, width, height]) => {
+            const wall = this.add.rectangle(x + width / 2, y + height / 2, width, height, 0x000000, 0);
+            this.physics.add.existing(wall, true);
+            this.walls.add(wall);
+          });
 
           // ── Player ──
-          this.player = this.physics.add.sprite(200, 300, 'player-idle-down', 0)
-            .setScale(2).setSize(10, 10).setOffset(11, 18)
+          this.player = this.physics.add.sprite(627, 1090, 'player-idle-up', 0)
+            .setScale(2.4).setSize(10, 10).setOffset(11, 18)
             .setCollideWorldBounds(true).setDepth(10);
-          this.player.play('player-idle-down');
+          this.player.play('player-idle-up');
 
           // ── Camera ──
-          this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+          this.cameras.main.setBounds(0, 0, MAP_SIZE, MAP_SIZE);
           this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-          this.cameras.main.setZoom(1.5);
-
-          if (groundLayer) this.physics.add.collider(this.player, groundLayer);
-          if (decoLayer)   this.physics.add.collider(this.player, decoLayer);
+          this.cameras.main.setZoom(this.scale.width < 720 ? 0.82 : 1.03);
+          this.cameras.main.fadeIn(700, 4, 12, 25);
+          this.physics.add.collider(this.player, this.walls);
 
           // ── Monsters ──
           this.monsters = this.physics.add.group();
-          const monsterLayer = map.getObjectLayer('monsters') || map.getObjectLayer('Monsters');
-          const treantPos: {x:number,y:number}[] = [];
-          const molePos:   {x:number,y:number}[] = [];
-
-          if (monsterLayer) {
-            monsterLayer.objects.forEach((obj: any) => {
-              if (obj.name === 'treant') treantPos.push({ x: obj.x, y: obj.y });
-              else molePos.push({ x: obj.x, y: obj.y });
-            });
-          }
-          while (treantPos.length < 3) treantPos.push({ x: 200 + treantPos.length * 130, y: 450 });
-          while (molePos.length < 4) molePos.push({ x: 270 + molePos.length * 110, y: 210 });
-
-          treantPos.forEach(pos => {
-            const m = this.physics.add.sprite(pos.x, pos.y, 'treant-idle-down', 0).setScale(2).setDepth(9);
+          TREANT_POSITIONS.forEach(pos => {
+            const m = this.physics.add.sprite(pos.x, pos.y, 'treant-idle-down', 0).setScale(2.25).setDepth(9);
             m.play('treant-idle');
             (m as any).monsterType = 'treant';
             (m as any).hp = 3;
             (m as any)._maxHp = 3;
             this.monsters.add(m);
           });
-          molePos.forEach(pos => {
-            const m = this.physics.add.sprite(pos.x, pos.y, 'mole-idle-down', 0).setScale(2).setDepth(9);
+          MOLE_POSITIONS.forEach(pos => {
+            const m = this.physics.add.sprite(pos.x, pos.y, 'mole-idle-down', 0).setScale(2.45).setDepth(9);
             m.play('mole-idle');
             (m as any).monsterType = 'mole';
             (m as any).hp = 2;
@@ -248,26 +278,16 @@ export default function RpgWorldPage() {
             this.monsters.add(m);
           });
 
-          if (groundLayer) this.physics.add.collider(this.monsters, groundLayer);
-          if (decoLayer)   this.physics.add.collider(this.monsters, decoLayer);
+          this.physics.add.collider(this.monsters, this.walls);
+          this.physics.add.collider(this.monsters, this.monsters);
 
           // ── NPCs ──
           this.npcs = this.physics.add.group();
-          const npcLayer = map.getObjectLayer('npcs') || map.getObjectLayer('Npcs') || map.getObjectLayer('NPCS');
-          const npcPositions: {x:number,y:number,msg:string}[] = [];
-
-          if (npcLayer) {
-            npcLayer.objects.forEach((obj: any, i: number) => {
-              npcPositions.push({ x: obj.x, y: obj.y, msg: NPC_DIALOGUES[i % NPC_DIALOGUES.length].msg });
-            });
-          }
-          if (npcPositions.length === 0) {
-            NPC_DIALOGUES.forEach((d, i) => npcPositions.push({ x: 150 + i * 90, y: 350, msg: d.msg }));
-          }
-          npcPositions.forEach(pos => {
-            const n = this.physics.add.sprite(pos.x, pos.y, 'npc', 0).setScale(2).setDepth(9).setImmovable(true);
+          NPC_POSITIONS.forEach((pos, index) => {
+            const dialogue = NPC_DIALOGUES[index % NPC_DIALOGUES.length];
+            const n = this.physics.add.sprite(pos.x, pos.y, 'npc', 0).setScale(2.35).setDepth(9).setImmovable(true);
             (n.body as Phaser.Physics.Arcade.Body).moves = false;
-            (n as any).dialogue = pos.msg;
+            (n as any).dialogue = `${dialogue.name}\n${dialogue.msg}`;
             this.npcs.add(n);
           });
 
@@ -316,7 +336,8 @@ export default function RpgWorldPage() {
                     monster._dead = true;
                     monster.destroy();
                     this.killed++;
-                    if (this.killed >= 8) cbRef.current.win();
+                    cbRef.current.progress(this.killed);
+                    if (this.killed >= MONSTERS_TO_WIN) cbRef.current.win();
                   };
                   monster.play('enemy-death');
                   monster.once('animationcomplete-enemy-death', finish);
@@ -349,6 +370,7 @@ export default function RpgWorldPage() {
             setNpcMsg(msg);
             setTimeout(() => setNpcMsg(null), 4500);
           };
+          cbRef.current.progress = (count: number) => setDefeated(count);
           cbRef.current.win = () => setGameOver('win');
 
           // ── Keyboard ──
@@ -450,11 +472,11 @@ export default function RpgWorldPage() {
       // ─── Launch Phaser (full-screen RESIZE mode) ───────────────────────
       const config: any = {
         type: Phaser.AUTO,
-        backgroundColor: '#1a2e05',
+        transparent: true,
         parent: containerRef.current!,
         physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 0 }, debug: false } },
         scene: [PreloaderScene, GameScene],
-        render: { pixelArt: true, antialias: false },
+        render: { pixelArt: false, antialias: true, roundPixels: true },
         scale: {
           mode: Phaser.Scale.RESIZE,
           autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -478,27 +500,43 @@ export default function RpgWorldPage() {
   const hearts = [0, 1, 2];
 
   return (
-    <main className="h-screen overflow-hidden bg-black relative">
+    <main className="h-screen overflow-hidden bg-[#020611] relative">
+      <div
+        aria-hidden="true"
+        className="absolute inset-[-5%] scale-110 opacity-40 blur-2xl"
+        style={{
+          backgroundImage: `linear-gradient(rgba(1,5,14,.45), rgba(1,5,14,.72)), url(${BASE}/dungeon-map-v2.png)`,
+          backgroundPosition: 'center',
+          backgroundSize: 'cover',
+        }}
+      />
       {/* Full-screen Phaser canvas */}
-      <div ref={containerRef} className="w-full h-full" />
+      <div ref={containerRef} className="relative z-[1] w-full h-full" />
 
       {/* ── HUD top bar ── */}
       {!gameOver && (
-        <div
-          className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2 pointer-events-none"
-          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 100%)' }}
-        >
-          <div className="pointer-events-auto">
+        <div className="absolute top-0 left-0 right-0 z-10 flex items-start justify-between gap-3 p-3 sm:p-5 pointer-events-none">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/games"
-              className="text-emerald-400 hover:text-white text-sm font-bold px-3 py-1.5 bg-black/50 rounded-lg border border-emerald-700 transition-colors"
+              aria-label="Quay lại danh sách trò chơi"
+              className="pointer-events-auto grid h-11 w-11 place-items-center rounded-full border-2 border-amber-400/70 bg-slate-950/85 text-xl font-black text-amber-200 shadow-[0_5px_20px_rgba(0,0,0,.55)] backdrop-blur-md transition hover:scale-105 hover:border-amber-300"
             >
-              ← Quay lại
+              ←
             </Link>
+            <div className="hidden rounded-2xl border border-cyan-300/25 bg-slate-950/80 px-4 py-2 shadow-xl backdrop-blur-md sm:block">
+              <p className="text-[10px] font-black uppercase tracking-[.24em] text-cyan-300/75">Nhiệm vụ</p>
+              <p className="text-sm font-black text-white">Bí mật Hầm Ngục Cổ</p>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-yellow-400 font-black text-lg drop-shadow">Score {score}</span>
-            <div className="flex gap-1">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="rounded-2xl border border-amber-400/35 bg-slate-950/85 px-3 py-2 text-right shadow-xl backdrop-blur-md">
+              <p className="text-[9px] font-black uppercase tracking-[.2em] text-amber-300/70">Điểm</p>
+              <p className="text-base font-black leading-none text-amber-300">✦ {score}</p>
+            </div>
+            <div className="rounded-2xl border border-rose-400/30 bg-slate-950/85 px-3 py-2 shadow-xl backdrop-blur-md">
+              <p className="mb-1 text-[9px] font-black uppercase tracking-[.2em] text-rose-300/70">Sinh lực</p>
+              <div className="flex gap-1">
               {hearts.map((_, i) => (
                 <Image
                   key={i}
@@ -509,23 +547,39 @@ export default function RpgWorldPage() {
                   className={`w-6 h-6 object-contain transition-all duration-300 ${i < hp ? "" : "opacity-25 grayscale"}`}
                 />
               ))}
+              </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {!gameOver && (
+        <div className="pointer-events-none absolute left-3 top-[76px] z-10 w-44 rounded-2xl border border-white/10 bg-slate-950/75 p-3 shadow-xl backdrop-blur-md sm:left-5 sm:top-[92px]">
+          <div className="mb-2 flex items-center justify-between text-[11px] font-black uppercase tracking-wider">
+            <span className="text-slate-300">Quái đã hạ</span>
+            <span className="text-cyan-300">{defeated}/{MONSTERS_TO_WIN}</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-700/80">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-[width] duration-500"
+              style={{ width: `${(defeated / MONSTERS_TO_WIN) * 100}%` }}
+            />
           </div>
         </div>
       )}
 
       {/* ── Controls hint (bottom) ── */}
       {!gameOver && !battle && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 text-white/35 text-xs pointer-events-none select-none">
-          Dùng phím mũi tên hoặc nút điều hướng &nbsp;·&nbsp; Chạm quái → chiến đấu &nbsp;·&nbsp; Diệt 5 quái để thắng!
+        <div className="absolute bottom-4 left-1/2 z-10 hidden -translate-x-1/2 select-none rounded-full border border-white/10 bg-slate-950/70 px-4 py-2 text-xs font-semibold text-white/60 shadow-lg backdrop-blur-md pointer-events-none sm:block">
+          Phím mũi tên để di chuyển · Chạm quái vật để chiến đấu · Hạ {MONSTERS_TO_WIN} quái để mở cổng
         </div>
       )}
 
       {/* ── On-screen D-pad (touch controls for mobile) ── */}
       {!gameOver && !battle && (
         <div
-          className="absolute bottom-5 right-5 z-20 select-none"
-          style={{ width: 168, height: 168, touchAction: 'none' }}
+          className="absolute bottom-4 right-4 z-20 select-none opacity-90 sm:bottom-6 sm:right-6"
+          style={{ width: 154, height: 154, touchAction: 'none' }}
         >
           {([
             { dir: 'up', label: '▲', style: 'left-1/2 top-0 -translate-x-1/2' },
@@ -543,11 +597,13 @@ export default function RpgWorldPage() {
                 onPointerLeave={press(false)}
                 onPointerCancel={press(false)}
                 onContextMenu={(e) => e.preventDefault()}
-                className={`absolute ${b.style} flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-black text-white active:scale-90`}
+                className={`absolute ${b.style} flex h-13 w-13 items-center justify-center rounded-full text-xl font-black text-cyan-100 backdrop-blur-md transition active:scale-90`}
                 style={{
-                  background: 'rgba(124,58,237,0.45)',
-                  border: '2px solid rgba(167,139,250,0.7)',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+                  width: 52,
+                  height: 52,
+                  background: 'radial-gradient(circle at 35% 25%, rgba(34,211,238,.45), rgba(8,47,73,.78))',
+                  border: '2px solid rgba(103,232,249,.55)',
+                  boxShadow: 'inset 0 1px 8px rgba(255,255,255,.12), 0 5px 18px rgba(0,0,0,.5)',
                   touchAction: 'none',
                 }}
               >

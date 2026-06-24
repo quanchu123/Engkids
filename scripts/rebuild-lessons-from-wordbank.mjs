@@ -128,10 +128,10 @@ function topicVi(topic) {
   return num ? `${vi} ${num[1]}` : vi;
 }
 function lessonObjective(stageId, topic) {
-  if (stageId === 'a2-key') return `Hoc tu vung ${topic}, doc cau ngan va tao cau tra loi ro rang.`;
-  if (stageId === 'b1-preliminary') return `Dung tu vung ${topic} de hieu y chinh va viet doan ngan co ly do.`;
-  if (stageId === 'b2-first') return `Phan tich noi dung ${topic}, so sanh y tuong va dien dat quan diem co vi du.`;
-  return `Tom tat, danh gia va trinh bay y kien chinh xac ve chu de ${topic}.`;
+  if (stageId === 'a2-key') return `Học từ vựng ${topic}, đọc câu ngắn và tạo câu trả lời rõ ràng.`;
+  if (stageId === 'b1-preliminary') return `Dùng từ vựng ${topic} để hiểu ý chính và viết đoạn ngắn có lý do.`;
+  if (stageId === 'b2-first') return `Phân tích nội dung ${topic}, so sánh ý tưởng và diễn đạt quan điểm có ví dụ.`;
+  return `Tóm tắt, đánh giá và trình bày ý kiến chính xác về chủ đề ${topic}.`;
 }
 function difficultyForStage(stageId) {
   return stageId === 'a2-key' ? 2.5 : stageId === 'b1-preliminary' ? 4.5 : stageId === 'b2-first' ? 6.5 : 8;
@@ -460,12 +460,12 @@ async function main() {
           .slice(0, 5);
         const buildTokens = pickBuildSentence(sentPack.map((s) => s.text));
         const stepRows = [
-          ['warmup', 'Khoi dong tu khoa', 'Doc nhanh cac tu va chon tu da biet.', { ...base, words: pack.slice(0, 5).map((w) => w.en) }],
-          ['vocab', 'Tu vung CEFR', 'Ghep tu voi nghia tieng Viet va chu y loai tu.', { ...base, items: pack.map((w) => ({ en: w.en, vi: w.vi, pos: w.part_of_speech, example: exampleMap.get(w.en.toLowerCase())?.text || w.example || '' })) }],
-          ['reading', passage ? 'Doc doan van mien phi ban quyen' : 'Doc cau vi du Tatoeba', 'Tim y chinh va tu khoa trong ngu lieu.', { ...base, passage: passage ? { title: passage.title, author: passage.author, text: passage.text, sourceUrl: passage.source_url } : null, sentences: sentPack.map((s) => ({ text: s.text, sourceUrl: s.source_url })), build: buildTokens ? { tokens: buildTokens } : null }],
+          ['warmup', 'Khởi động từ khóa', 'Đọc nhanh các từ và chọn từ đã biết.', { ...base, words: pack.slice(0, 5).map((w) => w.en) }],
+          ['vocab', 'Từ vựng CEFR', 'Ghép từ với nghĩa tiếng Việt và chú ý loại từ.', { ...base, items: pack.map((w) => ({ en: w.en, vi: w.vi, pos: w.part_of_speech, example: exampleMap.get(w.en.toLowerCase())?.text || w.example || '' })) }],
+          ['reading', passage ? 'Đọc đoạn văn miễn phí bản quyền' : 'Đọc câu ví dụ Tatoeba', 'Tìm ý chính và từ khóa trong ngữ liệu.', { ...base, passage: passage ? { title: passage.title, author: passage.author, text: passage.text, sourceUrl: passage.source_url } : null, sentences: sentPack.map((s) => ({ text: s.text, sourceUrl: s.source_url })), build: buildTokens ? { tokens: buildTokens } : null }],
           ['grammar', 'Mau cau va cach noi', 'Quan sat cach tu duoc dung trong cau va tao mot cau moi.', { ...base, focusWords: grammarFocus, sentences: grammarSentences, blanks }],
           [lessonNum % 2 === 0 ? 'writing' : 'speaking', lessonNum % 2 === 0 ? 'Viet output ngan' : 'Noi output ngan', 'Dung tu da hoc de tao output phu hop level.', { ...base, prompt: `Use at least three words from this ${stage.label} pack to talk about ${topic}.`, requiredWords: pack.slice(0, 6).map((w) => w.en) }],
-          ['quiz', 'Mini checkpoint', 'Tra loi nhanh de kiem tra tu va nghia.', { ...base, questions: pack.slice(0, 5).map((w) => ({ type: 'meaning-check', word: w.en, answer: w.vi })) }],
+          ['quiz', 'Mini checkpoint', 'Trả lời nhanh để kiểm tra từ và nghĩa.', { ...base, questions: pack.slice(0, 5).map((w) => ({ type: 'meaning-check', word: w.en, answer: w.vi })) }],
         ];
         stepRows.forEach(([stepType, titleVi, instructionVi, payload], stepIndex) => {
           steps.push({

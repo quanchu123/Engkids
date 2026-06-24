@@ -18,7 +18,7 @@ const BANK: WordPair[] = [
   { en: 'Apple', vi: 'Qua tao', level: 'a2-key', topic: 'food', example: 'I eat an apple.' },
   { en: 'River', vi: 'Dong song', level: 'a2-key', topic: 'nature', example: 'The river is blue.' },
   { en: 'Castle', vi: 'Lau dai', level: 'b1-preliminary', topic: 'places', example: 'The castle is tall.' },
-  { en: 'Adventure', vi: 'Cuoc phieu luu', level: 'b2-first', topic: 'adventure', example: 'The adventure starts today.' },
+  { en: 'Adventure', vi: 'Cuộc phiêu lưu', level: 'b2-first', topic: 'adventure', example: 'The adventure starts today.' },
   { en: 'Community', vi: 'Cong dong', level: 'b2-first', topic: 'community', example: 'Our community helps people.' },
 ];
 

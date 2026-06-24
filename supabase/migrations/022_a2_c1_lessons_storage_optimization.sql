@@ -56,41 +56,41 @@ INSERT INTO curriculum_stages (
   target_stories, target_games, topics, focus, can_do, daily_loop,
   weekly_plan, assessment, exit_criteria, engkids, sort_order, active
 ) VALUES
-  ('a2-key', 'A2 Key', 'A2 Key - Nen tang giao tiep', 'Be hieu noi dung quen thuoc, noi/viet cau ngan va tu tin trong cac tinh huong hang ngay.', '9-13 tuoi hoac da co nen tang A1', '4-6 thang', 1200, 18, 35,
+  ('a2-key', 'A2 Key', 'A2 Key - Nền tảng giao tiếp', 'Bé hiểu nội dung quen thuộc, nói/viết câu ngắn và tự tin trong các tình huống hằng ngày.', '9-13 tuổi hoặc đã có nền tảng A1', '4-6 tháng', 1200, 18, 35,
     ARRAY['daily life','school','travel','health','hobbies','stories','technology','community'],
-    '["Mo rong tu vung A2", "Hoi dap ve trai nghiem va ke hoach gan", "Doc/nghe doan ngan co chi tiet ro"]'::jsonb,
-    '["Hieu y chinh trong cau chuyen, video va hoi thoai ngan", "Viet tin nhan/email ngan ve chu de quen thuoc", "Dung thi hien tai, qua khu don va tu noi co ban"]'::jsonb,
-    '["Review tu den han", "Mot lesson ngan", "Game luyen phan xa", "Checkpoint mini"]'::jsonb,
+    '["Mở rộng từ vựng A2", "Hỏi đáp về trải nghiệm và kế hoạch gần", "Đọc/nghe đoạn ngắn có chi tiết rõ"]'::jsonb,
+    '["Hiểu ý chính trong câu chuyện, video và hội thoại ngắn", "Viết tin nhắn/email ngắn về chủ đề quen thuộc", "Dùng thì hiện tại, quá khứ đơn và từ nối cơ bản"]'::jsonb,
+    '["Review từ đến hạn", "Một lesson ngắn", "Game luyện phản xạ", "Checkpoint mini"]'::jsonb,
     '["Vocabulary + listening", "Reading story", "Grammar in context", "Speaking prompt", "Writing mini task", "Checkpoint"]'::jsonb,
-    '["Placement A2", "Daily check 8 cau", "Weekly checkpoint 16 cau", "Stage exit 24 cau"]'::jsonb,
-    '["1200 tu active", "18 lesson/story hoan thanh", "35 luot game dat 70%+", "Checkpoint >= 70%"]'::jsonb,
+    '["Placement A2", "Daily check 8 câu", "Weekly checkpoint 16 câu", "Stage exit 24 câu"]'::jsonb,
+    '["1200 từ active", "18 lesson/story hoàn thành", "35 lượt game đạt 70%+", "Checkpoint >= 70%"]'::jsonb,
     '["Today queue", "Word-bank games", "Story/video lesson", "Parent progress"]'::jsonb, 1, true),
-  ('b1-preliminary', 'B1 Preliminary', 'B1 Preliminary - Giao tiep doc lap', 'Be giao tiep ve truong lop, so thich, y kien va su kien quen thuoc bang doan ngan co cau truc.', '11-15 tuoi', '6-9 thang', 2200, 36, 70,
+  ('b1-preliminary', 'B1 Preliminary', 'B1 Preliminary - Giao tiếp độc lập', 'Bé giao tiếp về trường lớp, sở thích, ý kiến và sự kiện quen thuộc bằng đoạn ngắn có cấu trúc.', '11-15 tuổi', '6-9 tháng', 2200, 36, 70,
     ARRAY['teen life','environment','culture','media','science','problem solving','future plans'],
-    '["Doc bai 250-500 tu", "Nghe chi tiet va suy luan don gian", "Viet email/story/review ngan"]'::jsonb,
-    '["Giai thich ly do va y kien bang nhieu cau noi tiep", "Tom tat y chinh cua bai doc/video quen thuoc", "Tu sua loi co ban trong cau va doan ngan"]'::jsonb,
+    '["Đọc bài 250-500 từ", "Nghe chi tiết và suy luận đơn giản", "Viết email/story/review ngắn"]'::jsonb,
+    '["Giải thích lý do và ý kiến bằng nhiều câu nối tiếp", "Tóm tắt ý chính của bài đọc/video quen thuộc", "Tự sửa lỗi cơ bản trong câu và đoạn ngắn"]'::jsonb,
     '["SRS", "Reading/listening task", "Skill drill", "Writing or speaking output"]'::jsonb,
     '["Theme input", "Vocabulary depth", "Grammar pattern", "Listening detail", "Writing task", "Checkpoint"]'::jsonb,
-    '["B1 checkpoint theo skill", "Stage exit voi writing/speaking prompt", "Weak-skill review"]'::jsonb,
-    '["2200 tu active", "36 lesson hoan thanh", "70 luot game dat 70%+", "Skill thap nhat >= 60%"]'::jsonb,
+    '["B1 checkpoint theo skill", "Stage exit với writing/speaking prompt", "Weak-skill review"]'::jsonb,
+    '["2200 từ active", "36 lesson hoàn thành", "70 lượt game đạt 70%+", "Skill thấp nhất >= 60%"]'::jsonb,
     '["Learning path", "Review queue", "Skill breakdown", "Parent dashboard"]'::jsonb, 2, true),
-  ('b2-first', 'B2 First', 'B2 First - Tu tin dien dat', 'Be hieu van ban dai hon, so sanh quan diem va trinh bay y tuong ro rang trong bai noi/viet co cau truc.', '13-16 tuoi', '8-12 thang', 3600, 60, 110,
+  ('b2-first', 'B2 First', 'B2 First - Tự tin diễn đạt', 'Bé hiểu văn bản dài hơn, so sánh quan điểm và trình bày ý tưởng rõ ràng trong bài nói/viết có cấu trúc.', '13-16 tuổi', '8-12 tháng', 3600, 60, 110,
     ARRAY['global issues','education','technology','creativity','health','careers','literature'],
-    '["Doc bai 500-900 tu", "Phan biet y chinh/chi tiet/thai do", "Viet review/article/opinion paragraph"]'::jsonb,
-    '["Bao ve y kien bang vi du", "So sanh hai lua chon hoac hai quan diem", "Dung cau phuc, tu noi va paraphrase phu hop"]'::jsonb,
+    '["Đọc bài 500-900 từ", "Phân biệt ý chính/chi tiết/thái độ", "Viết review/article/opinion paragraph"]'::jsonb,
+    '["Bảo vệ ý kiến bằng ví dụ", "So sánh hai lựa chọn hoặc hai quan điểm", "Dùng câu phức, từ nối và paraphrase phù hợp"]'::jsonb,
     '["Advanced review", "Input rich lesson", "Analysis task", "Output task"]'::jsonb,
     '["Article/story", "Listening viewpoint", "Use of English", "Writing workshop", "Speaking cards", "Checkpoint"]'::jsonb,
-    '["B2 mixed-skill checkpoint", "Stage exit voi writing rubric", "Targeted remediation"]'::jsonb,
-    '["3600 tu active", "60 lesson hoan thanh", "110 luot game dat 70%+", "Checkpoint >= 75%"]'::jsonb,
+    '["B2 mixed-skill checkpoint", "Stage exit với writing rubric", "Targeted remediation"]'::jsonb,
+    '["3600 từ active", "60 lesson hoàn thành", "110 lượt game đạt 70%+", "Checkpoint >= 75%"]'::jsonb,
     '["Dashboard path", "Lesson workspace", "Assessment report", "Portfolio tasks"]'::jsonb, 3, true),
-  ('c1-advanced', 'C1 Advanced', 'C1 Advanced - Hoc thuat than thien', 'Be/teen hieu y phuc tap, tom tat, tranh luan va viet/noi ro rang ve chu de hoc thuat vua suc.', '14+ hoac da dat B2 vung', '9-15 thang', 5200, 90, 160,
+  ('c1-advanced', 'C1 Advanced', 'C1 Advanced - Học thuật thân thiện', 'Bé/teen hiểu ý phức tạp, tóm tắt, tranh luận và viết/nói rõ ràng về chủ đề học thuật vừa sức.', '14+ hoặc đã đạt B2 vững', '9-15 tháng', 5200, 90, 160,
     ARRAY['research','society','innovation','arts','ethics','communication','independent learning'],
-    '["Doc bai dai co lap luan", "Nghe quan diem/ham y", "Viet summary, proposal, presentation script"]'::jsonb,
-    '["Tom tat va danh gia y kien trong nguon doc/nghe", "Trinh bay lap luan co cau truc va vi du", "Dieu chinh van phong cho nguoi nghe/nguoi doc"]'::jsonb,
+    '["Đọc bài dài có lập luận", "Nghe quan điểm/hàm ý", "Viết summary, proposal, presentation script"]'::jsonb,
+    '["Tóm tắt và đánh giá ý kiến trong nguồn đọc/nghe", "Trình bày lập luận có cấu trúc và ví dụ", "Điều chỉnh văn phong cho người nghe/người đọc"]'::jsonb,
     '["Precision vocab", "Long-form input", "Critical thinking task", "Polished output"]'::jsonb,
     '["Deep reading", "Lecture-style listening", "Vocabulary nuance", "Discussion", "Writing revision", "Checkpoint"]'::jsonb,
     '["C1 checkpoint theo rubric", "Stage exit portfolio", "Parent/learner review"]'::jsonb,
-    '["5200 tu active", "90 lesson hoan thanh", "160 luot game dat 70%+", "Portfolio task dat rubric"]'::jsonb,
+    '["5200 từ active", "90 lesson hoàn thành", "160 lượt game đạt 70%+", "Portfolio task đạt rubric"]'::jsonb,
     '["Advanced lesson path", "Portfolio", "Skill radar", "Parent summary"]'::jsonb, 4, true)
 ON CONFLICT (id) DO UPDATE SET
   cefr = EXCLUDED.cefr,
@@ -269,24 +269,24 @@ INSERT INTO curriculum_units (id, stage_id, title_vi, theme, target_skills, sort
 ON CONFLICT (id) DO UPDATE SET stage_id = EXCLUDED.stage_id, title_vi = EXCLUDED.title_vi, theme = EXCLUDED.theme, target_skills = EXCLUDED.target_skills, active = true, updated_at = NOW();
 
 INSERT INTO lessons (id, unit_id, stage_id, title_vi, title_en, objective_vi, cefr, estimated_minutes, skill_focus, sort_order, license_status, review_status) VALUES
-  ('a2-key-first-message', 'a2-key-foundation', 'a2-key', 'Viet tin nhan dau tien', 'My first useful message', 'Doc mot tinh huong ngan va viet tin nhan 3-4 cau.', 'A2 Key', 18, ARRAY['vocabulary','reading','writing'], 1, 'original', 'approved'),
-  ('b1-preliminary-school-club', 'b1-preliminary-voice', 'b1-preliminary', 'Y kien ve cau lac bo', 'Opinions about a school club', 'Nghe/doc y kien va viet email ngan neu ly do.', 'B1 Preliminary', 22, ARRAY['listening','reading','writing'], 1, 'original', 'approved'),
-  ('b2-first-tech-choice', 'b2-first-ideas', 'b2-first', 'So sanh hai lua chon cong nghe', 'Comparing two tech choices', 'So sanh lua chon va bao ve y kien bang vi du.', 'B2 First', 28, ARRAY['reading','grammar','speaking'], 1, 'original', 'approved'),
-  ('c1-advanced-innovation-summary', 'c1-advanced-thinking', 'c1-advanced', 'Tom tat mot y tuong moi', 'Summarising an innovation', 'Tom tat, danh gia va trinh bay quan diem ro rang.', 'C1 Advanced', 35, ARRAY['reading','speaking','writing'], 1, 'original', 'approved')
+  ('a2-key-first-message', 'a2-key-foundation', 'a2-key', 'Viết tin nhắn đầu tiên', 'My first useful message', 'Đọc một tình huống ngắn và viết tin nhắn 3-4 câu.', 'A2 Key', 18, ARRAY['vocabulary','reading','writing'], 1, 'original', 'approved'),
+  ('b1-preliminary-school-club', 'b1-preliminary-voice', 'b1-preliminary', 'Ý kiến về câu lạc bộ', 'Opinions about a school club', 'Nghe/đọc ý kiến và viết email ngắn nêu lý do.', 'B1 Preliminary', 22, ARRAY['listening','reading','writing'], 1, 'original', 'approved'),
+  ('b2-first-tech-choice', 'b2-first-ideas', 'b2-first', 'So sánh hai lựa chọn công nghệ', 'Comparing two tech choices', 'So sánh lựa chọn và bảo vệ ý kiến bằng ví dụ.', 'B2 First', 28, ARRAY['reading','grammar','speaking'], 1, 'original', 'approved'),
+  ('c1-advanced-innovation-summary', 'c1-advanced-thinking', 'c1-advanced', 'Tóm tắt một ý tưởng mới', 'Summarising an innovation', 'Tóm tắt, đánh giá và trình bày quan điểm rõ ràng.', 'C1 Advanced', 35, ARRAY['reading','speaking','writing'], 1, 'original', 'approved')
 ON CONFLICT (id) DO UPDATE SET unit_id = EXCLUDED.unit_id, stage_id = EXCLUDED.stage_id, title_vi = EXCLUDED.title_vi, objective_vi = EXCLUDED.objective_vi, active = true, updated_at = NOW();
 
 INSERT INTO lesson_steps (lesson_id, step_type, title_vi, instruction_vi, payload, sort_order, license_status, review_status)
 SELECT lesson_id, step_type, title_vi, instruction_vi, payload, sort_order, 'original', 'approved'
 FROM (VALUES
-  ('a2-key-first-message','warmup','Khoi dong','Chon 3 tu ban can de viet tin nhan.', '{"minutes":3}'::jsonb, 1),
-  ('a2-key-first-message','reading','Doc tinh huong','Doc doan ngan va tim ai, o dau, can lam gi.', '{"minutes":5}'::jsonb, 2),
-  ('a2-key-first-message','writing','Viet tin nhan','Viet 3-4 cau ngan, ro y.', '{"minutes":8,"rubric":["clear purpose","friendly tone","A2 words"]}'::jsonb, 3),
-  ('b1-preliminary-school-club','listening','Nghe y kien','Ghi lai ly do ung ho hoac phan doi.', '{"minutes":7}'::jsonb, 1),
-  ('b1-preliminary-school-club','writing','Email ngan','Viet email neu y kien va hai ly do.', '{"minutes":10,"rubric":["opinion","reasons","closing"]}'::jsonb, 2),
-  ('b2-first-tech-choice','reading','So sanh lua chon','Tim diem manh/yeu cua moi lua chon.', '{"minutes":8}'::jsonb, 1),
-  ('b2-first-tech-choice','speaking','Bao ve y kien','Noi 45 giay ve lua chon tot hon.', '{"minutes":8,"rubric":["comparison","example","linkers"]}'::jsonb, 2),
-  ('c1-advanced-innovation-summary','reading','Doc y tuong','Danh dau y chinh va ham y.', '{"minutes":10}'::jsonb, 1),
-  ('c1-advanced-innovation-summary','writing','Tom tat va danh gia','Viet tom tat 80-120 tu kem nhan xet.', '{"minutes":15,"rubric":["summary","evaluation","precision"]}'::jsonb, 2)
+  ('a2-key-first-message','warmup','Khởi động','Chọn 3 từ bạn cần để viết tin nhắn.', '{"minutes":3}'::jsonb, 1),
+  ('a2-key-first-message','reading','Đọc tình huống','Đọc đoạn ngắn và tìm ai, ở đâu, cần làm gì.', '{"minutes":5}'::jsonb, 2),
+  ('a2-key-first-message','writing','Viết tin nhắn','Viết 3-4 câu ngắn, rõ ý.', '{"minutes":8,"rubric":["clear purpose","friendly tone","A2 words"]}'::jsonb, 3),
+  ('b1-preliminary-school-club','listening','Nghe ý kiến','Ghi lại lý do ủng hộ hoặc phản đối.', '{"minutes":7}'::jsonb, 1),
+  ('b1-preliminary-school-club','writing','Email ngắn','Viết email nêu ý kiến và hai lý do.', '{"minutes":10,"rubric":["opinion","reasons","closing"]}'::jsonb, 2),
+  ('b2-first-tech-choice','reading','So sánh lựa chọn','Tìm điểm mạnh/yếu của mỗi lựa chọn.', '{"minutes":8}'::jsonb, 1),
+  ('b2-first-tech-choice','speaking','Bảo vệ ý kiến','Nói 45 giây về lựa chọn tốt hơn.', '{"minutes":8,"rubric":["comparison","example","linkers"]}'::jsonb, 2),
+  ('c1-advanced-innovation-summary','reading','Đọc ý tưởng','Đánh dấu ý chính và hàm ý.', '{"minutes":10}'::jsonb, 1),
+  ('c1-advanced-innovation-summary','writing','Tóm tắt và đánh giá','Viết tóm tắt 80-120 từ kèm nhận xét.', '{"minutes":15,"rubric":["summary","evaluation","precision"]}'::jsonb, 2)
 ) AS seed(lesson_id, step_type, title_vi, instruction_vi, payload, sort_order)
 WHERE NOT EXISTS (
   SELECT 1 FROM lesson_steps existing

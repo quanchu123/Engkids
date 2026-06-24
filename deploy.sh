@@ -14,7 +14,7 @@ export UPLOADS_DIR
 echo "==> Đi tới thư mục dự án"
 cd "$APP_DIR"
 
-echo "==> Äáº£m báº£o thÆ° má»¥c upload tá»“n táº¡i trÃªn SSD droplet"
+echo "==> Đảm bảo thư mục upload tồn tại trên SSD droplet"
 mkdir -p "$UPLOADS_DIR"
 
 echo "==> Kéo code mới nhất từ GitHub"

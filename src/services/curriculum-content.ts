@@ -164,12 +164,12 @@ interface AssessmentItemRow {
 }
 
 const DEFAULT_SKILLS: CurriculumSkill[] = [
-  { id: 'vocabulary', nameEn: 'Vocabulary', nameVi: 'Tu vung', descriptionVi: 'Nhan dien, hieu nghia va dung tu dung topic.', cefrDomain: 'language', sortOrder: 1 },
-  { id: 'listening', nameEn: 'Listening', nameVi: 'Nghe', descriptionVi: 'Nhan dien am, tu va y chinh trong audio/video.', cefrDomain: 'reception', sortOrder: 2 },
-  { id: 'reading', nameEn: 'Reading', nameVi: 'Doc', descriptionVi: 'Doc tu, cau va doan ngan theo CEFR can-do.', cefrDomain: 'reception', sortOrder: 3 },
-  { id: 'grammar', nameEn: 'Grammar', nameVi: 'Ngu phap', descriptionVi: 'Dung mau cau va cau truc phu hop cap do.', cefrDomain: 'language', sortOrder: 4 },
-  { id: 'writing', nameEn: 'Writing', nameVi: 'Viet', descriptionVi: 'Sap xep, dien tu va tao cau ngan.', cefrDomain: 'production', sortOrder: 5 },
-  { id: 'speaking', nameEn: 'Speaking', nameVi: 'Noi', descriptionVi: 'Lap lai, tra loi va trinh bay ngan.', cefrDomain: 'production', sortOrder: 6 },
+  { id: 'vocabulary', nameEn: 'Vocabulary', nameVi: 'Từ vựng', descriptionVi: 'Nhận diện, hiểu nghĩa và dùng từ đúng chủ đề.', cefrDomain: 'language', sortOrder: 1 },
+  { id: 'listening', nameEn: 'Listening', nameVi: 'Nghe', descriptionVi: 'Nhận diện âm, từ và ý chính trong audio/video.', cefrDomain: 'reception', sortOrder: 2 },
+  { id: 'reading', nameEn: 'Reading', nameVi: 'Đọc', descriptionVi: 'Đọc từ, câu và đoạn ngắn theo CEFR can-do.', cefrDomain: 'reception', sortOrder: 3 },
+  { id: 'grammar', nameEn: 'Grammar', nameVi: 'Ngữ pháp', descriptionVi: 'Dùng mẫu câu và cấu trúc phù hợp cấp độ.', cefrDomain: 'language', sortOrder: 4 },
+  { id: 'writing', nameEn: 'Writing', nameVi: 'Viết', descriptionVi: 'Sắp xếp, điền từ và tạo câu ngắn.', cefrDomain: 'production', sortOrder: 5 },
+  { id: 'speaking', nameEn: 'Speaking', nameVi: 'Nói', descriptionVi: 'Lặp lại, trả lời và trình bày ngắn.', cefrDomain: 'production', sortOrder: 6 },
 ];
 
 const DEFAULT_BLUEPRINTS: AssessmentBlueprint[] = [
@@ -561,7 +561,7 @@ function itemFromWord(word: WordPair, bank: WordPair[], skillId: CurriculumSkill
       topic: word.topic || 'general',
       item_type: itemType,
       prompt: `"${word.en}" means...`,
-      prompt_vi: `Chon nghia tieng Viet cua "${word.en}"`,
+      prompt_vi: `Chọn nghĩa tiếng Việt của "${word.en}"`,
       choices,
       correct_answer: correct,
       explanation_vi: `${word.en} = ${word.vi}`,
@@ -590,7 +590,7 @@ function itemFromWord(word: WordPair, bank: WordPair[], skillId: CurriculumSkill
     topic: word.topic || 'general',
     item_type: itemType,
     prompt: word.vi,
-    prompt_vi: 'Chon tu tieng Anh phu hop.',
+    prompt_vi: 'Chọn từ tiếng Anh phù hợp.',
     choices,
     correct_answer: correct,
     explanation_vi: `${word.en} = ${word.vi}`,

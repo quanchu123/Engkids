@@ -614,10 +614,10 @@ function lessonTitle(stage, topic, index) {
 }
 
 function lessonObjective(stage, topic) {
-  if (stage.id === 'a2-key') return `Hoc tu vung ${topic}, doc cau ngan va tao cau tra loi ro rang.`;
-  if (stage.id === 'b1-preliminary') return `Dung tu vung ${topic} de hieu y chinh va viet doan ngan co ly do.`;
-  if (stage.id === 'b2-first') return `Phan tich noi dung ${topic}, so sanh y tuong va dien dat quan diem co vi du.`;
-  return `Tom tat, danh gia va trinh bay y kien chinh xac ve chu de ${topic}.`;
+  if (stage.id === 'a2-key') return `Học từ vựng ${topic}, đọc câu ngắn và tạo câu trả lời rõ ràng.`;
+  if (stage.id === 'b1-preliminary') return `Dùng từ vựng ${topic} để hiểu ý chính và viết đoạn ngắn có lý do.`;
+  if (stage.id === 'b2-first') return `Phân tích nội dung ${topic}, so sánh ý tưởng và diễn đạt quan điểm có ví dụ.`;
+  return `Tóm tắt, đánh giá và trình bày ý kiến chính xác về chủ đề ${topic}.`;
 }
 
 function difficultyForStage(stageId) {
@@ -740,12 +740,12 @@ async function publishLessons(words, sentences, passages) {
       const attribution = [...new Set([SOURCES.wordnet.attribution, ...sentencePack.map((s) => s.attribution), passage?.attribution].filter(Boolean))];
       const basePayload = { stageId: stage.id, topic, attribution, license: 'Open-source rows approved in Engkids source review.' };
       const stepRows = [
-        ['warmup', 'Khoi dong tu khoa', 'Doc nhanh cac tu va chon tu da biet.', { ...basePayload, words: wordPack.slice(0, 5).map((word) => word.lemma || word.en) }],
-        ['vocab', 'Tu vung trong nguon mo', 'Ghep tu voi dinh nghia va chu y loai tu.', { ...basePayload, items: wordPack.map((word) => ({ en: word.lemma || word.en, pos: word.part_of_speech, definition: word.definition, example: word.example })) }],
-        ['reading', passage ? 'Doc doan van mien phi ban quyen' : 'Doc cau vi du Tatoeba', 'Tim y chinh va tu khoa trong ngu lieu.', { ...basePayload, passage: passage ? { title: passage.title, author: passage.author, text: passage.text, sourceUrl: passage.source_url } : null, sentences: sentencePack.map((s) => ({ text: s.text, sourceUrl: s.source_url })) }],
+        ['warmup', 'Khởi động từ khóa', 'Đọc nhanh các từ và chọn từ đã biết.', { ...basePayload, words: wordPack.slice(0, 5).map((word) => word.lemma || word.en) }],
+        ['vocab', 'Từ vựng trong nguồn mở', 'Ghép từ với định nghĩa và chú ý loại từ.', { ...basePayload, items: wordPack.map((word) => ({ en: word.lemma || word.en, pos: word.part_of_speech, definition: word.definition, example: word.example })) }],
+        ['reading', passage ? 'Đọc đoạn văn miễn phí bản quyền' : 'Đọc câu ví dụ Tatoeba', 'Tìm ý chính và từ khóa trong ngữ liệu.', { ...basePayload, passage: passage ? { title: passage.title, author: passage.author, text: passage.text, sourceUrl: passage.source_url } : null, sentences: sentencePack.map((s) => ({ text: s.text, sourceUrl: s.source_url })) }],
         ['grammar', 'Mau cau va cach noi', 'Quan sat cach tu duoc dung trong cau va tao mot cau moi.', { ...basePayload, focusWords: wordPack.slice(0, 4).map((word) => word.lemma || word.en), sentences: sentencePack.map((s) => s.text) }],
         [index % 2 === 0 ? 'writing' : 'speaking', index % 2 === 0 ? 'Viet output ngan' : 'Noi output ngan', 'Dung tu da hoc de tao output phu hop level.', { ...basePayload, prompt: `Use at least three words from this ${stage.label} pack to respond about ${topic}.`, requiredWords: wordPack.slice(0, 6).map((word) => word.lemma || word.en) }],
-        ['quiz', 'Mini checkpoint', 'Tra loi nhanh de kiem tra tu va y chinh.', { ...basePayload, questions: wordPack.slice(0, 5).map((word) => ({ type: 'meaning-check', word: word.lemma || word.en, answer: word.definition })) }],
+        ['quiz', 'Mini checkpoint', 'Trả lời nhanh để kiểm tra từ và ý chính.', { ...basePayload, questions: wordPack.slice(0, 5).map((word) => ({ type: 'meaning-check', word: word.lemma || word.en, answer: word.definition })) }],
       ];
       stepRows.forEach(([stepType, titleVi, instructionVi, payload], stepIndex) => {
         steps.push({
