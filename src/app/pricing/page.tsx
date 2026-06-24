@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SUBSCRIPTION_PLANS } from '@/lib/payment';
-import { Check, Star, Crown, Clock, Sparkles, Shield, Zap, X } from 'lucide-react';
+import { Check, Star, Crown, Clock, Sparkles, Shield, X } from 'lucide-react';
 import Link from 'next/link';
 
-const PLAN_ORDER: (keyof typeof SUBSCRIPTION_PLANS)[] = ['1_month', '3_months', '6_months', '12_months'];
+const PLAN_ORDER: (keyof typeof SUBSCRIPTION_PLANS)[] = ['1_month', '3_months', '6_months'];
 
 const FEATURES_FREE = [
   { text: 'Tất cả tính năng học tập', included: true },
@@ -134,14 +134,17 @@ export default function PricingPage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white">Premium</h3>
-                  <p className="text-purple-400 text-sm">Không giới hạn</p>
+                  <p className="text-purple-400 text-sm">Gói 6 tháng · Không giới hạn</p>
                 </div>
               </div>
 
-              <div className="text-3xl font-black text-white mb-6">
-                Từ {Math.round(399000 / 12).toLocaleString('vi-VN')}đ
+              <div className="text-3xl font-black text-white">
+                {SUBSCRIPTION_PLANS['6_months'].pricePerMonth.toLocaleString('vi-VN')}đ
                 <span className="text-sm text-gray-500 font-medium ml-1">/tháng</span>
               </div>
+              <p className="text-sm text-purple-300/80 mt-1 mb-6">
+                Thanh toán {SUBSCRIPTION_PLANS['6_months'].price.toLocaleString('vi-VN')}đ cho 6 tháng
+              </p>
 
               <ul className="space-y-3">
                 {FEATURES_PREMIUM.map((text, i) => (
@@ -161,10 +164,9 @@ export default function PricingPage() {
           <p className="text-gray-400">Thanh toán đơn giản qua chuyển khoản ngân hàng</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl mx-auto">
           {PLAN_ORDER.map((planId) => {
             const plan = SUBSCRIPTION_PLANS[planId];
-            const isBestValue = planId === '12_months';
             const isPopular = planId === '6_months';
 
             // Calculate savings vs 1-month plan
@@ -175,24 +177,15 @@ export default function PricingPage() {
               <div
                 key={planId}
                 className={`relative flex flex-col p-6 rounded-2xl transition-all hover:scale-[1.03] ${
-                  isBestValue
-                    ? 'bg-gradient-to-b from-amber-900/40 to-gray-900 border-2 border-amber-500/40 shadow-xl shadow-amber-500/10'
-                    : isPopular
-                      ? 'bg-gradient-to-b from-purple-900/40 to-gray-900 border-2 border-purple-500/30 shadow-xl shadow-purple-500/10'
-                      : 'bg-gray-900 border border-gray-800'
+                  isPopular
+                    ? 'bg-gradient-to-b from-purple-900/40 to-gray-900 border-2 border-purple-500/30 shadow-xl shadow-purple-500/10'
+                    : 'bg-gray-900 border border-gray-800'
                 }`}
               >
-                {isBestValue && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 whitespace-nowrap">
-                      <Zap size={12} /> Tiết kiệm nhất
-                    </span>
-                  </div>
-                )}
                 {isPopular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 whitespace-nowrap">
-                      <Star size={12} fill="currentColor" /> Phổ biến nhất
+                      <Star size={12} fill="currentColor" /> Khuyến nghị
                     </span>
                   </div>
                 )}
@@ -214,11 +207,9 @@ export default function PricingPage() {
                   onClick={() => handleSubscribe(planId)}
                   disabled={!!loading}
                   className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${
-                    isBestValue
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white shadow-lg'
-                      : isPopular
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg'
-                        : 'bg-gray-800 hover:bg-gray-700 text-white'
+                    isPopular
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg'
+                      : 'bg-gray-800 hover:bg-gray-700 text-white'
                   } ${loading === planId ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {loading === planId ? 'Đang tạo đơn hàng...' : 'Chọn gói này'}
