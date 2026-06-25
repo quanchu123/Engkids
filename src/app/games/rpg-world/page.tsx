@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getCurrentAdmin } from '@/lib/admin-auth-client';
 import { DEFAULT_WORD_BANK, loadWordBank, toChoiceQuestions } from '@/lib/word-bank';
 
 // ─── Vocabulary questions for battle (defaults; replaced by shared bank) ────
@@ -20,8 +21,13 @@ const BASE = '/games/rpg-world';
 const SHEET = `${BASE}/spritesheets`;
 const MAP_SIZE = 1254;
 const MONSTERS_TO_WIN = 8;
+const BOSS_MAX_HP = 10;
+const BOSS_QUESTION_INTERVAL = 6900;
+const BOSS_ARENA = { width: 1280, height: 720 } as const;
 const MAX_HP = 3;
 const PLAYER_SPEED = 175;
+const BOSS_PLAYER_SPEED = 235;
+const BOSS_INVULN_MS = 2000;
 const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
 const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
 const POWER_UPS = {
@@ -92,6 +98,14 @@ interface BattleState {
   result: 'none' | 'correct' | 'wrong';
 }
 
+interface BossQuestionState {
+  active: boolean;
+  question: typeof VOCAB_QUESTIONS[0];
+  result: 'none' | 'correct' | 'wrong';
+}
+
+type GamePhase = 'dungeon' | 'boss';
+
 export default function RpgWorldPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<any>(null);
@@ -103,10 +117,16 @@ export default function RpgWorldPage() {
   const [defeated, setDefeated] = useState(0);
   const [attackBonus, setAttackBonus] = useState(0);
   const [shieldCharges, setShieldCharges] = useState(0);
+  const [phase, setPhase] = useState<GamePhase>('dungeon');
+  const [bossHp, setBossHp] = useState(BOSS_MAX_HP);
+  const [bossQuestion, setBossQuestion] = useState<BossQuestionState | null>(null);
+  const [isAdminTester, setIsAdminTester] = useState(false);
 
   const battleRef = useRef<BattleState | null>(null);
+  const bossQuestionRef = useRef<BossQuestionState | null>(null);
   const scoreRef = useRef(0);
   const hpRef = useRef(3);
+  const bossHpRef = useRef(BOSS_MAX_HP);
   const attackBonusRef = useRef(0);
   const shieldChargesRef = useRef(0);
   // On-screen D-pad state, read every frame by the Phaser update loop.
@@ -120,16 +140,34 @@ export default function RpgWorldPage() {
     });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    getCurrentAdmin()
+      .then((admin) => {
+        if (active) setIsAdminTester(Boolean(admin));
+      })
+      .catch(() => {
+        if (active) setIsAdminTester(false);
+      });
+    return () => { active = false; };
+  }, []);
   // Direct callback: Phaser registers, React calls when battle ends
   const battleResolveCbRef = useRef<((won: boolean) => void) | null>(null);
+  const bossResolveCbRef = useRef<((correct: boolean) => void) | null>(null);
 
   const cbRef = useRef({
     startBattle: (_state: BattleState) => {},
+    startBossQuestion: (_state: BossQuestionState) => {},
     showNpc: (_msg: string) => {},
     progress: (_count: number) => {},
     reward: (_kind: 'score' | 'hp', _amount: number) => {},
     powerUp: (_kind: 'sword' | 'shield') => {},
-    win: () => {},
+    openBossGate: () => {},
+    phase: (_phase: GamePhase) => {},
+    bossHp: (_hp: number) => {},
+    bossPlayerHit: () => {},
+    bossWin: () => {},
   });
 
   // Single clean answer handler — 1 attempt per encounter
@@ -164,7 +202,50 @@ export default function RpgWorldPage() {
     }, 750);
   }, []);
 
+  const handleBossAnswer = useCallback((choice: string) => {
+    if (!bossQuestionRef.current?.active) return;
+    const correct = choice === bossQuestionRef.current.question.en;
+
+    setBossQuestion(prev => prev ? { ...prev, result: correct ? 'correct' : 'wrong' } : null);
+
+    if (correct) {
+      scoreRef.current += 100;
+      setScore(scoreRef.current);
+    }
+
+    setTimeout(() => {
+      setBossQuestion(null);
+      bossQuestionRef.current = null;
+      const cb = bossResolveCbRef.current;
+      bossResolveCbRef.current = null;
+      cb?.(correct);
+    }, 650);
+  }, []);
+
+  const handleAdminSkipBoss = useCallback(() => {
+    const game = gameRef.current;
+    if (!game?.scene) return;
+
+    setGameOver(null);
+    setBattle(null);
+    battleRef.current = null;
+    setBossQuestion(null);
+    bossQuestionRef.current = null;
+    bossResolveCbRef.current = null;
+    moveRef.current = { up: false, down: false, left: false, right: false };
+
+    hpRef.current = MAX_HP;
+    setHp(MAX_HP);
+    bossHpRef.current = BOSS_MAX_HP;
+    setBossHp(BOSS_MAX_HP);
+    setPhase('boss');
+
+    game.scene.stop('GameScene');
+    game.scene.start('BossScene');
+  }, []);
+
   useEffect(() => { battleRef.current = battle; }, [battle]);
+  useEffect(() => { bossQuestionRef.current = bossQuestion; }, [bossQuestion]);
 
   // Clear held D-pad direction when a battle starts or the game ends.
   useEffect(() => {
@@ -195,6 +276,7 @@ export default function RpgWorldPage() {
           });
 
           this.load.image('dungeon-map', `${BASE}/dungeon-map-v2.png`);
+          this.load.image('boss-cave', `${BASE}/boss-dragon-demon-cave.png`);
           this.load.spritesheet('player-walk-down',   `${SHEET}/hero/walk/hero-walk-front.png`,     { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-walk-up',     `${SHEET}/hero/walk/hero-walk-back.png`,      { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-walk-side',   `${SHEET}/hero/walk/hero-walk-side.png`,      { frameWidth: 32, frameHeight: 32 });
@@ -254,6 +336,10 @@ export default function RpgWorldPage() {
         private usedVocab = new Set<number>();
         private killed = 0;
         private direction = 'down';
+        private bossGateOpen = false;
+        private bossGateZone!: Phaser.GameObjects.Zone;
+        private bossGateSeal!: Phaser.GameObjects.Arc;
+        private bossGateLabel!: Phaser.GameObjects.Text;
 
         constructor() { super({ key: 'GameScene' }); }
 
@@ -445,6 +531,33 @@ export default function RpgWorldPage() {
           this.cameras.main.fadeIn(700, 4, 12, 25);
           this.physics.add.collider(this.player, this.walls);
 
+          // Boss gate at the northern wooden door. It opens only after 8 minions
+          // are defeated, then touching it moves the player to the cosmic arena.
+          this.bossGateZone = this.add.zone(627, 104, 270, 130);
+          this.physics.add.existing(this.bossGateZone, true);
+          this.bossGateSeal = this.add.circle(627, 118, 70, 0x7c3aed, 0.12)
+            .setStrokeStyle(4, 0xa855f7, 0.8)
+            .setBlendMode(Phaser.BlendModes.ADD)
+            .setDepth(8);
+          this.bossGateLabel = this.add.text(627, 204, `Cổng boss\nHạ ${MONSTERS_TO_WIN} quái để mở`, {
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fontSize: '16px',
+            color: '#e9d5ff',
+            align: 'center',
+            stroke: '#18012c',
+            strokeThickness: 5,
+          }).setOrigin(0.5).setDepth(9);
+          this.tweens.add({
+            targets: this.bossGateSeal,
+            alpha: { from: 0.2, to: 0.65 },
+            scale: { from: 0.9, to: 1.08 },
+            duration: 1100,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+
           // ── Monsters ──
           this.monsters = this.physics.add.group();
           TREANT_POSITIONS.forEach(pos => {
@@ -527,7 +640,7 @@ export default function RpgWorldPage() {
                     monster.destroy();
                     this.killed++;
                     cbRef.current.progress(this.killed);
-                    if (this.killed >= MONSTERS_TO_WIN) cbRef.current.win();
+                    if (this.killed >= MONSTERS_TO_WIN) this._openBossGate();
                   };
                   monster.play('enemy-death');
                   monster.once('animationcomplete-enemy-death', finish);
@@ -554,8 +667,17 @@ export default function RpgWorldPage() {
             cbRef.current.showNpc(npc.dialogue);
           });
 
+          this.physics.add.overlap(this.player, this.bossGateZone, () => {
+            if (!this.bossGateOpen) return;
+            this.player.setVelocity(0, 0);
+            cbRef.current.phase('boss');
+            this.cameras.main.fadeOut(450, 20, 5, 45);
+            this.time.delayedCall(460, () => this.scene.start('BossScene'));
+          });
+
           // ── Wire up React callbacks ──
           cbRef.current.startBattle = (state: BattleState) => setBattle({ ...state });
+          cbRef.current.startBossQuestion = (state: BossQuestionState) => setBossQuestion({ ...state });
           cbRef.current.showNpc = (msg: string) => {
             setNpcMsg(msg);
             setTimeout(() => setNpcMsg(null), 4500);
@@ -585,7 +707,29 @@ export default function RpgWorldPage() {
             setShieldCharges(shieldChargesRef.current);
             cbRef.current.showNpc('Khiên phép\nSẽ chặn 1 lần mất máu!');
           };
-          cbRef.current.win = () => setGameOver('win');
+          cbRef.current.openBossGate = () => cbRef.current.showNpc('Cổng boss đã mở!\nĐi lên cánh cửa phía bắc.');
+          cbRef.current.phase = (nextPhase: GamePhase) => {
+            setPhase(nextPhase);
+            setBattle(null);
+            battleRef.current = null;
+            setBossQuestion(null);
+            bossQuestionRef.current = null;
+            moveRef.current = { up: false, down: false, left: false, right: false };
+          };
+          cbRef.current.bossHp = (nextHp: number) => {
+            bossHpRef.current = nextHp;
+            setBossHp(nextHp);
+          };
+          cbRef.current.bossPlayerHit = () => {
+            hpRef.current = Math.max(0, hpRef.current - 1);
+            setHp(hpRef.current);
+            if (hpRef.current <= 0) setGameOver('lose');
+          };
+          cbRef.current.bossWin = () => {
+            scoreRef.current += 500;
+            setScore(scoreRef.current);
+            setGameOver('win');
+          };
 
           // ── Keyboard ──
           this.cursors = this.input.keyboard!.createCursorKeys();
@@ -681,6 +825,41 @@ export default function RpgWorldPage() {
           });
         }
 
+        private _openBossGate() {
+          if (this.bossGateOpen) return;
+          this.bossGateOpen = true;
+          cbRef.current.openBossGate();
+          this.bossGateLabel.setText('CỔNG BOSS ĐÃ MỞ\nChạm để vào vũ trụ');
+          this.bossGateLabel.setColor('#f5d0fe');
+          this.bossGateSeal.setFillStyle(0xc026d3, 0.26);
+          this.bossGateSeal.setStrokeStyle(5, 0xf0abfc, 1);
+          this.tweens.add({
+            targets: this.bossGateSeal,
+            scale: { from: 1.05, to: 1.45 },
+            alpha: { from: 0.55, to: 0.95 },
+            duration: 420,
+            yoyo: true,
+            repeat: 2,
+            ease: 'Sine.easeInOut',
+          });
+          for (let i = 0; i < 24; i++) {
+            const spark = this.add.circle(627, 118, 3, 0xf0abfc, 1)
+              .setDepth(30)
+              .setBlendMode(Phaser.BlendModes.ADD);
+            const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+            const distance = Phaser.Math.Between(40, 140);
+            this.tweens.add({
+              targets: spark,
+              x: 627 + Math.cos(angle) * distance,
+              y: 118 + Math.sin(angle) * distance,
+              alpha: 0,
+              scale: 0.2,
+              duration: 850,
+              onComplete: () => spark.destroy(),
+            });
+          }
+        }
+
         private _isWalkable(x: number, y: number, margin: number) {
           if (
             x < SAFE_FLOOR_BOUNDS.left || x > SAFE_FLOOR_BOUNDS.right ||
@@ -733,12 +912,346 @@ export default function RpgWorldPage() {
       }
 
       // ─── Launch Phaser (full-screen RESIZE mode) ───────────────────────
+      class BossScene extends Phaser.Scene {
+        private player!: Phaser.Physics.Arcade.Sprite;
+        private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+        private wasd!: any;
+        private direction = 'up';
+        private bossHp = BOSS_MAX_HP;
+        private usedVocab = new Set<number>();
+        private hazards: any[] = [];
+        private invulnerableUntil = 0;
+        private battleEnded = false;
+        private bossX = BOSS_ARENA.width / 2;
+        private bossY = 190;
+
+        constructor() { super({ key: 'BossScene' }); }
+
+        create() {
+          cbRef.current.phase('boss');
+          cbRef.current.bossHp(BOSS_MAX_HP);
+          hpRef.current = MAX_HP;
+          setHp(MAX_HP);
+          this.bossHp = BOSS_MAX_HP;
+          this.physics.world.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
+          this._createCosmicArena();
+
+          this.add.image(this.bossX, this.bossY, 'boss-cave').setDisplaySize(680, 453).setDepth(4);
+          this.add.ellipse(this.bossX, this.bossY + 105, 500, 120, 0x7c3aed, 0.16)
+            .setBlendMode(Phaser.BlendModes.ADD)
+            .setDepth(5);
+
+          this.player = this.physics.add.sprite(this.bossX, 600, 'player-idle-up', 0)
+            .setScale(2.4)
+            .setSize(10, 10)
+            .setOffset(11, 18)
+            .setCollideWorldBounds(true)
+            .setDepth(20);
+          this.player.play('player-idle-up');
+
+          this.cameras.main.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
+          this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+          this.cameras.main.setZoom(this.scale.width < 720 ? 0.8 : 1);
+          this.cameras.main.fadeIn(700, 8, 2, 18);
+
+          this.cursors = this.input.keyboard!.createCursorKeys();
+          this.wasd = this.input.keyboard!.addKeys('W,A,S,D');
+
+          this.time.addEvent({ delay: 1200, loop: true, callback: () => this._smallMeteorWave() });
+          this.time.addEvent({ delay: 4200, loop: true, callback: () => this._laserAttack() });
+          this.time.addEvent({ delay: 9000, loop: true, callback: () => this._bigMeteor() });
+          this.time.addEvent({ delay: BOSS_QUESTION_INTERVAL, loop: true, callback: () => this._askQuestion() });
+
+          this.add.text(this.bossX, 408, 'Né chiêu tím. Mỗi 6.9 giây trả lời đúng để chém boss.', {
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fontSize: '16px',
+            color: '#e9d5ff',
+            stroke: '#090014',
+            strokeThickness: 5,
+          }).setOrigin(0.5).setDepth(30);
+        }
+
+        update() {
+          if (!this.player?.active || this.battleEnded) return;
+          this._movePlayer();
+          this._checkHazards();
+          this.player.setAlpha(this.time.now < this.invulnerableUntil && this.time.now % 220 < 110 ? 0.35 : 1);
+        }
+
+        private _createCosmicArena() {
+          const g = this.add.graphics().setDepth(0);
+          g.fillGradientStyle(0x02010e, 0x030014, 0x050018, 0x10021f, 1);
+          g.fillRect(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
+
+          for (let i = 0; i < 180; i++) {
+            const x = Phaser.Math.Between(0, BOSS_ARENA.width);
+            const y = Phaser.Math.Between(0, BOSS_ARENA.height);
+            const r = Phaser.Math.FloatBetween(0.7, 2.1);
+            const alpha = Phaser.Math.FloatBetween(0.25, 0.95);
+            const star = this.add.circle(x, y, r, i % 7 === 0 ? 0xf5d0fe : 0xffffff, alpha).setDepth(1);
+            this.tweens.add({
+              targets: star,
+              alpha: { from: alpha * 0.35, to: alpha },
+              duration: Phaser.Math.Between(900, 2200),
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+          }
+
+          for (let i = 0; i < 24; i++) {
+            const rock = this.add.polygon(
+              Phaser.Math.Between(80, BOSS_ARENA.width - 80),
+              Phaser.Math.Between(80, BOSS_ARENA.height - 80),
+              [-16, -8, -6, -20, 14, -14, 23, 3, 8, 18, -12, 14, -22, 0],
+              0x2d2240,
+              0.55,
+            ).setStrokeStyle(2, 0x8b5cf6, 0.25).setDepth(2);
+            rock.setRotation(Phaser.Math.FloatBetween(0, Math.PI));
+          }
+
+          this.add.circle(260, 160, 170, 0x7c3aed, 0.08).setBlendMode(Phaser.BlendModes.ADD).setDepth(1);
+          this.add.circle(1040, 510, 210, 0x2563eb, 0.07).setBlendMode(Phaser.BlendModes.ADD).setDepth(1);
+          this.add.rectangle(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2, BOSS_ARENA.width - 70, BOSS_ARENA.height - 70, 0x000000, 0)
+            .setStrokeStyle(2, 0x8b5cf6, 0.35)
+            .setDepth(3);
+        }
+
+        private _movePlayer() {
+          const m = moveRef.current;
+          const left = this.cursors.left.isDown || this.wasd.A.isDown || m.left;
+          const right = this.cursors.right.isDown || this.wasd.D.isDown || m.right;
+          const up = this.cursors.up.isDown || this.wasd.W.isDown || m.up;
+          const down = this.cursors.down.isDown || this.wasd.S.isDown || m.down;
+
+          let vx = 0;
+          let vy = 0;
+          if (left) vx -= 1;
+          if (right) vx += 1;
+          if (up) vy -= 1;
+          if (down) vy += 1;
+
+          const len = Math.hypot(vx, vy) || 1;
+          vx = (vx / len) * BOSS_PLAYER_SPEED;
+          vy = (vy / len) * BOSS_PLAYER_SPEED;
+          this.player.setVelocity(vx, vy);
+
+          if (vx < 0) {
+            this.direction = 'left';
+            this.player.setFlipX(true);
+            this.player.play('player-move-left', true);
+          } else if (vx > 0) {
+            this.direction = 'right';
+            this.player.setFlipX(false);
+            this.player.play('player-move-right', true);
+          } else if (vy < 0) {
+            this.direction = 'up';
+            this.player.play('player-move-up', true);
+          } else if (vy > 0) {
+            this.direction = 'down';
+            this.player.play('player-move-down', true);
+          } else {
+            const idle = this.direction === 'up' ? 'player-idle-up'
+              : (this.direction === 'left' || this.direction === 'right') ? 'player-idle-side'
+              : 'player-idle-down';
+            this.player.play(idle, true);
+          }
+        }
+
+        private _smallMeteorWave() {
+          if (this.battleEnded) return;
+          const count = Phaser.Math.Between(3, 5);
+          for (let i = 0; i < count; i++) {
+            this._meteorImpact(
+              Phaser.Math.Between(110, BOSS_ARENA.width - 110),
+              Phaser.Math.Between(260, BOSS_ARENA.height - 90),
+              27,
+              650,
+              520,
+            );
+          }
+        }
+
+        private _bigMeteor() {
+          if (this.battleEnded) return;
+          this._meteorImpact(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2 + 80, 112, 1300, 900);
+        }
+
+        private _meteorImpact(x: number, y: number, radius: number, warningMs: number, activeMs: number) {
+          const warning = this.add.circle(x, y, radius, 0x7c3aed, 0.08)
+            .setStrokeStyle(3, 0xf0abfc, 0.9)
+            .setDepth(18)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          this.tweens.add({
+            targets: warning,
+            scale: { from: 0.5, to: 1.08 },
+            alpha: { from: 0.18, to: 0.75 },
+            duration: warningMs,
+            ease: 'Sine.easeIn',
+          });
+          this.time.delayedCall(warningMs, () => {
+            warning.destroy();
+            const impact = this.add.circle(x, y, radius, 0xa855f7, radius > 60 ? 0.42 : 0.55)
+              .setStrokeStyle(4, 0xf5d0fe, 0.95)
+              .setDepth(19)
+              .setBlendMode(Phaser.BlendModes.ADD);
+            this.hazards.push({ kind: 'circle', x, y, radius, until: this.time.now + activeMs, gfx: impact });
+            this.cameras.main.shake(radius > 60 ? 260 : 90, radius > 60 ? 0.01 : 0.004);
+            this.tweens.add({
+              targets: impact,
+              alpha: 0,
+              scale: 1.25,
+              duration: activeMs,
+              onComplete: () => impact.destroy(),
+            });
+          });
+        }
+
+        private _laserAttack() {
+          if (this.battleEnded || !this.player?.active) return;
+          const startX = this.bossX;
+          const startY = this.bossY + 30;
+          const dx = this.player.x - startX;
+          const dy = this.player.y - startY;
+          const len = Math.hypot(dx, dy) || 1;
+          const endX = startX + (dx / len) * 1200;
+          const endY = startY + (dy / len) * 1200;
+
+          const warn = this.add.graphics().setDepth(21);
+          warn.lineStyle(10, 0xf0abfc, 0.32);
+          warn.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
+          this.tweens.add({ targets: warn, alpha: { from: 0.22, to: 0.85 }, duration: 700, yoyo: true });
+          this.time.delayedCall(800, () => {
+            warn.destroy();
+            const beam = this.add.graphics().setDepth(22);
+            beam.lineStyle(34, 0x7c3aed, 0.62);
+            beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
+            beam.lineStyle(11, 0xfdf4ff, 0.95);
+            beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
+            this.hazards.push({ kind: 'line', x1: startX, y1: startY, x2: endX, y2: endY, width: 24, until: this.time.now + 520, gfx: beam });
+            this.tweens.add({ targets: beam, alpha: 0, duration: 520, onComplete: () => beam.destroy() });
+          });
+        }
+
+        private _checkHazards() {
+          const now = this.time.now;
+          this.hazards = this.hazards.filter((h) => {
+            if (now > h.until) {
+              h.gfx?.destroy?.();
+              return false;
+            }
+
+            const touching = h.kind === 'circle'
+              ? Phaser.Math.Distance.Between(this.player.x, this.player.y, h.x, h.y) < h.radius + 13
+              : this._distanceToSegment(this.player.x, this.player.y, h.x1, h.y1, h.x2, h.y2) < h.width + 11;
+            if (touching) this._hitPlayer();
+            return true;
+          });
+        }
+
+        private _hitPlayer() {
+          if (this.time.now < this.invulnerableUntil || this.battleEnded) return;
+          this.invulnerableUntil = this.time.now + BOSS_INVULN_MS;
+          cbRef.current.bossPlayerHit();
+          this.player.setTint(0xff5ca8);
+          this.time.delayedCall(220, () => { if (this.player?.active) this.player.clearTint(); });
+          this.cameras.main.shake(180, 0.01);
+        }
+
+        private _askQuestion() {
+          if (this.battleEnded || bossQuestionRef.current?.active) return;
+          const question = this._pickQuestion();
+          bossResolveCbRef.current = (correct: boolean) => {
+            if (this.battleEnded) return;
+            if (correct) this._slashBoss();
+            else this._floatText(this.player.x, this.player.y - 42, 'Sai rồi, né tiếp!', '#fca5a5');
+          };
+          cbRef.current.startBossQuestion({ active: true, question, result: 'none' });
+        }
+
+        private _slashBoss() {
+          this.bossHp = Math.max(0, this.bossHp - 1);
+          cbRef.current.bossHp(this.bossHp);
+          this.player.play('player-attack', true);
+          this.time.delayedCall(360, () => {
+            if (!this.player?.active) return;
+            this.player.play(this.direction === 'up' ? 'player-idle-up' : 'player-idle-down', true);
+          });
+
+          const slash = this.add.graphics().setDepth(35);
+          slash.lineStyle(10, 0xdbeafe, 0.95);
+          slash.strokeLineShape(new Phaser.Geom.Line(this.player.x, this.player.y - 20, this.bossX, this.bossY + 10));
+          slash.lineStyle(24, 0x60a5fa, 0.3);
+          slash.strokeLineShape(new Phaser.Geom.Line(this.player.x, this.player.y - 20, this.bossX, this.bossY + 10));
+          this.tweens.add({ targets: slash, alpha: 0, duration: 420, onComplete: () => slash.destroy() });
+          this._floatText(this.bossX, this.bossY + 70, '-1 HP', '#fef3c7');
+          this.cameras.main.shake(180, 0.008);
+
+          if (this.bossHp <= 0) this._rescuePrincess();
+        }
+
+        private _rescuePrincess() {
+          if (this.battleEnded) return;
+          this.battleEnded = true;
+          this.hazards.forEach((h) => h.gfx?.destroy?.());
+          this.hazards = [];
+          setBossQuestion(null);
+          bossQuestionRef.current = null;
+          bossResolveCbRef.current = null;
+
+          this.add.circle(this.bossX, 430, 70, 0xfef08a, 0.2).setBlendMode(Phaser.BlendModes.ADD).setDepth(40);
+          this.add.text(this.bossX, 428, '👸', {
+            fontFamily: 'Arial',
+            fontSize: '70px',
+            stroke: '#111827',
+            strokeThickness: 6,
+          }).setOrigin(0.5).setDepth(41);
+          this._floatText(this.bossX, 510, 'Công chúa đã được cứu!', '#fde68a');
+          this.time.delayedCall(1300, () => cbRef.current.bossWin());
+        }
+
+        private _floatText(x: number, y: number, text: string, color: string) {
+          const label = this.add.text(x, y, text, {
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fontSize: '22px',
+            color,
+            stroke: '#020617',
+            strokeThickness: 5,
+          }).setOrigin(0.5).setDepth(45);
+          this.tweens.add({
+            targets: label,
+            y: y - 52,
+            alpha: 0,
+            duration: 900,
+            onComplete: () => label.destroy(),
+          });
+        }
+
+        private _pickQuestion() {
+          if (this.usedVocab.size >= VOCAB_QUESTIONS.length) this.usedVocab.clear();
+          let idx: number;
+          do { idx = Phaser.Math.Between(0, VOCAB_QUESTIONS.length - 1); } while (this.usedVocab.has(idx));
+          this.usedVocab.add(idx);
+          return VOCAB_QUESTIONS[idx];
+        }
+
+        private _distanceToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
+          const dx = x2 - x1;
+          const dy = y2 - y1;
+          if (dx === 0 && dy === 0) return Math.hypot(px - x1, py - y1);
+          const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)));
+          return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+        }
+      }
+
       const config: any = {
         type: Phaser.AUTO,
         transparent: true,
         parent: containerRef.current!,
         physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 0 }, debug: false } },
-        scene: [PreloaderScene, GameScene],
+        scene: [PreloaderScene, GameScene, BossScene],
         render: { pixelArt: false, antialias: true, roundPixels: true },
         scale: {
           mode: Phaser.Scale.RESIZE,
@@ -816,6 +1329,16 @@ export default function RpgWorldPage() {
         </div>
       )}
 
+      {isAdminTester && phase === 'dungeon' && !gameOver && (
+        <button
+          type="button"
+          onClick={handleAdminSkipBoss}
+          className="pointer-events-auto absolute right-3 top-[92px] z-20 rounded-2xl border border-fuchsia-300/40 bg-fuchsia-950/85 px-4 py-2 text-xs font-black uppercase tracking-wide text-fuchsia-100 shadow-[0_0_24px_rgba(168,85,247,.32)] backdrop-blur-md transition hover:scale-105 hover:bg-fuchsia-900/90 sm:right-5 sm:top-[104px]"
+        >
+          Admin: test màn boss
+        </button>
+      )}
+
       {!gameOver && (
         <div className="pointer-events-none absolute left-3 top-[76px] z-10 w-44 rounded-2xl border border-white/10 bg-slate-950/75 p-3 shadow-xl backdrop-blur-md sm:left-5 sm:top-[92px]">
           <div className="mb-2 flex items-center justify-between text-[11px] font-black uppercase tracking-wider">
@@ -840,6 +1363,24 @@ export default function RpgWorldPage() {
       )}
 
       {/* ── Controls hint (bottom) ── */}
+      {phase === 'boss' && !gameOver && (
+        <div className="pointer-events-none absolute left-1/2 top-[78px] z-10 w-72 -translate-x-1/2 rounded-2xl border border-fuchsia-300/30 bg-slate-950/80 p-3 shadow-[0_0_35px_rgba(168,85,247,.25)] backdrop-blur-md">
+          <div className="mb-2 flex items-center justify-between text-[11px] font-black uppercase tracking-wider">
+            <span className="text-fuchsia-200">Boss hư không</span>
+            <span className="text-fuchsia-300">{bossHp}/{BOSS_MAX_HP}</span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-slate-800">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 via-violet-400 to-cyan-300 transition-[width] duration-500"
+              style={{ width: `${(bossHp / BOSS_MAX_HP) * 100}%` }}
+            />
+          </div>
+          <p className="mt-2 text-center text-[11px] font-semibold text-white/65">
+            Né thiên thạch/laze · Trả lời đúng để chém boss
+          </p>
+        </div>
+      )}
+
       {!gameOver && !battle && (
         <div className="absolute bottom-4 left-1/2 z-10 hidden -translate-x-1/2 select-none rounded-full border border-white/10 bg-slate-950/70 px-4 py-2 text-xs font-semibold text-white/60 shadow-lg backdrop-blur-md pointer-events-none sm:block">
           Phím mũi tên để di chuyển · Chạm quái vật để chiến đấu · Hạ {MONSTERS_TO_WIN} quái để mở cổng
@@ -950,6 +1491,39 @@ export default function RpgWorldPage() {
       )}
 
       {/* ── NPC Dialogue ── */}
+      {bossQuestion && !gameOver && (
+        <div className="absolute bottom-4 left-1/2 z-30 w-[min(92vw,560px)] -translate-x-1/2 rounded-3xl border border-fuchsia-300/35 bg-slate-950/88 p-4 shadow-[0_0_45px_rgba(168,85,247,.32)] backdrop-blur-md">
+          <div className="mb-3 rounded-2xl border border-fuchsia-300/25 bg-fuchsia-500/10 p-3 text-center">
+            <div className="mb-1 text-[11px] font-black uppercase tracking-[.22em] text-fuchsia-200/75">
+              Kiếm khí tiếng Anh
+            </div>
+            <div className="text-2xl font-black text-fuchsia-100">&quot;{bossQuestion.question.vi}&quot;</div>
+          </div>
+
+          {bossQuestion.result !== 'none' ? (
+            <div className={`rounded-2xl py-3 text-center text-lg font-black ${
+              bossQuestion.result === 'correct'
+                ? 'bg-emerald-500/20 text-emerald-300'
+                : 'bg-rose-500/20 text-rose-300'
+            }`}>
+              {bossQuestion.result === 'correct' ? 'Chính xác! Boss -1 HP' : 'Sai rồi! Không mất HP, tiếp tục né!'}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {bossQuestion.question.choices.map(c => (
+                <button
+                  key={c}
+                  onClick={() => handleBossAnswer(c)}
+                  className="pointer-events-auto rounded-2xl border border-fuchsia-300/35 bg-violet-500/25 px-3 py-3 text-sm font-black text-white transition hover:scale-[1.03] hover:bg-violet-500/45 active:scale-95"
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {npcMsg && !battle && !gameOver && (
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-gray-900/95 border-2 border-blue-400 rounded-xl px-5 py-3 max-w-xs text-center z-10 shadow-xl pointer-events-none">
           <div className="text-blue-300 text-xs font-bold mb-1">NPC</div>
