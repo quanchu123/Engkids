@@ -304,6 +304,7 @@ export default function RpgWorldPage() {
           this.load.image('boss-body', `${BASE}/boss-dragon-demon.png`);
           this.load.image('boss-cosmic-arena', `${BASE}/boss-cosmic-arena.png`);
           this.load.image('boss-purple-meteor', `${BASE}/boss-purple-meteor.png`);
+          this.load.audio('boss-battle-music', `${BASE}/boss-music.mp3`);
           this.load.spritesheet('boss-roar-sheet', `${BASE}/boss-roar-sheet.png`, {
             frameWidth: BOSS_ROAR_FRAME_SIZE,
             frameHeight: BOSS_ROAR_FRAME_SIZE,
@@ -957,6 +958,7 @@ export default function RpgWorldPage() {
         private bossY = 292;
         private bossSprite?: Phaser.GameObjects.Sprite;
         private bossFloatTween?: Phaser.Tweens.Tween;
+        private bossMusic?: Phaser.Sound.BaseSound;
 
         constructor() { super({ key: 'BossScene' }); }
 
@@ -967,8 +969,11 @@ export default function RpgWorldPage() {
           setHp(MAX_HP);
           this.bossHp = BOSS_MAX_HP;
           this.physics.world.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
+          this.events.once('shutdown', () => this._stopBossMusic());
+          this.events.once('destroy', () => this._stopBossMusic());
           this._createCosmicArena();
           this._createAnimatedBoss();
+          this._startBossMusic();
 
           this.player = this.physics.add.sprite(this.bossX, 620, 'player-idle-up', 0)
             .setScale(2.4)
@@ -1012,6 +1017,23 @@ export default function RpgWorldPage() {
           this.add.image(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2, 'boss-cosmic-arena')
             .setDisplaySize(BOSS_ARENA.width, BOSS_ARENA.height)
             .setDepth(0);
+        }
+
+        private _startBossMusic() {
+          if (this.bossMusic?.isPlaying) return;
+          this.sound.stopByKey('boss-battle-music');
+          this.bossMusic = this.sound.add('boss-battle-music', {
+            loop: true,
+            volume: 0.46,
+          });
+          this.bossMusic.play();
+        }
+
+        private _stopBossMusic() {
+          if (!this.bossMusic) return;
+          this.bossMusic.stop();
+          this.bossMusic.destroy();
+          this.bossMusic = undefined;
         }
 
         private _createAnimatedBoss() {
@@ -1338,12 +1360,41 @@ export default function RpgWorldPage() {
             this.player.play(this.direction === 'up' ? 'player-idle-up' : 'player-idle-down', true);
           });
 
-          const slash = this.add.graphics().setDepth(35);
-          slash.lineStyle(10, 0xdbeafe, 0.95);
-          slash.strokeLineShape(new Phaser.Geom.Line(this.player.x, this.player.y - 20, this.bossX, this.bossY + 10));
-          slash.lineStyle(24, 0x60a5fa, 0.3);
-          slash.strokeLineShape(new Phaser.Geom.Line(this.player.x, this.player.y - 20, this.bossX, this.bossY + 10));
-          this.tweens.add({ targets: slash, alpha: 0, duration: 420, onComplete: () => slash.destroy() });
+          const startX = this.player.x;
+          const startY = this.player.y - 30;
+          const endX = this.bossX;
+          const endY = this.bossY + 38;
+          const angle = Phaser.Math.Angle.Between(startX, startY, endX, endY);
+          const slash = this.add.graphics({ x: startX, y: startY }).setDepth(35);
+          const drawSwordWave = (width: number, color: number, alpha: number, yOffset: number) => {
+            slash.lineStyle(width, color, alpha);
+            const points = [];
+            for (let i = 0; i <= 14; i += 1) {
+              const t = i / 14;
+              points.push(new Phaser.Math.Vector2(
+                -24 + t * 52,
+                yOffset - Math.sin(t * Math.PI) * 18,
+              ));
+            }
+            slash.strokePoints(points, false, false);
+          };
+          drawSwordWave(12, 0xf59e0b, 0.26, 2);
+          drawSwordWave(7, 0xfacc15, 0.95, 0);
+          drawSwordWave(2, 0xfffbeb, 0.95, -2);
+          slash.fillStyle(0xfef3c7, 0.85);
+          slash.fillCircle(25, -2, 3);
+          slash.setRotation(angle);
+          this.tweens.add({
+            targets: slash,
+            x: endX,
+            y: endY,
+            scaleX: 1.16,
+            scaleY: 0.82,
+            alpha: 0,
+            duration: 360,
+            ease: 'Quad.easeOut',
+            onComplete: () => slash.destroy(),
+          });
           this._floatText(this.bossX, this.bossY + 70, '-1 HP', '#fef3c7');
           this.cameras.main.shake(180, 0.008);
 
