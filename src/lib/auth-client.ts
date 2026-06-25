@@ -146,6 +146,7 @@ export async function signOut(redirectTo: string = '/') {
   
   if (typeof window !== 'undefined') {
     window.localStorage.removeItem('kids.progress.v2');
+    window.localStorage.removeItem('engkids.premium_cache');
     window.location.href = redirectTo;
   }
 }

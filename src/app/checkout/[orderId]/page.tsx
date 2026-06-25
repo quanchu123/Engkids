@@ -19,11 +19,11 @@ interface TransactionData {
 export default function CheckoutPage({ params }: { params: { orderId: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isSuccess = searchParams.get('success') === 'true';
+  const returnedFromPayos = searchParams.get('success') === 'true';
   const orderCode = params.orderId;
 
   const [transaction, setTransaction] = useState<TransactionData | null>(null);
-  const [isPaid, setIsPaid] = useState(isSuccess);
+  const [isPaid, setIsPaid] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [pollingError, setPollingError] = useState(false);
   const [redirectCount, setRedirectCount] = useState(5);
@@ -123,7 +123,11 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Thanh toán chuyển khoản</h1>
-          <p className="text-gray-400">Quét mã QR hoặc chuyển khoản theo thông tin bên dưới</p>
+          <p className="text-gray-400">
+            {returnedFromPayos
+              ? 'Đang xác nhận thanh toán với hệ thống...'
+              : 'Quét mã QR hoặc chuyển khoản theo thông tin bên dưới'}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -136,12 +140,13 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
 
             <div className="bg-white rounded-xl p-2 mb-4 w-fit">
               {amount > 0 ? (
-                <img
+                <Image
                   src={qrUrl}
                   alt="VietQR Code"
                   width={280}
                   height={280}
                   className="rounded-lg"
+                  unoptimized
                 />
               ) : (
                 <div className="w-[280px] h-[280px] flex items-center justify-center">

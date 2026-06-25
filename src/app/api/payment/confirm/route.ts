@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { SUBSCRIPTION_PLANS, PlanId } from '@/lib/payment';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { markTransactionPaidAndUpgrade } from '@/lib/server/subscriptions';
 
 /**
  * POST /api/payment/confirm
@@ -59,43 +59,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
-    if (transaction.status === 'PAID') {
+    if (transaction.status === 'PAID' && transaction.premium_applied_at) {
       return NextResponse.json({ message: 'Already confirmed', transaction });
     }
 
-    // Mark as PAID
-    const now = new Date().toISOString();
-    await supabaseAdmin
-      .from('transactions')
-      .update({ status: 'PAID', paid_at: now })
-      .eq('id', transaction.id);
+    const premiumUntil = await markTransactionPaidAndUpgrade(supabaseAdmin, transaction);
 
-    // Upgrade user account
-    const plan = SUBSCRIPTION_PLANS[transaction.plan_id as PlanId];
-    if (plan) {
-      const { data: profile } = await supabaseAdmin
-        .from('user_profiles')
-        .select('premium_until')
-        .eq('auth_id', transaction.user_id)
-        .single();
-
-      let currentExpiry = new Date();
-      if (profile?.premium_until && new Date(profile.premium_until) > currentExpiry) {
-        currentExpiry = new Date(profile.premium_until);
-      }
-
-      currentExpiry.setMonth(currentExpiry.getMonth() + plan.durationMonths);
-
-      await supabaseAdmin
-        .from('user_profiles')
-        .update({
-          account_type: 'premium',
-          premium_until: currentExpiry.toISOString(),
-        })
-        .eq('auth_id', transaction.user_id);
-    }
-
-    return NextResponse.json({ success: true, orderCode, paidAt: now });
+    return NextResponse.json({ success: true, orderCode, premiumUntil });
   } catch (error: unknown) {
     console.error('Confirm Payment Error:', error);
     const message = error instanceof Error ? error.message : 'Internal Server Error';

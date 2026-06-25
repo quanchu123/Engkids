@@ -10,9 +10,10 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { LogIn, LogOut, Pencil, Check } from 'lucide-react';
+import { LogIn, LogOut, Pencil, Check, Crown } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { User } from '@/lib/auth-client';
+import { checkPremiumStatus } from '@/lib/freemium';
 import AvatarDisplay from '@/components/learning/AvatarDisplay';
 import UiIcon, { UiIconName } from '@/components/common/UiIcon';
 
@@ -24,6 +25,9 @@ interface ProfileMenuProps {
 }
 
 export default function ProfileMenu({ user, onLogout }: ProfileMenuProps) {
+  const userId = user?.id;
+  const userName = user?.name;
+  const userEmail = user?.email;
   const totalStars = useAppStore((state) => state.progress.totalStars);
   const coins = useAppStore((state) => state.coins);
   const streak = useAppStore((state) => state.progress.currentStreak);
@@ -33,20 +37,42 @@ export default function ProfileMenu({ user, onLogout }: ProfileMenuProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [editing, setEditing] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
-      if (user?.name) {
-        setName(user.name);
-        window.localStorage.setItem(NAME_KEY, user.name);
-      } else if (!user) {
+      if (userName) {
+        setName(userName);
+        window.localStorage.setItem(NAME_KEY, userName);
+      } else if (!userId) {
         setName(window.localStorage.getItem(NAME_KEY) || '');
       }
     } catch {
       /* ignore */
     }
-  }, [user?.id, user?.name]);
+  }, [userId, userName]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!userId) {
+      setIsPremium(false);
+      return;
+    }
+
+    checkPremiumStatus()
+      .then((result) => {
+        if (!cancelled) setIsPremium(result.isPremium);
+      })
+      .catch(() => {
+        if (!cancelled) setIsPremium(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, open]);
 
   // Close on outside click / Escape.
   useEffect(() => {
@@ -81,7 +107,7 @@ export default function ProfileMenu({ user, onLogout }: ProfileMenuProps) {
     setEditing(false);
   };
 
-  const displayName = name || user?.name || 'Bé yêu';
+  const displayName = name || userName || 'Bé yêu';
 
   const stats: Array<{ icon: UiIconName; label: string; value: number }> = [
     { icon: 'star', label: 'Sao', value: totalStars },
@@ -109,11 +135,17 @@ export default function ProfileMenu({ user, onLogout }: ProfileMenuProps) {
           role="menu"
         >
           {/* Header */}
-          <div className="flex items-center gap-3 bg-gradient-to-br from-violet-500 to-fuchsia-500 p-4 text-white">
+          <div className="relative flex items-center gap-3 bg-gradient-to-br from-violet-500 to-fuchsia-500 p-4 text-white">
+            {isPremium && (
+              <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-amber-300 px-2.5 py-1 text-[11px] font-black uppercase tracking-wide text-amber-950 shadow-lg shadow-amber-950/20">
+                <Crown size={13} fill="currentColor" />
+                Premium
+              </div>
+            )}
             <div className="rounded-2xl bg-white/15 p-1">
               <AvatarDisplay size="md" />
             </div>
-            <div className="min-w-0 flex-1">
+            <div className={`min-w-0 flex-1 ${isPremium ? 'pr-20' : ''}`}>
               {editing ? (
                 <div className="flex items-center gap-1">
                   <input
@@ -138,7 +170,7 @@ export default function ProfileMenu({ user, onLogout }: ProfileMenuProps) {
                 </div>
               )}
               <p className="truncate text-xs font-semibold text-white/85">
-                {user?.email || 'Khách (chưa đăng nhập)'}
+                {userEmail || 'Khách (chưa đăng nhập)'}
               </p>
             </div>
           </div>
@@ -156,7 +188,7 @@ export default function ProfileMenu({ user, onLogout }: ProfileMenuProps) {
 
           {/* Links */}
           <div className="grid gap-1 px-3 pb-2">
-            <ProfileLink href="/pricing" icon="crown" label="Mua Premium" onClick={() => setOpen(false)} />
+            <ProfileLink href="/pricing" icon="crown" label={isPremium ? 'Tài khoản Premium' : 'Mua Premium'} onClick={() => setOpen(false)} />
             <ProfileLink href="/progress" icon="medal" label="Tiến trình của bé" onClick={() => setOpen(false)} />
             <ProfileLink href="/shop" icon="gift" label="Cửa hàng phần thưởng" onClick={() => setOpen(false)} />
             <ProfileLink href="/progress/certificate" icon="certificate" label="Giấy chứng nhận" onClick={() => setOpen(false)} />

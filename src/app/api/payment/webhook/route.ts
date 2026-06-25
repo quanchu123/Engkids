@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { payos } from '@/lib/payos';
-import { SUBSCRIPTION_PLANS, PlanId } from '@/lib/payment';
 import { createClient } from '@supabase/supabase-js';
+import { markTransactionPaidAndUpgrade } from '@/lib/server/subscriptions';
 
 export async function POST(req: Request) {
   try {
@@ -35,40 +35,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
-    if (transaction.status === 'PAID') {
+    if (transaction.status === 'PAID' && transaction.premium_applied_at) {
       return NextResponse.json({ message: 'Already processed' });
     }
 
-    // 2. Mark transaction as PAID
-    await supabaseAdmin
-      .from('transactions')
-      .update({ status: 'PAID', paid_at: new Date().toISOString() })
-      .eq('id', transaction.id);
-
-    // 3. Upgrade user account Premium status
-    const plan = SUBSCRIPTION_PLANS[transaction.plan_id as PlanId];
-    if (plan) {
-      const { data: profile } = await supabaseAdmin
-        .from('user_profiles')
-        .select('premium_until')
-        .eq('auth_id', transaction.user_id)
-        .single();
-
-      let currentExpiry = new Date();
-      if (profile?.premium_until && new Date(profile.premium_until) > currentExpiry) {
-        currentExpiry = new Date(profile.premium_until);
-      }
-
-      currentExpiry.setMonth(currentExpiry.getMonth() + plan.durationMonths);
-
-      await supabaseAdmin
-        .from('user_profiles')
-        .update({
-          account_type: 'premium',
-          premium_until: currentExpiry.toISOString(),
-        })
-        .eq('auth_id', transaction.user_id);
-    }
+    // 2. Mark transaction as PAID and upgrade user account Premium status.
+    await markTransactionPaidAndUpgrade(supabaseAdmin, transaction);
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

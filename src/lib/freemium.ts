@@ -43,6 +43,7 @@ export function isFreemiumExpired(): boolean {
 // ── Premium status ──────────────────────────────────────────────────────
 
 interface PremiumCache {
+  userId: string;
   isPremium: boolean;
   premiumUntil: string | null;
   cachedAt: number; // epoch ms
@@ -51,12 +52,13 @@ interface PremiumCache {
 const CACHE_TTL_MS = 5 * 60_000; // 5 minutes
 
 /** Check if cached premium status is still valid. */
-function getCachedPremiumStatus(): PremiumCache | null {
+function getCachedPremiumStatus(userId: string): PremiumCache | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(PREMIUM_CACHE_KEY);
     if (!raw) return null;
     const cache: PremiumCache = JSON.parse(raw);
+    if (cache.userId !== userId) return null;
     if (Date.now() - cache.cachedAt > CACHE_TTL_MS) return null;
     return cache;
   } catch {
@@ -65,9 +67,9 @@ function getCachedPremiumStatus(): PremiumCache | null {
 }
 
 /** Set cached premium status. */
-function setCachedPremiumStatus(isPremium: boolean, premiumUntil: string | null): void {
+function setCachedPremiumStatus(userId: string, isPremium: boolean, premiumUntil: string | null): void {
   if (typeof window === 'undefined') return;
-  const cache: PremiumCache = { isPremium, premiumUntil, cachedAt: Date.now() };
+  const cache: PremiumCache = { userId, isPremium, premiumUntil, cachedAt: Date.now() };
   localStorage.setItem(PREMIUM_CACHE_KEY, JSON.stringify(cache));
 }
 
@@ -82,35 +84,34 @@ export function clearPremiumCache(): void {
  * Uses a short-lived localStorage cache to avoid repeated DB queries.
  */
 export async function checkPremiumStatus(): Promise<{ isPremium: boolean; premiumUntil: string | null }> {
-  // Check cache first
-  const cached = getCachedPremiumStatus();
-  if (cached) return { isPremium: cached.isPremium, premiumUntil: cached.premiumUntil };
-
   try {
     const supabase = getSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setCachedPremiumStatus(false, null);
       return { isPremium: false, premiumUntil: null };
     }
 
+    // Check cache after auth so cached premium status cannot leak across users.
+    const cached = getCachedPremiumStatus(user.id);
+    if (cached) return { isPremium: cached.isPremium, premiumUntil: cached.premiumUntil };
+
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('account_type, premium_until')
+      .select('account_type, is_premium, premium_until')
       .eq('auth_id', user.id)
       .maybeSingle();
 
     if (!profile) {
-      setCachedPremiumStatus(false, null);
+      setCachedPremiumStatus(user.id, false, null);
       return { isPremium: false, premiumUntil: null };
     }
 
     const isPremium =
-      profile.account_type === 'premium' &&
+      (profile.is_premium === true || profile.account_type === 'premium' || profile.account_type === 'admin') &&
       !!profile.premium_until &&
       new Date(profile.premium_until) > new Date();
 
-    setCachedPremiumStatus(isPremium, profile.premium_until);
+    setCachedPremiumStatus(user.id, isPremium, profile.premium_until);
     return { isPremium, premiumUntil: profile.premium_until };
   } catch (err) {
     console.error('Failed to check premium status:', err);
