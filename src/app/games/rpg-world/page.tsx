@@ -31,6 +31,8 @@ const BOSS_INVULN_MS = 2000;
 const BOSS_SMALL_METEOR_DELAY = 1900;
 const BOSS_LASER_DELAY = 6800;
 const BOSS_BIG_METEOR_DELAY = 13000;
+const BOSS_ROAR_FRAME_SIZE = 627;
+const BOSS_SPRITE_SCALE = 0.88;
 const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
 const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
 const POWER_UPS = {
@@ -302,6 +304,10 @@ export default function RpgWorldPage() {
           this.load.image('boss-body', `${BASE}/boss-dragon-demon.png`);
           this.load.image('boss-cosmic-arena', `${BASE}/boss-cosmic-arena.png`);
           this.load.image('boss-purple-meteor', `${BASE}/boss-purple-meteor.png`);
+          this.load.spritesheet('boss-roar-sheet', `${BASE}/boss-roar-sheet.png`, {
+            frameWidth: BOSS_ROAR_FRAME_SIZE,
+            frameHeight: BOSS_ROAR_FRAME_SIZE,
+          });
           this.load.spritesheet('player-walk-down',   `${SHEET}/hero/walk/hero-walk-front.png`,     { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-walk-up',     `${SHEET}/hero/walk/hero-walk-back.png`,      { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-walk-side',   `${SHEET}/hero/walk/hero-walk-side.png`,      { frameWidth: 32, frameHeight: 32 });
@@ -949,6 +955,8 @@ export default function RpgWorldPage() {
         private battleEnded = false;
         private bossX = BOSS_ARENA.width / 2;
         private bossY = 292;
+        private bossSprite?: Phaser.GameObjects.Sprite;
+        private bossFloatTween?: Phaser.Tweens.Tween;
         private bossRig: {
           aura?: any;
           chest?: any;
@@ -969,6 +977,7 @@ export default function RpgWorldPage() {
           this.bossHp = BOSS_MAX_HP;
           this.physics.world.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
           this._createCosmicArena();
+          this._createAnimatedBoss();
           this._createBossMotionRig();
 
           this.player = this.physics.add.sprite(this.bossX, 620, 'player-idle-up', 0)
@@ -1017,6 +1026,122 @@ export default function RpgWorldPage() {
           this.add.rectangle(BOSS_ARENA.width / 2, BOSS_ARENA.height - 40, BOSS_ARENA.width, 80, 0x020617, 0.12).setDepth(1);
         }
 
+        private _createAnimatedBoss() {
+          const baseY = this.bossY + 24;
+          const portal = this.add.container(this.bossX, this.bossY + 16).setDepth(12);
+          const voidCore = this.add.ellipse(0, 4, 710, 610, 0x030014, 0.88);
+          const nebula = this.add.ellipse(0, 12, 640, 520, 0x581c87, 0.16).setBlendMode(Phaser.BlendModes.ADD);
+          const innerGlow = this.add.ellipse(0, -4, 470, 390, 0x7c3aed, 0.1).setBlendMode(Phaser.BlendModes.ADD);
+          const ring = this.add.graphics();
+          ring.lineStyle(3, 0xc084fc, 0.24);
+          ring.strokeEllipse(0, 20, 660, 545);
+          ring.lineStyle(2, 0x67e8f9, 0.1);
+          ring.strokeEllipse(0, 28, 520, 430);
+          portal.add([voidCore, nebula, innerGlow, ring]);
+          this.tweens.add({
+            targets: [nebula, innerGlow],
+            scale: { from: 0.96, to: 1.04 },
+            alpha: { from: 0.7, to: 1 },
+            duration: 2200,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+
+          if (!this.anims.exists('boss-cast-meteor')) {
+            this.anims.create({
+              key: 'boss-cast-meteor',
+              frames: [
+                { key: 'boss-roar-sheet', frame: 0 },
+                { key: 'boss-roar-sheet', frame: 1 },
+                { key: 'boss-roar-sheet', frame: 3 },
+                { key: 'boss-roar-sheet', frame: 1 },
+                { key: 'boss-roar-sheet', frame: 0 },
+              ],
+              frameRate: 8,
+              repeat: 0,
+            });
+          }
+          if (!this.anims.exists('boss-cast-laser')) {
+            this.anims.create({
+              key: 'boss-cast-laser',
+              frames: [
+                { key: 'boss-roar-sheet', frame: 0 },
+                { key: 'boss-roar-sheet', frame: 1 },
+                { key: 'boss-roar-sheet', frame: 2 },
+                { key: 'boss-roar-sheet', frame: 3 },
+                { key: 'boss-roar-sheet', frame: 2 },
+                { key: 'boss-roar-sheet', frame: 0 },
+              ],
+              frameRate: 7,
+              repeat: 0,
+            });
+          }
+          if (!this.anims.exists('boss-cast-big')) {
+            this.anims.create({
+              key: 'boss-cast-big',
+              frames: [
+                { key: 'boss-roar-sheet', frame: 0 },
+                { key: 'boss-roar-sheet', frame: 1 },
+                { key: 'boss-roar-sheet', frame: 2 },
+                { key: 'boss-roar-sheet', frame: 3 },
+                { key: 'boss-roar-sheet', frame: 3 },
+                { key: 'boss-roar-sheet', frame: 2 },
+                { key: 'boss-roar-sheet', frame: 1 },
+                { key: 'boss-roar-sheet', frame: 0 },
+              ],
+              frameRate: 7,
+              repeat: 0,
+            });
+          }
+
+          this.bossSprite = this.add.sprite(this.bossX, baseY, 'boss-roar-sheet', 0)
+            .setScale(BOSS_SPRITE_SCALE)
+            .setDepth(16);
+          this.bossFloatTween = this.tweens.add({
+            targets: this.bossSprite,
+            y: baseY - 10,
+            scale: BOSS_SPRITE_SCALE * 1.015,
+            duration: 1900,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+        }
+
+        private _playBossCast(kind: 'meteor' | 'laser' | 'big', duration: number) {
+          const sprite = this.bossSprite;
+          if (!sprite?.active) return;
+
+          const baseY = this.bossY + 24;
+          const animKey = kind === 'big' ? 'boss-cast-big' : kind === 'laser' ? 'boss-cast-laser' : 'boss-cast-meteor';
+          const lift = kind === 'big' ? 34 : kind === 'laser' ? 24 : 16;
+          const punchScale = kind === 'big' ? BOSS_SPRITE_SCALE * 1.08 : BOSS_SPRITE_SCALE * 1.045;
+
+          this.bossFloatTween?.pause();
+          sprite.setY(baseY).setScale(BOSS_SPRITE_SCALE).clearTint();
+          sprite.play(animKey, true);
+          this.tweens.add({
+            targets: sprite,
+            y: baseY - lift,
+            scale: punchScale,
+            duration: duration * 0.36,
+            yoyo: true,
+            ease: 'Sine.easeInOut',
+            onComplete: () => {
+              if (!sprite.active) return;
+              sprite.setFrame(0).setY(baseY).setScale(BOSS_SPRITE_SCALE);
+              this.bossFloatTween?.resume();
+            },
+          });
+          if (kind !== 'meteor') {
+            sprite.setTint(0xf0abfc);
+            this.time.delayedCall(Math.max(360, duration * 0.55), () => {
+              if (sprite.active) sprite.clearTint();
+            });
+          }
+        }
+
         private _createBossMotionRig() {
           const makeHand = (side: -1 | 1) => {
             const hand = this.add.container(this.bossX + side * 158, this.bossY + 86).setDepth(17).setAlpha(0);
@@ -1063,6 +1188,7 @@ export default function RpgWorldPage() {
 
         private _bossRoar(kind: 'meteor' | 'laser' | 'big' = 'meteor', duration = 760) {
           if (this.battleEnded) return;
+          this._playBossCast(kind, duration);
           const rig = this.bossRig;
           const handLift = kind === 'big' ? 58 : kind === 'laser' ? 44 : 30;
           const mouthScale = kind === 'big' ? 1.35 : kind === 'laser' ? 1.15 : 0.95;
