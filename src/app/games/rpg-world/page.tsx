@@ -28,9 +28,9 @@ const MAX_HP = 3;
 const PLAYER_SPEED = 175;
 const BOSS_PLAYER_SPEED = 235;
 const BOSS_INVULN_MS = 2000;
-const BOSS_SMALL_METEOR_DELAY = 1900;
-const BOSS_LASER_DELAY = 6800;
-const BOSS_BIG_METEOR_DELAY = 13000;
+const BOSS_SMALL_METEOR_DELAY = 3000;
+const BOSS_LASER_DELAY = 9200;
+const BOSS_BIG_METEOR_DELAY = 17500;
 const BOSS_ROAR_FRAME_SIZE = 627;
 const BOSS_SPRITE_SCALE = 0.88;
 const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
@@ -957,15 +957,6 @@ export default function RpgWorldPage() {
         private bossY = 292;
         private bossSprite?: Phaser.GameObjects.Sprite;
         private bossFloatTween?: Phaser.Tweens.Tween;
-        private bossRig: {
-          aura?: any;
-          chest?: any;
-          mouth?: any;
-          leftEye?: any;
-          rightEye?: any;
-          leftHand?: any;
-          rightHand?: any;
-        } = {};
 
         constructor() { super({ key: 'BossScene' }); }
 
@@ -978,7 +969,6 @@ export default function RpgWorldPage() {
           this.physics.world.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
           this._createCosmicArena();
           this._createAnimatedBoss();
-          this._createBossMotionRig();
 
           this.player = this.physics.add.sprite(this.bossX, 620, 'player-idle-up', 0)
             .setScale(2.4)
@@ -1054,11 +1044,14 @@ export default function RpgWorldPage() {
               frames: [
                 { key: 'boss-roar-sheet', frame: 0 },
                 { key: 'boss-roar-sheet', frame: 1 },
+                { key: 'boss-roar-sheet', frame: 1 },
+                { key: 'boss-roar-sheet', frame: 2 },
+                { key: 'boss-roar-sheet', frame: 3 },
                 { key: 'boss-roar-sheet', frame: 3 },
                 { key: 'boss-roar-sheet', frame: 1 },
                 { key: 'boss-roar-sheet', frame: 0 },
               ],
-              frameRate: 8,
+              frameRate: 4,
               repeat: 0,
             });
           }
@@ -1068,12 +1061,15 @@ export default function RpgWorldPage() {
               frames: [
                 { key: 'boss-roar-sheet', frame: 0 },
                 { key: 'boss-roar-sheet', frame: 1 },
+                { key: 'boss-roar-sheet', frame: 1 },
                 { key: 'boss-roar-sheet', frame: 2 },
+                { key: 'boss-roar-sheet', frame: 2 },
+                { key: 'boss-roar-sheet', frame: 3 },
                 { key: 'boss-roar-sheet', frame: 3 },
                 { key: 'boss-roar-sheet', frame: 2 },
                 { key: 'boss-roar-sheet', frame: 0 },
               ],
-              frameRate: 7,
+              frameRate: 4,
               repeat: 0,
             });
           }
@@ -1083,14 +1079,17 @@ export default function RpgWorldPage() {
               frames: [
                 { key: 'boss-roar-sheet', frame: 0 },
                 { key: 'boss-roar-sheet', frame: 1 },
+                { key: 'boss-roar-sheet', frame: 1 },
                 { key: 'boss-roar-sheet', frame: 2 },
+                { key: 'boss-roar-sheet', frame: 2 },
+                { key: 'boss-roar-sheet', frame: 3 },
                 { key: 'boss-roar-sheet', frame: 3 },
                 { key: 'boss-roar-sheet', frame: 3 },
                 { key: 'boss-roar-sheet', frame: 2 },
                 { key: 'boss-roar-sheet', frame: 1 },
                 { key: 'boss-roar-sheet', frame: 0 },
               ],
-              frameRate: 7,
+              frameRate: 3,
               repeat: 0,
             });
           }
@@ -1128,137 +1127,20 @@ export default function RpgWorldPage() {
             duration: duration * 0.36,
             yoyo: true,
             ease: 'Sine.easeInOut',
-            onComplete: () => {
-              if (!sprite.active) return;
-              sprite.setFrame(0).setY(baseY).setScale(BOSS_SPRITE_SCALE);
-              this.bossFloatTween?.resume();
-            },
           });
-          if (kind !== 'meteor') {
-            sprite.setTint(0xf0abfc);
-            this.time.delayedCall(Math.max(360, duration * 0.55), () => {
-              if (sprite.active) sprite.clearTint();
-            });
-          }
-        }
-
-        private _createBossMotionRig() {
-          const makeHand = (side: -1 | 1) => {
-            const hand = this.add.container(this.bossX + side * 158, this.bossY + 86).setDepth(17).setAlpha(0);
-            const glow = this.add.circle(0, 0, 30, 0xc084fc, 0.18).setBlendMode(Phaser.BlendModes.ADD);
-            const claw = this.add.graphics();
-            claw.fillStyle(0xa855f7, 0.16);
-            claw.fillCircle(0, 0, 30);
-            claw.lineStyle(5, 0xf0abfc, 0.9);
-            claw.strokeCircle(0, 0, 19);
-            claw.lineStyle(4, 0xc084fc, 0.86);
-            claw.lineBetween(0, 0, side * 44, -18);
-            claw.lineBetween(0, 0, side * 36, 10);
-            claw.lineBetween(0, 0, side * 25, 32);
-            claw.lineStyle(2, 0xffffff, 0.8);
-            claw.lineBetween(side * 9, -5, side * 54, -31);
-            claw.lineBetween(side * 5, 7, side * 46, 18);
-            hand.add([glow, claw]);
-            return hand;
-          };
-
-          this.bossRig.aura = this.add.ellipse(this.bossX, this.bossY + 58, 310, 220, 0xa855f7, 0.12)
-            .setDepth(14)
-            .setAlpha(0)
-            .setBlendMode(Phaser.BlendModes.ADD);
-          this.bossRig.chest = this.add.circle(this.bossX, this.bossY + 7, 28, 0xd946ef, 0.52)
-            .setDepth(17)
-            .setAlpha(0)
-            .setBlendMode(Phaser.BlendModes.ADD);
-          this.bossRig.mouth = this.add.ellipse(this.bossX, this.bossY - 106, 48, 12, 0xf0abfc, 0.82)
-            .setDepth(17)
-            .setAlpha(0)
-            .setBlendMode(Phaser.BlendModes.ADD);
-          this.bossRig.leftEye = this.add.circle(this.bossX - 18, this.bossY - 126, 6, 0xf5d0fe, 0.9)
-            .setDepth(17)
-            .setAlpha(0)
-            .setBlendMode(Phaser.BlendModes.ADD);
-          this.bossRig.rightEye = this.add.circle(this.bossX + 18, this.bossY - 126, 6, 0xf5d0fe, 0.9)
-            .setDepth(17)
-            .setAlpha(0)
-            .setBlendMode(Phaser.BlendModes.ADD);
-          this.bossRig.leftHand = makeHand(-1);
-          this.bossRig.rightHand = makeHand(1);
+          this.time.delayedCall(duration, () => {
+            if (!sprite.active) return;
+            sprite.stop();
+            sprite.setFrame(0).setY(baseY).setScale(BOSS_SPRITE_SCALE);
+            this.bossFloatTween?.resume();
+          });
         }
 
         private _bossRoar(kind: 'meteor' | 'laser' | 'big' = 'meteor', duration = 760) {
           if (this.battleEnded) return;
           this._playBossCast(kind, duration);
-          const rig = this.bossRig;
-          const handLift = kind === 'big' ? 58 : kind === 'laser' ? 44 : 30;
-          const mouthScale = kind === 'big' ? 1.35 : kind === 'laser' ? 1.15 : 0.95;
-          const shake = kind === 'big' ? 0.006 : kind === 'laser' ? 0.004 : 0.0025;
-
-          rig.aura?.setPosition(this.bossX, this.bossY + 58).setScale(0.62).setAlpha(0.32);
-          rig.chest?.setPosition(this.bossX, this.bossY + 7).setScale(0.75).setAlpha(0.45);
-          rig.mouth?.setPosition(this.bossX, this.bossY - 106).setScale(0.42, 0.16).setAlpha(0.18);
-          rig.leftEye?.setPosition(this.bossX - 18, this.bossY - 126).setScale(0.7).setAlpha(0.25);
-          rig.rightEye?.setPosition(this.bossX + 18, this.bossY - 126).setScale(0.7).setAlpha(0.25);
-          rig.leftHand?.setPosition(this.bossX - 158, this.bossY + 86).setScale(0.88).setRotation(-0.18).setAlpha(0.12);
-          rig.rightHand?.setPosition(this.bossX + 158, this.bossY + 86).setScale(0.88).setRotation(0.18).setAlpha(0.12);
-
-          this.cameras.main.shake(Math.min(duration, 420), shake);
-          this.tweens.add({
-            targets: rig.aura,
-            scale: { from: 0.62, to: kind === 'big' ? 1.65 : 1.28 },
-            alpha: { from: 0.32, to: 0 },
-            duration,
-            ease: 'Cubic.easeOut',
-          });
-          this.tweens.add({
-            targets: [rig.chest, rig.leftEye, rig.rightEye],
-            scale: { from: 0.75, to: kind === 'big' ? 1.9 : 1.45 },
-            alpha: { from: 0.45, to: 1 },
-            duration: duration * 0.42,
-            yoyo: true,
-            repeat: 1,
-            ease: 'Sine.easeInOut',
-            onComplete: () => {
-              rig.chest?.setAlpha(0);
-              rig.leftEye?.setAlpha(0);
-              rig.rightEye?.setAlpha(0);
-            },
-          });
-          this.tweens.add({
-            targets: rig.mouth,
-            scaleX: { from: 0.42, to: mouthScale },
-            scaleY: { from: 0.16, to: kind === 'laser' ? 1.05 : 0.78 },
-            alpha: { from: 0.18, to: 0.98 },
-            duration: duration * 0.34,
-            yoyo: true,
-            repeat: 1,
-            ease: 'Sine.easeInOut',
-            onComplete: () => rig.mouth?.setAlpha(0),
-          });
-          this.tweens.add({
-            targets: rig.leftHand,
-            x: this.bossX - 186,
-            y: this.bossY + 86 - handLift,
-            rotation: -0.5,
-            scale: 1.12,
-            alpha: 0.95,
-            duration: duration * 0.5,
-            yoyo: true,
-            ease: 'Sine.easeInOut',
-            onComplete: () => rig.leftHand?.setAlpha(0),
-          });
-          this.tweens.add({
-            targets: rig.rightHand,
-            x: this.bossX + 186,
-            y: this.bossY + 86 - handLift,
-            rotation: 0.5,
-            scale: 1.12,
-            alpha: 0.95,
-            duration: duration * 0.5,
-            yoyo: true,
-            ease: 'Sine.easeInOut',
-            onComplete: () => rig.rightHand?.setAlpha(0),
-          });
+          const shake = kind === 'big' ? 0.007 : kind === 'laser' ? 0.0045 : 0.0028;
+          this.cameras.main.shake(Math.min(duration, kind === 'big' ? 900 : 620), shake);
         }
 
         private _movePlayer() {
@@ -1304,17 +1186,17 @@ export default function RpgWorldPage() {
 
         private _smallMeteorWave() {
           if (this.battleEnded) return;
-          this._bossRoar('meteor', 620);
-          this.time.delayedCall(420, () => {
+          this._bossRoar('meteor', 2200);
+          this.time.delayedCall(1150, () => {
             if (this.battleEnded) return;
-            const count = Phaser.Math.Between(3, 4);
+            const count = Phaser.Math.Between(2, 3);
             for (let i = 0; i < count; i++) {
               this._meteorImpact(
                 Phaser.Math.Between(110, BOSS_ARENA.width - 110),
                 Phaser.Math.Between(260, BOSS_ARENA.height - 90),
-                29,
-                860,
-                620,
+                38,
+                1450,
+                760,
               );
             }
           });
@@ -1322,27 +1204,27 @@ export default function RpgWorldPage() {
 
         private _bigMeteor() {
           if (this.battleEnded) return;
-          this._bossRoar('big', 1100);
-          this.time.delayedCall(780, () => {
+          this._bossRoar('big', 3600);
+          this.time.delayedCall(2300, () => {
             if (this.battleEnded) return;
-            this._meteorImpact(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2 + 80, 112, 1900, 980);
+            this._meteorImpact(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2 + 88, 160, 2850, 1180);
           });
         }
 
         private _meteorImpact(x: number, y: number, radius: number, warningMs: number, activeMs: number) {
+          const isBig = radius > 80;
           const warning = this.add.circle(x, y, radius, 0x7c3aed, 0.08)
-            .setStrokeStyle(3, 0xf0abfc, 0.9)
+            .setStrokeStyle(isBig ? 6 : 4, 0xf0abfc, 0.9)
             .setDepth(18)
             .setBlendMode(Phaser.BlendModes.ADD);
-          const isBig = radius > 60;
-          const meteorScale = isBig ? 0.22 : 0.105;
-          const travelX = isBig ? 330 : 205;
-          const travelY = isBig ? 360 : 230;
+          const meteorScale = isBig ? 0.42 : 0.13;
+          const travelX = isBig ? 0 : 230;
+          const travelY = isBig ? 640 : 280;
           const meteor = this.add.image(x + travelX, y - travelY, 'boss-purple-meteor')
             .setOrigin(0.22, 0.88)
-            .setScale(meteorScale * 0.65)
+            .setScale(meteorScale * (isBig ? 0.82 : 0.65))
             .setAlpha(0)
-            .setRotation(Phaser.Math.FloatBetween(-0.06, 0.06))
+            .setRotation(isBig ? -Math.PI / 4 : Phaser.Math.FloatBetween(-0.06, 0.06))
             .setDepth(20)
             .setBlendMode(Phaser.BlendModes.ADD);
           this.tweens.add({
@@ -1364,18 +1246,19 @@ export default function RpgWorldPage() {
           this.time.delayedCall(warningMs, () => {
             warning.destroy();
             meteor.destroy();
-            const impact = this.add.circle(x, y, radius, 0xa855f7, radius > 60 ? 0.42 : 0.55)
+            const impact = this.add.circle(x, y, radius, 0xa855f7, isBig ? 0.42 : 0.55)
               .setStrokeStyle(4, 0xf5d0fe, 0.95)
               .setDepth(19)
               .setBlendMode(Phaser.BlendModes.ADD);
             const burst = this.add.image(x, y, 'boss-purple-meteor')
               .setOrigin(0.22, 0.88)
               .setScale(meteorScale * 1.12)
-              .setAlpha(radius > 60 ? 0.7 : 0.55)
+              .setAlpha(isBig ? 0.7 : 0.55)
+              .setRotation(isBig ? -Math.PI / 4 : 0)
               .setDepth(19)
               .setBlendMode(Phaser.BlendModes.ADD);
             this.hazards.push({ kind: 'circle', x, y, radius, until: this.time.now + activeMs, gfx: impact });
-            this.cameras.main.shake(radius > 60 ? 260 : 90, radius > 60 ? 0.01 : 0.004);
+            this.cameras.main.shake(isBig ? 340 : 110, isBig ? 0.012 : 0.0045);
             this.tweens.add({
               targets: burst,
               alpha: 0,
@@ -1395,8 +1278,8 @@ export default function RpgWorldPage() {
 
         private _laserAttack() {
           if (this.battleEnded || !this.player?.active) return;
-          this._bossRoar('laser', 960);
-          this.time.delayedCall(620, () => {
+          this._bossRoar('laser', 2800);
+          this.time.delayedCall(1650, () => {
             if (this.battleEnded || !this.player?.active) return;
             const startX = this.bossX;
             const startY = this.bossY + 30;
@@ -1407,27 +1290,27 @@ export default function RpgWorldPage() {
             const endY = startY + (dy / len) * 1200;
 
             const warn = this.add.graphics().setDepth(21);
-            warn.lineStyle(22, 0xf0abfc, 0.26);
+            warn.lineStyle(32, 0xf0abfc, 0.24);
             warn.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-            warn.lineStyle(5, 0xffffff, 0.62);
+            warn.lineStyle(7, 0xffffff, 0.58);
             warn.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-            this.tweens.add({ targets: warn, alpha: { from: 0.2, to: 0.9 }, duration: 520, yoyo: true, repeat: 1 });
-            this.time.delayedCall(1220, () => {
+            this.tweens.add({ targets: warn, alpha: { from: 0.18, to: 0.9 }, duration: 720, yoyo: true, repeat: 1 });
+            this.time.delayedCall(1820, () => {
               if (this.battleEnded) {
                 warn.destroy();
                 return;
               }
               warn.destroy();
               const beam = this.add.graphics().setDepth(22);
-              beam.lineStyle(64, 0x7c3aed, 0.5);
+              beam.lineStyle(92, 0x7c3aed, 0.46);
               beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-              beam.lineStyle(34, 0xd946ef, 0.68);
+              beam.lineStyle(52, 0xd946ef, 0.66);
               beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-              beam.lineStyle(14, 0xfdf4ff, 0.96);
+              beam.lineStyle(20, 0xfdf4ff, 0.96);
               beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-              this.hazards.push({ kind: 'line', x1: startX, y1: startY, x2: endX, y2: endY, width: 36, until: this.time.now + 640, gfx: beam });
-              this.cameras.main.shake(180, 0.006);
-              this.tweens.add({ targets: beam, alpha: 0, duration: 640, onComplete: () => beam.destroy() });
+              this.hazards.push({ kind: 'line', x1: startX, y1: startY, x2: endX, y2: endY, width: 48, until: this.time.now + 820, gfx: beam });
+              this.cameras.main.shake(240, 0.007);
+              this.tweens.add({ targets: beam, alpha: 0, duration: 820, onComplete: () => beam.destroy() });
             });
           });
         }
