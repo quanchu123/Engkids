@@ -24,6 +24,10 @@ const MAX_HP = 3;
 const PLAYER_SPEED = 175;
 const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
 const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
+const POWER_UPS = {
+  sword: { x: 566, y: 1032, label: 'KIẾM +1', icon: '⚔️', color: 0x60a5fa },
+  shield: { x: 690, y: 1032, label: 'KHIÊN', icon: '🛡️', color: 0x22d3ee },
+} as const;
 
 // Collision rectangles trace only hard blockers in dungeon-map-v2.png.
 // Important: cracked stone floors, rugs, stairs, door thresholds and low
@@ -36,31 +40,31 @@ const DUNGEON_WALLS = [
   [0, 0, 48, MAP_SIZE], [1206, 0, 48, MAP_SIZE],
 
   // Tall room divider walls.
-  [402, 24, 34, 372], [820, 24, 34, 372],
-  [402, 844, 34, 376], [820, 844, 34, 376],
+  [410, 32, 18, 350], [828, 32, 18, 350],
+  [410, 862, 18, 344], [828, 862, 18, 344],
 
   // Outer room wall bands. The short inner tile runs are floor, so they are
   // deliberately not blocked.
-  [56, 412, 134, 28], [1094, 412, 112, 28],
-  [56, 788, 134, 28], [1094, 788, 112, 28],
+  [58, 416, 126, 20], [1100, 416, 100, 20],
+  [58, 792, 126, 20], [1100, 792, 100, 20],
 
   // Central masonry columns / pillar bases. These are tight on the stones so
   // the surrounding cracked floor remains walkable.
-  [314, 462, 38, 134], [314, 704, 38, 104],
-  [902, 462, 38, 134], [902, 704, 38, 104],
-  [432, 515, 38, 82], [784, 515, 38, 82],
-  [434, 682, 38, 70], [782, 682, 38, 70],
+  [322, 476, 22, 104], [322, 718, 22, 74],
+  [910, 476, 22, 104], [910, 718, 22, 74],
+  [438, 524, 24, 62], [792, 524, 24, 62],
+  [440, 692, 24, 50], [790, 692, 24, 50],
 
   // Top-room props.
-  [126, 104, 70, 58], [292, 104, 76, 58],
-  [958, 96, 46, 62], [1094, 110, 70, 48],
-  [982, 238, 76, 58], // chest body only; rug/floor around it stays walkable
+  [132, 112, 58, 42], [300, 112, 60, 42],
+  [964, 102, 34, 50], [1100, 116, 58, 36],
+  [988, 244, 64, 46], // chest body only; rug/floor around it stays walkable
 
   // Side-room props: barrels, grates, crates and blocked desks.
-  [70, 510, 88, 76], [1094, 510, 92, 78],
-  [70, 720, 88, 78], [1094, 720, 92, 78],
-  [158, 952, 142, 106], [970, 952, 146, 106],
-  [72, 880, 92, 76], [1090, 870, 98, 96],
+  [78, 518, 72, 58], [1102, 518, 74, 60],
+  [78, 728, 72, 60], [1102, 728, 74, 60],
+  [166, 962, 126, 88], [980, 962, 126, 88],
+  [80, 888, 76, 60], [1100, 880, 78, 78],
 ] as const;
 
 const TREANT_POSITIONS = [
@@ -97,10 +101,14 @@ export default function RpgWorldPage() {
   const [gameOver, setGameOver] = useState<'win' | 'lose' | null>(null);
   const [npcMsg, setNpcMsg] = useState<string | null>(null);
   const [defeated, setDefeated] = useState(0);
+  const [attackBonus, setAttackBonus] = useState(0);
+  const [shieldCharges, setShieldCharges] = useState(0);
 
   const battleRef = useRef<BattleState | null>(null);
   const scoreRef = useRef(0);
   const hpRef = useRef(3);
+  const attackBonusRef = useRef(0);
+  const shieldChargesRef = useRef(0);
   // On-screen D-pad state, read every frame by the Phaser update loop.
   const moveRef = useRef({ up: false, down: false, left: false, right: false });
 
@@ -120,6 +128,7 @@ export default function RpgWorldPage() {
     showNpc: (_msg: string) => {},
     progress: (_count: number) => {},
     reward: (_kind: 'score' | 'hp', _amount: number) => {},
+    powerUp: (_kind: 'sword' | 'shield') => {},
     win: () => {},
   });
 
@@ -134,8 +143,14 @@ export default function RpgWorldPage() {
       scoreRef.current += 50;
       setScore(s => s + 50);
     } else {
-      hpRef.current = Math.max(0, hpRef.current - 1);
-      setHp(hpRef.current);
+      if (shieldChargesRef.current > 0) {
+        shieldChargesRef.current -= 1;
+        setShieldCharges(shieldChargesRef.current);
+        cbRef.current.showNpc('Khiên phép\nĐã chặn 1 lần mất máu!');
+      } else {
+        hpRef.current = Math.max(0, hpRef.current - 1);
+        setHp(hpRef.current);
+      }
     }
 
     // After feedback: close battle, notify Phaser, check game-over
@@ -281,6 +296,75 @@ export default function RpgWorldPage() {
           this.player.play('player-idle-up');
           this.player.setData({ safeX: this.player.x, safeY: this.player.y });
 
+          // ── Pickable power-ups ──
+          const createPowerUp = (kind: 'sword' | 'shield') => {
+            const cfg = POWER_UPS[kind];
+            const zone = this.add.zone(cfg.x, cfg.y, 74, 74);
+            this.physics.add.existing(zone, true);
+
+            const glow = this.add.circle(cfg.x, cfg.y, 34, cfg.color, 0.18)
+              .setDepth(18).setBlendMode(Phaser.BlendModes.ADD);
+            const ring = this.add.circle(cfg.x, cfg.y, 25, cfg.color, 0.05)
+              .setStrokeStyle(2, cfg.color, 0.95).setDepth(19);
+            const icon = this.add.text(cfg.x, cfg.y - 4, cfg.icon, {
+              fontFamily: 'Arial', fontSize: '30px',
+              stroke: '#020617', strokeThickness: 4,
+            }).setOrigin(0.5).setDepth(20);
+            const label = this.add.text(cfg.x, cfg.y + 37, cfg.label, {
+              fontFamily: 'Arial', fontStyle: 'bold', fontSize: '12px',
+              color: '#e0f2fe', stroke: '#020617', strokeThickness: 4,
+            }).setOrigin(0.5).setDepth(20);
+
+            this.tweens.add({
+              targets: [glow, ring, icon],
+              y: '-=5',
+              alpha: { from: 0.7, to: 1 },
+              duration: 850,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+
+            this.physics.add.overlap(this.player, zone, () => {
+              if (zone.getData('picked')) return;
+              zone.setData('picked', true);
+              const body = zone.body as Phaser.Physics.Arcade.Body;
+              body.enable = false;
+
+              cbRef.current.powerUp(kind);
+
+              const burstColor = kind === 'sword' ? 0x93c5fd : 0x67e8f9;
+              for (let i = 0; i < 12; i++) {
+                const spark = this.add.circle(cfg.x, cfg.y, 3, burstColor, 1)
+                  .setDepth(27).setBlendMode(Phaser.BlendModes.ADD);
+                const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+                const distance = Phaser.Math.Between(24, 70);
+                this.tweens.add({
+                  targets: spark,
+                  x: cfg.x + Math.cos(angle) * distance,
+                  y: cfg.y + Math.sin(angle) * distance,
+                  alpha: 0,
+                  scale: 0.2,
+                  duration: 620,
+                  onComplete: () => spark.destroy(),
+                });
+              }
+
+              this.tweens.killTweensOf([glow, ring, icon]);
+              this.tweens.add({
+                targets: [glow, ring, icon, label],
+                scale: 1.45,
+                alpha: 0,
+                duration: 260,
+                onComplete: () => {
+                  glow.destroy(); ring.destroy(); icon.destroy(); label.destroy(); zone.destroy();
+                },
+              });
+            });
+          };
+          createPowerUp('sword');
+          createPowerUp('shield');
+
           // ── Treasure chest ──
           // The chest artwork is baked into the map. This larger proximity
           // zone lets the player open it while the chest itself remains solid.
@@ -412,6 +496,7 @@ export default function RpgWorldPage() {
               this.inBattle = false;
               this.battleCooldownUntil = this.time.now + 2500; // 2.5s cooldown after each battle
               if (won && monster.active) {
+                const damage = 1 + attackBonusRef.current;
                 // ── Hit feedback: slash spark, damage text, red flash, shake ──
                 this.player.play('player-attack', true);
                 this.time.delayedCall(380, () => {
@@ -420,8 +505,9 @@ export default function RpgWorldPage() {
                 const spark = this.add.circle(monster.x, monster.y, 6, 0xffffff)
                   .setDepth(25).setBlendMode(Phaser.BlendModes.ADD);
                 this.tweens.add({ targets: spark, scale: 3, alpha: 0, duration: 320, onComplete: () => spark.destroy() });
-                const dmg = this.add.text(monster.x, monster.y - 18, '-1', {
-                  fontFamily: 'Arial', fontStyle: 'bold', fontSize: '16px', color: '#ff5555',
+                const dmg = this.add.text(monster.x, monster.y - 18, `-${damage}`, {
+                  fontFamily: 'Arial', fontStyle: 'bold', fontSize: damage > 1 ? '20px' : '16px',
+                  color: damage > 1 ? '#93c5fd' : '#ff5555',
                   stroke: '#000000', strokeThickness: 3,
                 }).setOrigin(0.5).setDepth(26);
                 this.tweens.add({ targets: dmg, y: monster.y - 46, alpha: 0, duration: 700, onComplete: () => dmg.destroy() });
@@ -429,7 +515,7 @@ export default function RpgWorldPage() {
                 this.time.delayedCall(220, () => { if (monster.active) monster.clearTint(); });
                 this.cameras.main.shake(140, 0.006);
 
-                monster.hp--;
+                monster.hp -= damage;
                 if (monster.hp <= 0) {
                   monster._dying = true;
                   if (monster.body) monster.body.enable = false;
@@ -486,6 +572,18 @@ export default function RpgWorldPage() {
             scoreRef.current += amount;
             setScore(scoreRef.current);
             cbRef.current.showNpc(`Rương báu\nNhận được +${amount} điểm!`);
+          };
+          cbRef.current.powerUp = (kind: 'sword' | 'shield') => {
+            if (kind === 'sword') {
+              attackBonusRef.current = Math.max(attackBonusRef.current, 1);
+              setAttackBonus(attackBonusRef.current);
+              cbRef.current.showNpc('Kiếm thép\nSát thương tăng thêm +1!');
+              return;
+            }
+
+            shieldChargesRef.current += 1;
+            setShieldCharges(shieldChargesRef.current);
+            cbRef.current.showNpc('Khiên phép\nSẽ chặn 1 lần mất máu!');
           };
           cbRef.current.win = () => setGameOver('win');
 
@@ -729,6 +827,14 @@ export default function RpgWorldPage() {
               className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-[width] duration-500"
               style={{ width: `${(defeated / MONSTERS_TO_WIN) * 100}%` }}
             />
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] font-black uppercase tracking-wide">
+            <div className="rounded-xl border border-sky-300/20 bg-sky-950/45 px-2 py-1 text-sky-200">
+              ⚔ DMG {1 + attackBonus}
+            </div>
+            <div className="rounded-xl border border-cyan-300/20 bg-cyan-950/45 px-2 py-1 text-cyan-200">
+              🛡 {shieldCharges}
+            </div>
           </div>
         </div>
       )}
