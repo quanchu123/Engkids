@@ -1018,26 +1018,6 @@ export default function RpgWorldPage() {
 
         private _createAnimatedBoss() {
           const baseY = this.bossY + 24;
-          const portal = this.add.container(this.bossX, this.bossY + 16).setDepth(12);
-          const voidCore = this.add.ellipse(0, 4, 710, 610, 0x030014, 0.88);
-          const nebula = this.add.ellipse(0, 12, 640, 520, 0x581c87, 0.16).setBlendMode(Phaser.BlendModes.ADD);
-          const innerGlow = this.add.ellipse(0, -4, 470, 390, 0x7c3aed, 0.1).setBlendMode(Phaser.BlendModes.ADD);
-          const ring = this.add.graphics();
-          ring.lineStyle(3, 0xc084fc, 0.24);
-          ring.strokeEllipse(0, 20, 660, 545);
-          ring.lineStyle(2, 0x67e8f9, 0.1);
-          ring.strokeEllipse(0, 28, 520, 430);
-          portal.add([voidCore, nebula, innerGlow, ring]);
-          this.tweens.add({
-            targets: [nebula, innerGlow],
-            scale: { from: 0.96, to: 1.04 },
-            alpha: { from: 0.7, to: 1 },
-            duration: 2200,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
-          });
-
           if (!this.anims.exists('boss-cast-meteor')) {
             this.anims.create({
               key: 'boss-cast-meteor',
@@ -1189,14 +1169,14 @@ export default function RpgWorldPage() {
           this._bossRoar('meteor', 2200);
           this.time.delayedCall(1150, () => {
             if (this.battleEnded) return;
-            const count = Phaser.Math.Between(2, 3);
+            const count = Phaser.Math.Between(6, 8);
             for (let i = 0; i < count; i++) {
               this._meteorImpact(
                 Phaser.Math.Between(110, BOSS_ARENA.width - 110),
                 Phaser.Math.Between(260, BOSS_ARENA.height - 90),
-                38,
+                32,
                 1450,
-                760,
+                700,
               );
             }
           });
@@ -1207,7 +1187,7 @@ export default function RpgWorldPage() {
           this._bossRoar('big', 3600);
           this.time.delayedCall(2300, () => {
             if (this.battleEnded) return;
-            this._meteorImpact(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2 + 88, 160, 2850, 1180);
+            this._meteorImpact(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2 + 74, 300, 3300, 1300);
           });
         }
 
@@ -1217,9 +1197,9 @@ export default function RpgWorldPage() {
             .setStrokeStyle(isBig ? 6 : 4, 0xf0abfc, 0.9)
             .setDepth(18)
             .setBlendMode(Phaser.BlendModes.ADD);
-          const meteorScale = isBig ? 0.42 : 0.13;
+          const meteorScale = isBig ? 0.82 : 0.12;
           const travelX = isBig ? 0 : 230;
-          const travelY = isBig ? 640 : 280;
+          const travelY = isBig ? 820 : 280;
           const meteor = this.add.image(x + travelX, y - travelY, 'boss-purple-meteor')
             .setOrigin(0.22, 0.88)
             .setScale(meteorScale * (isBig ? 0.82 : 0.65))
@@ -1290,9 +1270,9 @@ export default function RpgWorldPage() {
             const endY = startY + (dy / len) * 1200;
 
             const warn = this.add.graphics().setDepth(21);
-            warn.lineStyle(32, 0xf0abfc, 0.24);
+            warn.lineStyle(48, 0xf0abfc, 0.24);
             warn.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-            warn.lineStyle(7, 0xffffff, 0.58);
+            warn.lineStyle(10, 0xffffff, 0.58);
             warn.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
             this.tweens.add({ targets: warn, alpha: { from: 0.18, to: 0.9 }, duration: 720, yoyo: true, repeat: 1 });
             this.time.delayedCall(1820, () => {
@@ -1302,14 +1282,14 @@ export default function RpgWorldPage() {
               }
               warn.destroy();
               const beam = this.add.graphics().setDepth(22);
-              beam.lineStyle(92, 0x7c3aed, 0.46);
+              beam.lineStyle(132, 0x7c3aed, 0.44);
               beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-              beam.lineStyle(52, 0xd946ef, 0.66);
+              beam.lineStyle(82, 0xd946ef, 0.64);
               beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-              beam.lineStyle(20, 0xfdf4ff, 0.96);
+              beam.lineStyle(30, 0xfdf4ff, 0.96);
               beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-              this.hazards.push({ kind: 'line', x1: startX, y1: startY, x2: endX, y2: endY, width: 48, until: this.time.now + 820, gfx: beam });
-              this.cameras.main.shake(240, 0.007);
+              this.hazards.push({ kind: 'line', x1: startX, y1: startY, x2: endX, y2: endY, width: 70, until: this.time.now + 820, gfx: beam });
+              this.cameras.main.shake(300, 0.008);
               this.tweens.add({ targets: beam, alpha: 0, duration: 820, onComplete: () => beam.destroy() });
             });
           });
