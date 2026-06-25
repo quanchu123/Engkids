@@ -278,6 +278,7 @@ export default function RpgWorldPage() {
           this.load.image('dungeon-map', `${BASE}/dungeon-map-v2.png`);
           this.load.image('boss-cave', `${BASE}/boss-dragon-demon-cave.png`);
           this.load.image('boss-body', `${BASE}/boss-dragon-demon.png`);
+          this.load.image('boss-cosmic-arena', `${BASE}/boss-cosmic-arena.png`);
           this.load.spritesheet('player-walk-down',   `${SHEET}/hero/walk/hero-walk-front.png`,     { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-walk-up',     `${SHEET}/hero/walk/hero-walk-back.png`,      { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-walk-side',   `${SHEET}/hero/walk/hero-walk-side.png`,      { frameWidth: 32, frameHeight: 32 });
@@ -924,7 +925,7 @@ export default function RpgWorldPage() {
         private invulnerableUntil = 0;
         private battleEnded = false;
         private bossX = BOSS_ARENA.width / 2;
-        private bossY = 190;
+        private bossY = 292;
 
         constructor() { super({ key: 'BossScene' }); }
 
@@ -936,22 +937,6 @@ export default function RpgWorldPage() {
           this.bossHp = BOSS_MAX_HP;
           this.physics.world.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
           this._createCosmicArena();
-
-          this.add.ellipse(this.bossX, this.bossY + 188, 560, 86, 0x7c3aed, 0.18)
-            .setBlendMode(Phaser.BlendModes.ADD)
-            .setDepth(4);
-          const boss = this.add.image(this.bossX, this.bossY + 118, 'boss-body')
-            .setCrop(0, 0, 1024, 900)
-            .setDisplaySize(520, 610)
-            .setDepth(8);
-          this.tweens.add({
-            targets: boss,
-            y: boss.y + 10,
-            duration: 1800,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
-          });
 
           this.player = this.physics.add.sprite(this.bossX, 620, 'player-idle-up', 0)
             .setScale(2.4)
@@ -992,82 +977,11 @@ export default function RpgWorldPage() {
         }
 
         private _createCosmicArena() {
-          const g = this.add.graphics().setDepth(0);
-          g.fillGradientStyle(0x02020f, 0x040016, 0x080018, 0x170020, 1);
-          g.fillRect(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
-
-          for (let i = 0; i < 360; i++) {
-            const x = Phaser.Math.Between(0, BOSS_ARENA.width);
-            const y = Phaser.Math.Between(0, BOSS_ARENA.height);
-            const r = i % 19 === 0 ? Phaser.Math.FloatBetween(2.0, 3.2) : Phaser.Math.FloatBetween(0.55, 1.75);
-            const alpha = Phaser.Math.FloatBetween(0.32, 0.98);
-            const color = i % 17 === 0 ? 0x60a5fa : i % 13 === 0 ? 0xf472b6 : i % 11 === 0 ? 0xf97316 : 0xffffff;
-            const star = this.add.circle(x, y, r, color, alpha).setDepth(1).setBlendMode(Phaser.BlendModes.ADD);
-            this.tweens.add({
-              targets: star,
-              alpha: { from: alpha * 0.35, to: alpha },
-              duration: Phaser.Math.Between(900, 2200),
-              yoyo: true,
-              repeat: -1,
-              ease: 'Sine.easeInOut',
-            });
-          }
-
-          const drawGalaxy = (cx: number, cy: number, color: number, accent: number, rotation: number, scale: number) => {
-            this.add.circle(cx, cy, 96 * scale, color, 0.12)
-              .setBlendMode(Phaser.BlendModes.ADD)
-              .setDepth(1);
-            for (let i = 0; i < 9; i++) {
-              const ring = this.add.ellipse(cx, cy, (92 + i * 36) * scale, (22 + i * 8) * scale, i % 2 ? accent : color, 0.035)
-                .setStrokeStyle(3, i % 2 ? accent : color, 0.24)
-                .setRotation(rotation + i * 0.1)
-                .setBlendMode(Phaser.BlendModes.ADD)
-                .setDepth(2);
-              this.tweens.add({
-                targets: ring,
-                alpha: { from: 0.1, to: 0.34 },
-                duration: 1600 + i * 130,
-                yoyo: true,
-                repeat: -1,
-              });
-            }
-          };
-
-          const drawPlanet = (x: number, y: number, radius: number, color: number, ring = false) => {
-            this.add.circle(x + radius * 0.25, y + radius * 0.25, radius * 1.1, 0x000000, 0.28).setDepth(2);
-            this.add.circle(x, y, radius, color, 0.92).setDepth(3);
-            this.add.circle(x - radius * 0.32, y - radius * 0.35, radius * 0.42, 0xffffff, 0.16)
-              .setBlendMode(Phaser.BlendModes.ADD)
-              .setDepth(4);
-            if (ring) {
-              this.add.ellipse(x, y + 4, radius * 3.15, radius * 0.72, 0x60a5fa, 0.045)
-                .setStrokeStyle(3, 0x60a5fa, 0.45)
-                .setRotation(-0.2)
-                .setDepth(4)
-                .setBlendMode(Phaser.BlendModes.ADD);
-            }
-          };
-
-          drawGalaxy(170, 395, 0xef4444, 0xf97316, 0.36, 1.0);
-          drawGalaxy(1075, 440, 0xf59e0b, 0xf97316, -0.25, 0.95);
-          drawGalaxy(1115, 255, 0xa855f7, 0xf0abfc, -0.18, 0.75);
-          this.add.ellipse(540, 305, 360, 92, 0x38bdf8, 0.08)
-            .setStrokeStyle(7, 0x38bdf8, 0.16)
-            .setRotation(-1.08)
-            .setDepth(1)
-            .setBlendMode(Phaser.BlendModes.ADD);
-          this.add.ellipse(690, 320, 420, 88, 0xa855f7, 0.07)
-            .setStrokeStyle(8, 0xa855f7, 0.16)
-            .setRotation(1.08)
-            .setDepth(1)
-            .setBlendMode(Phaser.BlendModes.ADD);
-
-          drawPlanet(96, 450, 42, 0x2563eb, true);
-          drawPlanet(228, 245, 28, 0x1d4ed8);
-          drawPlanet(965, 615, 20, 0x7c3aed, true);
-          drawPlanet(1212, 402, 26, 0x8b5cf6);
-
-          this.add.circle(this.bossX, this.bossY + 160, 250, 0x7c3aed, 0.05).setBlendMode(Phaser.BlendModes.ADD).setDepth(1);
+          this.add.image(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2, 'boss-cosmic-arena')
+            .setDisplaySize(BOSS_ARENA.width, BOSS_ARENA.height)
+            .setDepth(0);
+          this.add.rectangle(BOSS_ARENA.width / 2, 48, BOSS_ARENA.width, 96, 0x020617, 0.18).setDepth(1);
+          this.add.rectangle(BOSS_ARENA.width / 2, BOSS_ARENA.height - 40, BOSS_ARENA.width, 80, 0x020617, 0.12).setDepth(1);
           this.add.rectangle(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2, BOSS_ARENA.width - 70, BOSS_ARENA.height - 70, 0x000000, 0)
             .setStrokeStyle(2, 0x8b5cf6, 0.35)
             .setDepth(3);
