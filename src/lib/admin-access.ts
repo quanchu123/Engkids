@@ -1,7 +1,7 @@
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { isAdminEmail } from '@/config/admin';
 
-export type AdminRole = 'admin' | 'super_admin';
+export type AdminRole = 'admin' | 'super_admin' | 'god';
 
 export interface ResolvedAdminUser {
   id: string;
@@ -16,7 +16,7 @@ interface ProfileRoleRow {
 }
 
 export function normalizeAdminRole(role: string | null | undefined): AdminRole | null {
-  if (role === 'admin' || role === 'super_admin') {
+  if (role === 'admin' || role === 'super_admin' || role === 'god') {
     return role;
   }
   return null;
@@ -34,7 +34,10 @@ export async function resolveSupabaseAdminUser(
     return null;
   }
 
-  let role: AdminRole | null = isAdminEmail(user.email) ? 'admin' : null;
+  let role: AdminRole | null =
+    normalizeAdminRole(user.app_metadata?.role) ||
+    normalizeAdminRole(user.app_metadata?.admin_role) ||
+    (isAdminEmail(user.email) ? 'admin' : null);
 
   try {
     const { data: profile } = await supabase
