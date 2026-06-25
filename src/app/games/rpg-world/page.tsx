@@ -174,6 +174,7 @@ export default function RpgWorldPage() {
     phase: (_phase: GamePhase) => {},
     bossHp: (_hp: number) => {},
     bossPlayerHit: (): BossHitResult => 'hit',
+    bossAngelRevive: () => {},
     bossWin: () => {},
   });
 
@@ -308,6 +309,7 @@ export default function RpgWorldPage() {
           this.load.image('boss-cosmic-arena', `${BASE}/boss-cosmic-arena.png`);
           this.load.image('boss-purple-meteor', `${BASE}/boss-purple-meteor.png`);
           this.load.image('angel-front', `${BASE}/angel-front.png`);
+          this.load.video('angel-revive-video', `${BASE}/thien_su_galaxy.mp4`);
           this.load.audio('boss-battle-music', `${BASE}/boss-music.mp3`);
           this.load.spritesheet('boss-roar-sheet', `${BASE}/boss-roar-sheet.png`, {
             frameWidth: BOSS_ROAR_FRAME_SIZE,
@@ -761,9 +763,6 @@ export default function RpgWorldPage() {
             if (hpRef.current <= 0) {
               if (!angelReviveUsedRef.current) {
                 angelReviveUsedRef.current = true;
-                hpRef.current = 1;
-                attackBonusRef.current = Math.max(attackBonusRef.current, 1);
-                setAttackBonus(attackBonusRef.current);
                 setHp(hpRef.current);
                 return 'revived';
               }
@@ -775,6 +774,12 @@ export default function RpgWorldPage() {
 
             setHp(hpRef.current);
             return 'hit';
+          };
+          cbRef.current.bossAngelRevive = () => {
+            hpRef.current = 1;
+            attackBonusRef.current = Math.max(attackBonusRef.current, 1);
+            setAttackBonus(attackBonusRef.current);
+            setHp(hpRef.current);
           };
           cbRef.current.bossWin = () => {
             scoreRef.current += 500;
@@ -978,6 +983,7 @@ export default function RpgWorldPage() {
         private bossSprite?: Phaser.GameObjects.Sprite;
         private bossFloatTween?: Phaser.Tweens.Tween;
         private bossMusic?: Phaser.Sound.BaseSound;
+        private reviveVideo?: Phaser.GameObjects.Video;
         private blessedByAngel = false;
         private angelRevivePlaying = false;
 
@@ -1032,6 +1038,10 @@ export default function RpgWorldPage() {
 
         update() {
           if (!this.player?.active || this.battleEnded) return;
+          if (this.angelRevivePlaying) {
+            this.player.setVelocity(0, 0);
+            return;
+          }
           this._movePlayer();
           this._checkHazards();
           this.player.setAlpha(this.time.now < this.invulnerableUntil && this.time.now % 220 < 110 ? 0.35 : 1);
@@ -1209,10 +1219,10 @@ export default function RpgWorldPage() {
         }
 
         private _smallMeteorWave() {
-          if (this.battleEnded) return;
+          if (this.battleEnded || this.angelRevivePlaying) return;
           this._bossRoar('meteor', 2200);
           this.time.delayedCall(1150, () => {
-            if (this.battleEnded) return;
+            if (this.battleEnded || this.angelRevivePlaying) return;
             const count = Phaser.Math.Between(6, 8);
             for (let i = 0; i < count; i++) {
               this._meteorImpact(
@@ -1227,10 +1237,10 @@ export default function RpgWorldPage() {
         }
 
         private _bigMeteor() {
-          if (this.battleEnded) return;
+          if (this.battleEnded || this.angelRevivePlaying) return;
           this._bossRoar('big', 3600);
           this.time.delayedCall(2300, () => {
-            if (this.battleEnded) return;
+            if (this.battleEnded || this.angelRevivePlaying) return;
             this._meteorImpact(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2 + 74, 300, 3300, 1300);
           });
         }
@@ -1301,10 +1311,10 @@ export default function RpgWorldPage() {
         }
 
         private _laserAttack() {
-          if (this.battleEnded || !this.player?.active) return;
+          if (this.battleEnded || this.angelRevivePlaying || !this.player?.active) return;
           this._bossRoar('laser', 2800);
           this.time.delayedCall(1650, () => {
-            if (this.battleEnded || !this.player?.active) return;
+            if (this.battleEnded || this.angelRevivePlaying || !this.player?.active) return;
             const startX = this.bossX;
             const startY = this.bossY + 30;
             const dx = this.player.x - startX;
@@ -1321,6 +1331,10 @@ export default function RpgWorldPage() {
             this.tweens.add({ targets: warn, alpha: { from: 0.18, to: 0.9 }, duration: 720, yoyo: true, repeat: 1 });
             this.time.delayedCall(1820, () => {
               if (this.battleEnded) {
+                warn.destroy();
+                return;
+              }
+              if (this.angelRevivePlaying) {
                 warn.destroy();
                 return;
               }
@@ -1360,8 +1374,7 @@ export default function RpgWorldPage() {
           this.invulnerableUntil = this.time.now + BOSS_INVULN_MS;
           const result = cbRef.current.bossPlayerHit();
           if (result === 'revived') {
-            this.blessedByAngel = true;
-            this.invulnerableUntil = this.time.now + 4300;
+            this.invulnerableUntil = Number.MAX_SAFE_INTEGER;
             this._angelRevive();
             return;
           }
@@ -1384,6 +1397,80 @@ export default function RpgWorldPage() {
           setBossQuestion(null);
           bossQuestionRef.current = null;
           bossResolveCbRef.current = null;
+
+          const useVideoRevive = Boolean(this.cache.video.get('angel-revive-video'));
+          if (useVideoRevive) {
+            this.player.setVelocity(0, 0);
+            this.player.clearTint();
+            this.player.setVisible(false);
+            this.bossFloatTween?.pause();
+            this.bossSprite?.anims.pause();
+            (this.bossMusic as any)?.setVolume?.(0.16);
+
+            const overlay = this.add.rectangle(
+              BOSS_ARENA.width / 2,
+              BOSS_ARENA.height / 2,
+              BOSS_ARENA.width,
+              BOSS_ARENA.height,
+              0x02020a,
+              0.94,
+            ).setDepth(88).setScrollFactor(0);
+            const video = this.add.video(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2, 'angel-revive-video')
+              .setDepth(90)
+              .setScrollFactor(0);
+            video.setDisplaySize(BOSS_ARENA.width, BOSS_ARENA.height);
+            video.setAlpha(0);
+            this.reviveVideo = video;
+
+            const caption = this.add.text(BOSS_ARENA.width / 2, BOSS_ARENA.height - 56, 'Thiên sứ xuất hiện...', {
+              fontFamily: 'Arial',
+              fontStyle: 'bold',
+              fontSize: '22px',
+              color: '#fff7ad',
+              stroke: '#160a00',
+              strokeThickness: 6,
+            }).setOrigin(0.5).setDepth(91).setScrollFactor(0);
+
+            this.tweens.add({ targets: video, alpha: 1, duration: 380, ease: 'Sine.easeOut' });
+            this.cameras.main.flash(360, 255, 244, 184, false);
+            this.cameras.main.shake(260, 0.004);
+
+            let finished = false;
+            const finishRevive = () => {
+              if (finished) return;
+              finished = true;
+              cbRef.current.bossAngelRevive();
+              this.blessedByAngel = true;
+              this.invulnerableUntil = this.time.now + 3000;
+              this.player.setVisible(true);
+              this.player.clearTint();
+              this.bossFloatTween?.resume();
+              this.bossSprite?.anims.resume();
+              (this.bossMusic as any)?.setVolume?.(0.46);
+              this._floatText(this.player.x, this.player.y - 74, 'Thiên sứ hồi sinh! DMG 2', '#fde68a');
+              this.cameras.main.flash(260, 255, 244, 184, false);
+              this.tweens.add({
+                targets: [video, overlay, caption],
+                alpha: 0,
+                duration: 420,
+                ease: 'Sine.easeIn',
+                onComplete: () => {
+                  video.stop();
+                  video.destroy();
+                  overlay.destroy();
+                  caption.destroy();
+                  this.reviveVideo = undefined;
+                  this.angelRevivePlaying = false;
+                },
+              });
+            };
+
+            video.once('complete', finishRevive);
+            video.once('error', finishRevive);
+            this.time.delayedCall(11500, finishRevive);
+            video.play(false);
+            return;
+          }
 
           const x = this.player.x;
           const y = this.player.y - 92;
@@ -1479,7 +1566,7 @@ export default function RpgWorldPage() {
         }
 
         private _askQuestion() {
-          if (this.battleEnded || bossQuestionRef.current?.active) return;
+          if (this.battleEnded || this.angelRevivePlaying || bossQuestionRef.current?.active) return;
           const question = this._pickQuestion();
           bossResolveCbRef.current = (correct: boolean) => {
             if (this.battleEnded) return;
