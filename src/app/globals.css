@@ -1079,6 +1079,31 @@ a {
   color: rgba(100, 116, 139, 0.72);
 }
 
+.account-input {
+  min-height: 48px;
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgb(226 232 240);
+  background: rgb(255 255 255);
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: rgb(15 23 42);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.account-input:focus {
+  border-color: rgb(168 85 247);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.16);
+}
+
+.account-input:disabled {
+  cursor: not-allowed;
+  background: rgb(248 250 252);
+  color: rgb(148 163 184);
+}
+
 
 
 /* ============================================================
