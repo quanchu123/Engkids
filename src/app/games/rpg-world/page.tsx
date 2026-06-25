@@ -1365,34 +1365,58 @@ export default function RpgWorldPage() {
           const endX = this.bossX;
           const endY = this.bossY + 38;
           const angle = Phaser.Math.Angle.Between(startX, startY, endX, endY);
-          const slash = this.add.graphics({ x: startX, y: startY }).setDepth(35);
-          const drawSwordWave = (width: number, color: number, alpha: number, yOffset: number) => {
-            slash.lineStyle(width, color, alpha);
-            const points = [];
-            for (let i = 0; i <= 14; i += 1) {
-              const t = i / 14;
+          const slash = this.add.container(startX, startY).setDepth(35).setRotation(angle);
+          const drawCrescent = (
+            width: number,
+            height: number,
+            color: number,
+            alpha: number,
+            xOffset = 0,
+            yOffset = 0,
+          ) => {
+            const crescent = this.add.graphics();
+            const points: Phaser.Math.Vector2[] = [];
+            for (let i = -72; i <= 72; i += 6) {
+              const rad = Phaser.Math.DegToRad(i);
               points.push(new Phaser.Math.Vector2(
-                -24 + t * 52,
-                yOffset - Math.sin(t * Math.PI) * 18,
+                xOffset + Math.cos(rad) * width,
+                yOffset + Math.sin(rad) * height,
               ));
             }
-            slash.strokePoints(points, false, false);
+            for (let i = 72; i >= -72; i -= 6) {
+              const rad = Phaser.Math.DegToRad(i);
+              points.push(new Phaser.Math.Vector2(
+                xOffset - 18 + Math.cos(rad) * width * 0.46,
+                yOffset + Math.sin(rad) * height * 0.66,
+              ));
+            }
+            crescent.fillStyle(color, alpha);
+            crescent.fillPoints(points, true);
+            return crescent;
           };
-          drawSwordWave(12, 0xf59e0b, 0.26, 2);
-          drawSwordWave(7, 0xfacc15, 0.95, 0);
-          drawSwordWave(2, 0xfffbeb, 0.95, -2);
-          slash.fillStyle(0xfef3c7, 0.85);
-          slash.fillCircle(25, -2, 3);
-          slash.setRotation(angle);
+          slash.add(drawCrescent(62, 50, 0xf59e0b, 0.24));
+          slash.add(drawCrescent(50, 40, 0xfacc15, 0.92));
+          slash.add(drawCrescent(31, 24, 0xfffbeb, 0.9, 8, -1));
+          const edge = this.add.graphics();
+          edge.lineStyle(3, 0xfef3c7, 0.95);
+          edge.beginPath();
+          for (let i = -72; i <= 72; i += 6) {
+            const rad = Phaser.Math.DegToRad(i);
+            if (i === -72) edge.moveTo(Math.cos(rad) * 52, Math.sin(rad) * 42);
+            else edge.lineTo(Math.cos(rad) * 52, Math.sin(rad) * 42);
+          }
+          edge.strokePath();
+          slash.add(edge);
+          slash.setScale(0.9);
           this.tweens.add({
             targets: slash,
             x: endX,
             y: endY,
-            scaleX: 1.16,
-            scaleY: 0.82,
+            scaleX: 1.18,
+            scaleY: 1.18,
             alpha: 0,
-            duration: 360,
-            ease: 'Quad.easeOut',
+            duration: 620,
+            ease: 'Sine.easeOut',
             onComplete: () => slash.destroy(),
           });
           this._floatText(this.bossX, this.bossY + 70, '-1 HP', '#fef3c7');
