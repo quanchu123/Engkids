@@ -110,6 +110,7 @@ interface BossQuestionState {
 }
 
 type GamePhase = 'dungeon' | 'boss';
+type BossHitResult = 'hit' | 'revived' | 'dead';
 
 export default function RpgWorldPage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -134,6 +135,7 @@ export default function RpgWorldPage() {
   const bossHpRef = useRef(BOSS_MAX_HP);
   const attackBonusRef = useRef(0);
   const shieldChargesRef = useRef(0);
+  const angelReviveUsedRef = useRef(false);
   // On-screen D-pad state, read every frame by the Phaser update loop.
   const moveRef = useRef({ up: false, down: false, left: false, right: false });
 
@@ -171,7 +173,7 @@ export default function RpgWorldPage() {
     openBossGate: () => {},
     phase: (_phase: GamePhase) => {},
     bossHp: (_hp: number) => {},
-    bossPlayerHit: () => {},
+    bossPlayerHit: (): BossHitResult => 'hit',
     bossWin: () => {},
   });
 
@@ -241,6 +243,7 @@ export default function RpgWorldPage() {
 
     hpRef.current = MAX_HP;
     setHp(MAX_HP);
+    angelReviveUsedRef.current = false;
     bossHpRef.current = BOSS_MAX_HP;
     setBossHp(BOSS_MAX_HP);
     setPhase('boss');
@@ -304,6 +307,7 @@ export default function RpgWorldPage() {
           this.load.image('boss-body', `${BASE}/boss-dragon-demon.png`);
           this.load.image('boss-cosmic-arena', `${BASE}/boss-cosmic-arena.png`);
           this.load.image('boss-purple-meteor', `${BASE}/boss-purple-meteor.png`);
+          this.load.image('angel-front', `${BASE}/angel-front.png`);
           this.load.audio('boss-battle-music', `${BASE}/boss-music.mp3`);
           this.load.spritesheet('boss-roar-sheet', `${BASE}/boss-roar-sheet.png`, {
             frameWidth: BOSS_ROAR_FRAME_SIZE,
@@ -754,8 +758,23 @@ export default function RpgWorldPage() {
           };
           cbRef.current.bossPlayerHit = () => {
             hpRef.current = Math.max(0, hpRef.current - 1);
+            if (hpRef.current <= 0) {
+              if (!angelReviveUsedRef.current) {
+                angelReviveUsedRef.current = true;
+                hpRef.current = 1;
+                attackBonusRef.current = Math.max(attackBonusRef.current, 1);
+                setAttackBonus(attackBonusRef.current);
+                setHp(hpRef.current);
+                return 'revived';
+              }
+
+              setHp(hpRef.current);
+              setGameOver('lose');
+              return 'dead';
+            }
+
             setHp(hpRef.current);
-            if (hpRef.current <= 0) setGameOver('lose');
+            return 'hit';
           };
           cbRef.current.bossWin = () => {
             scoreRef.current += 500;
@@ -959,6 +978,8 @@ export default function RpgWorldPage() {
         private bossSprite?: Phaser.GameObjects.Sprite;
         private bossFloatTween?: Phaser.Tweens.Tween;
         private bossMusic?: Phaser.Sound.BaseSound;
+        private blessedByAngel = false;
+        private angelRevivePlaying = false;
 
         constructor() { super({ key: 'BossScene' }); }
 
@@ -967,6 +988,9 @@ export default function RpgWorldPage() {
           cbRef.current.bossHp(BOSS_MAX_HP);
           hpRef.current = MAX_HP;
           setHp(MAX_HP);
+          angelReviveUsedRef.current = false;
+          this.blessedByAngel = false;
+          this.angelRevivePlaying = false;
           this.bossHp = BOSS_MAX_HP;
           this.physics.world.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
           this.events.once('shutdown', () => this._stopBossMusic());
@@ -1334,10 +1358,124 @@ export default function RpgWorldPage() {
         private _hitPlayer() {
           if (this.time.now < this.invulnerableUntil || this.battleEnded) return;
           this.invulnerableUntil = this.time.now + BOSS_INVULN_MS;
-          cbRef.current.bossPlayerHit();
+          const result = cbRef.current.bossPlayerHit();
+          if (result === 'revived') {
+            this.blessedByAngel = true;
+            this.invulnerableUntil = this.time.now + 4300;
+            this._angelRevive();
+            return;
+          }
+          if (result === 'dead') {
+            this.battleEnded = true;
+            this.hazards.forEach((h) => h.gfx?.destroy?.());
+            this.hazards = [];
+            this.player.setVelocity(0, 0);
+          }
           this.player.setTint(0xff5ca8);
           this.time.delayedCall(220, () => { if (this.player?.active) this.player.clearTint(); });
           this.cameras.main.shake(180, 0.01);
+        }
+
+        private _angelRevive() {
+          if (this.angelRevivePlaying || !this.player?.active) return;
+          this.angelRevivePlaying = true;
+          this.hazards.forEach((h) => h.gfx?.destroy?.());
+          this.hazards = [];
+          setBossQuestion(null);
+          bossQuestionRef.current = null;
+          bossResolveCbRef.current = null;
+
+          const x = this.player.x;
+          const y = this.player.y - 92;
+          this.player.setVelocity(0, 0);
+          this.player.clearTint();
+          this.player.setTint(0xfff4b8);
+          this.cameras.main.flash(360, 255, 244, 184, false);
+          this.cameras.main.shake(260, 0.004);
+
+          const container = this.add.container(x, y).setDepth(65).setAlpha(0);
+          const aura = this.add.circle(0, 12, 120, 0xfff7ad, 0.18)
+            .setStrokeStyle(4, 0xfacc15, 0.72)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          const halo = this.add.ellipse(0, -182, 130, 28, 0xfff7ad, 0.18)
+            .setStrokeStyle(5, 0xfde68a, 0.94)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          const angel = this.add.image(0, -34, 'angel-front')
+            .setScale(0.28)
+            .setAlpha(0)
+            .setBlendMode(Phaser.BlendModes.NORMAL);
+          const rays = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
+          rays.lineStyle(3, 0xfff7ad, 0.58);
+          for (let i = 0; i < 18; i++) {
+            const a = Phaser.Math.DegToRad(i * 20);
+            rays.lineBetween(Math.cos(a) * 38, Math.sin(a) * 38, Math.cos(a) * 185, Math.sin(a) * 185);
+          }
+          const ring1 = this.add.circle(0, 26, 58, 0xffffff, 0)
+            .setStrokeStyle(4, 0xfef3c7, 0.92)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          const ring2 = this.add.circle(0, 26, 88, 0xffffff, 0)
+            .setStrokeStyle(3, 0xfacc15, 0.68)
+            .setBlendMode(Phaser.BlendModes.ADD);
+
+          container.add([aura, rays, halo, angel, ring1, ring2]);
+          container.setScale(0.62);
+
+          this.tweens.add({
+            targets: container,
+            alpha: 1,
+            scaleX: 1,
+            scaleY: 1,
+            y: y - 20,
+            duration: 720,
+            ease: 'Back.easeOut',
+          });
+          this.tweens.add({
+            targets: angel,
+            alpha: 1,
+            y: -56,
+            scaleX: 0.34,
+            scaleY: 0.34,
+            duration: 820,
+            ease: 'Sine.easeOut',
+          });
+          this.tweens.add({
+            targets: [ring1, ring2],
+            scaleX: 1.75,
+            scaleY: 1.75,
+            alpha: 0,
+            duration: 1200,
+            repeat: 1,
+            ease: 'Sine.easeOut',
+          });
+          this.tweens.add({
+            targets: halo,
+            scaleX: 1.16,
+            alpha: 0.94,
+            duration: 620,
+            yoyo: true,
+            repeat: 2,
+            ease: 'Sine.easeInOut',
+          });
+
+          this._floatText(x, this.player.y - 74, 'Thiên sứ hồi sinh! DMG 2', '#fde68a');
+          this.time.delayedCall(1700, () => {
+            if (this.player?.active) this.player.clearTint();
+          });
+          this.time.delayedCall(2450, () => {
+            this.tweens.add({
+              targets: container,
+              alpha: 0,
+              y: y - 120,
+              scaleX: 1.12,
+              scaleY: 1.12,
+              duration: 900,
+              ease: 'Sine.easeIn',
+              onComplete: () => {
+                container.destroy();
+                this.angelRevivePlaying = false;
+              },
+            });
+          });
         }
 
         private _askQuestion() {
@@ -1352,7 +1490,8 @@ export default function RpgWorldPage() {
         }
 
         private _slashBoss() {
-          this.bossHp = Math.max(0, this.bossHp - 1);
+          const damage = this.blessedByAngel ? 2 : 1;
+          this.bossHp = Math.max(0, this.bossHp - damage);
           cbRef.current.bossHp(this.bossHp);
           this.player.play('player-attack', true);
           this.time.delayedCall(360, () => {
@@ -1419,7 +1558,7 @@ export default function RpgWorldPage() {
             ease: 'Sine.easeOut',
             onComplete: () => slash.destroy(),
           });
-          this._floatText(this.bossX, this.bossY + 70, '-1 HP', '#fef3c7');
+          this._floatText(this.bossX, this.bossY + 70, `-${damage} HP`, damage > 1 ? '#fde68a' : '#fef3c7');
           this.cameras.main.shake(180, 0.008);
 
           if (this.bossHp <= 0) this._rescuePrincess();
