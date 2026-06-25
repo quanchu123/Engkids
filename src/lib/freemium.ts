@@ -49,7 +49,7 @@ interface PremiumCache {
   cachedAt: number; // epoch ms
 }
 
-const CACHE_TTL_MS = 5 * 60_000; // 5 minutes
+const CACHE_TTL_MS = 60_000; // 1 minute
 
 /** Check if cached premium status is still valid. */
 function getCachedPremiumStatus(userId: string): PremiumCache | null {

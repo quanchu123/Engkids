@@ -23,7 +23,8 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
   const orderCode = params.orderId;
 
   const [transaction, setTransaction] = useState<TransactionData | null>(null);
-  const [isPaid, setIsPaid] = useState(false);
+  const [isPaid, setIsPaid] = useState(returnedFromPayos);
+  const [isConfirmed, setIsConfirmed] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [pollingError, setPollingError] = useState(false);
   const [redirectCount, setRedirectCount] = useState(5);
@@ -38,6 +39,7 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
         setTransaction(data.transaction);
         if (data.transaction.status === 'PAID') {
           setIsPaid(true);
+          setIsConfirmed(true);
           clearPremiumCache();
         }
       }
@@ -51,16 +53,16 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
     checkStatus();
   }, [checkStatus]);
 
-  // Poll every 5s while still pending
+  // Poll status while not confirmed in DB (especially important if redirected with success=true before webhook finishes)
   useEffect(() => {
-    if (isPaid) return;
-    const interval = setInterval(checkStatus, 5000);
+    if (isConfirmed) return;
+    const interval = setInterval(checkStatus, 3000);
     return () => clearInterval(interval);
-  }, [isPaid, checkStatus]);
+  }, [isConfirmed, checkStatus]);
 
-  // Auto redirect after payment success
+  // Auto redirect after payment success and DB confirmation
   useEffect(() => {
-    if (!isPaid) return;
+    if (!isConfirmed) return;
     const timer = setInterval(() => {
       setRedirectCount((prev) => {
         if (prev <= 1) {
@@ -72,7 +74,7 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [isPaid, router]);
+  }, [isConfirmed, router]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -102,11 +104,19 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
               {plan.name} – {plan.price.toLocaleString('vi-VN')}đ
             </p>
           )}
-          <p className="text-sm text-gray-600 mb-8">
-            Tự động chuyển về trang chủ sau {redirectCount} giây...
-          </p>
+          {isConfirmed ? (
+            <p className="text-sm text-gray-600 mb-8">
+              Tự động chuyển về trang chủ sau {redirectCount} giây...
+            </p>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 mb-8">
+              <Loader2 size={16} className="animate-spin text-purple-400" />
+              <span>Đang hoàn tất kích hoạt Premium...</span>
+            </div>
+          )}
           <Link
             href="/"
+            onClick={() => clearPremiumCache()}
             className="inline-flex items-center justify-center w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all shadow-lg gap-2"
           >
             Bắt đầu học ngay <ArrowRight size={20} />
