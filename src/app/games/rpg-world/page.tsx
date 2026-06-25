@@ -28,6 +28,9 @@ const MAX_HP = 3;
 const PLAYER_SPEED = 175;
 const BOSS_PLAYER_SPEED = 235;
 const BOSS_INVULN_MS = 2000;
+const BOSS_SMALL_METEOR_DELAY = 1900;
+const BOSS_LASER_DELAY = 6800;
+const BOSS_BIG_METEOR_DELAY = 13000;
 const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
 const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
 const POWER_UPS = {
@@ -298,6 +301,7 @@ export default function RpgWorldPage() {
           this.load.image('boss-cave', `${BASE}/boss-dragon-demon-cave.png`);
           this.load.image('boss-body', `${BASE}/boss-dragon-demon.png`);
           this.load.image('boss-cosmic-arena', `${BASE}/boss-cosmic-arena.png`);
+          this.load.image('boss-purple-meteor', `${BASE}/boss-purple-meteor.png`);
           this.load.spritesheet('player-walk-down',   `${SHEET}/hero/walk/hero-walk-front.png`,     { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-walk-up',     `${SHEET}/hero/walk/hero-walk-back.png`,      { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-walk-side',   `${SHEET}/hero/walk/hero-walk-side.png`,      { frameWidth: 32, frameHeight: 32 });
@@ -945,6 +949,15 @@ export default function RpgWorldPage() {
         private battleEnded = false;
         private bossX = BOSS_ARENA.width / 2;
         private bossY = 292;
+        private bossRig: {
+          aura?: any;
+          chest?: any;
+          mouth?: any;
+          leftEye?: any;
+          rightEye?: any;
+          leftHand?: any;
+          rightHand?: any;
+        } = {};
 
         constructor() { super({ key: 'BossScene' }); }
 
@@ -956,6 +969,7 @@ export default function RpgWorldPage() {
           this.bossHp = BOSS_MAX_HP;
           this.physics.world.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
           this._createCosmicArena();
+          this._createBossMotionRig();
 
           this.player = this.physics.add.sprite(this.bossX, 620, 'player-idle-up', 0)
             .setScale(2.4)
@@ -973,9 +987,9 @@ export default function RpgWorldPage() {
           this.cursors = this.input.keyboard!.createCursorKeys();
           this.wasd = this.input.keyboard!.addKeys('W,A,S,D');
 
-          this.time.addEvent({ delay: 1200, loop: true, callback: () => this._smallMeteorWave() });
-          this.time.addEvent({ delay: 4200, loop: true, callback: () => this._laserAttack() });
-          this.time.addEvent({ delay: 9000, loop: true, callback: () => this._bigMeteor() });
+          this.time.addEvent({ delay: BOSS_SMALL_METEOR_DELAY, loop: true, callback: () => this._smallMeteorWave() });
+          this.time.addEvent({ delay: BOSS_LASER_DELAY, loop: true, callback: () => this._laserAttack() });
+          this.time.addEvent({ delay: BOSS_BIG_METEOR_DELAY, loop: true, callback: () => this._bigMeteor() });
           this.time.addEvent({ delay: BOSS_QUESTION_INTERVAL, loop: true, callback: () => this._askQuestion() });
 
           this.add.text(this.bossX, 408, 'Né chiêu. Mỗi 6.9 giây trả lời đúng để chém boss.', {
@@ -1001,6 +1015,124 @@ export default function RpgWorldPage() {
             .setDepth(0);
           this.add.rectangle(BOSS_ARENA.width / 2, 48, BOSS_ARENA.width, 96, 0x020617, 0.18).setDepth(1);
           this.add.rectangle(BOSS_ARENA.width / 2, BOSS_ARENA.height - 40, BOSS_ARENA.width, 80, 0x020617, 0.12).setDepth(1);
+        }
+
+        private _createBossMotionRig() {
+          const makeHand = (side: -1 | 1) => {
+            const hand = this.add.container(this.bossX + side * 158, this.bossY + 86).setDepth(17).setAlpha(0);
+            const glow = this.add.circle(0, 0, 30, 0xc084fc, 0.18).setBlendMode(Phaser.BlendModes.ADD);
+            const claw = this.add.graphics();
+            claw.fillStyle(0xa855f7, 0.16);
+            claw.fillCircle(0, 0, 30);
+            claw.lineStyle(5, 0xf0abfc, 0.9);
+            claw.strokeCircle(0, 0, 19);
+            claw.lineStyle(4, 0xc084fc, 0.86);
+            claw.lineBetween(0, 0, side * 44, -18);
+            claw.lineBetween(0, 0, side * 36, 10);
+            claw.lineBetween(0, 0, side * 25, 32);
+            claw.lineStyle(2, 0xffffff, 0.8);
+            claw.lineBetween(side * 9, -5, side * 54, -31);
+            claw.lineBetween(side * 5, 7, side * 46, 18);
+            hand.add([glow, claw]);
+            return hand;
+          };
+
+          this.bossRig.aura = this.add.ellipse(this.bossX, this.bossY + 58, 310, 220, 0xa855f7, 0.12)
+            .setDepth(14)
+            .setAlpha(0)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          this.bossRig.chest = this.add.circle(this.bossX, this.bossY + 7, 28, 0xd946ef, 0.52)
+            .setDepth(17)
+            .setAlpha(0)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          this.bossRig.mouth = this.add.ellipse(this.bossX, this.bossY - 106, 48, 12, 0xf0abfc, 0.82)
+            .setDepth(17)
+            .setAlpha(0)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          this.bossRig.leftEye = this.add.circle(this.bossX - 18, this.bossY - 126, 6, 0xf5d0fe, 0.9)
+            .setDepth(17)
+            .setAlpha(0)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          this.bossRig.rightEye = this.add.circle(this.bossX + 18, this.bossY - 126, 6, 0xf5d0fe, 0.9)
+            .setDepth(17)
+            .setAlpha(0)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          this.bossRig.leftHand = makeHand(-1);
+          this.bossRig.rightHand = makeHand(1);
+        }
+
+        private _bossRoar(kind: 'meteor' | 'laser' | 'big' = 'meteor', duration = 760) {
+          if (this.battleEnded) return;
+          const rig = this.bossRig;
+          const handLift = kind === 'big' ? 58 : kind === 'laser' ? 44 : 30;
+          const mouthScale = kind === 'big' ? 1.35 : kind === 'laser' ? 1.15 : 0.95;
+          const shake = kind === 'big' ? 0.006 : kind === 'laser' ? 0.004 : 0.0025;
+
+          rig.aura?.setPosition(this.bossX, this.bossY + 58).setScale(0.62).setAlpha(0.32);
+          rig.chest?.setPosition(this.bossX, this.bossY + 7).setScale(0.75).setAlpha(0.45);
+          rig.mouth?.setPosition(this.bossX, this.bossY - 106).setScale(0.42, 0.16).setAlpha(0.18);
+          rig.leftEye?.setPosition(this.bossX - 18, this.bossY - 126).setScale(0.7).setAlpha(0.25);
+          rig.rightEye?.setPosition(this.bossX + 18, this.bossY - 126).setScale(0.7).setAlpha(0.25);
+          rig.leftHand?.setPosition(this.bossX - 158, this.bossY + 86).setScale(0.88).setRotation(-0.18).setAlpha(0.12);
+          rig.rightHand?.setPosition(this.bossX + 158, this.bossY + 86).setScale(0.88).setRotation(0.18).setAlpha(0.12);
+
+          this.cameras.main.shake(Math.min(duration, 420), shake);
+          this.tweens.add({
+            targets: rig.aura,
+            scale: { from: 0.62, to: kind === 'big' ? 1.65 : 1.28 },
+            alpha: { from: 0.32, to: 0 },
+            duration,
+            ease: 'Cubic.easeOut',
+          });
+          this.tweens.add({
+            targets: [rig.chest, rig.leftEye, rig.rightEye],
+            scale: { from: 0.75, to: kind === 'big' ? 1.9 : 1.45 },
+            alpha: { from: 0.45, to: 1 },
+            duration: duration * 0.42,
+            yoyo: true,
+            repeat: 1,
+            ease: 'Sine.easeInOut',
+            onComplete: () => {
+              rig.chest?.setAlpha(0);
+              rig.leftEye?.setAlpha(0);
+              rig.rightEye?.setAlpha(0);
+            },
+          });
+          this.tweens.add({
+            targets: rig.mouth,
+            scaleX: { from: 0.42, to: mouthScale },
+            scaleY: { from: 0.16, to: kind === 'laser' ? 1.05 : 0.78 },
+            alpha: { from: 0.18, to: 0.98 },
+            duration: duration * 0.34,
+            yoyo: true,
+            repeat: 1,
+            ease: 'Sine.easeInOut',
+            onComplete: () => rig.mouth?.setAlpha(0),
+          });
+          this.tweens.add({
+            targets: rig.leftHand,
+            x: this.bossX - 186,
+            y: this.bossY + 86 - handLift,
+            rotation: -0.5,
+            scale: 1.12,
+            alpha: 0.95,
+            duration: duration * 0.5,
+            yoyo: true,
+            ease: 'Sine.easeInOut',
+            onComplete: () => rig.leftHand?.setAlpha(0),
+          });
+          this.tweens.add({
+            targets: rig.rightHand,
+            x: this.bossX + 186,
+            y: this.bossY + 86 - handLift,
+            rotation: 0.5,
+            scale: 1.12,
+            alpha: 0.95,
+            duration: duration * 0.5,
+            yoyo: true,
+            ease: 'Sine.easeInOut',
+            onComplete: () => rig.rightHand?.setAlpha(0),
+          });
         }
 
         private _movePlayer() {
@@ -1046,27 +1178,46 @@ export default function RpgWorldPage() {
 
         private _smallMeteorWave() {
           if (this.battleEnded) return;
-          const count = Phaser.Math.Between(3, 5);
-          for (let i = 0; i < count; i++) {
-            this._meteorImpact(
-              Phaser.Math.Between(110, BOSS_ARENA.width - 110),
-              Phaser.Math.Between(260, BOSS_ARENA.height - 90),
-              27,
-              650,
-              520,
-            );
-          }
+          this._bossRoar('meteor', 620);
+          this.time.delayedCall(420, () => {
+            if (this.battleEnded) return;
+            const count = Phaser.Math.Between(3, 4);
+            for (let i = 0; i < count; i++) {
+              this._meteorImpact(
+                Phaser.Math.Between(110, BOSS_ARENA.width - 110),
+                Phaser.Math.Between(260, BOSS_ARENA.height - 90),
+                29,
+                860,
+                620,
+              );
+            }
+          });
         }
 
         private _bigMeteor() {
           if (this.battleEnded) return;
-          this._meteorImpact(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2 + 80, 112, 1300, 900);
+          this._bossRoar('big', 1100);
+          this.time.delayedCall(780, () => {
+            if (this.battleEnded) return;
+            this._meteorImpact(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2 + 80, 112, 1900, 980);
+          });
         }
 
         private _meteorImpact(x: number, y: number, radius: number, warningMs: number, activeMs: number) {
           const warning = this.add.circle(x, y, radius, 0x7c3aed, 0.08)
             .setStrokeStyle(3, 0xf0abfc, 0.9)
             .setDepth(18)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          const isBig = radius > 60;
+          const meteorScale = isBig ? 0.22 : 0.105;
+          const travelX = isBig ? 330 : 205;
+          const travelY = isBig ? 360 : 230;
+          const meteor = this.add.image(x + travelX, y - travelY, 'boss-purple-meteor')
+            .setOrigin(0.22, 0.88)
+            .setScale(meteorScale * 0.65)
+            .setAlpha(0)
+            .setRotation(Phaser.Math.FloatBetween(-0.06, 0.06))
+            .setDepth(20)
             .setBlendMode(Phaser.BlendModes.ADD);
           this.tweens.add({
             targets: warning,
@@ -1075,14 +1226,37 @@ export default function RpgWorldPage() {
             duration: warningMs,
             ease: 'Sine.easeIn',
           });
+          this.tweens.add({
+            targets: meteor,
+            x,
+            y,
+            scale: meteorScale,
+            alpha: { from: 0, to: 0.96 },
+            duration: Math.max(360, warningMs - 80),
+            ease: 'Cubic.easeIn',
+          });
           this.time.delayedCall(warningMs, () => {
             warning.destroy();
+            meteor.destroy();
             const impact = this.add.circle(x, y, radius, 0xa855f7, radius > 60 ? 0.42 : 0.55)
               .setStrokeStyle(4, 0xf5d0fe, 0.95)
               .setDepth(19)
               .setBlendMode(Phaser.BlendModes.ADD);
+            const burst = this.add.image(x, y, 'boss-purple-meteor')
+              .setOrigin(0.22, 0.88)
+              .setScale(meteorScale * 1.12)
+              .setAlpha(radius > 60 ? 0.7 : 0.55)
+              .setDepth(19)
+              .setBlendMode(Phaser.BlendModes.ADD);
             this.hazards.push({ kind: 'circle', x, y, radius, until: this.time.now + activeMs, gfx: impact });
             this.cameras.main.shake(radius > 60 ? 260 : 90, radius > 60 ? 0.01 : 0.004);
+            this.tweens.add({
+              targets: burst,
+              alpha: 0,
+              scale: meteorScale * 1.42,
+              duration: 260,
+              onComplete: () => burst.destroy(),
+            });
             this.tweens.add({
               targets: impact,
               alpha: 0,
@@ -1095,27 +1269,40 @@ export default function RpgWorldPage() {
 
         private _laserAttack() {
           if (this.battleEnded || !this.player?.active) return;
-          const startX = this.bossX;
-          const startY = this.bossY + 30;
-          const dx = this.player.x - startX;
-          const dy = this.player.y - startY;
-          const len = Math.hypot(dx, dy) || 1;
-          const endX = startX + (dx / len) * 1200;
-          const endY = startY + (dy / len) * 1200;
+          this._bossRoar('laser', 960);
+          this.time.delayedCall(620, () => {
+            if (this.battleEnded || !this.player?.active) return;
+            const startX = this.bossX;
+            const startY = this.bossY + 30;
+            const dx = this.player.x - startX;
+            const dy = this.player.y - startY;
+            const len = Math.hypot(dx, dy) || 1;
+            const endX = startX + (dx / len) * 1200;
+            const endY = startY + (dy / len) * 1200;
 
-          const warn = this.add.graphics().setDepth(21);
-          warn.lineStyle(10, 0xf0abfc, 0.32);
-          warn.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-          this.tweens.add({ targets: warn, alpha: { from: 0.22, to: 0.85 }, duration: 700, yoyo: true });
-          this.time.delayedCall(800, () => {
-            warn.destroy();
-            const beam = this.add.graphics().setDepth(22);
-            beam.lineStyle(34, 0x7c3aed, 0.62);
-            beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-            beam.lineStyle(11, 0xfdf4ff, 0.95);
-            beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
-            this.hazards.push({ kind: 'line', x1: startX, y1: startY, x2: endX, y2: endY, width: 24, until: this.time.now + 520, gfx: beam });
-            this.tweens.add({ targets: beam, alpha: 0, duration: 520, onComplete: () => beam.destroy() });
+            const warn = this.add.graphics().setDepth(21);
+            warn.lineStyle(22, 0xf0abfc, 0.26);
+            warn.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
+            warn.lineStyle(5, 0xffffff, 0.62);
+            warn.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
+            this.tweens.add({ targets: warn, alpha: { from: 0.2, to: 0.9 }, duration: 520, yoyo: true, repeat: 1 });
+            this.time.delayedCall(1220, () => {
+              if (this.battleEnded) {
+                warn.destroy();
+                return;
+              }
+              warn.destroy();
+              const beam = this.add.graphics().setDepth(22);
+              beam.lineStyle(64, 0x7c3aed, 0.5);
+              beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
+              beam.lineStyle(34, 0xd946ef, 0.68);
+              beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
+              beam.lineStyle(14, 0xfdf4ff, 0.96);
+              beam.strokeLineShape(new Phaser.Geom.Line(startX, startY, endX, endY));
+              this.hazards.push({ kind: 'line', x1: startX, y1: startY, x2: endX, y2: endY, width: 36, until: this.time.now + 640, gfx: beam });
+              this.cameras.main.shake(180, 0.006);
+              this.tweens.add({ targets: beam, alpha: 0, duration: 640, onComplete: () => beam.destroy() });
+            });
           });
         }
 
