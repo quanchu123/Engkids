@@ -1012,8 +1012,6 @@ export default function RpgWorldPage() {
           this.add.image(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2, 'boss-cosmic-arena')
             .setDisplaySize(BOSS_ARENA.width, BOSS_ARENA.height)
             .setDepth(0);
-          this.add.rectangle(BOSS_ARENA.width / 2, 48, BOSS_ARENA.width, 96, 0x020617, 0.18).setDepth(1);
-          this.add.rectangle(BOSS_ARENA.width / 2, BOSS_ARENA.height - 40, BOSS_ARENA.width, 80, 0x020617, 0.12).setDepth(1);
         }
 
         private _createAnimatedBoss() {
