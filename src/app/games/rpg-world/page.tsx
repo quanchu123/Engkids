@@ -247,6 +247,25 @@ export default function RpgWorldPage() {
   useEffect(() => { battleRef.current = battle; }, [battle]);
   useEffect(() => { bossQuestionRef.current = bossQuestion; }, [bossQuestion]);
 
+  useEffect(() => {
+    if (!bossQuestion || bossQuestion.result !== 'none' || gameOver) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat) return;
+      const choiceIndex = Number(event.key) - 1;
+      if (choiceIndex < 0 || choiceIndex > 3) return;
+
+      const choice = bossQuestionRef.current?.question.choices[choiceIndex];
+      if (!choice) return;
+
+      event.preventDefault();
+      handleBossAnswer(choice);
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [bossQuestion, gameOver, handleBossAnswer]);
+
   // Clear held D-pad direction when a battle starts or the game ends.
   useEffect(() => {
     if (battle || gameOver) moveRef.current = { up: false, down: false, left: false, right: false };
@@ -959,7 +978,7 @@ export default function RpgWorldPage() {
           this.time.addEvent({ delay: 9000, loop: true, callback: () => this._bigMeteor() });
           this.time.addEvent({ delay: BOSS_QUESTION_INTERVAL, loop: true, callback: () => this._askQuestion() });
 
-          this.add.text(this.bossX, 408, 'Né chiêu tím. Mỗi 6.9 giây trả lời đúng để chém boss.', {
+          this.add.text(this.bossX, 408, 'Né chiêu. Mỗi 6.9 giây trả lời đúng để chém boss.', {
             fontFamily: 'Arial',
             fontStyle: 'bold',
             fontSize: '16px',
@@ -982,9 +1001,6 @@ export default function RpgWorldPage() {
             .setDepth(0);
           this.add.rectangle(BOSS_ARENA.width / 2, 48, BOSS_ARENA.width, 96, 0x020617, 0.18).setDepth(1);
           this.add.rectangle(BOSS_ARENA.width / 2, BOSS_ARENA.height - 40, BOSS_ARENA.width, 80, 0x020617, 0.12).setDepth(1);
-          this.add.rectangle(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2, BOSS_ARENA.width - 70, BOSS_ARENA.height - 70, 0x000000, 0)
-            .setStrokeStyle(2, 0x8b5cf6, 0.35)
-            .setDepth(3);
         }
 
         private _movePlayer() {
@@ -1333,7 +1349,7 @@ export default function RpgWorldPage() {
 
       {/* ── Controls hint (bottom) ── */}
       {phase === 'boss' && !gameOver && (
-        <div className="pointer-events-none absolute right-3 top-[92px] z-10 w-80 rounded-2xl border border-fuchsia-300/30 bg-slate-950/80 p-3 shadow-[0_0_35px_rgba(168,85,247,.25)] backdrop-blur-md sm:right-5 sm:top-[104px]">
+        <div className="pointer-events-none absolute right-3 top-[112px] z-10 w-[min(92vw,360px)] rounded-2xl border border-fuchsia-300/30 bg-slate-950/85 p-4 shadow-[0_0_35px_rgba(168,85,247,.25)] backdrop-blur-md sm:right-5 sm:top-[118px]">
           <div className="mb-2 flex items-center justify-between text-[11px] font-black uppercase tracking-wider">
             <span className="text-fuchsia-200">Boss hư không</span>
             <span className="text-fuchsia-300">{bossHp}/{BOSS_MAX_HP}</span>
@@ -1461,12 +1477,15 @@ export default function RpgWorldPage() {
 
       {/* ── NPC Dialogue ── */}
       {bossQuestion && !gameOver && (
-        <div className="absolute bottom-4 left-1/2 z-30 w-[min(92vw,560px)] -translate-x-1/2 rounded-3xl border border-fuchsia-300/35 bg-slate-950/88 p-4 shadow-[0_0_45px_rgba(168,85,247,.32)] backdrop-blur-md">
+        <div className="absolute right-3 top-[245px] z-30 w-[min(92vw,360px)] rounded-3xl border border-fuchsia-300/35 bg-slate-950/90 p-4 shadow-[0_0_45px_rgba(168,85,247,.32)] backdrop-blur-md sm:right-5 sm:top-[258px]">
           <div className="mb-3 rounded-2xl border border-fuchsia-300/25 bg-fuchsia-500/10 p-3 text-center">
             <div className="mb-1 text-[11px] font-black uppercase tracking-[.22em] text-fuchsia-200/75">
               Kiếm khí tiếng Anh
             </div>
-            <div className="text-2xl font-black text-fuchsia-100">&quot;{bossQuestion.question.vi}&quot;</div>
+            <div className="text-xl font-black text-fuchsia-100">&quot;{bossQuestion.question.vi}&quot;</div>
+            <div className="mt-2 text-[11px] font-bold uppercase tracking-wider text-cyan-100/70">
+              Bấm phím 1–4 để trả lời
+            </div>
           </div>
 
           {bossQuestion.result !== 'none' ? (
@@ -1478,14 +1497,17 @@ export default function RpgWorldPage() {
               {bossQuestion.result === 'correct' ? 'Chính xác! Boss -1 HP' : 'Sai rồi! Không mất HP, tiếp tục né!'}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
-              {bossQuestion.question.choices.map(c => (
+            <div className="grid grid-cols-1 gap-2">
+              {bossQuestion.question.choices.map((c, index) => (
                 <button
                   key={c}
                   onClick={() => handleBossAnswer(c)}
-                  className="pointer-events-auto rounded-2xl border border-fuchsia-300/35 bg-violet-500/25 px-3 py-3 text-sm font-black text-white transition hover:scale-[1.03] hover:bg-violet-500/45 active:scale-95"
+                  className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-fuchsia-300/35 bg-violet-500/25 px-3 py-3 text-left text-sm font-black text-white transition hover:translate-x-1 hover:bg-violet-500/45 active:scale-95"
                 >
-                  {c}
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-cyan-200/40 bg-cyan-500/18 text-cyan-100">
+                    {index + 1}
+                  </span>
+                  <span>{c}</span>
                 </button>
               ))}
             </div>
