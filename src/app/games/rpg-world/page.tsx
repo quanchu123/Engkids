@@ -25,34 +25,42 @@ const PLAYER_SPEED = 175;
 const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
 const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
 
-// Collision rectangles trace the visible masonry and large props in
-// dungeon-map-v2.png. Coordinates use the original 1254×1254 image pixels.
+// Collision rectangles trace only hard blockers in dungeon-map-v2.png.
+// Important: cracked stone floors, rugs, stairs, door thresholds and low
+// decorative tile borders are walkable. Only tall walls, pillars, shelves,
+// crates, barrels, tables and the treasure chest block movement.
+// Coordinates use the original 1254×1254 image pixels.
 const DUNGEON_WALLS = [
-  // Outer stone frame — thicker at the top so the hero's feet never reach it.
-  [0, 0, MAP_SIZE, 72], [0, 1174, MAP_SIZE, 80],
-  [0, 0, 56, MAP_SIZE], [1198, 0, 56, MAP_SIZE],
+  // Outer black void / wall frame.
+  [0, 0, MAP_SIZE, 58], [0, 1198, MAP_SIZE, 56],
+  [0, 0, 48, MAP_SIZE], [1206, 0, 48, MAP_SIZE],
 
-  // Upper room dividers and their lower walls.
-  [390, 24, 52, 374], [812, 24, 54, 374],
-  [24, 402, 174, 62], [302, 402, 87, 62],
-  [865, 402, 126, 62], [1082, 402, 148, 62],
+  // Tall room divider walls.
+  [402, 24, 34, 372], [820, 24, 34, 372],
+  [402, 844, 34, 376], [820, 844, 34, 376],
 
-  // Central hall side walls; the gaps are the actual walkable doorways.
-  [286, 448, 86, 158], [286, 690, 86, 142],
-  [882, 448, 86, 158], [882, 690, 86, 142],
-  [410, 405, 136, 82], [708, 405, 136, 82],
-  [410, 746, 148, 88], [696, 746, 148, 88],
+  // Outer room wall bands. The short inner tile runs are floor, so they are
+  // deliberately not blocked.
+  [56, 412, 134, 28], [1094, 412, 112, 28],
+  [56, 788, 134, 28], [1094, 788, 112, 28],
 
-  // Lower room dividers and upper walls.
-  [24, 776, 174, 58], [302, 776, 87, 58],
-  [865, 776, 126, 58], [1082, 776, 148, 58],
-  [388, 834, 52, 390], [814, 834, 54, 390],
+  // Central masonry columns / pillar bases. These are tight on the stones so
+  // the surrounding cracked floor remains walkable.
+  [314, 462, 38, 134], [314, 704, 38, 104],
+  [902, 462, 38, 134], [902, 704, 38, 104],
+  [432, 515, 38, 82], [784, 515, 38, 82],
+  [434, 682, 38, 70], [782, 682, 38, 70],
 
-  // Large visible props that cannot be walked through.
-  [154, 202, 174, 176],
-  [930, 198, 182, 146], // treasure chest and rug
-  [158, 922, 206, 174], [926, 922, 206, 174],
-  [72, 506, 126, 94], [1050, 500, 128, 102],
+  // Top-room props.
+  [126, 104, 70, 58], [292, 104, 76, 58],
+  [958, 96, 46, 62], [1094, 110, 70, 48],
+  [982, 238, 76, 58], // chest body only; rug/floor around it stays walkable
+
+  // Side-room props: barrels, grates, crates and blocked desks.
+  [70, 510, 88, 76], [1094, 510, 92, 78],
+  [70, 720, 88, 78], [1094, 720, 92, 78],
+  [158, 952, 142, 106], [970, 952, 146, 106],
+  [72, 880, 92, 76], [1090, 870, 98, 96],
 ] as const;
 
 const TREANT_POSITIONS = [
@@ -488,10 +496,11 @@ export default function RpgWorldPage() {
         update() {
           if (!this.player?.active) return;
 
-          // Physics collision handles normal wall contact. This nav-mesh
-          // fail-safe also catches high-speed knockback or a missed frame, so
-          // neither the hero nor a monster can ever enter masonry/outside map.
-          this._keepOnFloor(this.player, 8);
+          // Physics collision handles normal wall contact. This fail-safe is
+          // deliberately permissive: it only clamps escaped sprites back into
+          // the map / true blockers, without expanding walls into walkable
+          // cracked-floor tiles.
+          this._keepOnFloor(this.player, 0);
 
           if (this.inBattle) {
             this.player.setVelocity(0, 0);
@@ -536,7 +545,7 @@ export default function RpgWorldPage() {
           // ── Monster AI (per-frame smooth chase/patrol) ──
           this.monsters.getChildren().forEach((m: any) => {
             if (!m.active || m._dying) return;
-            this._keepOnFloor(m, 9);
+            this._keepOnFloor(m, 0);
             const dx = this.player.x - m.x;
             const dy = this.player.y - m.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
