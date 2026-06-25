@@ -20,20 +20,39 @@ const BASE = '/games/rpg-world';
 const SHEET = `${BASE}/spritesheets`;
 const MAP_SIZE = 1254;
 const MONSTERS_TO_WIN = 8;
+const MAX_HP = 3;
+const PLAYER_SPEED = 175;
+const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
+const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
 
-// Collision rectangles follow the major walls and props in dungeon-map-v2.png.
-// They intentionally leave the broad corridors and combat arenas open.
+// Collision rectangles trace the visible masonry and large props in
+// dungeon-map-v2.png. Coordinates use the original 1254×1254 image pixels.
 const DUNGEON_WALLS = [
-  [0, 0, MAP_SIZE, 42], [0, MAP_SIZE - 42, MAP_SIZE, 42],
-  [0, 0, 42, MAP_SIZE], [MAP_SIZE - 42, 0, 42, MAP_SIZE],
-  [32, 405, 350, 54], [872, 405, 350, 54],
-  [32, 778, 350, 52], [872, 778, 350, 52],
-  [389, 35, 48, 330], [817, 35, 48, 330],
-  [388, 844, 48, 365], [818, 844, 48, 365],
-  [286, 452, 76, 174], [892, 452, 76, 174],
-  [454, 718, 346, 68],
-  [166, 204, 154, 170], [943, 211, 163, 124],
-  [168, 934, 188, 151], [939, 935, 178, 144],
+  // Outer stone frame — thicker at the top so the hero's feet never reach it.
+  [0, 0, MAP_SIZE, 72], [0, 1174, MAP_SIZE, 80],
+  [0, 0, 56, MAP_SIZE], [1198, 0, 56, MAP_SIZE],
+
+  // Upper room dividers and their lower walls.
+  [390, 24, 52, 374], [812, 24, 54, 374],
+  [24, 402, 174, 62], [302, 402, 87, 62],
+  [865, 402, 126, 62], [1082, 402, 148, 62],
+
+  // Central hall side walls; the gaps are the actual walkable doorways.
+  [286, 448, 86, 158], [286, 690, 86, 142],
+  [882, 448, 86, 158], [882, 690, 86, 142],
+  [410, 405, 136, 82], [708, 405, 136, 82],
+  [410, 746, 148, 88], [696, 746, 148, 88],
+
+  // Lower room dividers and upper walls.
+  [24, 776, 174, 58], [302, 776, 87, 58],
+  [865, 776, 126, 58], [1082, 776, 148, 58],
+  [388, 834, 52, 390], [814, 834, 54, 390],
+
+  // Large visible props that cannot be walked through.
+  [154, 202, 174, 176],
+  [930, 198, 182, 146], // treasure chest and rug
+  [158, 922, 206, 174], [926, 922, 206, 174],
+  [72, 506, 126, 94], [1050, 500, 128, 102],
 ] as const;
 
 const TREANT_POSITIONS = [
@@ -92,6 +111,7 @@ export default function RpgWorldPage() {
     startBattle: (_state: BattleState) => {},
     showNpc: (_msg: string) => {},
     progress: (_count: number) => {},
+    reward: (_kind: 'score' | 'hp', _amount: number) => {},
     win: () => {},
   });
 
@@ -251,6 +271,80 @@ export default function RpgWorldPage() {
             .setScale(2.4).setSize(10, 10).setOffset(11, 18)
             .setCollideWorldBounds(true).setDepth(10);
           this.player.play('player-idle-up');
+          this.player.setData({ safeX: this.player.x, safeY: this.player.y });
+
+          // ── Treasure chest ──
+          // The chest artwork is baked into the map. This larger proximity
+          // zone lets the player open it while the chest itself remains solid.
+          const chestZone = this.add.zone(
+            TREASURE_CHEST.x,
+            TREASURE_CHEST.y,
+            TREASURE_CHEST.width,
+            TREASURE_CHEST.height,
+          );
+          this.physics.add.existing(chestZone, true);
+
+          const chestFrame = this.add.rectangle(
+            TREASURE_CHEST.x,
+            TREASURE_CHEST.y,
+            164,
+            126,
+            0xffc857,
+            0.025,
+          ).setStrokeStyle(3, 0xfbbf24, 0.9).setDepth(6);
+          const chestLabel = this.add.text(TREASURE_CHEST.x, 368, 'RƯƠNG BÁU\nChạm để mở', {
+            fontFamily: 'Arial', fontStyle: 'bold', fontSize: '13px', color: '#fde68a',
+            align: 'center', stroke: '#1c1004', strokeThickness: 4,
+          }).setOrigin(0.5).setDepth(7);
+          this.tweens.add({
+            targets: chestFrame, alpha: { from: 0.45, to: 1 }, scale: { from: 0.97, to: 1.04 },
+            duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+          });
+
+          this.physics.add.overlap(this.player, chestZone, () => {
+            if (chestZone.getData('opened')) return;
+            chestZone.setData('opened', true);
+
+            const canHeal = hpRef.current < MAX_HP;
+            const rewardHp = canHeal && Phaser.Math.Between(0, 1) === 0;
+            const rewardKind = rewardHp ? 'hp' : 'score';
+            const amount = rewardHp ? 1 : 150;
+            cbRef.current.reward(rewardKind, amount);
+
+            chestFrame.setFillStyle(0x111827, 0.5).setStrokeStyle(2, 0x64748b, 0.65);
+            chestLabel.setText('RƯƠNG ĐÃ MỞ').setColor('#94a3b8');
+            this.tweens.killTweensOf(chestFrame);
+
+            for (let i = 0; i < 14; i++) {
+              const spark = this.add.circle(TREASURE_CHEST.x, TREASURE_CHEST.y, 3, rewardHp ? 0xfb7185 : 0xfacc15, 1)
+                .setDepth(24).setBlendMode(Phaser.BlendModes.ADD);
+              const angle = Phaser.Math.FloatBetween(0, Math.PI * 2);
+              const distance = Phaser.Math.Between(35, 95);
+              this.tweens.add({
+                targets: spark,
+                x: TREASURE_CHEST.x + Math.cos(angle) * distance,
+                y: TREASURE_CHEST.y + Math.sin(angle) * distance,
+                alpha: 0,
+                scale: 0.2,
+                duration: Phaser.Math.Between(500, 900),
+                onComplete: () => spark.destroy(),
+              });
+            }
+
+            const rewardText = this.add.text(
+              TREASURE_CHEST.x,
+              TREASURE_CHEST.y - 40,
+              rewardHp ? '+1 HP' : '+150 ĐIỂM',
+              {
+                fontFamily: 'Arial', fontStyle: 'bold', fontSize: '23px',
+                color: rewardHp ? '#fb7185' : '#fde047', stroke: '#020617', strokeThickness: 5,
+              },
+            ).setOrigin(0.5).setDepth(26);
+            this.tweens.add({
+              targets: rewardText, y: rewardText.y - 70, alpha: 0, duration: 1400,
+              onComplete: () => rewardText.destroy(),
+            });
+          });
 
           // ── Camera ──
           this.cameras.main.setBounds(0, 0, MAP_SIZE, MAP_SIZE);
@@ -267,6 +361,7 @@ export default function RpgWorldPage() {
             (m as any).monsterType = 'treant';
             (m as any).hp = 3;
             (m as any)._maxHp = 3;
+            m.setData({ safeX: m.x, safeY: m.y });
             this.monsters.add(m);
           });
           MOLE_POSITIONS.forEach(pos => {
@@ -275,6 +370,7 @@ export default function RpgWorldPage() {
             (m as any).monsterType = 'mole';
             (m as any).hp = 2;
             (m as any)._maxHp = 2;
+            m.setData({ safeX: m.x, safeY: m.y });
             this.monsters.add(m);
           });
 
@@ -371,6 +467,18 @@ export default function RpgWorldPage() {
             setTimeout(() => setNpcMsg(null), 4500);
           };
           cbRef.current.progress = (count: number) => setDefeated(count);
+          cbRef.current.reward = (kind: 'score' | 'hp', amount: number) => {
+            if (kind === 'hp') {
+              hpRef.current = Math.min(MAX_HP, hpRef.current + amount);
+              setHp(hpRef.current);
+              cbRef.current.showNpc(`Rương báu\nNhận được +${amount} HP!`);
+              return;
+            }
+
+            scoreRef.current += amount;
+            setScore(scoreRef.current);
+            cbRef.current.showNpc(`Rương báu\nNhận được +${amount} điểm!`);
+          };
           cbRef.current.win = () => setGameOver('win');
 
           // ── Keyboard ──
@@ -379,6 +487,11 @@ export default function RpgWorldPage() {
 
         update() {
           if (!this.player?.active) return;
+
+          // Physics collision handles normal wall contact. This nav-mesh
+          // fail-safe also catches high-speed knockback or a missed frame, so
+          // neither the hero nor a monster can ever enter masonry/outside map.
+          this._keepOnFloor(this.player, 8);
 
           if (this.inBattle) {
             this.player.setVelocity(0, 0);
@@ -392,7 +505,7 @@ export default function RpgWorldPage() {
           const right = c.right.isDown || m.right;
           const up = c.up.isDown || m.up;
           const down = c.down.isDown || m.down;
-          const spd = 110;
+          const spd = PLAYER_SPEED;
 
           if (left) {
             this.player.setVelocity(-spd, 0);
@@ -423,18 +536,19 @@ export default function RpgWorldPage() {
           // ── Monster AI (per-frame smooth chase/patrol) ──
           this.monsters.getChildren().forEach((m: any) => {
             if (!m.active || m._dying) return;
+            this._keepOnFloor(m, 9);
             const dx = this.player.x - m.x;
             const dy = this.player.y - m.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            const speed = m.monsterType === 'treant' ? 38 : 58;
+            const speed = m.monsterType === 'treant' ? 34 : 50;
 
             if (dist < 200 && dist > 15) {
               m.setVelocity((dx / dist) * speed, (dy / dist) * speed);
               m.play(m.monsterType === 'treant' ? 'treant-walk' : 'mole-walk', true);
             } else if (dist >= 200) {
               if (!m.lastPatrol || this.time.now - m.lastPatrol > 2000) {
-                m.patrolVx = Phaser.Math.Between(-22, 22);
-                m.patrolVy = Phaser.Math.Between(-22, 22);
+                m.patrolVx = Phaser.Math.Between(-18, 18);
+                m.patrolVy = Phaser.Math.Between(-18, 18);
                 m.lastPatrol = this.time.now;
               }
               m.setVelocity(m.patrolVx || 0, m.patrolVy || 0);
@@ -458,6 +572,48 @@ export default function RpgWorldPage() {
             const col = pct > 0.5 ? 0x22c55e : pct > 0.25 ? 0xeab308 : 0xef4444;
             bar.fillStyle(col, 1); bar.fillRect(bx, by, bw * pct, bh);
           });
+        }
+
+        private _isWalkable(x: number, y: number, margin: number) {
+          if (
+            x < SAFE_FLOOR_BOUNDS.left || x > SAFE_FLOOR_BOUNDS.right ||
+            y < SAFE_FLOOR_BOUNDS.top || y > SAFE_FLOOR_BOUNDS.bottom
+          ) return false;
+
+          return !DUNGEON_WALLS.some(([wallX, wallY, width, height]) => (
+            x > wallX - margin && x < wallX + width + margin &&
+            y > wallY - margin && y < wallY + height + margin
+          ));
+        }
+
+        private _keepOnFloor(sprite: Phaser.Physics.Arcade.Sprite, margin: number) {
+          const safeX = Number(sprite.getData('safeX') ?? sprite.x);
+          const safeY = Number(sprite.getData('safeY') ?? sprite.y);
+          const x = Phaser.Math.Clamp(sprite.x, SAFE_FLOOR_BOUNDS.left, SAFE_FLOOR_BOUNDS.right);
+          const y = Phaser.Math.Clamp(sprite.y, SAFE_FLOOR_BOUNDS.top, SAFE_FLOOR_BOUNDS.bottom);
+
+          let nextX = safeX;
+          let nextY = safeY;
+
+          if (this._isWalkable(x, y, margin)) {
+            nextX = x;
+            nextY = y;
+          } else if (this._isWalkable(x, safeY, margin)) {
+            nextX = x;
+          } else if (this._isWalkable(safeX, y, margin)) {
+            nextY = y;
+          }
+
+          sprite.setData('safeX', nextX);
+          sprite.setData('safeY', nextY);
+
+          if (nextX !== sprite.x || nextY !== sprite.y) {
+            const body = sprite.body as Phaser.Physics.Arcade.Body;
+            sprite.setPosition(nextX, nextY);
+            body.updateFromGameObject();
+            if (nextX !== x) body.setVelocityX(0);
+            if (nextY !== y) body.setVelocityY(0);
+          }
         }
 
         private _pickQuestion() {
