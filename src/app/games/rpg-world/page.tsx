@@ -33,7 +33,6 @@ const BOSS_LASER_DELAY = 9200;
 const BOSS_BIG_METEOR_DELAY = 17500;
 const BOSS_ROAR_FRAME_SIZE = 627;
 const BOSS_SPRITE_SCALE = 0.88;
-const ANGEL_GODDESS_FRAME = { width: 640, height: 760, frames: 24 } as const;
 const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
 const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
 const POWER_UPS = {
@@ -324,10 +323,6 @@ export default function RpgWorldPage() {
           this.load.image('boss-purple-meteor', `${BASE}/boss-purple-meteor.png`);
           this.load.image('angel-front', `${BASE}/angel-front.png`);
           this.load.audio('boss-battle-music', `${BASE}/boss-music.mp3`);
-          this.load.spritesheet('angel-goddess-sheet', `${BASE}/angel-goddess-sheet.png`, {
-            frameWidth: ANGEL_GODDESS_FRAME.width,
-            frameHeight: ANGEL_GODDESS_FRAME.height,
-          });
           this.load.spritesheet('boss-roar-sheet', `${BASE}/boss-roar-sheet.png`, {
             frameWidth: BOSS_ROAR_FRAME_SIZE,
             frameHeight: BOSS_ROAR_FRAME_SIZE,
@@ -365,7 +360,6 @@ export default function RpgWorldPage() {
             { key: 'mole-walk',         sheet: 'mole-walk-down',    s: 0, e: 3, fps: 7  },
             { key: 'mole-idle',         sheet: 'mole-idle-down',    s: 0, e: 0, fps: 5  },
             { key: 'enemy-death',       sheet: 'enemy-death',       s: 0, e: 5, fps: 15 },
-            { key: 'angel-goddess-float', sheet: 'angel-goddess-sheet', s: 0, e: ANGEL_GODDESS_FRAME.frames - 1, fps: 12 },
           ];
           animDefs.forEach(a => {
             this.anims.create({
@@ -1616,33 +1610,23 @@ export default function RpgWorldPage() {
           layer.add(glow);
 
           const angelWrap = this.add.container(vp.cx, goddessY);
-          const angel = this.add.sprite(0, 0, 'angel-goddess-sheet', 0)
+          const angel = this.add.image(0, 0, 'angel-front')
             .setAlpha(0.98);
-          angel.play('angel-goddess-float');
-          const angelScale = Math.min(
-            vp.width * 0.62 / ANGEL_GODDESS_FRAME.width,
-            maxGoddessHeight / ANGEL_GODDESS_FRAME.height,
-          );
+          const angelScale = Math.min(vp.width * 0.58 / Math.max(1, angel.width), maxGoddessHeight / Math.max(1, angel.height));
           angelWrap.setScale(angelScale);
           angelWrap.add(angel);
 
           layer.add(angelWrap);
           this.tweens.add({
             targets: angelWrap,
-            y: goddessY - Math.max(8, vp.height * 0.012),
-            duration: 2400,
+            y: {
+              from: goddessY + Math.max(5, vp.height * 0.007),
+              to: goddessY - Math.max(16, vp.height * 0.024),
+            },
+            duration: 4200,
+            ease: 'Sine.easeInOut',
             yoyo: true,
             repeat: -1,
-            ease: 'Sine.easeInOut',
-          });
-          this.tweens.add({
-            targets: angelWrap,
-            scaleX: angelScale * 1.012,
-            scaleY: angelScale * 1.012,
-            duration: 2600,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
           });
           this.tweens.add({
             targets: glow,
