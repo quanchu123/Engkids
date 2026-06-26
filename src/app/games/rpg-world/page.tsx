@@ -33,7 +33,7 @@ const BOSS_LASER_DELAY = 9200;
 const BOSS_BIG_METEOR_DELAY = 17500;
 const BOSS_ROAR_FRAME_SIZE = 627;
 const BOSS_SPRITE_SCALE = 0.88;
-const ANGEL_GODDESS_FRAME = { width: 640, height: 760, frames: 12 } as const;
+const ANGEL_GODDESS_FRAME = { width: 640, height: 760, frames: 24 } as const;
 const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
 const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
 const POWER_UPS = {
@@ -365,7 +365,7 @@ export default function RpgWorldPage() {
             { key: 'mole-walk',         sheet: 'mole-walk-down',    s: 0, e: 3, fps: 7  },
             { key: 'mole-idle',         sheet: 'mole-idle-down',    s: 0, e: 0, fps: 5  },
             { key: 'enemy-death',       sheet: 'enemy-death',       s: 0, e: 5, fps: 15 },
-            { key: 'angel-goddess-float', sheet: 'angel-goddess-sheet', s: 0, e: ANGEL_GODDESS_FRAME.frames - 1, fps: 7 },
+            { key: 'angel-goddess-float', sheet: 'angel-goddess-sheet', s: 0, e: ANGEL_GODDESS_FRAME.frames - 1, fps: 12 },
           ];
           animDefs.forEach(a => {
             this.anims.create({
