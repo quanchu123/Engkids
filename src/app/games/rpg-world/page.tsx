@@ -33,6 +33,7 @@ const BOSS_LASER_DELAY = 9200;
 const BOSS_BIG_METEOR_DELAY = 17500;
 const BOSS_ROAR_FRAME_SIZE = 627;
 const BOSS_SPRITE_SCALE = 0.88;
+const ANGEL_GODDESS_FRAME = { width: 640, height: 760, frames: 12 } as const;
 const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
 const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
 const POWER_UPS = {
@@ -323,6 +324,10 @@ export default function RpgWorldPage() {
           this.load.image('boss-purple-meteor', `${BASE}/boss-purple-meteor.png`);
           this.load.image('angel-front', `${BASE}/angel-front.png`);
           this.load.audio('boss-battle-music', `${BASE}/boss-music.mp3`);
+          this.load.spritesheet('angel-goddess-sheet', `${BASE}/angel-goddess-sheet.png`, {
+            frameWidth: ANGEL_GODDESS_FRAME.width,
+            frameHeight: ANGEL_GODDESS_FRAME.height,
+          });
           this.load.spritesheet('boss-roar-sheet', `${BASE}/boss-roar-sheet.png`, {
             frameWidth: BOSS_ROAR_FRAME_SIZE,
             frameHeight: BOSS_ROAR_FRAME_SIZE,
@@ -360,6 +365,7 @@ export default function RpgWorldPage() {
             { key: 'mole-walk',         sheet: 'mole-walk-down',    s: 0, e: 3, fps: 7  },
             { key: 'mole-idle',         sheet: 'mole-idle-down',    s: 0, e: 0, fps: 5  },
             { key: 'enemy-death',       sheet: 'enemy-death',       s: 0, e: 5, fps: 15 },
+            { key: 'angel-goddess-float', sheet: 'angel-goddess-sheet', s: 0, e: ANGEL_GODDESS_FRAME.frames - 1, fps: 7 },
           ];
           animDefs.forEach(a => {
             this.anims.create({
@@ -1586,8 +1592,8 @@ export default function RpgWorldPage() {
           const vignette = this.add.rectangle(vp.cx, vp.cy, vp.width, vp.height, 0x020611, 0.28);
           layer.add(vignette);
 
-          const goddessTop = Math.max(12, vp.height * 0.02);
-          const reservedBottom = Math.min(250, Math.max(210, vp.height * 0.26));
+          const goddessTop = Math.max(10, vp.height * 0.018);
+          const reservedBottom = Math.min(310, Math.max(250, vp.height * 0.31));
           const maxGoddessHeight = Math.max(360, vp.height - reservedBottom - goddessTop);
           const goddessY = goddessTop + maxGoddessHeight / 2;
 
@@ -1610,27 +1616,30 @@ export default function RpgWorldPage() {
           layer.add(glow);
 
           const angelWrap = this.add.container(vp.cx, goddessY);
-          const angel = this.add.image(0, 0, 'angel-front')
+          const angel = this.add.sprite(0, 0, 'angel-goddess-sheet', 0)
             .setAlpha(0.98);
-          const angelScale = Math.min(vp.width * 0.58 / Math.max(1, angel.width), maxGoddessHeight / Math.max(1, angel.height));
+          angel.play('angel-goddess-float');
+          const angelScale = Math.min(
+            vp.width * 0.62 / ANGEL_GODDESS_FRAME.width,
+            maxGoddessHeight / ANGEL_GODDESS_FRAME.height,
+          );
           angelWrap.setScale(angelScale);
           angelWrap.add(angel);
-
-          const blink = this.add.graphics();
-          blink.fillStyle(0x221307, 0.9);
-          blink.fillEllipse(-24, -226, 23, 5);
-          blink.fillEllipse(25, -226, 23, 5);
-          blink.lineStyle(2, 0xfff0b3, 0.86);
-          blink.strokeEllipse(-24, -226, 23, 5);
-          blink.strokeEllipse(25, -226, 23, 5);
-          blink.setAlpha(0);
-          angelWrap.add(blink);
 
           layer.add(angelWrap);
           this.tweens.add({
             targets: angelWrap,
             y: goddessY - Math.max(8, vp.height * 0.012),
             duration: 2400,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+          this.tweens.add({
+            targets: angelWrap,
+            scaleX: angelScale * 1.012,
+            scaleY: angelScale * 1.012,
+            duration: 2600,
             yoyo: true,
             repeat: -1,
             ease: 'Sine.easeInOut',
@@ -1645,31 +1654,6 @@ export default function RpgWorldPage() {
             repeat: -1,
             ease: 'Sine.easeInOut',
           });
-          const blinkTimer = this.time.addEvent({
-            delay: 3100,
-            loop: true,
-            callback: () => {
-              if (!blink.active) return;
-              this.tweens.add({
-                targets: blink,
-                alpha: 1,
-                duration: 70,
-                ease: 'Sine.easeOut',
-                onComplete: () => {
-                  this.time.delayedCall(90, () => {
-                    if (!blink.active) return;
-                    this.tweens.add({
-                      targets: blink,
-                      alpha: 0,
-                      duration: 90,
-                      ease: 'Sine.easeIn',
-                    });
-                  });
-                },
-              });
-            },
-          });
-          layer.once('destroy', () => blinkTimer.remove(false));
 
           for (let i = 0; i < 10; i++) {
             const feather = this.add.text(
