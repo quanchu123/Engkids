@@ -1586,6 +1586,11 @@ export default function RpgWorldPage() {
           const vignette = this.add.rectangle(vp.cx, vp.cy, vp.width, vp.height, 0x020611, 0.28);
           layer.add(vignette);
 
+          const goddessTop = Math.max(12, vp.height * 0.02);
+          const reservedBottom = Math.min(250, Math.max(210, vp.height * 0.26));
+          const maxGoddessHeight = Math.max(360, vp.height - reservedBottom - goddessTop);
+          const goddessY = goddessTop + maxGoddessHeight / 2;
+
           const rays = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
           for (let i = 0; i < 28; i++) {
             const angle = Phaser.Math.DegToRad(i * (360 / 28));
@@ -1593,30 +1598,78 @@ export default function RpgWorldPage() {
             rays.lineStyle(i % 3 === 0 ? 3 : 1, 0xfff0a8, i % 3 === 0 ? 0.5 : 0.28);
             rays.lineBetween(
               vp.cx + Math.cos(angle) * 42,
-              vp.height * 0.34 + Math.sin(angle) * 42,
+              goddessY - maxGoddessHeight * 0.18 + Math.sin(angle) * 42,
               vp.cx + Math.cos(angle) * len,
-              vp.height * 0.34 + Math.sin(angle) * len,
+              goddessY - maxGoddessHeight * 0.18 + Math.sin(angle) * len,
             );
           }
           layer.add(rays);
 
-          const glow = this.add.circle(vp.cx, vp.height * 0.38, Math.min(vp.width, vp.height) * 0.28, 0xffe8a3, 0.18)
+          const glow = this.add.circle(vp.cx, goddessY - maxGoddessHeight * 0.1, Math.min(vp.width, vp.height) * 0.26, 0xffe8a3, 0.18)
             .setBlendMode(Phaser.BlendModes.ADD);
           layer.add(glow);
 
-          const angel = this.add.image(vp.cx, vp.height * 0.43, 'angel-front')
+          const angelWrap = this.add.container(vp.cx, goddessY);
+          const angel = this.add.image(0, 0, 'angel-front')
             .setAlpha(0.98);
-          const angelScale = Math.min(vp.width * 0.52 / Math.max(1, angel.width), vp.height * 0.86 / Math.max(1, angel.height));
-          angel.setScale(angelScale);
-          layer.add(angel);
+          const angelScale = Math.min(vp.width * 0.58 / Math.max(1, angel.width), maxGoddessHeight / Math.max(1, angel.height));
+          angelWrap.setScale(angelScale);
+          angelWrap.add(angel);
+
+          const blink = this.add.graphics();
+          blink.fillStyle(0x221307, 0.9);
+          blink.fillEllipse(-24, -226, 23, 5);
+          blink.fillEllipse(25, -226, 23, 5);
+          blink.lineStyle(2, 0xfff0b3, 0.86);
+          blink.strokeEllipse(-24, -226, 23, 5);
+          blink.strokeEllipse(25, -226, 23, 5);
+          blink.setAlpha(0);
+          angelWrap.add(blink);
+
+          layer.add(angelWrap);
           this.tweens.add({
-            targets: angel,
-            y: angel.y - 10,
+            targets: angelWrap,
+            y: goddessY - Math.max(8, vp.height * 0.012),
+            duration: 2400,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+          this.tweens.add({
+            targets: glow,
+            alpha: 0.28,
+            scaleX: 1.08,
+            scaleY: 1.08,
             duration: 1800,
             yoyo: true,
             repeat: -1,
             ease: 'Sine.easeInOut',
           });
+          const blinkTimer = this.time.addEvent({
+            delay: 3100,
+            loop: true,
+            callback: () => {
+              if (!blink.active) return;
+              this.tweens.add({
+                targets: blink,
+                alpha: 1,
+                duration: 70,
+                ease: 'Sine.easeOut',
+                onComplete: () => {
+                  this.time.delayedCall(90, () => {
+                    if (!blink.active) return;
+                    this.tweens.add({
+                      targets: blink,
+                      alpha: 0,
+                      duration: 90,
+                      ease: 'Sine.easeIn',
+                    });
+                  });
+                },
+              });
+            },
+          });
+          layer.once('destroy', () => blinkTimer.remove(false));
 
           for (let i = 0; i < 10; i++) {
             const feather = this.add.text(
@@ -1681,9 +1734,12 @@ export default function RpgWorldPage() {
           portraitFrame.strokeRoundedRect(boxX + 24, boxY + 22, 112, 112, 22);
           dialogueObjects.push(portraitFrame);
 
-          const portrait = this.add.image(boxX + 80, boxY + 78, 'angel-front')
-            .setCrop(166, 56, 205, 235)
-            .setDisplaySize(98, 112);
+          const portraitGlow = this.add.circle(boxX + 80, boxY + 78, 45, 0xfde68a, 0.12)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          dialogueObjects.push(portraitGlow);
+
+          const portrait = this.add.image(boxX + 80, boxY + 79, 'angel-front')
+            .setDisplaySize(84, 108);
           dialogueObjects.push(portrait);
 
           const name = this.add.text(boxX + 156, boxY + 28, 'Nữ thần Thảo Hiền:', {
@@ -1811,9 +1867,10 @@ export default function RpgWorldPage() {
           const gap = Math.min(28, Math.max(14, vp.width * 0.018));
           const totalW = cardW * upgrades.length + gap * (upgrades.length - 1);
           const startX = vp.cx - totalW / 2 + cardW / 2;
-          const cardY = Math.min(vp.height - 150, Math.max(vp.height * 0.48, 270));
+          const cardY = vp.height - cardH / 2 - Math.max(20, vp.height * 0.032);
 
           let picked = false;
+          const cards: Phaser.GameObjects.Container[] = [];
           const cleanupKey = (event: KeyboardEvent) => {
             const found = upgrades.find((upgrade) => upgrade.key === event.key);
             if (found) choose(found.kind);
@@ -1822,13 +1879,8 @@ export default function RpgWorldPage() {
             if (picked) return;
             picked = true;
             this.input.keyboard?.off('keydown', cleanupKey);
-            this.tweens.add({
-              targets: upgradeLayer,
-              alpha: 0,
-              duration: 280,
-              ease: 'Sine.easeIn',
-              onComplete: () => this._finishAngelRevive(kind, [overlay, layer, upgradeLayer]),
-            });
+            cards.forEach((card) => card.disableInteractive());
+            this._finishAngelRevive(kind, [overlay, layer, upgradeLayer]);
           };
 
           upgrades.forEach((upgrade, index) => {
@@ -1876,7 +1928,9 @@ export default function RpgWorldPage() {
             card.on('pointerover', () => card.setScale(1.035));
             card.on('pointerout', () => card.setScale(1));
             card.on('pointerdown', () => choose(upgrade.kind));
+            card.on('pointerup', () => choose(upgrade.kind));
             upgradeLayer.add(card);
+            cards.push(card);
           });
 
           this.input.keyboard?.on('keydown', cleanupKey);
@@ -1903,7 +1957,7 @@ export default function RpgWorldPage() {
           this.tweens.add({
             targets: fadeTargets,
             alpha: 0,
-            duration: 420,
+            duration: 220,
             ease: 'Sine.easeIn',
             onComplete: () => {
               fadeTargets.forEach((target) => target.destroy());
