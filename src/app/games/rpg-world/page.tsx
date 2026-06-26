@@ -129,6 +129,7 @@ export default function RpgWorldPage() {
   const [bossQuestion, setBossQuestion] = useState<BossQuestionState | null>(null);
   const [isAdminTester, setIsAdminTester] = useState(false);
   const [bossCinematic, setBossCinematic] = useState(false);
+  const [bossReviveVideo, setBossReviveVideo] = useState<{ id: number; src: string } | null>(null);
 
   const battleRef = useRef<BattleState | null>(null);
   const bossQuestionRef = useRef<BossQuestionState | null>(null);
@@ -138,6 +139,7 @@ export default function RpgWorldPage() {
   const attackBonusRef = useRef(0);
   const shieldChargesRef = useRef(0);
   const angelReviveUsedRef = useRef(false);
+  const bossReviveVideoDoneRef = useRef<(() => void) | null>(null);
   // On-screen D-pad state, read every frame by the Phaser update loop.
   const moveRef = useRef({ up: false, down: false, left: false, right: false });
 
@@ -178,6 +180,7 @@ export default function RpgWorldPage() {
     bossPlayerHit: (): BossHitResult => 'hit',
     bossAngelRevive: (_upgrade: BossReviveUpgrade) => {},
     bossCinematic: (_active: boolean) => {},
+    playBossReviveVideo: (_onDone: () => void) => {},
     bossWin: () => {},
   });
 
@@ -231,6 +234,13 @@ export default function RpgWorldPage() {
       bossResolveCbRef.current = null;
       cb?.(correct);
     }, 650);
+  }, []);
+
+  const finishBossReviveVideo = useCallback(() => {
+    const done = bossReviveVideoDoneRef.current;
+    bossReviveVideoDoneRef.current = null;
+    setBossReviveVideo(null);
+    done?.();
   }, []);
 
   const handleAdminSkipBoss = useCallback(() => {
@@ -312,7 +322,6 @@ export default function RpgWorldPage() {
           this.load.image('boss-cosmic-arena', `${BASE}/boss-cosmic-arena.png`);
           this.load.image('boss-purple-meteor', `${BASE}/boss-purple-meteor.png`);
           this.load.image('angel-front', `${BASE}/angel-front.png`);
-          this.load.video('angel-revive-video', `${BASE}/thien_su_galaxy.mp4`);
           this.load.audio('boss-battle-music', `${BASE}/boss-music.mp3`);
           this.load.spritesheet('boss-roar-sheet', `${BASE}/boss-roar-sheet.png`, {
             frameWidth: BOSS_ROAR_FRAME_SIZE,
@@ -756,6 +765,8 @@ export default function RpgWorldPage() {
             setBossQuestion(null);
             bossQuestionRef.current = null;
             setBossCinematic(false);
+            setBossReviveVideo(null);
+            bossReviveVideoDoneRef.current = null;
             moveRef.current = { up: false, down: false, left: false, right: false };
           };
           cbRef.current.bossHp = (nextHp: number) => {
@@ -773,6 +784,8 @@ export default function RpgWorldPage() {
 
               setHp(hpRef.current);
               setBossCinematic(false);
+              setBossReviveVideo(null);
+              bossReviveVideoDoneRef.current = null;
               setGameOver('lose');
               return 'dead';
             }
@@ -791,10 +804,16 @@ export default function RpgWorldPage() {
             setHp(hpRef.current);
           };
           cbRef.current.bossCinematic = (active: boolean) => setBossCinematic(active);
+          cbRef.current.playBossReviveVideo = (onDone: () => void) => {
+            bossReviveVideoDoneRef.current = onDone;
+            setBossReviveVideo({ id: Date.now(), src: `${BASE}/thien_su_galaxy.mp4` });
+          };
           cbRef.current.bossWin = () => {
             scoreRef.current += 500;
             setScore(scoreRef.current);
             setBossCinematic(false);
+            setBossReviveVideo(null);
+            bossReviveVideoDoneRef.current = null;
             setGameOver('win');
           };
 
@@ -994,7 +1013,6 @@ export default function RpgWorldPage() {
         private bossSprite?: Phaser.GameObjects.Sprite;
         private bossFloatTween?: Phaser.Tweens.Tween;
         private bossMusic?: Phaser.Sound.BaseSound;
-        private reviveVideo?: Phaser.GameObjects.Video;
         private blessedByAngel = false;
         private angelRevivePlaying = false;
 
@@ -1409,8 +1427,8 @@ export default function RpgWorldPage() {
           bossQuestionRef.current = null;
           bossResolveCbRef.current = null;
 
-          const useVideoRevive = Boolean(this.cache.video.get('angel-revive-video'));
-          if (useVideoRevive) {
+          const useReactVideo = Boolean(cbRef.current.playBossReviveVideo);
+          if (useReactVideo) {
             this._playAngelReviveFlow();
             return;
           }
@@ -1515,16 +1533,6 @@ export default function RpgWorldPage() {
           return { width, height, cx: width / 2, cy: height / 2 };
         }
 
-        private _fitVideoContain(video: Phaser.GameObjects.Video, padding = 0) {
-          const vp = this._getViewport();
-          const htmlVideo = video.video;
-          const sourceW = Math.max(1, htmlVideo?.videoWidth || video.width || 16);
-          const sourceH = Math.max(1, htmlVideo?.videoHeight || video.height || 9);
-          const scale = Math.min((vp.width - padding * 2) / sourceW, (vp.height - padding * 2) / sourceH);
-          video.setPosition(vp.cx, vp.cy);
-          video.setDisplaySize(Math.round(sourceW * scale), Math.round(sourceH * scale));
-        }
-
         private _fitImage(image: Phaser.GameObjects.Image, mode: 'cover' | 'contain', maxW: number, maxH: number) {
           const sourceW = Math.max(1, image.width || 1);
           const sourceH = Math.max(1, image.height || 1);
@@ -1551,36 +1559,17 @@ export default function RpgWorldPage() {
           const overlay = this.add.rectangle(vp.cx, vp.cy, vp.width, vp.height, 0x02020a, 1)
             .setDepth(88)
             .setScrollFactor(0);
-          const video = this.add.video(vp.cx, vp.cy, 'angel-revive-video')
-            .setDepth(90)
-            .setScrollFactor(0)
-            .setAlpha(0);
-          this.reviveVideo = video;
-
-          const htmlVideo = video.video;
-          if (htmlVideo) {
-            htmlVideo.preload = 'auto';
-            htmlVideo.playsInline = true;
-            htmlVideo.disablePictureInPicture = true;
-            htmlVideo.addEventListener('loadedmetadata', () => this._fitVideoContain(video, 0), { once: true });
-            htmlVideo.addEventListener('canplay', () => this._fitVideoContain(video, 0), { once: true });
-          }
-          this._fitVideoContain(video, 0);
-
-          this.tweens.add({ targets: video, alpha: 1, duration: 420, ease: 'Sine.easeOut' });
           this.cameras.main.flash(260, 255, 244, 184, false);
 
           let videoDone = false;
           const finishVideo = () => {
             if (videoDone) return;
             videoDone = true;
-            this._showGoddessDialogueCutscene(overlay, video);
+            this._showGoddessDialogueCutscene(overlay);
           };
 
-          video.once('complete', finishVideo);
-          video.once('error', finishVideo);
-          this.time.delayedCall(11500, finishVideo);
-          video.play(false);
+          cbRef.current.playBossReviveVideo(finishVideo);
+          this.time.delayedCall(16000, finishVideo);
         }
 
         private _createGoddessLayer() {
@@ -1657,20 +1646,14 @@ export default function RpgWorldPage() {
           return layer;
         }
 
-        private _showGoddessDialogueCutscene(overlay: Phaser.GameObjects.Rectangle, video: Phaser.GameObjects.Video) {
+        private _showGoddessDialogueCutscene(overlay: Phaser.GameObjects.Rectangle) {
           const layer = this._createGoddessLayer();
-          this.tweens.add({ targets: layer, alpha: 1, duration: 520, ease: 'Sine.easeOut' });
           this.tweens.add({
-            targets: video,
-            alpha: 0,
+            targets: layer,
+            alpha: 1,
             duration: 520,
-            ease: 'Sine.easeIn',
-            onComplete: () => {
-              video.stop();
-              video.destroy();
-              this.reviveVideo = undefined;
-              this._runGoddessDialogue(layer, () => this._showReviveUpgrade(layer, overlay));
-            },
+            ease: 'Sine.easeOut',
+            onComplete: () => this._runGoddessDialogue(layer, () => this._showReviveUpgrade(layer, overlay)),
           });
         }
 
@@ -1699,8 +1682,8 @@ export default function RpgWorldPage() {
           dialogueObjects.push(portraitFrame);
 
           const portrait = this.add.image(boxX + 80, boxY + 78, 'angel-front')
-            .setCrop(112, 34, 314, 300)
-            .setDisplaySize(104, 104);
+            .setCrop(166, 56, 205, 235)
+            .setDisplaySize(98, 112);
           dialogueObjects.push(portrait);
 
           const name = this.add.text(boxX + 156, boxY + 28, 'Nữ thần Thảo Hiền:', {
@@ -1924,7 +1907,6 @@ export default function RpgWorldPage() {
             ease: 'Sine.easeIn',
             onComplete: () => {
               fadeTargets.forEach((target) => target.destroy());
-              this.reviveVideo = undefined;
               this.angelRevivePlaying = false;
               cbRef.current.bossCinematic(false);
             },
@@ -2114,6 +2096,44 @@ export default function RpgWorldPage() {
       />
       {/* Full-screen Phaser canvas */}
       <div ref={containerRef} className="relative z-[1] w-full h-full" />
+
+      {bossReviveVideo && !gameOver && (
+        <div className="absolute inset-0 z-[80] flex items-center justify-center bg-black">
+          <video
+            key={bossReviveVideo.id}
+            src={bossReviveVideo.src}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            controls={false}
+            disablePictureInPicture
+            onLoadedMetadata={(event) => {
+              const video = event.currentTarget;
+              if (video.videoWidth && video.videoHeight) {
+                video.width = video.videoWidth;
+                video.height = video.videoHeight;
+              }
+              video.play().catch(() => {});
+            }}
+            onCanPlay={(event) => {
+              event.currentTarget.play().catch(() => {});
+            }}
+            onEnded={finishBossReviveVideo}
+            onError={finishBossReviveVideo}
+            className="block select-none"
+            style={{
+              width: 'auto',
+              height: 'auto',
+              maxWidth: '100vw',
+              maxHeight: '100vh',
+              objectFit: 'contain',
+              objectPosition: 'center center',
+              imageRendering: 'auto',
+            }}
+          />
+        </div>
+      )}
 
       {/* ── HUD top bar ── */}
       {!gameOver && !bossCinematic && (
