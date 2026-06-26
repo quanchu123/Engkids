@@ -322,6 +322,7 @@ export default function RpgWorldPage() {
           this.load.image('boss-cosmic-arena', `${BASE}/boss-cosmic-arena.png`);
           this.load.image('boss-purple-meteor', `${BASE}/boss-purple-meteor.png`);
           this.load.image('angel-front', `${BASE}/angel-front.png`);
+          this.load.image('angel-front-hd', `${BASE}/angel-front-hd.png`);
           this.load.audio('boss-battle-music', `${BASE}/boss-music.mp3`);
           this.load.spritesheet('boss-roar-sheet', `${BASE}/boss-roar-sheet.png`, {
             frameWidth: BOSS_ROAR_FRAME_SIZE,
@@ -1610,24 +1611,24 @@ export default function RpgWorldPage() {
           layer.add(glow);
 
           const angelWrap = this.add.container(vp.cx, goddessY);
-          const angel = this.add.image(0, 0, 'angel-front')
+          const angel = this.add.image(0, 0, 'angel-front-hd')
             .setAlpha(0.98);
           const angelScale = Math.min(vp.width * 0.58 / Math.max(1, angel.width), maxGoddessHeight / Math.max(1, angel.height));
           angelWrap.setScale(angelScale);
           angelWrap.add(angel);
 
           layer.add(angelWrap);
-          this.tweens.add({
-            targets: angelWrap,
-            y: {
-              from: goddessY + Math.max(5, vp.height * 0.007),
-              to: goddessY - Math.max(16, vp.height * 0.024),
-            },
-            duration: 4200,
-            ease: 'Sine.easeInOut',
-            yoyo: true,
-            repeat: -1,
-          });
+          const floatAmplitude = Math.max(18, vp.height * 0.024);
+          const floatCycleMs = 5600;
+          let floatPhase = 0;
+          const updateFloat = (_time: number, delta: number) => {
+            const smoothDelta = Math.min(Math.max(delta, 0), 34);
+            floatPhase = (floatPhase + (smoothDelta / floatCycleMs) * Math.PI * 2) % (Math.PI * 2);
+            angelWrap.y = goddessY + Math.sin(floatPhase) * floatAmplitude;
+          };
+          updateFloat(0, 0);
+          this.events.on('update', updateFloat);
+          layer.once('destroy', () => this.events.off('update', updateFloat));
           this.tweens.add({
             targets: glow,
             alpha: 0.28,
@@ -2082,7 +2083,8 @@ export default function RpgWorldPage() {
         parent: containerRef.current!,
         physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 0 }, debug: false } },
         scene: [PreloaderScene, GameScene, BossScene],
-        render: { pixelArt: false, antialias: true, roundPixels: true },
+        fps: { target: 60, min: 30, forceSetTimeOut: false, smoothStep: true },
+        render: { pixelArt: false, antialias: true, antialiasGL: true, roundPixels: false },
         scale: {
           mode: Phaser.Scale.RESIZE,
           autoCenter: Phaser.Scale.CENTER_BOTH,
