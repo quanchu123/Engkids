@@ -55,7 +55,8 @@
         "assets:migrate-to-droplet": "node scripts/migrate-static-assets-to-droplet.mjs",
         "storage:audit": "node scripts/storage-audit.mjs",
         "storage:cleanup": "node scripts/cleanup-uploads.mjs",
-        "storage:cleanup:apply": "node scripts/storage-cleanup-apply.mjs --apply"
+        "storage:cleanup:apply": "node scripts/storage-cleanup-apply.mjs --apply",
+        "user:create-test-premium": "node scripts/create-test-premium-user.mjs"
     },
     "dependencies": {
         "@emoji-mart/data": "^1.2.1",
