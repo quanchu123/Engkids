@@ -111,6 +111,7 @@ interface BossQuestionState {
 
 type GamePhase = 'dungeon' | 'boss';
 type BossHitResult = 'hit' | 'revived' | 'dead';
+type BossReviveUpgrade = 'light_blade' | 'angel_heart' | 'star_shield';
 
 export default function RpgWorldPage() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -127,6 +128,7 @@ export default function RpgWorldPage() {
   const [bossHp, setBossHp] = useState(BOSS_MAX_HP);
   const [bossQuestion, setBossQuestion] = useState<BossQuestionState | null>(null);
   const [isAdminTester, setIsAdminTester] = useState(false);
+  const [bossCinematic, setBossCinematic] = useState(false);
 
   const battleRef = useRef<BattleState | null>(null);
   const bossQuestionRef = useRef<BossQuestionState | null>(null);
@@ -174,7 +176,8 @@ export default function RpgWorldPage() {
     phase: (_phase: GamePhase) => {},
     bossHp: (_hp: number) => {},
     bossPlayerHit: (): BossHitResult => 'hit',
-    bossAngelRevive: () => {},
+    bossAngelRevive: (_upgrade: BossReviveUpgrade) => {},
+    bossCinematic: (_active: boolean) => {},
     bossWin: () => {},
   });
 
@@ -752,6 +755,7 @@ export default function RpgWorldPage() {
             battleRef.current = null;
             setBossQuestion(null);
             bossQuestionRef.current = null;
+            setBossCinematic(false);
             moveRef.current = { up: false, down: false, left: false, right: false };
           };
           cbRef.current.bossHp = (nextHp: number) => {
@@ -768,6 +772,7 @@ export default function RpgWorldPage() {
               }
 
               setHp(hpRef.current);
+              setBossCinematic(false);
               setGameOver('lose');
               return 'dead';
             }
@@ -775,15 +780,21 @@ export default function RpgWorldPage() {
             setHp(hpRef.current);
             return 'hit';
           };
-          cbRef.current.bossAngelRevive = () => {
-            hpRef.current = 1;
+          cbRef.current.bossAngelRevive = (upgrade: BossReviveUpgrade) => {
+            hpRef.current = upgrade === 'angel_heart' ? 2 : 1;
             attackBonusRef.current = Math.max(attackBonusRef.current, 1);
             setAttackBonus(attackBonusRef.current);
+            if (upgrade === 'star_shield') {
+              shieldChargesRef.current += 1;
+              setShieldCharges(shieldChargesRef.current);
+            }
             setHp(hpRef.current);
           };
+          cbRef.current.bossCinematic = (active: boolean) => setBossCinematic(active);
           cbRef.current.bossWin = () => {
             scoreRef.current += 500;
             setScore(scoreRef.current);
+            setBossCinematic(false);
             setGameOver('win');
           };
 
@@ -1400,78 +1411,11 @@ export default function RpgWorldPage() {
 
           const useVideoRevive = Boolean(this.cache.video.get('angel-revive-video'));
           if (useVideoRevive) {
-            this.player.setVelocity(0, 0);
-            this.player.clearTint();
-            this.player.setVisible(false);
-            this.bossFloatTween?.pause();
-            this.bossSprite?.anims.pause();
-            (this.bossMusic as any)?.setVolume?.(0.16);
-
-            const overlay = this.add.rectangle(
-              BOSS_ARENA.width / 2,
-              BOSS_ARENA.height / 2,
-              BOSS_ARENA.width,
-              BOSS_ARENA.height,
-              0x02020a,
-              0.94,
-            ).setDepth(88).setScrollFactor(0);
-            const video = this.add.video(BOSS_ARENA.width / 2, BOSS_ARENA.height / 2, 'angel-revive-video')
-              .setDepth(90)
-              .setScrollFactor(0);
-            video.setDisplaySize(BOSS_ARENA.width, BOSS_ARENA.height);
-            video.setAlpha(0);
-            this.reviveVideo = video;
-
-            const caption = this.add.text(BOSS_ARENA.width / 2, BOSS_ARENA.height - 56, 'Thiên sứ xuất hiện...', {
-              fontFamily: 'Arial',
-              fontStyle: 'bold',
-              fontSize: '22px',
-              color: '#fff7ad',
-              stroke: '#160a00',
-              strokeThickness: 6,
-            }).setOrigin(0.5).setDepth(91).setScrollFactor(0);
-
-            this.tweens.add({ targets: video, alpha: 1, duration: 380, ease: 'Sine.easeOut' });
-            this.cameras.main.flash(360, 255, 244, 184, false);
-            this.cameras.main.shake(260, 0.004);
-
-            let finished = false;
-            const finishRevive = () => {
-              if (finished) return;
-              finished = true;
-              cbRef.current.bossAngelRevive();
-              this.blessedByAngel = true;
-              this.invulnerableUntil = this.time.now + 3000;
-              this.player.setVisible(true);
-              this.player.clearTint();
-              this.bossFloatTween?.resume();
-              this.bossSprite?.anims.resume();
-              (this.bossMusic as any)?.setVolume?.(0.46);
-              this._floatText(this.player.x, this.player.y - 74, 'Thiên sứ hồi sinh! DMG 2', '#fde68a');
-              this.cameras.main.flash(260, 255, 244, 184, false);
-              this.tweens.add({
-                targets: [video, overlay, caption],
-                alpha: 0,
-                duration: 420,
-                ease: 'Sine.easeIn',
-                onComplete: () => {
-                  video.stop();
-                  video.destroy();
-                  overlay.destroy();
-                  caption.destroy();
-                  this.reviveVideo = undefined;
-                  this.angelRevivePlaying = false;
-                },
-              });
-            };
-
-            video.once('complete', finishRevive);
-            video.once('error', finishRevive);
-            this.time.delayedCall(11500, finishRevive);
-            video.play(false);
+            this._playAngelReviveFlow();
             return;
           }
 
+          cbRef.current.bossCinematic(true);
           const x = this.player.x;
           const y = this.player.y - 92;
           this.player.setVelocity(0, 0);
@@ -1558,10 +1502,432 @@ export default function RpgWorldPage() {
               duration: 900,
               ease: 'Sine.easeIn',
               onComplete: () => {
-                container.destroy();
-                this.angelRevivePlaying = false;
+                this._finishAngelRevive('light_blade', [container]);
               },
             });
+          });
+        }
+
+        private _getViewport() {
+          const camera = this.cameras.main;
+          const width = Math.max(1, camera.width || this.scale.width || BOSS_ARENA.width);
+          const height = Math.max(1, camera.height || this.scale.height || BOSS_ARENA.height);
+          return { width, height, cx: width / 2, cy: height / 2 };
+        }
+
+        private _fitVideoContain(video: Phaser.GameObjects.Video, padding = 0) {
+          const vp = this._getViewport();
+          const htmlVideo = video.video;
+          const sourceW = Math.max(1, htmlVideo?.videoWidth || video.width || 16);
+          const sourceH = Math.max(1, htmlVideo?.videoHeight || video.height || 9);
+          const scale = Math.min((vp.width - padding * 2) / sourceW, (vp.height - padding * 2) / sourceH);
+          video.setPosition(vp.cx, vp.cy);
+          video.setDisplaySize(Math.round(sourceW * scale), Math.round(sourceH * scale));
+        }
+
+        private _fitImage(image: Phaser.GameObjects.Image, mode: 'cover' | 'contain', maxW: number, maxH: number) {
+          const sourceW = Math.max(1, image.width || 1);
+          const sourceH = Math.max(1, image.height || 1);
+          const scale = mode === 'cover'
+            ? Math.max(maxW / sourceW, maxH / sourceH)
+            : Math.min(maxW / sourceW, maxH / sourceH);
+          image.setDisplaySize(Math.round(sourceW * scale), Math.round(sourceH * scale));
+        }
+
+        private _playAngelReviveFlow() {
+          cbRef.current.bossCinematic(true);
+          moveRef.current = { up: false, down: false, left: false, right: false };
+          this.player.setVelocity(0, 0);
+          this.player.clearTint();
+          this.player.setVisible(false);
+          this.bossFloatTween?.pause();
+          this.bossSprite?.anims.pause();
+          (this.bossMusic as any)?.setVolume?.(0.12);
+          this.cameras.main.stopFollow();
+          this.cameras.main.setZoom(1);
+          this.cameras.main.setScroll(0, 0);
+
+          const vp = this._getViewport();
+          const overlay = this.add.rectangle(vp.cx, vp.cy, vp.width, vp.height, 0x02020a, 1)
+            .setDepth(88)
+            .setScrollFactor(0);
+          const video = this.add.video(vp.cx, vp.cy, 'angel-revive-video')
+            .setDepth(90)
+            .setScrollFactor(0)
+            .setAlpha(0);
+          this.reviveVideo = video;
+
+          const htmlVideo = video.video;
+          if (htmlVideo) {
+            htmlVideo.preload = 'auto';
+            htmlVideo.playsInline = true;
+            htmlVideo.disablePictureInPicture = true;
+            htmlVideo.addEventListener('loadedmetadata', () => this._fitVideoContain(video, 0), { once: true });
+            htmlVideo.addEventListener('canplay', () => this._fitVideoContain(video, 0), { once: true });
+          }
+          this._fitVideoContain(video, 0);
+
+          this.tweens.add({ targets: video, alpha: 1, duration: 420, ease: 'Sine.easeOut' });
+          this.cameras.main.flash(260, 255, 244, 184, false);
+
+          let videoDone = false;
+          const finishVideo = () => {
+            if (videoDone) return;
+            videoDone = true;
+            this._showGoddessDialogueCutscene(overlay, video);
+          };
+
+          video.once('complete', finishVideo);
+          video.once('error', finishVideo);
+          this.time.delayedCall(11500, finishVideo);
+          video.play(false);
+        }
+
+        private _createGoddessLayer() {
+          const vp = this._getViewport();
+          const layer = this.add.container(0, 0)
+            .setDepth(91)
+            .setScrollFactor(0)
+            .setAlpha(0);
+
+          const bg = this.add.image(vp.cx, vp.cy, 'boss-cosmic-arena');
+          this._fitImage(bg, 'cover', vp.width, vp.height);
+          layer.add(bg);
+
+          const vignette = this.add.rectangle(vp.cx, vp.cy, vp.width, vp.height, 0x020611, 0.28);
+          layer.add(vignette);
+
+          const rays = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
+          for (let i = 0; i < 28; i++) {
+            const angle = Phaser.Math.DegToRad(i * (360 / 28));
+            const len = Phaser.Math.Between(Math.round(vp.height * 0.22), Math.round(vp.height * 0.58));
+            rays.lineStyle(i % 3 === 0 ? 3 : 1, 0xfff0a8, i % 3 === 0 ? 0.5 : 0.28);
+            rays.lineBetween(
+              vp.cx + Math.cos(angle) * 42,
+              vp.height * 0.34 + Math.sin(angle) * 42,
+              vp.cx + Math.cos(angle) * len,
+              vp.height * 0.34 + Math.sin(angle) * len,
+            );
+          }
+          layer.add(rays);
+
+          const glow = this.add.circle(vp.cx, vp.height * 0.38, Math.min(vp.width, vp.height) * 0.28, 0xffe8a3, 0.18)
+            .setBlendMode(Phaser.BlendModes.ADD);
+          layer.add(glow);
+
+          const angel = this.add.image(vp.cx, vp.height * 0.43, 'angel-front')
+            .setAlpha(0.98);
+          const angelScale = Math.min(vp.width * 0.52 / Math.max(1, angel.width), vp.height * 0.86 / Math.max(1, angel.height));
+          angel.setScale(angelScale);
+          layer.add(angel);
+          this.tweens.add({
+            targets: angel,
+            y: angel.y - 10,
+            duration: 1800,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+
+          for (let i = 0; i < 10; i++) {
+            const feather = this.add.text(
+              Phaser.Math.Between(Math.round(vp.width * 0.12), Math.round(vp.width * 0.88)),
+              Phaser.Math.Between(Math.round(vp.height * 0.08), Math.round(vp.height * 0.72)),
+              '✦',
+              {
+                fontFamily: 'Arial',
+                fontSize: `${Phaser.Math.Between(14, 26)}px`,
+                color: '#fff4bf',
+                stroke: '#7c4a03',
+                strokeThickness: 2,
+              },
+            ).setAlpha(0.58).setRotation(Phaser.Math.FloatBetween(-0.6, 0.6));
+            layer.add(feather);
+            this.tweens.add({
+              targets: feather,
+              y: feather.y + Phaser.Math.Between(10, 26),
+              alpha: 0.2,
+              duration: Phaser.Math.Between(1800, 2800),
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+          }
+
+          return layer;
+        }
+
+        private _showGoddessDialogueCutscene(overlay: Phaser.GameObjects.Rectangle, video: Phaser.GameObjects.Video) {
+          const layer = this._createGoddessLayer();
+          this.tweens.add({ targets: layer, alpha: 1, duration: 520, ease: 'Sine.easeOut' });
+          this.tweens.add({
+            targets: video,
+            alpha: 0,
+            duration: 520,
+            ease: 'Sine.easeIn',
+            onComplete: () => {
+              video.stop();
+              video.destroy();
+              this.reviveVideo = undefined;
+              this._runGoddessDialogue(layer, () => this._showReviveUpgrade(layer, overlay));
+            },
+          });
+        }
+
+        private _runGoddessDialogue(layer: Phaser.GameObjects.Container, onDone: () => void) {
+          const vp = this._getViewport();
+          const boxW = Math.min(vp.width * 0.76, 860);
+          const boxH = Math.min(168, vp.height * 0.25);
+          const boxX = vp.cx - boxW / 2;
+          const boxY = vp.height - boxH - 34;
+          const dialogueObjects: Phaser.GameObjects.GameObject[] = [];
+
+          const box = this.add.graphics();
+          box.fillStyle(0x05070d, 0.84);
+          box.fillRoundedRect(boxX, boxY, boxW, boxH, 28);
+          box.lineStyle(2, 0xf8d77b, 0.34);
+          box.strokeRoundedRect(boxX, boxY, boxW, boxH, 28);
+          box.lineStyle(1, 0xffffff, 0.12);
+          box.strokeRoundedRect(boxX + 5, boxY + 5, boxW - 10, boxH - 10, 22);
+          dialogueObjects.push(box);
+
+          const portraitFrame = this.add.graphics();
+          portraitFrame.fillStyle(0x111827, 0.88);
+          portraitFrame.fillRoundedRect(boxX + 24, boxY + 22, 112, 112, 22);
+          portraitFrame.lineStyle(2, 0xf8d77b, 0.62);
+          portraitFrame.strokeRoundedRect(boxX + 24, boxY + 22, 112, 112, 22);
+          dialogueObjects.push(portraitFrame);
+
+          const portrait = this.add.image(boxX + 80, boxY + 78, 'angel-front')
+            .setCrop(112, 34, 314, 300)
+            .setDisplaySize(104, 104);
+          dialogueObjects.push(portrait);
+
+          const name = this.add.text(boxX + 156, boxY + 28, 'Nữ thần Thảo Hiền:', {
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fontSize: `${Math.round(Math.min(30, Math.max(21, vp.width * 0.017)))}px`,
+            color: '#f9d879',
+            stroke: '#160a00',
+            strokeThickness: 4,
+          });
+          dialogueObjects.push(name);
+
+          const body = this.add.text(boxX + 156, boxY + 76, '', {
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fontSize: `${Math.round(Math.min(28, Math.max(19, vp.width * 0.015)))}px`,
+            color: '#fffaf0',
+            stroke: '#05070d',
+            strokeThickness: 5,
+            wordWrap: { width: boxW - 190 },
+          });
+          dialogueObjects.push(body);
+
+          const prompt = this.add.text(boxX + boxW - 42, boxY + boxH - 38, '▼', {
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fontSize: '26px',
+            color: '#f8d77b',
+            stroke: '#120700',
+            strokeThickness: 4,
+          }).setOrigin(0.5).setAlpha(0);
+          dialogueObjects.push(prompt);
+
+          const hint = this.add.text(boxX + boxW - 170, boxY + boxH - 32, 'Nhấn phím / click / chạm', {
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fontSize: '13px',
+            color: '#fef3c7',
+            stroke: '#05070d',
+            strokeThickness: 3,
+          }).setOrigin(0.5).setAlpha(0);
+          dialogueObjects.push(hint);
+
+          dialogueObjects.forEach((obj) => layer.add(obj));
+
+          const line = 'Tôi tới để đem ánh sáng cho bạn.';
+          const chars = Array.from(line);
+          let cursor = 0;
+          let typeTimer: Phaser.Time.TimerEvent;
+          typeTimer = this.time.addEvent({
+            delay: 38,
+            loop: true,
+            callback: () => {
+              cursor += 1;
+              body.setText(chars.slice(0, cursor).join(''));
+              if (cursor >= chars.length) {
+                typeTimer.remove(false);
+                prompt.setAlpha(1);
+                hint.setAlpha(0.82);
+                this.tweens.add({ targets: prompt, y: prompt.y + 8, alpha: 0.42, duration: 560, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+                this._waitForAnyInput(() => {
+                  this.tweens.add({
+                    targets: dialogueObjects,
+                    alpha: 0,
+                    duration: 280,
+                    ease: 'Sine.easeIn',
+                    onComplete: onDone,
+                  });
+                });
+              }
+            },
+          });
+        }
+
+        private _waitForAnyInput(onInput: () => void) {
+          let done = false;
+          const confirm = () => {
+            if (done) return;
+            done = true;
+            this.input.off('pointerdown', confirm);
+            this.input.keyboard?.off('keydown', confirm);
+            onInput();
+          };
+          this.input.once('pointerdown', confirm);
+          this.input.keyboard?.once('keydown', confirm);
+        }
+
+        private _showReviveUpgrade(layer: Phaser.GameObjects.Container, overlay: Phaser.GameObjects.Rectangle) {
+          const vp = this._getViewport();
+          const upgradeLayer = this.add.container(0, 0)
+            .setDepth(96)
+            .setScrollFactor(0)
+            .setAlpha(0);
+          const veil = this.add.rectangle(vp.cx, vp.cy, vp.width, vp.height, 0x020611, 0.42);
+          upgradeLayer.add(veil);
+
+          const title = this.add.text(vp.cx, Math.max(72, vp.height * 0.13), 'Chọn phước lành của Nữ thần', {
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fontSize: `${Math.round(Math.min(34, Math.max(24, vp.width * 0.022)))}px`,
+            color: '#fff7ad',
+            stroke: '#160a00',
+            strokeThickness: 6,
+          }).setOrigin(0.5);
+          upgradeLayer.add(title);
+
+          const subtitle = this.add.text(vp.cx, title.y + 40, 'Bấm 1–3 hoặc chọn một nâng cấp để quay lại trận đấu', {
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            fontSize: '15px',
+            color: '#e0f2fe',
+            stroke: '#020617',
+            strokeThickness: 4,
+          }).setOrigin(0.5).setAlpha(0.86);
+          upgradeLayer.add(subtitle);
+
+          const upgrades: Array<{ kind: BossReviveUpgrade; key: string; icon: string; title: string; desc: string; }> = [
+            { kind: 'light_blade', key: '1', icon: '⚔', title: 'Kiếm ánh sáng', desc: 'Mỗi câu đúng chém boss -2 HP.' },
+            { kind: 'angel_heart', key: '2', icon: '♥', title: 'Trái tim bình minh', desc: 'Hồi sinh với 2 tim để dễ né hơn.' },
+            { kind: 'star_shield', key: '3', icon: '🛡', title: 'Khiên tinh tú', desc: 'Nhận thêm 1 khiên chặn sát thương.' },
+          ];
+
+          const cardW = Math.min(250, Math.max(196, vp.width * 0.22));
+          const cardH = 170;
+          const gap = Math.min(28, Math.max(14, vp.width * 0.018));
+          const totalW = cardW * upgrades.length + gap * (upgrades.length - 1);
+          const startX = vp.cx - totalW / 2 + cardW / 2;
+          const cardY = Math.min(vp.height - 150, Math.max(vp.height * 0.48, 270));
+
+          let picked = false;
+          const cleanupKey = (event: KeyboardEvent) => {
+            const found = upgrades.find((upgrade) => upgrade.key === event.key);
+            if (found) choose(found.kind);
+          };
+          const choose = (kind: BossReviveUpgrade) => {
+            if (picked) return;
+            picked = true;
+            this.input.keyboard?.off('keydown', cleanupKey);
+            this.tweens.add({
+              targets: upgradeLayer,
+              alpha: 0,
+              duration: 280,
+              ease: 'Sine.easeIn',
+              onComplete: () => this._finishAngelRevive(kind, [overlay, layer, upgradeLayer]),
+            });
+          };
+
+          upgrades.forEach((upgrade, index) => {
+            const x = startX + index * (cardW + gap);
+            const card = this.add.container(x, cardY)
+              .setSize(cardW, cardH)
+              .setInteractive(new Phaser.Geom.Rectangle(-cardW / 2, -cardH / 2, cardW, cardH), Phaser.Geom.Rectangle.Contains);
+            const bg = this.add.graphics();
+            bg.fillStyle(0x090b16, 0.9);
+            bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 24);
+            bg.lineStyle(2, index === 0 ? 0xfacc15 : 0x93c5fd, index === 0 ? 0.78 : 0.46);
+            bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 24);
+            const keyBadge = this.add.text(-cardW / 2 + 22, -cardH / 2 + 20, upgrade.key, {
+              fontFamily: 'Arial',
+              fontStyle: 'bold',
+              fontSize: '18px',
+              color: '#111827',
+              backgroundColor: '#fde68a',
+              padding: { x: 9, y: 4 },
+            }).setOrigin(0.5);
+            const icon = this.add.text(0, -42, upgrade.icon, {
+              fontFamily: 'Arial',
+              fontSize: '38px',
+              color: '#fff7ad',
+              stroke: '#1f1300',
+              strokeThickness: 4,
+            }).setOrigin(0.5);
+            const label = this.add.text(0, 8, upgrade.title, {
+              fontFamily: 'Arial',
+              fontStyle: 'bold',
+              fontSize: '20px',
+              color: '#fff7ad',
+              stroke: '#020617',
+              strokeThickness: 4,
+            }).setOrigin(0.5);
+            const desc = this.add.text(0, 48, upgrade.desc, {
+              fontFamily: 'Arial',
+              fontStyle: 'bold',
+              fontSize: '13px',
+              color: '#dbeafe',
+              align: 'center',
+              wordWrap: { width: cardW - 30 },
+            }).setOrigin(0.5);
+            card.add([bg, keyBadge, icon, label, desc]);
+            card.on('pointerover', () => card.setScale(1.035));
+            card.on('pointerout', () => card.setScale(1));
+            card.on('pointerdown', () => choose(upgrade.kind));
+            upgradeLayer.add(card);
+          });
+
+          this.input.keyboard?.on('keydown', cleanupKey);
+          this.tweens.add({ targets: upgradeLayer, alpha: 1, duration: 360, ease: 'Sine.easeOut' });
+        }
+
+        private _finishAngelRevive(
+          upgrade: BossReviveUpgrade,
+          fadeTargets: Array<Phaser.GameObjects.GameObject>,
+        ) {
+          cbRef.current.bossAngelRevive(upgrade);
+          this.blessedByAngel = true;
+          this.invulnerableUntil = this.time.now + 3000;
+          this.player.setVisible(true);
+          this.player.clearTint();
+          this.player.setAlpha(1);
+          this.bossFloatTween?.resume();
+          this.bossSprite?.anims.resume();
+          (this.bossMusic as any)?.setVolume?.(0.46);
+          this.cameras.main.setZoom(this.scale.width < 720 ? 0.8 : 1);
+          this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+          this._floatText(this.player.x, this.player.y - 74, 'Thiên sứ hồi sinh! DMG 2', '#fde68a');
+          this.cameras.main.flash(300, 255, 244, 184, false);
+          this.tweens.add({
+            targets: fadeTargets,
+            alpha: 0,
+            duration: 420,
+            ease: 'Sine.easeIn',
+            onComplete: () => {
+              fadeTargets.forEach((target) => target.destroy());
+              this.reviveVideo = undefined;
+              this.angelRevivePlaying = false;
+              cbRef.current.bossCinematic(false);
+            },
           });
         }
 
@@ -1750,7 +2116,7 @@ export default function RpgWorldPage() {
       <div ref={containerRef} className="relative z-[1] w-full h-full" />
 
       {/* ── HUD top bar ── */}
-      {!gameOver && (
+      {!gameOver && !bossCinematic && (
         <div className="absolute top-0 left-0 right-0 z-10 flex items-start justify-between gap-3 p-3 sm:p-5 pointer-events-none">
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
@@ -1789,7 +2155,7 @@ export default function RpgWorldPage() {
         </div>
       )}
 
-      {isAdminTester && phase === 'dungeon' && !gameOver && (
+      {isAdminTester && phase === 'dungeon' && !gameOver && !bossCinematic && (
         <button
           type="button"
           onClick={handleAdminSkipBoss}
@@ -1799,7 +2165,7 @@ export default function RpgWorldPage() {
         </button>
       )}
 
-      {!gameOver && (
+      {!gameOver && !bossCinematic && (
         <div className="pointer-events-none absolute left-3 top-[76px] z-10 w-44 rounded-2xl border border-white/10 bg-slate-950/75 p-3 shadow-xl backdrop-blur-md sm:left-5 sm:top-[92px]">
           <div className="mb-2 flex items-center justify-between text-[11px] font-black uppercase tracking-wider">
             <span className="text-slate-300">Quái đã hạ</span>
@@ -1823,7 +2189,7 @@ export default function RpgWorldPage() {
       )}
 
       {/* ── Controls hint (bottom) ── */}
-      {phase === 'boss' && !gameOver && (
+      {phase === 'boss' && !gameOver && !bossCinematic && (
         <div className="pointer-events-none absolute right-3 top-[112px] z-10 w-[min(92vw,360px)] rounded-2xl border border-fuchsia-300/30 bg-slate-950/85 p-4 shadow-[0_0_35px_rgba(168,85,247,.25)] backdrop-blur-md sm:right-5 sm:top-[118px]">
           <div className="mb-2 flex items-center justify-between text-[11px] font-black uppercase tracking-wider">
             <span className="text-fuchsia-200">Boss hư không</span>
@@ -1841,14 +2207,14 @@ export default function RpgWorldPage() {
         </div>
       )}
 
-      {!gameOver && !battle && (
+      {!gameOver && !battle && !bossCinematic && (
         <div className="absolute bottom-4 left-1/2 z-10 hidden -translate-x-1/2 select-none rounded-full border border-white/10 bg-slate-950/70 px-4 py-2 text-xs font-semibold text-white/60 shadow-lg backdrop-blur-md pointer-events-none sm:block">
           Phím mũi tên để di chuyển · Chạm quái vật để chiến đấu · Hạ {MONSTERS_TO_WIN} quái để mở cổng
         </div>
       )}
 
       {/* ── On-screen D-pad (touch controls for mobile) ── */}
-      {!gameOver && !battle && (
+      {!gameOver && !battle && !bossCinematic && (
         <div
           className="absolute bottom-4 right-4 z-20 select-none opacity-90 sm:bottom-6 sm:right-6"
           style={{ width: 154, height: 154, touchAction: 'none' }}
@@ -1951,7 +2317,7 @@ export default function RpgWorldPage() {
       )}
 
       {/* ── NPC Dialogue ── */}
-      {bossQuestion && !gameOver && (
+      {bossQuestion && !gameOver && !bossCinematic && (
         <div className="absolute right-3 top-[245px] z-30 w-[min(92vw,360px)] rounded-3xl border border-fuchsia-300/35 bg-slate-950/90 p-4 shadow-[0_0_45px_rgba(168,85,247,.32)] backdrop-blur-md sm:right-5 sm:top-[258px]">
           <div className="mb-3 rounded-2xl border border-fuchsia-300/25 bg-fuchsia-500/10 p-3 text-center">
             <div className="mb-1 text-[11px] font-black uppercase tracking-[.22em] text-fuchsia-200/75">
@@ -1990,7 +2356,7 @@ export default function RpgWorldPage() {
         </div>
       )}
 
-      {npcMsg && !battle && !gameOver && (
+      {npcMsg && !battle && !gameOver && !bossCinematic && (
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-gray-900/95 border-2 border-blue-400 rounded-xl px-5 py-3 max-w-xs text-center z-10 shadow-xl pointer-events-none">
           <div className="text-blue-300 text-xs font-bold mb-1">NPC</div>
           <div className="text-white text-sm font-semibold whitespace-pre-line">{npcMsg}</div>
