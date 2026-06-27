@@ -1046,6 +1046,7 @@ export default function RpgWorldPage() {
           this.cameras.main.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
           this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
           this.cameras.main.setZoom(this.scale.width < 720 ? 0.8 : 1);
+          this.cameras.main.roundPixels = false;
           this.cameras.main.fadeIn(700, 8, 2, 18);
 
           this.cursors = this.input.keyboard!.createCursorKeys();
@@ -1619,16 +1620,24 @@ export default function RpgWorldPage() {
 
           layer.add(angelWrap);
           const floatAmplitude = Math.max(18, vp.height * 0.024);
-          const floatCycleMs = 5600;
-          let floatPhase = 0;
-          const updateFloat = (_time: number, delta: number) => {
-            const smoothDelta = Math.min(Math.max(delta, 0), 34);
-            floatPhase = (floatPhase + (smoothDelta / floatCycleMs) * Math.PI * 2) % (Math.PI * 2);
-            angelWrap.y = goddessY + Math.sin(floatPhase) * floatAmplitude;
-          };
-          updateFloat(0, 0);
-          this.events.on('update', updateFloat);
-          layer.once('destroy', () => this.events.off('update', updateFloat));
+          angelWrap.y = goddessY - floatAmplitude * 0.35;
+          this.tweens.add({
+            targets: angelWrap,
+            y: goddessY + floatAmplitude,
+            duration: 2800,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+          this.tweens.add({
+            targets: angelWrap,
+            scaleX: angelScale * 1.006,
+            scaleY: angelScale * 1.006,
+            duration: 2800,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
           this.tweens.add({
             targets: glow,
             alpha: 0.28,
@@ -2084,7 +2093,7 @@ export default function RpgWorldPage() {
         physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 0 }, debug: false } },
         scene: [PreloaderScene, GameScene, BossScene],
         fps: { target: 60, min: 30, forceSetTimeOut: false, smoothStep: true },
-        render: { pixelArt: false, antialias: true, antialiasGL: true, roundPixels: false },
+        render: { pixelArt: false, antialias: true, antialiasGL: true, roundPixels: false, powerPreference: 'high-performance' },
         scale: {
           mode: Phaser.Scale.RESIZE,
           autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -2154,6 +2163,8 @@ export default function RpgWorldPage() {
               objectFit: 'contain',
               objectPosition: 'center center',
               imageRendering: 'auto',
+              transform: 'translate3d(0,0,0)',
+              willChange: 'transform',
             }}
           />
         </div>
