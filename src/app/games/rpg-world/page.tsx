@@ -1026,6 +1026,7 @@ export default function RpgWorldPage() {
         private bossMusic?: Phaser.Sound.BaseSound;
         private blessedByAngel = false;
         private angelRevivePlaying = false;
+        private paladinAura?: Phaser.GameObjects.Ellipse;
 
         constructor() { super({ key: 'BossScene' }); }
 
@@ -1037,6 +1038,8 @@ export default function RpgWorldPage() {
           angelReviveUsedRef.current = false;
           this.blessedByAngel = false;
           this.angelRevivePlaying = false;
+          this.paladinAura?.destroy();
+          this.paladinAura = undefined;
           this.bossHp = BOSS_MAX_HP;
           this.physics.world.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
           this.events.once('shutdown', () => this._stopBossMusic());
@@ -1236,6 +1239,9 @@ export default function RpgWorldPage() {
           vx = (vx / len) * BOSS_PLAYER_SPEED;
           vy = (vy / len) * BOSS_PLAYER_SPEED;
           this.player.setVelocity(vx, vy);
+          if (this.paladinAura?.active) {
+            this.paladinAura.setPosition(this.player.x, this.player.y + 12);
+          }
 
           if (vx < 0) {
             this.direction = 'left';
@@ -1426,7 +1432,11 @@ export default function RpgWorldPage() {
             this.player.setVelocity(0, 0);
           }
           this.player.setTint(0xff5ca8);
-          this.time.delayedCall(220, () => { if (this.player?.active) this.player.clearTint(); });
+          this.time.delayedCall(220, () => {
+            if (!this.player?.active) return;
+            if (this.blessedByAngel) this._applyPaladinLook();
+            else this.player.clearTint();
+          });
           this.cameras.main.shake(180, 0.01);
         }
 
@@ -1970,7 +1980,7 @@ export default function RpgWorldPage() {
           this.blessedByAngel = true;
           this.invulnerableUntil = this.time.now + 3000;
           this.player.setVisible(true);
-          this.player.clearTint();
+          this._applyPaladinLook();
           this.player.setAlpha(1);
           this.bossFloatTween?.resume();
           this.bossSprite?.anims.resume();
@@ -1993,6 +2003,26 @@ export default function RpgWorldPage() {
               cbRef.current.bossCinematic(false);
             },
           });
+        }
+
+        private _applyPaladinLook() {
+          if (!this.player?.active) return;
+          this.player.setTint(0xffd76a);
+          if (!this.paladinAura?.active) {
+            this.paladinAura = this.add.ellipse(this.player.x, this.player.y + 12, 54, 18, 0xfacc15, 0.22)
+              .setDepth(19)
+              .setBlendMode(Phaser.BlendModes.ADD);
+            this.tweens.add({
+              targets: this.paladinAura,
+              alpha: { from: 0.12, to: 0.32 },
+              scaleX: { from: 0.92, to: 1.14 },
+              duration: 820,
+              yoyo: true,
+              repeat: -1,
+              ease: 'Sine.easeInOut',
+            });
+          }
+          this.paladinAura.setPosition(this.player.x, this.player.y + 12);
         }
 
         private _askQuestion() {
@@ -2021,7 +2051,34 @@ export default function RpgWorldPage() {
           const endX = this.bossX;
           const endY = this.bossY + 38;
           const angle = Phaser.Math.Angle.Between(startX, startY, endX, endY);
-          const slash = this.add.container(startX, startY).setDepth(35).setRotation(angle);
+          const bladeColor = this.blessedByAngel ? 0xfacc15 : 0x38bdf8;
+          const bladeEdge = this.blessedByAngel ? 0xfffbeb : 0xe0f2fe;
+          const bladeGlow = this.blessedByAngel ? 0xf59e0b : 0x0284c7;
+
+          const projectile = this.add.container(startX, startY).setDepth(35).setRotation(angle);
+          const beam = this.add.graphics();
+          beam.lineStyle(18, bladeGlow, 0.18);
+          beam.lineBetween(0, 0, 116, 0);
+          beam.lineStyle(9, bladeColor, 0.8);
+          beam.lineBetween(8, 0, 104, 0);
+          beam.lineStyle(3, bladeEdge, 0.95);
+          beam.lineBetween(24, -1, 98, -1);
+          const tip = this.add.triangle(116, 0, 0, -10, 0, 10, 24, 0, bladeEdge, 0.9);
+          projectile.add([beam, tip]);
+          projectile.setScale(0.72);
+          this.tweens.add({
+            targets: projectile,
+            x: endX - Math.cos(angle) * 72,
+            y: endY - Math.sin(angle) * 72,
+            alpha: 0,
+            scaleX: 1.02,
+            scaleY: 1.02,
+            duration: 260,
+            ease: 'Quad.easeOut',
+            onComplete: () => projectile.destroy(),
+          });
+
+          const slash = this.add.container(endX, endY).setDepth(36).setRotation(angle + Phaser.Math.DegToRad(-8));
           const drawCrescent = (
             width: number,
             height: number,
@@ -2032,46 +2089,54 @@ export default function RpgWorldPage() {
           ) => {
             const crescent = this.add.graphics();
             const points: Phaser.Math.Vector2[] = [];
-            for (let i = -72; i <= 72; i += 6) {
+            for (let i = -82; i <= 82; i += 5) {
               const rad = Phaser.Math.DegToRad(i);
               points.push(new Phaser.Math.Vector2(
                 xOffset + Math.cos(rad) * width,
                 yOffset + Math.sin(rad) * height,
               ));
             }
-            for (let i = 72; i >= -72; i -= 6) {
+            for (let i = 82; i >= -82; i -= 5) {
               const rad = Phaser.Math.DegToRad(i);
               points.push(new Phaser.Math.Vector2(
-                xOffset - 18 + Math.cos(rad) * width * 0.46,
-                yOffset + Math.sin(rad) * height * 0.66,
+                xOffset - width * 0.34 + Math.cos(rad) * width * 0.52,
+                yOffset + Math.sin(rad) * height * 0.72,
               ));
             }
             crescent.fillStyle(color, alpha);
             crescent.fillPoints(points, true);
             return crescent;
           };
-          slash.add(drawCrescent(62, 50, 0xf59e0b, 0.24));
-          slash.add(drawCrescent(50, 40, 0xfacc15, 0.92));
-          slash.add(drawCrescent(31, 24, 0xfffbeb, 0.9, 8, -1));
+          slash.add(drawCrescent(58, 40, bladeGlow, 0.22));
+          slash.add(drawCrescent(46, 31, bladeColor, 0.9));
+          slash.add(drawCrescent(25, 16, bladeEdge, 0.86, 8, -1));
           const edge = this.add.graphics();
-          edge.lineStyle(3, 0xfef3c7, 0.95);
+          edge.lineStyle(3, bladeEdge, 0.95);
           edge.beginPath();
-          for (let i = -72; i <= 72; i += 6) {
+          for (let i = -82; i <= 82; i += 5) {
             const rad = Phaser.Math.DegToRad(i);
-            if (i === -72) edge.moveTo(Math.cos(rad) * 52, Math.sin(rad) * 42);
-            else edge.lineTo(Math.cos(rad) * 52, Math.sin(rad) * 42);
+            if (i === -82) edge.moveTo(Math.cos(rad) * 46, Math.sin(rad) * 31);
+            else edge.lineTo(Math.cos(rad) * 46, Math.sin(rad) * 31);
           }
           edge.strokePath();
           slash.add(edge);
-          slash.setScale(0.9);
+          slash.setScale(0.55);
+          slash.setAlpha(0);
           this.tweens.add({
             targets: slash,
-            x: endX,
-            y: endY,
+            alpha: { from: 0, to: 1 },
+            scaleX: 1.02,
+            scaleY: 1.02,
+            duration: 120,
+            ease: 'Back.easeOut',
+          });
+          this.tweens.add({
+            targets: slash,
+            alpha: 0,
             scaleX: 1.18,
             scaleY: 1.18,
-            alpha: 0,
-            duration: 620,
+            delay: 150,
+            duration: 260,
             ease: 'Sine.easeOut',
             onComplete: () => slash.destroy(),
           });
