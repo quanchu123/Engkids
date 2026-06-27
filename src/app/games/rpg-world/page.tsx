@@ -1847,15 +1847,20 @@ export default function RpgWorldPage() {
             { kind: 'star_shield', key: '3', icon: '🛡', title: 'Khiên tinh tú', desc: 'Nhận thêm 1 khiên chặn sát thương.' },
           ];
 
-          const cardW = Math.min(250, Math.max(196, vp.width * 0.22));
-          const cardH = 170;
-          const gap = Math.min(28, Math.max(14, vp.width * 0.018));
+          const isCompact = vp.width < 720;
+          const cardW = isCompact
+            ? Math.min(vp.width - 32, 360)
+            : Math.min(250, Math.max(196, vp.width * 0.22));
+          const cardH = isCompact ? 118 : 170;
+          const gap = isCompact ? 10 : Math.min(28, Math.max(14, vp.width * 0.018));
           const totalW = cardW * upgrades.length + gap * (upgrades.length - 1);
           const startX = vp.cx - totalW / 2 + cardW / 2;
           const cardY = vp.height - cardH / 2 - Math.max(20, vp.height * 0.032);
+          const compactStartY = Math.max(title.y + 86, vp.cy - cardH - gap);
 
           let picked = false;
           const cards: Phaser.GameObjects.Container[] = [];
+          const hitZones: Phaser.GameObjects.Zone[] = [];
           const cleanupKey = (event: KeyboardEvent) => {
             const found = upgrades.find((upgrade) => upgrade.key === event.key);
             if (found) choose(found.kind);
@@ -1864,15 +1869,14 @@ export default function RpgWorldPage() {
             if (picked) return;
             picked = true;
             this.input.keyboard?.off('keydown', cleanupKey);
-            cards.forEach((card) => card.disableInteractive());
+            hitZones.forEach((hitZone) => hitZone.disableInteractive());
             this.time.delayedCall(24, () => this._finishAngelRevive(kind, [overlay, layer, upgradeLayer]));
           };
 
           upgrades.forEach((upgrade, index) => {
-            const x = startX + index * (cardW + gap);
-            const card = this.add.container(x, cardY)
-              .setSize(cardW, cardH)
-              .setInteractive(new Phaser.Geom.Rectangle(-cardW / 2, -cardH / 2, cardW, cardH), Phaser.Geom.Rectangle.Contains);
+            const x = isCompact ? vp.cx : startX + index * (cardW + gap);
+            const y = isCompact ? compactStartY + index * (cardH + gap) : cardY;
+            const card = this.add.container(x, y).setSize(cardW, cardH);
             const bg = this.add.graphics();
             bg.fillStyle(0x090b16, 0.9);
             bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 24);
@@ -1881,56 +1885,60 @@ export default function RpgWorldPage() {
             const keyBadge = this.add.text(-cardW / 2 + 22, -cardH / 2 + 20, upgrade.key, {
               fontFamily: 'Arial',
               fontStyle: 'bold',
-              fontSize: '18px',
+              fontSize: isCompact ? '16px' : '18px',
               color: '#111827',
               backgroundColor: '#fde68a',
               padding: { x: 9, y: 4 },
             }).setOrigin(0.5);
-            const icon = this.add.text(0, -42, upgrade.icon, {
+            const icon = this.add.text(isCompact ? -cardW / 2 + 64 : 0, isCompact ? 14 : -42, upgrade.icon, {
               fontFamily: 'Arial',
-              fontSize: '38px',
+              fontSize: isCompact ? '32px' : '38px',
               color: '#fff7ad',
               stroke: '#1f1300',
               strokeThickness: 4,
             }).setOrigin(0.5);
-            const label = this.add.text(0, 8, upgrade.title, {
+            const label = this.add.text(isCompact ? -cardW / 2 + 118 : 0, isCompact ? -16 : 8, upgrade.title, {
               fontFamily: 'Arial',
               fontStyle: 'bold',
-              fontSize: '20px',
+              fontSize: isCompact ? '18px' : '20px',
               color: '#fff7ad',
               stroke: '#020617',
               strokeThickness: 4,
-            }).setOrigin(0.5);
-            const desc = this.add.text(0, 48, upgrade.desc, {
+            }).setOrigin(isCompact ? 0 : 0.5, 0.5);
+            const desc = this.add.text(isCompact ? -cardW / 2 + 118 : 0, isCompact ? 24 : 48, upgrade.desc, {
               fontFamily: 'Arial',
               fontStyle: 'bold',
-              fontSize: '13px',
+              fontSize: isCompact ? '12px' : '13px',
               color: '#dbeafe',
-              align: 'center',
-              wordWrap: { width: cardW - 30 },
-            }).setOrigin(0.5);
-            card.add([bg, keyBadge, icon, label, desc]);
-            card.on('pointerover', () => {
+              align: isCompact ? 'left' : 'center',
+              wordWrap: { width: isCompact ? cardW - 142 : cardW - 30 },
+            }).setOrigin(isCompact ? 0 : 0.5, 0.5);
+            const hitZone = this.add.zone(0, 0, cardW, cardH)
+              .setOrigin(0.5)
+              .setInteractive({ useHandCursor: true });
+            card.add([bg, keyBadge, icon, label, desc, hitZone]);
+            hitZone.on('pointerover', () => {
               if (!picked) card.setScale(1.035);
             });
-            card.on('pointerout', () => {
+            hitZone.on('pointerout', () => {
               if (!picked) card.setScale(1);
             });
-            card.on('pointerdown', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event: any) => {
+            hitZone.on('pointerdown', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event: any) => {
               event?.stopPropagation?.();
               if (!picked) card.setScale(0.98);
             });
-            card.on('pointerup', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event: any) => {
+            hitZone.on('pointerup', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event: any) => {
               event?.stopPropagation?.();
               if (picked) return;
               card.setScale(1.02);
               choose(upgrade.kind);
             });
-            card.on('pointerupoutside', () => {
+            hitZone.on('pointerupoutside', () => {
               if (!picked) card.setScale(1);
             });
             upgradeLayer.add(card);
             cards.push(card);
+            hitZones.push(hitZone);
           });
 
           this.input.keyboard?.on('keydown', cleanupKey);
