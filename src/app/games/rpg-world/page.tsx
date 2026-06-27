@@ -345,6 +345,13 @@ export default function RpgWorldPage() {
           this.load.spritesheet('player-idle-up',     `${SHEET}/hero/idle/hero-idle-back.png`,      { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-idle-side',   `${SHEET}/hero/idle/hero-idle-side.png`,      { frameWidth: 32, frameHeight: 32 });
           this.load.spritesheet('player-attack-down', `${SHEET}/hero/attack/hero-attack-front.png`, { frameWidth: 32, frameHeight: 32 });
+          this.load.spritesheet('paladin-walk-down',   `${SHEET}/hero-paladin/walk/hero-paladin-walk-front.png`,     { frameWidth: 96, frameHeight: 96 });
+          this.load.spritesheet('paladin-walk-up',     `${SHEET}/hero-paladin/walk/hero-paladin-walk-back.png`,      { frameWidth: 96, frameHeight: 96 });
+          this.load.spritesheet('paladin-walk-side',   `${SHEET}/hero-paladin/walk/hero-paladin-walk-side.png`,      { frameWidth: 96, frameHeight: 96 });
+          this.load.spritesheet('paladin-idle-down',   `${SHEET}/hero-paladin/idle/hero-paladin-idle-front.png`,     { frameWidth: 96, frameHeight: 96 });
+          this.load.spritesheet('paladin-idle-up',     `${SHEET}/hero-paladin/idle/hero-paladin-idle-back.png`,      { frameWidth: 96, frameHeight: 96 });
+          this.load.spritesheet('paladin-idle-side',   `${SHEET}/hero-paladin/idle/hero-paladin-idle-side.png`,      { frameWidth: 96, frameHeight: 96 });
+          this.load.spritesheet('paladin-attack-down', `${SHEET}/hero-paladin/attack/hero-paladin-attack-front.png`, { frameWidth: 96, frameHeight: 96 });
           this.load.spritesheet('npc',                `${BASE}/npc.png`,                            { frameWidth: 16, frameHeight: 16 });
           this.load.spritesheet('treant-walk-down',   `${SHEET}/treant/walk/treant-walk-front.png`, { frameWidth: 31, frameHeight: 35 });
           this.load.spritesheet('treant-walk-side',   `${SHEET}/treant/walk/treant-walk-side.png`,  { frameWidth: 31, frameHeight: 35 });
@@ -366,6 +373,14 @@ export default function RpgWorldPage() {
             { key: 'player-idle-up',    sheet: 'player-idle-up',    s: 0, e: 0, fps: 5  },
             { key: 'player-idle-side',  sheet: 'player-idle-side',  s: 0, e: 0, fps: 5  },
             { key: 'player-attack',     sheet: 'player-attack-down',s: 0, e: 2, fps: 10 },
+            { key: 'paladin-move-down',  sheet: 'paladin-walk-down',  s: 0, e: 5, fps: 12 },
+            { key: 'paladin-move-up',    sheet: 'paladin-walk-up',    s: 0, e: 5, fps: 12 },
+            { key: 'paladin-move-left',  sheet: 'paladin-walk-side',  s: 0, e: 5, fps: 12 },
+            { key: 'paladin-move-right', sheet: 'paladin-walk-side',  s: 0, e: 5, fps: 12 },
+            { key: 'paladin-idle-down',  sheet: 'paladin-idle-down',  s: 0, e: 0, fps: 5  },
+            { key: 'paladin-idle-up',    sheet: 'paladin-idle-up',    s: 0, e: 0, fps: 5  },
+            { key: 'paladin-idle-side',  sheet: 'paladin-idle-side',  s: 0, e: 0, fps: 5  },
+            { key: 'paladin-attack',     sheet: 'paladin-attack-down',s: 0, e: 3, fps: 12 },
             { key: 'treant-walk',       sheet: 'treant-walk-down',  s: 0, e: 3, fps: 7  },
             { key: 'treant-idle',       sheet: 'treant-idle-down',  s: 0, e: 0, fps: 5  },
             { key: 'mole-walk',         sheet: 'mole-walk-down',    s: 0, e: 3, fps: 7  },
@@ -1246,23 +1261,32 @@ export default function RpgWorldPage() {
           if (vx < 0) {
             this.direction = 'left';
             this.player.setFlipX(true);
-            this.player.play('player-move-left', true);
+            this._playHero('player-move-left', true);
           } else if (vx > 0) {
             this.direction = 'right';
             this.player.setFlipX(false);
-            this.player.play('player-move-right', true);
+            this._playHero('player-move-right', true);
           } else if (vy < 0) {
             this.direction = 'up';
-            this.player.play('player-move-up', true);
+            this._playHero('player-move-up', true);
           } else if (vy > 0) {
             this.direction = 'down';
-            this.player.play('player-move-down', true);
+            this._playHero('player-move-down', true);
           } else {
             const idle = this.direction === 'up' ? 'player-idle-up'
               : (this.direction === 'left' || this.direction === 'right') ? 'player-idle-side'
               : 'player-idle-down';
-            this.player.play(idle, true);
+            this._playHero(idle, true);
           }
+        }
+
+        private _heroAnim(key: string) {
+          return this.blessedByAngel ? key.replace(/^player-/, 'paladin-') : key;
+        }
+
+        private _playHero(key: string, ignoreIfPlaying = true) {
+          if (!this.player?.active) return;
+          this.player.play(this._heroAnim(key), ignoreIfPlaying);
         }
 
         private _smallMeteorWave() {
@@ -2006,7 +2030,14 @@ export default function RpgWorldPage() {
 
         private _applyPaladinLook() {
           if (!this.player?.active) return;
-          this.player.setTint(0xffd76a);
+          this.player.clearTint();
+          this.player.setScale(0.95);
+          this.player.setSize(10, 10);
+          this.player.setOffset(43, 70);
+          const idle = this.direction === 'up' ? 'player-idle-up'
+            : (this.direction === 'left' || this.direction === 'right') ? 'player-idle-side'
+            : 'player-idle-down';
+          this._playHero(idle, true);
           if (!this.paladinAura?.active) {
             this.paladinAura = this.add.ellipse(this.player.x, this.player.y + 12, 54, 18, 0xfacc15, 0.22)
               .setDepth(19)
@@ -2039,10 +2070,13 @@ export default function RpgWorldPage() {
           const damage = this.blessedByAngel ? 2 : 1;
           this.bossHp = Math.max(0, this.bossHp - damage);
           cbRef.current.bossHp(this.bossHp);
-          this.player.play('player-attack', true);
+          this._playHero('player-attack', true);
           this.time.delayedCall(360, () => {
             if (!this.player?.active) return;
-            this.player.play(this.direction === 'up' ? 'player-idle-up' : 'player-idle-down', true);
+            const idle = this.direction === 'up' ? 'player-idle-up'
+              : (this.direction === 'left' || this.direction === 'right') ? 'player-idle-side'
+              : 'player-idle-down';
+            this._playHero(idle, true);
           });
 
           const startX = this.player.x;
