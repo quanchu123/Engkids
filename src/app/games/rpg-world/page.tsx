@@ -1027,6 +1027,8 @@ export default function RpgWorldPage() {
         private blessedByAngel = false;
         private angelRevivePlaying = false;
         private paladinAura?: Phaser.GameObjects.Ellipse;
+        private paladinSkin?: Phaser.GameObjects.Container;
+        private paladinSkinDirection = '';
 
         constructor() { super({ key: 'BossScene' }); }
 
@@ -1040,6 +1042,9 @@ export default function RpgWorldPage() {
           this.angelRevivePlaying = false;
           this.paladinAura?.destroy();
           this.paladinAura = undefined;
+          this.paladinSkin?.destroy();
+          this.paladinSkin = undefined;
+          this.paladinSkinDirection = '';
           this.bossHp = BOSS_MAX_HP;
           this.physics.world.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
           this.events.once('shutdown', () => this._stopBossMusic());
@@ -1263,6 +1268,7 @@ export default function RpgWorldPage() {
               : 'player-idle-down';
             this.player.play(idle, true);
           }
+          if (this.blessedByAngel) this._syncPaladinSkin();
         }
 
         private _smallMeteorWave() {
@@ -1981,7 +1987,6 @@ export default function RpgWorldPage() {
           this.invulnerableUntil = this.time.now + 3000;
           this.player.setVisible(true);
           this._applyPaladinLook();
-          this.player.setAlpha(1);
           this.bossFloatTween?.resume();
           this.bossSprite?.anims.resume();
           (this.bossMusic as any)?.setVolume?.(0.46);
@@ -2008,6 +2013,7 @@ export default function RpgWorldPage() {
         private _applyPaladinLook() {
           if (!this.player?.active) return;
           this.player.setTint(0xffd76a);
+          this.player.setAlpha(0.38);
           if (!this.paladinAura?.active) {
             this.paladinAura = this.add.ellipse(this.player.x, this.player.y + 12, 54, 18, 0xfacc15, 0.22)
               .setDepth(19)
@@ -2023,6 +2029,128 @@ export default function RpgWorldPage() {
             });
           }
           this.paladinAura.setPosition(this.player.x, this.player.y + 12);
+          this._syncPaladinSkin(true);
+        }
+
+        private _syncPaladinSkin(forceRedraw = false) {
+          if (!this.player?.active) return;
+          if (!this.paladinSkin?.active) {
+            this.paladinSkin = this.add.container(this.player.x, this.player.y)
+              .setDepth(22)
+              .setScale(2.4);
+            forceRedraw = true;
+          }
+
+          this.paladinSkin.setPosition(this.player.x, this.player.y);
+          const facing = this.direction;
+          const drawFacing = facing === 'left' ? 'right' : facing;
+          this.paladinSkin.setScale(facing === 'left' ? -2.4 : 2.4, 2.4);
+          if (!forceRedraw && this.paladinSkinDirection === facing) return;
+
+          this.paladinSkinDirection = facing;
+          this.paladinSkin.removeAll(true);
+
+          const art = this.add.graphics();
+          const gold = 0xfacc15;
+          const deepGold = 0xb77906;
+          const white = 0xfff7dd;
+          const shadow = 0x2b1a05;
+          const blueGem = 0x38bdf8;
+          const fillDiamond = (x: number, y: number, w: number, h: number, color: number) => {
+            art.fillStyle(color, 1);
+            art.fillTriangle(x, y - h / 2, x - w / 2, y, x, y + h / 2);
+            art.fillTriangle(x, y - h / 2, x + w / 2, y, x, y + h / 2);
+          };
+
+          const drawHead = () => {
+            art.fillStyle(0xffd66b, 1);
+            art.fillTriangle(-8, -14, -2, -20, -2, -12);
+            art.fillTriangle(-3, -15, 4, -22, 3, -12);
+            art.fillTriangle(3, -14, 10, -18, 6, -10);
+            art.fillCircle(0, -11, 5);
+            art.fillStyle(0xffe7a3, 1);
+            art.fillCircle(0, -10, 4);
+          };
+
+          const drawArmorFront = () => {
+            art.fillStyle(white, 1);
+            art.fillRoundedRect(-5, -5, 10, 12, 2);
+            art.fillStyle(gold, 1);
+            art.fillTriangle(-5, -5, 0, 4, 5, -5);
+            fillDiamond(0, -1, 3, 4, blueGem);
+            art.fillStyle(deepGold, 1);
+            art.fillRect(-8, -4, 4, 6);
+            art.fillRect(4, -4, 4, 6);
+            art.fillStyle(gold, 1);
+            art.fillTriangle(-11, -6, -4, -8, -5, 0);
+            art.fillTriangle(11, -6, 4, -8, 5, 0);
+            art.fillRect(-5, 7, 4, 7);
+            art.fillRect(1, 7, 4, 7);
+            art.fillStyle(white, 1);
+            art.fillRect(-4, 7, 2, 6);
+            art.fillRect(2, 7, 2, 6);
+          };
+
+          const drawCloakBack = () => {
+            art.fillStyle(0x6b4a12, 0.72);
+            art.fillTriangle(-9, -3, 9, -3, 14, 15);
+            art.fillTriangle(-9, -3, -14, 15, 4, 13);
+            art.fillStyle(white, 0.95);
+            art.fillTriangle(-7, -4, 7, -4, 11, 14);
+            art.fillTriangle(-7, -4, -11, 14, 3, 13);
+            art.lineStyle(1, gold, 0.8);
+            art.lineBetween(0, -2, 0, 12);
+            art.lineBetween(-6, 8, 0, 12);
+            art.lineBetween(6, 8, 0, 12);
+          };
+
+          const drawSword = (side: 'front' | 'side') => {
+            art.lineStyle(5, 0xf59e0b, 0.42);
+            if (side === 'side') {
+              art.lineBetween(9, -2, 18, 8);
+              art.lineStyle(2, 0xfffbeb, 1);
+              art.lineBetween(10, -3, 19, 7);
+              fillDiamond(9, -2, 4, 4, gold);
+              return;
+            }
+            art.lineBetween(8, 0, 15, 12);
+            art.lineStyle(2, 0xfffbeb, 1);
+            art.lineBetween(8, -1, 16, 11);
+            fillDiamond(8, 0, 4, 4, gold);
+          };
+
+          if (drawFacing === 'up') {
+            drawCloakBack();
+            drawHead();
+            art.fillStyle(gold, 1);
+            art.fillTriangle(-10, -5, -4, -8, -5, 1);
+            art.fillTriangle(10, -5, 4, -8, 5, 1);
+            art.fillStyle(deepGold, 1);
+            art.fillRect(-5, -4, 10, 12);
+            art.fillStyle(white, 0.9);
+            art.fillRect(-4, -2, 8, 11);
+          } else if (drawFacing === 'right') {
+            drawCloakBack();
+            drawHead();
+            art.fillStyle(white, 1);
+            art.fillRoundedRect(-4, -5, 8, 13, 2);
+            art.fillStyle(gold, 1);
+            art.fillTriangle(1, -6, 9, -7, 5, 1);
+            art.fillRect(-3, 7, 4, 7);
+            art.fillRect(2, 7, 4, 7);
+            art.fillStyle(shadow, 0.8);
+            art.fillRect(-7, -2, 4, 8);
+            drawSword('side');
+          } else {
+            drawCloakBack();
+            drawArmorFront();
+            drawHead();
+            drawSword('front');
+          }
+
+          art.lineStyle(1, 0xfffbeb, 0.9);
+          art.strokeCircle(0, -1, 10);
+          this.paladinSkin.add(art);
         }
 
         private _askQuestion() {
