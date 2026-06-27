@@ -1027,8 +1027,6 @@ export default function RpgWorldPage() {
         private blessedByAngel = false;
         private angelRevivePlaying = false;
         private paladinAura?: Phaser.GameObjects.Ellipse;
-        private paladinSkin?: Phaser.GameObjects.Container;
-        private paladinSkinDirection = '';
 
         constructor() { super({ key: 'BossScene' }); }
 
@@ -1042,9 +1040,6 @@ export default function RpgWorldPage() {
           this.angelRevivePlaying = false;
           this.paladinAura?.destroy();
           this.paladinAura = undefined;
-          this.paladinSkin?.destroy();
-          this.paladinSkin = undefined;
-          this.paladinSkinDirection = '';
           this.bossHp = BOSS_MAX_HP;
           this.physics.world.setBounds(0, 0, BOSS_ARENA.width, BOSS_ARENA.height);
           this.events.once('shutdown', () => this._stopBossMusic());
@@ -1268,7 +1263,6 @@ export default function RpgWorldPage() {
               : 'player-idle-down';
             this.player.play(idle, true);
           }
-          if (this.blessedByAngel) this._syncPaladinSkin();
         }
 
         private _smallMeteorWave() {
@@ -2013,7 +2007,6 @@ export default function RpgWorldPage() {
         private _applyPaladinLook() {
           if (!this.player?.active) return;
           this.player.setTint(0xffd76a);
-          this.player.setAlpha(0.38);
           if (!this.paladinAura?.active) {
             this.paladinAura = this.add.ellipse(this.player.x, this.player.y + 12, 54, 18, 0xfacc15, 0.22)
               .setDepth(19)
@@ -2029,128 +2022,6 @@ export default function RpgWorldPage() {
             });
           }
           this.paladinAura.setPosition(this.player.x, this.player.y + 12);
-          this._syncPaladinSkin(true);
-        }
-
-        private _syncPaladinSkin(forceRedraw = false) {
-          if (!this.player?.active) return;
-          if (!this.paladinSkin?.active) {
-            this.paladinSkin = this.add.container(this.player.x, this.player.y)
-              .setDepth(22)
-              .setScale(2.4);
-            forceRedraw = true;
-          }
-
-          this.paladinSkin.setPosition(this.player.x, this.player.y);
-          const facing = this.direction;
-          const drawFacing = facing === 'left' ? 'right' : facing;
-          this.paladinSkin.setScale(facing === 'left' ? -2.4 : 2.4, 2.4);
-          if (!forceRedraw && this.paladinSkinDirection === facing) return;
-
-          this.paladinSkinDirection = facing;
-          this.paladinSkin.removeAll(true);
-
-          const art = this.add.graphics();
-          const gold = 0xfacc15;
-          const deepGold = 0xb77906;
-          const white = 0xfff7dd;
-          const shadow = 0x2b1a05;
-          const blueGem = 0x38bdf8;
-          const fillDiamond = (x: number, y: number, w: number, h: number, color: number) => {
-            art.fillStyle(color, 1);
-            art.fillTriangle(x, y - h / 2, x - w / 2, y, x, y + h / 2);
-            art.fillTriangle(x, y - h / 2, x + w / 2, y, x, y + h / 2);
-          };
-
-          const drawHead = () => {
-            art.fillStyle(0xffd66b, 1);
-            art.fillTriangle(-8, -14, -2, -20, -2, -12);
-            art.fillTriangle(-3, -15, 4, -22, 3, -12);
-            art.fillTriangle(3, -14, 10, -18, 6, -10);
-            art.fillCircle(0, -11, 5);
-            art.fillStyle(0xffe7a3, 1);
-            art.fillCircle(0, -10, 4);
-          };
-
-          const drawArmorFront = () => {
-            art.fillStyle(white, 1);
-            art.fillRoundedRect(-5, -5, 10, 12, 2);
-            art.fillStyle(gold, 1);
-            art.fillTriangle(-5, -5, 0, 4, 5, -5);
-            fillDiamond(0, -1, 3, 4, blueGem);
-            art.fillStyle(deepGold, 1);
-            art.fillRect(-8, -4, 4, 6);
-            art.fillRect(4, -4, 4, 6);
-            art.fillStyle(gold, 1);
-            art.fillTriangle(-11, -6, -4, -8, -5, 0);
-            art.fillTriangle(11, -6, 4, -8, 5, 0);
-            art.fillRect(-5, 7, 4, 7);
-            art.fillRect(1, 7, 4, 7);
-            art.fillStyle(white, 1);
-            art.fillRect(-4, 7, 2, 6);
-            art.fillRect(2, 7, 2, 6);
-          };
-
-          const drawCloakBack = () => {
-            art.fillStyle(0x6b4a12, 0.72);
-            art.fillTriangle(-9, -3, 9, -3, 14, 15);
-            art.fillTriangle(-9, -3, -14, 15, 4, 13);
-            art.fillStyle(white, 0.95);
-            art.fillTriangle(-7, -4, 7, -4, 11, 14);
-            art.fillTriangle(-7, -4, -11, 14, 3, 13);
-            art.lineStyle(1, gold, 0.8);
-            art.lineBetween(0, -2, 0, 12);
-            art.lineBetween(-6, 8, 0, 12);
-            art.lineBetween(6, 8, 0, 12);
-          };
-
-          const drawSword = (side: 'front' | 'side') => {
-            art.lineStyle(5, 0xf59e0b, 0.42);
-            if (side === 'side') {
-              art.lineBetween(9, -2, 18, 8);
-              art.lineStyle(2, 0xfffbeb, 1);
-              art.lineBetween(10, -3, 19, 7);
-              fillDiamond(9, -2, 4, 4, gold);
-              return;
-            }
-            art.lineBetween(8, 0, 15, 12);
-            art.lineStyle(2, 0xfffbeb, 1);
-            art.lineBetween(8, -1, 16, 11);
-            fillDiamond(8, 0, 4, 4, gold);
-          };
-
-          if (drawFacing === 'up') {
-            drawCloakBack();
-            drawHead();
-            art.fillStyle(gold, 1);
-            art.fillTriangle(-10, -5, -4, -8, -5, 1);
-            art.fillTriangle(10, -5, 4, -8, 5, 1);
-            art.fillStyle(deepGold, 1);
-            art.fillRect(-5, -4, 10, 12);
-            art.fillStyle(white, 0.9);
-            art.fillRect(-4, -2, 8, 11);
-          } else if (drawFacing === 'right') {
-            drawCloakBack();
-            drawHead();
-            art.fillStyle(white, 1);
-            art.fillRoundedRect(-4, -5, 8, 13, 2);
-            art.fillStyle(gold, 1);
-            art.fillTriangle(1, -6, 9, -7, 5, 1);
-            art.fillRect(-3, 7, 4, 7);
-            art.fillRect(2, 7, 4, 7);
-            art.fillStyle(shadow, 0.8);
-            art.fillRect(-7, -2, 4, 8);
-            drawSword('side');
-          } else {
-            drawCloakBack();
-            drawArmorFront();
-            drawHead();
-            drawSword('front');
-          }
-
-          art.lineStyle(1, 0xfffbeb, 0.9);
-          art.strokeCircle(0, -1, 10);
-          this.paladinSkin.add(art);
         }
 
         private _askQuestion() {
@@ -2183,90 +2054,70 @@ export default function RpgWorldPage() {
           const bladeEdge = this.blessedByAngel ? 0xfffbeb : 0xe0f2fe;
           const bladeGlow = this.blessedByAngel ? 0xf59e0b : 0x0284c7;
 
-          const projectile = this.add.container(startX, startY).setDepth(35).setRotation(angle);
-          const beam = this.add.graphics();
-          beam.lineStyle(18, bladeGlow, 0.18);
-          beam.lineBetween(0, 0, 116, 0);
-          beam.lineStyle(9, bladeColor, 0.8);
-          beam.lineBetween(8, 0, 104, 0);
-          beam.lineStyle(3, bladeEdge, 0.95);
-          beam.lineBetween(24, -1, 98, -1);
-          const tip = this.add.triangle(116, 0, 0, -10, 0, 10, 24, 0, bladeEdge, 0.9);
-          projectile.add([beam, tip]);
-          projectile.setScale(0.72);
-          this.tweens.add({
-            targets: projectile,
-            x: endX - Math.cos(angle) * 72,
-            y: endY - Math.sin(angle) * 72,
-            alpha: 0,
-            scaleX: 1.02,
-            scaleY: 1.02,
-            duration: 260,
-            ease: 'Quad.easeOut',
-            onComplete: () => projectile.destroy(),
-          });
+          const swordQi = this.add.container(startX, startY)
+            .setDepth(36)
+            .setRotation(angle)
+            .setScale(0.58);
 
-          const slash = this.add.container(endX, endY).setDepth(36).setRotation(angle + Phaser.Math.DegToRad(-8));
-          const drawCrescent = (
-            width: number,
-            height: number,
-            color: number,
-            alpha: number,
-            xOffset = 0,
-            yOffset = 0,
-          ) => {
-            const crescent = this.add.graphics();
-            const points: Phaser.Math.Vector2[] = [];
-            for (let i = -82; i <= 82; i += 5) {
-              const rad = Phaser.Math.DegToRad(i);
-              points.push(new Phaser.Math.Vector2(
-                xOffset + Math.cos(rad) * width,
-                yOffset + Math.sin(rad) * height,
-              ));
+          const drawEnergyBand = (w: number, h: number, color: number, alpha: number, inset = 0) => {
+            const g = this.add.graphics();
+            const top: Phaser.Math.Vector2[] = [];
+            const innerTop: Phaser.Math.Vector2[] = [];
+            const innerBottom: Phaser.Math.Vector2[] = [];
+            const bottom: Phaser.Math.Vector2[] = [];
+            for (let i = 0; i <= 24; i += 1) {
+              const t = i / 24;
+              const curve = Math.sin(Math.PI * t);
+              top.push(new Phaser.Math.Vector2(-w * 0.48 + w * 1.45 * t, -h * 0.12 - h * 0.84 * curve + h * 0.1 * t));
+              innerTop.push(new Phaser.Math.Vector2(-w * 0.1 + w * 1.08 * t, -h * 0.08 - h * 0.38 * curve + h * 0.1 * t + inset));
+              innerBottom.push(new Phaser.Math.Vector2(-w * 0.1 + w * 1.08 * t, h * 0.08 + h * 0.38 * curve - h * 0.1 * t - inset));
+              bottom.push(new Phaser.Math.Vector2(-w * 0.48 + w * 1.45 * t, h * 0.12 + h * 0.84 * curve - h * 0.1 * t));
             }
-            for (let i = 82; i >= -82; i -= 5) {
-              const rad = Phaser.Math.DegToRad(i);
-              points.push(new Phaser.Math.Vector2(
-                xOffset - width * 0.34 + Math.cos(rad) * width * 0.52,
-                yOffset + Math.sin(rad) * height * 0.72,
-              ));
-            }
-            crescent.fillStyle(color, alpha);
-            crescent.fillPoints(points, true);
-            return crescent;
+            g.fillStyle(color, alpha);
+            g.fillPoints([...top, ...innerTop.reverse()], true);
+            g.fillPoints([...innerBottom, ...bottom.reverse()], true);
+            return g;
           };
-          slash.add(drawCrescent(58, 40, bladeGlow, 0.22));
-          slash.add(drawCrescent(46, 31, bladeColor, 0.9));
-          slash.add(drawCrescent(25, 16, bladeEdge, 0.86, 8, -1));
-          const edge = this.add.graphics();
-          edge.lineStyle(3, bladeEdge, 0.95);
-          edge.beginPath();
-          for (let i = -82; i <= 82; i += 5) {
-            const rad = Phaser.Math.DegToRad(i);
-            if (i === -82) edge.moveTo(Math.cos(rad) * 46, Math.sin(rad) * 31);
-            else edge.lineTo(Math.cos(rad) * 46, Math.sin(rad) * 31);
+
+          swordQi.add(drawEnergyBand(122, 50, bladeGlow, 0.16, -4));
+          swordQi.add(drawEnergyBand(104, 40, bladeColor, 0.7));
+          swordQi.add(drawEnergyBand(86, 31, bladeEdge, 0.46, 3));
+
+          const highlight = this.add.graphics();
+          highlight.lineStyle(3, bladeEdge, 0.95);
+          highlight.beginPath();
+          for (let i = 0; i <= 24; i += 1) {
+            const t = i / 24;
+            const curve = Math.sin(Math.PI * t);
+            const x = -48 + 132 * t;
+            const y = -8 - 31 * curve + 4 * t;
+            if (i === 0) highlight.moveTo(x, y);
+            else highlight.lineTo(x, y);
           }
-          edge.strokePath();
-          slash.add(edge);
-          slash.setScale(0.55);
-          slash.setAlpha(0);
+          highlight.strokePath();
+          highlight.lineStyle(2, bladeEdge, 0.6);
+          highlight.beginPath();
+          for (let i = 0; i <= 24; i += 1) {
+            const t = i / 24;
+            const curve = Math.sin(Math.PI * t);
+            const x = -36 + 116 * t;
+            const y = 10 + 25 * curve - 4 * t;
+            if (i === 0) highlight.moveTo(x, y);
+            else highlight.lineTo(x, y);
+          }
+          highlight.strokePath();
+          swordQi.add(highlight);
+
           this.tweens.add({
-            targets: slash,
-            alpha: { from: 0, to: 1 },
-            scaleX: 1.02,
-            scaleY: 1.02,
-            duration: 120,
-            ease: 'Back.easeOut',
-          });
-          this.tweens.add({
-            targets: slash,
+            targets: swordQi,
+            x: endX - Math.cos(angle) * 24,
+            y: endY - Math.sin(angle) * 24,
             alpha: 0,
-            scaleX: 1.18,
-            scaleY: 1.18,
-            delay: 150,
-            duration: 260,
-            ease: 'Sine.easeOut',
-            onComplete: () => slash.destroy(),
+            scaleX: 0.68,
+            scaleY: 0.68,
+            duration: 430,
+            ease: 'Quad.easeOut',
+            onComplete: () => swordQi.destroy(),
           });
           this._floatText(this.bossX, this.bossY + 70, `-${damage} HP`, damage > 1 ? '#fde68a' : '#fef3c7');
           this.cameras.main.shake(180, 0.008);
