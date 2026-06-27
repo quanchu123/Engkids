@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import UiIcon from '@/components/common/UiIcon';
 import Fireworks from '@/components/common/Fireworks';
 import { useAppStore } from '@/store/useAppStore';
+import { getCurrentUser } from '@/lib/auth-client';
 import {
   PET_ACTIONS,
   PetActionKey,
@@ -35,6 +36,9 @@ import {
   createPetBattle,
 } from '@/lib/pet-battle';
 import { loadWordBank, DEFAULT_WORD_BANK, WordPair } from '@/lib/word-bank';
+
+const PET_MAX_LEVEL = 10;
+const PET_LEVEL_CONTROL_EMAILS = new Set(['viet@ultra.com']);
 
 const STAT_META: Record<PetStatKey, { labelVi: string; emoji: string; bar: string; soft: string }> = {
   hunger: { labelVi: 'No bụng', emoji: '🍎', bar: 'from-orange-400 to-amber-500', soft: 'bg-orange-50 text-orange-700' },
@@ -65,6 +69,10 @@ const QUALITY_MESSAGE: Record<PetActionQuality, string> = {
   wasted: 'Ít tác dụng',
   tired: 'Pet đang mệt',
 };
+
+function clampPetLevel(level: number): number {
+  return Math.max(1, Math.min(PET_MAX_LEVEL, Math.round(level)));
+}
 
 function playTones(notes: number[], gap = 0.1) {
   try {
@@ -117,6 +125,7 @@ export default function PetGamePage() {
   const adoptPet = useAppStore((state) => state.adoptPet);
   const carePet = useAppStore((state) => state.carePet);
   const syncPetDecay = useAppStore((state) => state.syncPetDecay);
+  const setPetLevel = useAppStore((state) => state.setPetLevel);
   const savedWords = useAppStore((state) => state.progress.savedWords);
   const completeQuestStep = useAppStore((state) => state.completeQuestStep);
 
@@ -133,6 +142,7 @@ export default function PetGamePage() {
   const [starBursts, setStarBursts] = useState<Array<{ id: number; tone: 'correct' | 'combo' | 'battle' }>>([]);
   const [tapRipples, setTapRipples] = useState<number[]>([]);
   const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const questDoneRef = useRef(false);
 
   const [quizAction, setQuizAction] = useState<PetActionKey | null>(null);
@@ -170,6 +180,21 @@ export default function PetGamePage() {
   const lvl = pet ? levelFromExp(pet.exp) : null;
   const species = pet ? getSpecies(pet.species) : undefined;
   const stageIdx = species && lvl ? stageIndexForLevel(species, lvl.level) : 0;
+  const canControlPetLevel = Boolean(userEmail && PET_LEVEL_CONTROL_EMAILS.has(userEmail));
+
+  useEffect(() => {
+    let alive = true;
+    getCurrentUser()
+      .then((user) => {
+        if (alive) setUserEmail(user?.email?.toLowerCase() || null);
+      })
+      .catch(() => {
+        if (alive) setUserEmail(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -388,7 +413,7 @@ export default function PetGamePage() {
   }
 
   if (!pet || !species || !lvl) {
-    return <AdoptScreen onAdopt={adoptPet} hasBadPet={!!pet && !species} />;
+    return <AdoptScreen onAdopt={adoptPet} hasBadPet={!!pet && !species} canControlPetLevel={canControlPetLevel} />;
   }
 
   const stage = currentStage(species, lvl.level);
@@ -551,6 +576,14 @@ export default function PetGamePage() {
             </div>
 
             <aside className="flex min-h-0 flex-col gap-3">
+              {canControlPetLevel && (
+                <PetLevelControls
+                  level={lvl.level}
+                  title="Điều chỉnh level"
+                  onLevelChange={(level) => setPetLevel(level)}
+                />
+              )}
+
               <div className="rounded-[1.75rem] border border-white/70 bg-white/88 p-3 shadow-xl backdrop-blur">
                 <div className="mb-2 flex items-center justify-between">
                   <div>
@@ -1243,9 +1276,73 @@ function PetStyles() {
   );
 }
 
-function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: string) => void; hasBadPet?: boolean }) {
+function PetLevelControls({
+  level,
+  title = 'Level pet',
+  onLevelChange,
+}: {
+  level: number;
+  title?: string;
+  onLevelChange: (level: number) => void;
+}) {
+  const normalizedLevel = clampPetLevel(level);
+  return (
+    <div className="rounded-[1.5rem] border border-white/70 bg-white/90 p-3 shadow-xl backdrop-blur">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-violet-500">{title}</p>
+          <p className="text-sm font-bold text-slate-500">Cấp hiện tại: {normalizedLevel}</p>
+        </div>
+        {normalizedLevel >= PET_MAX_LEVEL && (
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">MAX</span>
+        )}
+      </div>
+      <div className="grid grid-cols-[44px_1fr_44px] gap-2">
+        <button
+          type="button"
+          onClick={() => onLevelChange(clampPetLevel(normalizedLevel - 1))}
+          disabled={normalizedLevel <= 1}
+          className="rounded-2xl bg-slate-100 px-3 py-2 text-xl font-black text-slate-700 shadow-sm transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-45"
+          aria-label="Hạ level pet"
+        >
+          -
+        </button>
+        <select
+          value={normalizedLevel}
+          onChange={(event) => onLevelChange(clampPetLevel(Number(event.target.value)))}
+          className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-center text-sm font-black text-slate-800 shadow-sm outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+          aria-label="Chọn level pet"
+        >
+          {Array.from({ length: PET_MAX_LEVEL }, (_, index) => index + 1).map((item) => (
+            <option key={item} value={item}>Cấp {item}</option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => onLevelChange(clampPetLevel(normalizedLevel + 1))}
+          disabled={normalizedLevel >= PET_MAX_LEVEL}
+          className="rounded-2xl bg-violet-100 px-3 py-2 text-xl font-black text-violet-700 shadow-sm transition hover:bg-violet-200 disabled:cursor-not-allowed disabled:opacity-45"
+          aria-label="Nâng level pet"
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AdoptScreen({
+  onAdopt,
+  hasBadPet,
+  canControlPetLevel = false,
+}: {
+  onAdopt: (species: string, name: string, initialLevel?: number) => void;
+  hasBadPet?: boolean;
+  canControlPetLevel?: boolean;
+}) {
   const [selectedId, setSelectedId] = useState(PET_SPECIES[0].id);
   const [name, setName] = useState('');
+  const [initialLevel, setInitialLevel] = useState(1);
   const selected = useMemo<PetSpecies>(() => getSpecies(selectedId) ?? PET_SPECIES[0], [selectedId]);
   const eggArt = selected.stages[0].art;
 
@@ -1280,52 +1377,65 @@ function AdoptScreen({ onAdopt, hasBadPet }: { onAdopt: (species: string, name: 
             </div>
           </section>
 
-          <aside className="flex min-h-0 flex-col gap-3 rounded-[2rem] border border-white/70 bg-white/88 p-4 shadow-2xl backdrop-blur">
+          <aside className="flex min-h-0 flex-col gap-3 overflow-hidden rounded-[2rem] border border-white/70 bg-white/88 p-4 shadow-2xl backdrop-blur">
             <div>
               <p className="text-xs font-black uppercase tracking-wide text-violet-500">Chọn giống</p>
               <h2 className="text-xl font-black text-slate-950 sm:text-2xl">Bạn muốn nuôi con nào?</h2>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              {PET_SPECIES.map((species) => (
-                <button
-                  key={species.id}
-                  onClick={() => setSelectedId(species.id)}
-                  className={`rounded-[1.25rem] bg-white p-2.5 text-left shadow-sm ring-1 transition-all hover:-translate-y-1 hover:shadow-lg ${
-                    selectedId === species.id ? 'ring-4 ring-violet-300' : 'ring-slate-100'
-                  }`}
-                  title={species.nameVi}
-                >
-                  <Image src={species.stages[species.stages.length - 1].art} alt={species.nameVi} width={66} height={66} unoptimized className="mx-auto h-14 w-14 object-contain sm:h-16 sm:w-16" />
-                  <span className="mt-2 block text-center text-xs font-black text-slate-800">{species.emoji} {species.nameVi}</span>
-                </button>
-              ))}
-            </div>
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Tiến hóa</p>
+                <div className="flex items-center justify-center gap-1.5">
+                  {selected.stages.map((stage, index) => (
+                    <div key={stage.art} className="flex items-center gap-1.5">
+                      {index > 0 && <span className="text-slate-300">→</span>}
+                      <Image src={stage.art} alt={stage.nameVi} width={38} height={38} unoptimized className="h-9 w-9 object-contain" />
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            <div className="rounded-2xl bg-slate-50 p-3">
-              <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-400">Tiến hóa</p>
-              <div className="flex items-center justify-center gap-1.5">
-                {selected.stages.map((stage, index) => (
-                  <div key={stage.art} className="flex items-center gap-1.5">
-                    {index > 0 && <span className="text-slate-300">→</span>}
-                    <Image src={stage.art} alt={stage.nameVi} width={38} height={38} unoptimized className="h-9 w-9 object-contain" />
-                  </div>
+              {canControlPetLevel && (
+                <PetLevelControls
+                  level={initialLevel}
+                  title="Level khởi đầu"
+                  onLevelChange={setInitialLevel}
+                />
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                {PET_SPECIES.map((species) => (
+                  <button
+                    key={species.id}
+                    type="button"
+                    onClick={() => setSelectedId(species.id)}
+                    className={`rounded-[1.25rem] bg-white p-2.5 text-left shadow-sm ring-1 transition-all hover:-translate-y-1 hover:shadow-lg ${
+                      selectedId === species.id ? 'ring-4 ring-violet-300' : 'ring-slate-100'
+                    }`}
+                    title={species.nameVi}
+                  >
+                    <Image src={species.stages[species.stages.length - 1].art} alt={species.nameVi} width={66} height={66} unoptimized className="mx-auto h-14 w-14 object-contain sm:h-16 sm:w-16" />
+                    <span className="mt-2 block text-center text-xs font-black text-slate-800">{species.emoji} {species.nameVi}</span>
+                  </button>
                 ))}
               </div>
+
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                maxLength={20}
+                placeholder="Đặt tên cho thú cưng..."
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center font-bold text-slate-700 shadow-sm outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+              />
             </div>
 
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={20}
-              placeholder="Đặt tên cho thú cưng..."
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center font-bold text-slate-700 shadow-sm outline-none focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
-            />
             <button
-              onClick={() => onAdopt(selected.id, name)}
-              className={`w-full rounded-2xl bg-gradient-to-r ${selected.accent} px-8 py-3 text-base font-black text-white shadow-lg transition-transform hover:scale-[1.02]`}
+              type="button"
+              onClick={() => onAdopt(selected.id, name, initialLevel)}
+              className={`w-full shrink-0 rounded-2xl bg-gradient-to-r ${selected.accent} px-8 py-3 text-base font-black text-white shadow-lg transition-transform hover:scale-[1.02]`}
             >
-              Ấp trứng
+              Xác nhận lựa chọn
             </button>
           </aside>
         </div>

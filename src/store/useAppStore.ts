@@ -33,6 +33,8 @@ import {
   applyDecay,
   applyAction,
   coinRewardForCombo,
+  expForLevel,
+  MAX_STAT,
 } from '@/lib/pet';
 
 const MAX_WORD_INTERACTIONS = 2000;
@@ -70,9 +72,10 @@ interface AppState {
   purchaseAvatarItem: (itemId: string) => boolean;
   buyStreakFreeze: () => boolean;
   spinDailyWheel: () => { kind: 'coins' | 'freeze'; amount: number; index: number } | null;
-  adoptPet: (species: string, name: string) => void;
+  adoptPet: (species: string, name: string, initialLevel?: number) => void;
   carePet: (action: PetActionKey, combo?: number) => { coins: number; exp: number; quality: PetActionQuality; rhythmBonus: number };
   syncPetDecay: () => void;
+  setPetLevel: (level: number) => void;
   triggerReward: (stars: number, coins: number) => void;
   clearReward: () => void;
   isAvatarItemOwned: (itemId: string) => boolean;
@@ -148,6 +151,15 @@ function withNormalizedProgress(progress: UserProgress, updater: (progress: User
   return applyBadgeUnlocks(updater(normalized));
 }
 
+function expAtPetLevel(level: number): number {
+  const target = Math.max(1, Math.min(10, Math.floor(level)));
+  let exp = 0;
+  for (let current = 1; current < target; current += 1) {
+    exp += expForLevel(current);
+  }
+  return exp;
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -164,8 +176,9 @@ export const useAppStore = create<AppState>()(
       rewardEvent: null,
       pet: null,
 
-      adoptPet: (species, name) => {
-        set({ pet: createPet(species, name.trim().slice(0, 20) || 'Bạn nhỏ') });
+      adoptPet: (species, name, initialLevel = 1) => {
+        const pet = createPet(species, name.trim().slice(0, 20) || 'Bạn nhỏ');
+        set({ pet: { ...pet, exp: expAtPetLevel(initialLevel) } });
       },
 
       // Apply a successful care action (called only after the child answers the
@@ -185,6 +198,22 @@ export const useAppStore = create<AppState>()(
         const state = get();
         if (!state.pet) return;
         set({ pet: applyDecay(state.pet, Date.now()) });
+      },
+
+      setPetLevel: (level) => {
+        const state = get();
+        if (!state.pet) return;
+        set({
+          pet: {
+            ...state.pet,
+            hunger: MAX_STAT,
+            happiness: MAX_STAT,
+            clean: MAX_STAT,
+            energy: MAX_STAT,
+            exp: expAtPetLevel(level),
+            lastTick: Date.now(),
+          },
+        });
       },
 
       // Spend coins to buy an avatar item. Returns false (no-op) when the item
