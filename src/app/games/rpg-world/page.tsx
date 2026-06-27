@@ -1811,7 +1811,14 @@ export default function RpgWorldPage() {
             .setDepth(96)
             .setScrollFactor(0)
             .setAlpha(0);
-          const veil = this.add.rectangle(vp.cx, vp.cy, vp.width, vp.height, 0x020611, 0.42);
+          const veil = this.add.rectangle(vp.cx, vp.cy, vp.width, vp.height, 0x020611, 0.42)
+            .setInteractive();
+          veil.on('pointerdown', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event: any) => {
+            event?.stopPropagation?.();
+          });
+          veil.on('pointerup', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event: any) => {
+            event?.stopPropagation?.();
+          });
           upgradeLayer.add(veil);
 
           const title = this.add.text(vp.cx, Math.max(72, vp.height * 0.13), 'Chọn phước lành của Nữ thần', {
@@ -1858,7 +1865,7 @@ export default function RpgWorldPage() {
             picked = true;
             this.input.keyboard?.off('keydown', cleanupKey);
             cards.forEach((card) => card.disableInteractive());
-            this._finishAngelRevive(kind, [overlay, layer, upgradeLayer]);
+            this.time.delayedCall(24, () => this._finishAngelRevive(kind, [overlay, layer, upgradeLayer]));
           };
 
           upgrades.forEach((upgrade, index) => {
@@ -1903,16 +1910,38 @@ export default function RpgWorldPage() {
               wordWrap: { width: cardW - 30 },
             }).setOrigin(0.5);
             card.add([bg, keyBadge, icon, label, desc]);
-            card.on('pointerover', () => card.setScale(1.035));
-            card.on('pointerout', () => card.setScale(1));
-            card.on('pointerdown', () => choose(upgrade.kind));
-            card.on('pointerup', () => choose(upgrade.kind));
+            card.on('pointerover', () => {
+              if (!picked) card.setScale(1.035);
+            });
+            card.on('pointerout', () => {
+              if (!picked) card.setScale(1);
+            });
+            card.on('pointerdown', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event: any) => {
+              event?.stopPropagation?.();
+              if (!picked) card.setScale(0.98);
+            });
+            card.on('pointerup', (_pointer: Phaser.Input.Pointer, _x: number, _y: number, event: any) => {
+              event?.stopPropagation?.();
+              if (picked) return;
+              card.setScale(1.02);
+              choose(upgrade.kind);
+            });
+            card.on('pointerupoutside', () => {
+              if (!picked) card.setScale(1);
+            });
             upgradeLayer.add(card);
             cards.push(card);
           });
 
           this.input.keyboard?.on('keydown', cleanupKey);
           this.tweens.add({ targets: upgradeLayer, alpha: 1, duration: 360, ease: 'Sine.easeOut' });
+        }
+
+        private _killTweensDeep(target: Phaser.GameObjects.GameObject) {
+          this.tweens.killTweensOf(target);
+          const children = (target as any).list;
+          if (!Array.isArray(children)) return;
+          children.forEach((child) => this._killTweensDeep(child as Phaser.GameObjects.GameObject));
         }
 
         private _finishAngelRevive(
@@ -1938,7 +1967,10 @@ export default function RpgWorldPage() {
             duration: 220,
             ease: 'Sine.easeIn',
             onComplete: () => {
-              fadeTargets.forEach((target) => target.destroy());
+              fadeTargets.forEach((target) => {
+                this._killTweensDeep(target);
+                target.destroy();
+              });
               this.angelRevivePlaying = false;
               cbRef.current.bossCinematic(false);
             },
