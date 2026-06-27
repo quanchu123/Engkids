@@ -306,14 +306,24 @@ export default function RpgWorldPage() {
         preload() {
           const cx = this.scale.width / 2;
           const cy = this.scale.height / 2;
-          const pbar = this.add.rectangle(cx - 148, cy, 4, 20, 0x7c3aed);
-          this.add.rectangle(cx, cy, 304, 24).setStrokeStyle(2, 0x7c3aed);
+          const barW = Math.min(304, Math.max(180, this.scale.width - 48));
+          const barH = 24;
+          const fillPad = 4;
+          const fill = this.add.graphics();
+          this.add.rectangle(cx, cy, barW, barH).setStrokeStyle(2, 0x7c3aed);
           this.add.text(cx, cy - 40, 'Đang mở cổng hầm ngục...', {
             fontFamily: 'Arial', fontSize: '18px', color: '#67e8f9',
           }).setOrigin(0.5);
           this.load.on('progress', (p: number) => {
-            pbar.width = 4 + 296 * p;
-            pbar.x = cx - 148 + pbar.width / 2 - 2;
+            const progress = Phaser.Math.Clamp(p, 0, 1);
+            fill.clear();
+            fill.fillStyle(0x7c3aed, 1);
+            fill.fillRect(
+              cx - barW / 2 + fillPad,
+              cy - (barH - fillPad * 2) / 2,
+              Math.max(0, (barW - fillPad * 2) * progress),
+              barH - fillPad * 2,
+            );
           });
 
           this.load.image('dungeon-map', `${BASE}/dungeon-map-v2.png`);
