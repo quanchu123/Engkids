@@ -1,6 +1,7 @@
 import { staticAssetUrl } from '@/lib/static-assets';
 
-const petStageArt = (name: string) => staticAssetUrl(`/games/pet/stages/${name}`);
+const PET_STAGE_ASSET_VERSION = '20260627-clean2';
+const petStageArt = (name: string) => `${staticAssetUrl(`/games/pet/stages/${name}`)}?v=${PET_STAGE_ASSET_VERSION}`;
 
 /**
  * Pet evolution species — pure & testable (no React, no storage).
