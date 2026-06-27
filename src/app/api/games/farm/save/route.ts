@@ -16,77 +16,35 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { readAccountJson, writeAccountJson } from '@/lib/server/account-file-store';
+import { getRequestAuthUserId } from '@/lib/server/request-auth';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const runtime = 'nodejs';
 
 /** Max serialized payload size accepted on PUT (defends the DB / abuse). */
 const MAX_PAYLOAD_CHARS = 200_000;
+const FARM_SAVE_BUCKET = 'farm-save';
+
+interface StoredFarmEnvelope {
+  updatedAt?: string;
+  payload?: unknown;
+}
 
 /** Service-role Supabase client — server-only, bypasses RLS. */
-function getSupabaseAdmin(): SupabaseClient {
+function getSupabaseAdmin(): SupabaseClient | null {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Supabase credentials not configured');
+    return null;
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) },
   });
-}
-
-/**
- * Resolve the Supabase auth user id from the request.
- *
- * Tries a bearer token first (anon client + getUser(token)), then falls back to
- * the Supabase auth cookie. Returns null on any failure so callers respond 401.
- */
-async function getAuthUserId(request: NextRequest): Promise<string | null> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !anonKey) return null;
-
-  // 1) Authorization: Bearer <token>
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.slice(7).trim();
-    if (token) {
-      try {
-        const anon = createClient(supabaseUrl, anonKey, {
-          auth: { persistSession: false, autoRefreshToken: false },
-        });
-        const {
-          data: { user },
-        } = await anon.auth.getUser(token);
-        if (user?.id) return user.id;
-      } catch {
-        // fall through to cookie auth
-      }
-    }
-  }
-
-  // 2) Supabase auth cookie
-  try {
-    const cookieStore = cookies();
-    const supabase = createServerClient(supabaseUrl, anonKey, {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    });
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user?.id ?? null;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -150,16 +108,25 @@ async function getOrCreateProfileId(
 
 // GET /api/games/farm/save — return { payload } for the logged-in user (or null).
 export async function GET(request: NextRequest) {
-  let admin: SupabaseClient;
-  try {
-    admin = getSupabaseAdmin();
-  } catch {
-    return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
-  }
-
-  const authUserId = await getAuthUserId(request);
+  const authUserId = await getRequestAuthUserId(request);
   if (!authUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const stored = await readAccountJson<StoredFarmEnvelope>(FARM_SAVE_BUCKET, authUserId);
+  if (stored?.payload) {
+    return NextResponse.json(
+      { payload: stored.payload, source: 'digitalocean', updatedAt: stored.updatedAt ?? null },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
+  }
+
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return NextResponse.json(
+      { payload: null, source: 'digitalocean' },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
   }
 
   const profileId = await getOrCreateProfileId(admin, authUserId);
@@ -179,22 +146,21 @@ export async function GET(request: NextRequest) {
   }
 
   const payload = (data as { payload?: unknown } | null)?.payload ?? null;
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    void writeAccountJson(FARM_SAVE_BUCKET, authUserId, payload, MAX_PAYLOAD_CHARS + 2_000).catch((error) => {
+      console.error('Failed to seed farm save file:', error);
+    });
+  }
+
   return NextResponse.json(
-    { payload },
+    { payload, source: 'supabase' },
     { headers: { 'Cache-Control': 'no-store, max-age=0' } },
   );
 }
 
 // PUT /api/games/farm/save — upsert { payload } for the logged-in user.
 export async function PUT(request: NextRequest) {
-  let admin: SupabaseClient;
-  try {
-    admin = getSupabaseAdmin();
-  } catch {
-    return NextResponse.json({ error: 'Server not configured' }, { status: 500 });
-  }
-
-  const authUserId = await getAuthUserId(request);
+  const authUserId = await getRequestAuthUserId(request);
   if (!authUserId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -219,9 +185,21 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Payload too large' }, { status: 413 });
   }
 
+  try {
+    await writeAccountJson(FARM_SAVE_BUCKET, authUserId, payload, MAX_PAYLOAD_CHARS + 2_000);
+  } catch (error) {
+    console.error('Save farm file error:', error);
+    return NextResponse.json({ error: 'Failed to save farm save' }, { status: 500 });
+  }
+
+  const admin = getSupabaseAdmin();
+  if (!admin) {
+    return NextResponse.json({ ok: true, source: 'digitalocean' });
+  }
+
   const profileId = await getOrCreateProfileId(admin, authUserId);
   if (!profileId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ ok: true, source: 'digitalocean' });
   }
 
   // schema_version comes from payload.version when present, defaulting to 1.
@@ -243,8 +221,8 @@ export async function PUT(request: NextRequest) {
 
   if (error) {
     console.error('Save farm save error:', error.message);
-    return NextResponse.json({ error: 'Failed to save farm save' }, { status: 500 });
+    return NextResponse.json({ ok: true, source: 'digitalocean', supabaseMirrored: false });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, source: 'digitalocean', supabaseMirrored: true });
 }

@@ -5,6 +5,7 @@ import { ProgressSnapshot, SavedWord, StoryProgress, GameScore, UserSettings, Da
 import { DEFAULT_SETTINGS, getTodayDate, normalizeProgressSnapshot } from '@/lib/progress';
 import type { EquippedAvatar } from '@/lib/avatar';
 import type { PetState } from '@/lib/pet';
+import type { WordInteraction } from '@/store/useAppStore';
 
 /** Per-account economy / shop / pet state synced alongside progress. */
 export interface EconomyState {
@@ -16,7 +17,18 @@ export interface EconomyState {
   pet: PetState | null;
 }
 
-export type RemoteSnapshot = ProgressSnapshot & { economy: EconomyState };
+export interface AccountExtras {
+  completedLessonIds: string[];
+  wordInteractions: [string, WordInteraction][];
+}
+
+export type RemoteSnapshot = ProgressSnapshot & {
+  economy: EconomyState;
+  extras?: AccountExtras;
+  updatedAt?: string;
+};
+
+const ACCOUNT_STATE_ENDPOINT = '/api/account/state';
 
 /** True when remote economy has no meaningful data yet (fresh column). */
 export function isEmptyEconomy(e: EconomyState | null | undefined): boolean {
@@ -66,6 +78,84 @@ interface VocabularyRow {
   last_reviewed_at: string | null;
   example_sentence: string | null;
   created_at: string;
+}
+
+function normalizeEconomy(value: Partial<EconomyState> | null | undefined): EconomyState {
+  return {
+    coins: Math.max(0, Math.round(Number(value?.coins) || 0)),
+    streakFreezes: Math.max(0, Math.round(Number(value?.streakFreezes) || 0)),
+    lastSpinDate: typeof value?.lastSpinDate === 'string' ? value.lastSpinDate : null,
+    ownedAvatarItems: Array.isArray(value?.ownedAvatarItems) ? value.ownedAvatarItems.filter((item): item is string => typeof item === 'string') : [],
+    equippedAvatar: value?.equippedAvatar ?? null,
+    pet: value?.pet ?? null,
+  };
+}
+
+function normalizeExtras(value: Partial<AccountExtras> | null | undefined): AccountExtras {
+  return {
+    completedLessonIds: Array.isArray(value?.completedLessonIds)
+      ? value.completedLessonIds.filter((item): item is string => typeof item === 'string')
+      : [],
+    wordInteractions: Array.isArray(value?.wordInteractions)
+      ? value.wordInteractions.filter(
+          (entry): entry is [string, WordInteraction] =>
+            Array.isArray(entry) && typeof entry[0] === 'string' && !!entry[1] && typeof entry[1] === 'object',
+        )
+      : [],
+  };
+}
+
+function normalizeRemoteSnapshot(value: unknown): RemoteSnapshot | null {
+  if (!value || typeof value !== 'object') return null;
+  const raw = value as Partial<RemoteSnapshot>;
+  const normalized = normalizeProgressSnapshot({
+    progress: raw.progress,
+    settings: raw.settings,
+  } as Partial<ProgressSnapshot>);
+
+  return {
+    ...normalized,
+    economy: normalizeEconomy(raw.economy),
+    extras: normalizeExtras(raw.extras),
+    updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : undefined,
+  };
+}
+
+async function loadDigitalOceanProgressSnapshot(): Promise<RemoteSnapshot | null> {
+  try {
+    const res = await fetch(ACCOUNT_STATE_ENDPOINT, {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { payload?: unknown; updatedAt?: string | null };
+    const snapshot = normalizeRemoteSnapshot(data.payload);
+    if (snapshot && data.updatedAt) snapshot.updatedAt = data.updatedAt;
+    return snapshot;
+  } catch (error) {
+    console.error('Failed to load DigitalOcean progress:', error);
+    return null;
+  }
+}
+
+async function saveDigitalOceanProgressSnapshot(snapshot: RemoteSnapshot): Promise<boolean> {
+  try {
+    const res = await fetch(ACCOUNT_STATE_ENDPOINT, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payload: snapshot }),
+    });
+    if (!res.ok) {
+      console.error('Failed to save DigitalOcean progress:', await res.text());
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to save DigitalOcean progress:', error);
+    return false;
+  }
 }
 
 async function getAuthenticatedUser() {
@@ -175,6 +265,11 @@ function mapVocabularyRows(rows: VocabularyRow[]): SavedWord[] {
 }
 
 export async function loadRemoteProgressSnapshot(): Promise<RemoteSnapshot | null> {
+  const digitalOceanSnapshot = await loadDigitalOceanProgressSnapshot();
+  if (digitalOceanSnapshot) {
+    return digitalOceanSnapshot;
+  }
+
   const supabase = getSupabaseClient();
   const db = supabase as any;
   const profileId = await getOrCreateAuthProfileId();
@@ -221,7 +316,7 @@ if (progressRow?.daily_quest_state) {
   remoteProgress.dailyQuestState = progressRow.daily_quest_state;
 }
 
-return {
+const remoteSnapshot: RemoteSnapshot = {
   ...normalizeProgressSnapshot({
     progress: remoteProgress,
     settings: {
@@ -238,20 +333,51 @@ return {
     pet: progressRow?.pet ?? null,
   },
 };
+
+void saveDigitalOceanProgressSnapshot(remoteSnapshot);
+return remoteSnapshot;
 }
 
-export async function saveRemoteProgressSnapshot(snapshot: ProgressSnapshot, economy?: EconomyState): Promise<void> {
-  const supabase = getSupabaseClient();
-  const db = supabase as any;
-  const profileId = await getOrCreateAuthProfileId();
+export async function saveRemoteProgressSnapshot(
+  snapshot: ProgressSnapshot,
+  economy?: EconomyState,
+  extras?: AccountExtras,
+): Promise<void> {
+  const normalized = normalizeProgressSnapshot(snapshot);
+  const normalizedEconomy = normalizeEconomy(economy);
+  const remoteSnapshot: RemoteSnapshot = {
+    ...normalized,
+    economy: normalizedEconomy,
+    extras: normalizeExtras(extras),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const savedToDigitalOcean = await saveDigitalOceanProgressSnapshot(remoteSnapshot);
+  if (!savedToDigitalOcean) {
+    console.error('DigitalOcean account progress save failed; trying Supabase fallback.');
+  }
+
+  let profileId: string | null = null;
+  let db: any = null;
+  try {
+    const supabase = getSupabaseClient();
+    db = supabase as any;
+    profileId = await getOrCreateAuthProfileId();
+  } catch (error) {
+    console.error('Supabase progress fallback unavailable:', error);
+    return;
+  }
 
   if (!profileId) {
     return;
   }
 
-  await ensureUserProgressRow(profileId);
-
-  const normalized = normalizeProgressSnapshot(snapshot);
+  try {
+    await ensureUserProgressRow(profileId);
+  } catch (error) {
+    console.error('Failed to prepare Supabase progress row:', error);
+    return;
+  }
 
   const progressPayload: Record<string, unknown> = {
     user_profile_id: profileId,
@@ -266,14 +392,12 @@ export async function saveRemoteProgressSnapshot(snapshot: ProgressSnapshot, eco
     saved_words: normalized.progress.savedWords.map((word) => word.word),
   };
 
-  if (economy) {
-    progressPayload.coins = Math.max(0, Math.round(economy.coins || 0));
-    progressPayload.streak_freezes = Math.max(0, Math.round(economy.streakFreezes || 0));
-    progressPayload.last_spin_date = economy.lastSpinDate || null;
-    progressPayload.owned_avatar_items = economy.ownedAvatarItems || [];
-    progressPayload.equipped_avatar = economy.equippedAvatar || null;
-    progressPayload.pet = economy.pet || null;
-  }
+  progressPayload.coins = normalizedEconomy.coins;
+  progressPayload.streak_freezes = normalizedEconomy.streakFreezes;
+  progressPayload.last_spin_date = normalizedEconomy.lastSpinDate;
+  progressPayload.owned_avatar_items = normalizedEconomy.ownedAvatarItems;
+  progressPayload.equipped_avatar = normalizedEconomy.equippedAvatar;
+  progressPayload.pet = normalizedEconomy.pet;
 
   const { error: progressError } = await db
     .from('user_progress')

@@ -11,6 +11,7 @@ import {
   saveRemoteProgressSnapshot,
   isEmptyEconomy,
   EconomyState,
+  AccountExtras,
 } from '@/services/progress-sync';
 
 const PROGRESS_OWNER_KEY = 'kids.progress.owner.v1';
@@ -28,6 +29,33 @@ function readEconomy(): EconomyState {
   };
 }
 
+function readExtras(): AccountExtras {
+  const s = useAppStore.getState();
+  return {
+    completedLessonIds: s.completedLessonIds,
+    wordInteractions: Array.from(s.wordInteractions.entries()),
+  };
+}
+
+function mergeExtras(local: AccountExtras, remote?: AccountExtras): AccountExtras {
+  const completedLessonIds = Array.from(
+    new Set([...(remote?.completedLessonIds || []), ...local.completedLessonIds]),
+  );
+  const wordInteractions = new Map(remote?.wordInteractions || []);
+
+  for (const [key, localValue] of local.wordInteractions) {
+    const remoteValue = wordInteractions.get(key);
+    if (!remoteValue || localValue.lastSeen.localeCompare(remoteValue.lastSeen) > 0) {
+      wordInteractions.set(key, localValue);
+    }
+  }
+
+  return {
+    completedLessonIds,
+    wordInteractions: Array.from(wordInteractions.entries()),
+  };
+}
+
 export default function UserProgressSync() {
   const progress = useAppStore((state) => state.progress);
   const settings = useAppStore((state) => state.settings);
@@ -39,6 +67,8 @@ export default function UserProgressSync() {
   const ownedAvatarItems = useAppStore((state) => state.ownedAvatarItems);
   const equippedAvatar = useAppStore((state) => state.equippedAvatar);
   const pet = useAppStore((state) => state.pet);
+  const completedLessonIds = useAppStore((state) => state.completedLessonIds);
+  const wordInteractions = useAppStore((state) => state.wordInteractions);
   const replaceEconomy = useAppStore((state) => state.replaceEconomy);
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -51,6 +81,13 @@ export default function UserProgressSync() {
   const economy = useMemo<EconomyState>(
     () => ({ coins, streakFreezes, lastSpinDate, ownedAvatarItems, equippedAvatar, pet }),
     [coins, streakFreezes, lastSpinDate, ownedAvatarItems, equippedAvatar, pet],
+  );
+  const extras = useMemo<AccountExtras>(
+    () => ({
+      completedLessonIds,
+      wordInteractions: Array.from(wordInteractions.entries()),
+    }),
+    [completedLessonIds, wordInteractions],
   );
 
   useEffect(() => {
@@ -101,6 +138,7 @@ export default function UserProgressSync() {
       // can preserve coins/pet/stories/words earned before this account ever
       // synced (same-account first run, or guest play before logging in).
       const localEconomy = readEconomy();
+      const localExtras = readExtras();
       const localState = useAppStore.getState();
       const localSnapshot = {
         progress: localState.progress,
@@ -125,6 +163,10 @@ export default function UserProgressSync() {
           equippedAvatar: getDefaultEquipped(),
           pet: null,
         });
+        useAppStore.setState({
+          completedLessonIds: [],
+          wordInteractions: new Map(),
+        });
       }
 
       const remoteSnapshot = await loadRemoteProgressSnapshot();
@@ -138,6 +180,8 @@ export default function UserProgressSync() {
           useAppStore.setState({
             progress: localSnapshot.progress,
             settings: localSnapshot.settings,
+            completedLessonIds: localExtras.completedLessonIds,
+            wordInteractions: new Map(localExtras.wordInteractions),
           });
         }
         applyingRemoteRef.current = false;
@@ -169,6 +213,14 @@ export default function UserProgressSync() {
         ownedAvatarItems: chosen.ownedAvatarItems,
         equippedAvatar: chosen.equippedAvatar || getDefaultEquipped(),
         pet: chosen.pet,
+      });
+
+      const chosenExtras = isSwitchingAccount
+        ? (remoteSnapshot.extras || { completedLessonIds: [], wordInteractions: [] })
+        : mergeExtras(localExtras, remoteSnapshot.extras);
+      useAppStore.setState({
+        completedLessonIds: chosenExtras.completedLessonIds,
+        wordInteractions: new Map(chosenExtras.wordInteractions),
       });
 
       window.localStorage.setItem(PROGRESS_OWNER_KEY, userId);
@@ -208,7 +260,7 @@ export default function UserProgressSync() {
     }
 
     saveTimeoutRef.current = setTimeout(() => {
-      saveRemoteProgressSnapshot(snapshot, economy).catch((error) => {
+      saveRemoteProgressSnapshot(snapshot, economy, extras).catch((error) => {
         console.error('Failed to sync progress:', error);
       });
     }, 1200);
@@ -218,7 +270,7 @@ export default function UserProgressSync() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [snapshot, economy, hydrated, userId]);
+  }, [snapshot, economy, extras, hydrated, userId]);
 
   return null;
 }
