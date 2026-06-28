@@ -37,6 +37,8 @@ const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as co
 const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
 const PRINCESS_WIN_VIDEO_SRC = `${BASE}/cong_chua.mp4`;
 const PRINCESS_WIN_VIDEO_SECONDS = 3;
+const PRINCESS_RESCUE_MESSAGE_MS = 3000;
+const PRINCESS_RESCUE_MESSAGE = 'C\u00f4ng ch\u00faa \u0111\u00e3 \u0111\u01b0\u1ee3c c\u1ee9u!';
 const POWER_UPS = {
   sword: { x: 566, y: 1032, label: 'KIẾM +1', icon: '⚔️', color: 0x60a5fa },
   shield: { x: 690, y: 1032, label: 'KHIÊN', icon: '🛡️', color: 0x22d3ee },
@@ -2190,15 +2192,25 @@ export default function RpgWorldPage() {
           bossQuestionRef.current = null;
           bossResolveCbRef.current = null;
 
-          this.add.circle(this.bossX, 430, 70, 0xfef08a, 0.2).setBlendMode(Phaser.BlendModes.ADD).setDepth(40);
-          this.add.text(this.bossX, 428, '👸', {
+          const message = this.add.text(this.bossX, 430, PRINCESS_RESCUE_MESSAGE, {
             fontFamily: 'Arial',
-            fontSize: '70px',
-            stroke: '#111827',
-            strokeThickness: 6,
-          }).setOrigin(0.5).setDepth(41);
-          this._floatText(this.bossX, 510, 'Công chúa đã được cứu!', '#fde68a');
-          this.time.delayedCall(1300, () => cbRef.current.bossWin());
+            fontStyle: 'bold',
+            fontSize: '36px',
+            color: '#fde68a',
+            stroke: '#020617',
+            strokeThickness: 7,
+          }).setOrigin(0.5).setDepth(60);
+          this.tweens.add({
+            targets: message,
+            alpha: { from: 0, to: 1 },
+            y: 414,
+            duration: 360,
+            ease: 'Quad.easeOut',
+          });
+          this.time.delayedCall(PRINCESS_RESCUE_MESSAGE_MS, () => {
+            message.destroy();
+            cbRef.current.bossWin();
+          });
         }
 
         private _floatText(x: number, y: number, text: string, color: string) {
