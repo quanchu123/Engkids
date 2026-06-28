@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { CheckCircle, XCircle, Clock, Search, Filter, RefreshCw, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Filter, Loader2, RefreshCw, Search, XCircle } from 'lucide-react';
+import { authFetch } from '@/lib/admin-auth-client';
 
 interface Transaction {
   id: string;
@@ -15,38 +17,58 @@ interface Transaction {
   user_profiles?: { display_name: string | null; auth_id: string } | null;
 }
 
-const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  PENDING: { label: 'Chờ thanh toán', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20', icon: Clock },
-  PAID: { label: 'Đã thanh toán', color: 'text-green-400 bg-green-500/10 border-green-500/20', icon: CheckCircle },
-  CANCELLED: { label: 'Đã hủy', color: 'text-red-400 bg-red-500/10 border-red-500/20', icon: XCircle },
+const STATUS_MAP: Record<string, { label: string; badge: string; icon: LucideIcon }> = {
+  PENDING: { label: 'Chờ thanh toán', badge: 'admin-badge-warning', icon: Clock },
+  PAID: { label: 'Đã thanh toán', badge: 'admin-badge-success', icon: CheckCircle },
+  CANCELLED: { label: 'Đã hủy', badge: 'admin-badge-danger', icon: XCircle },
 };
+
+function formatCurrency(value: number): string {
+  return `${value.toLocaleString('vi-VN')}đ`;
+}
+
+function formatDateTime(value: string): string {
+  return new Intl.DateTimeFormat('vi-VN', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
 
 export default function AdminTransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [search, setSearch] = useState('');
 
-  const fetchTransactions = useCallback(async () => {
-    setLoading(true);
+  const fetchTransactions = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
+    if (mode === 'refresh') {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
+
     try {
       const params = new URLSearchParams();
       if (statusFilter) params.set('status', statusFilter);
-      const res = await fetch(`/api/payment/transactions?${params}`);
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to load');
+
+      const response = await authFetch(`/api/payment/transactions?${params}`);
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Không thể tải danh sách giao dịch');
       }
-      const data = await res.json();
-      setTransactions(data.transactions || []);
+
+      setTransactions(payload.transactions || []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Không thể tải danh sách giao dịch';
       setError(message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [statusFilter]);
 
@@ -54,19 +76,31 @@ export default function AdminTransactionsPage() {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      fetchTransactions('refresh');
+    }, 30_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [fetchTransactions]);
+
   const handleConfirm = async (orderCode: string) => {
     if (!confirm(`Xác nhận thanh toán cho đơn hàng ${orderCode}?`)) return;
+
     setConfirming(orderCode);
     try {
-      const res = await fetch('/api/payment/confirm', {
+      const response = await authFetch('/api/payment/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderCode }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      // Refresh list
-      await fetchTransactions();
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Không thể xác nhận thanh toán');
+      }
+
+      await fetchTransactions('refresh');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Lỗi xác nhận';
       alert(`Lỗi: ${message}`);
@@ -75,147 +109,153 @@ export default function AdminTransactionsPage() {
     }
   };
 
-  const filtered = transactions.filter((t) => {
-    if (search) {
-      const q = search.toLowerCase();
-      return (
-        t.order_code.toLowerCase().includes(q) ||
-        t.user_id.toLowerCase().includes(q) ||
-        t.plan_id.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return transactions;
 
-  const pendingCount = transactions.filter((t) => t.status === 'PENDING').length;
+    return transactions.filter((transaction) => (
+      String(transaction.order_code).toLowerCase().includes(query) ||
+      transaction.user_id.toLowerCase().includes(query) ||
+      transaction.plan_id.toLowerCase().includes(query) ||
+      transaction.user_profiles?.display_name?.toLowerCase().includes(query)
+    ));
+  }, [search, transactions]);
+
+  const paidRevenue = transactions
+    .filter((transaction) => transaction.status === 'PAID')
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
+  const pendingCount = transactions.filter((transaction) => transaction.status === 'PENDING').length;
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      <header className="admin-card flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Quản lý giao dịch</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            {pendingCount > 0 && (
-              <span className="text-amber-400 font-medium">{pendingCount} đơn chờ xác nhận • </span>
-            )}
-            Tổng {transactions.length} giao dịch
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-admin-primary">Thanh toán</p>
+          <h1 className="mt-1 text-2xl font-black text-admin-text">Quản lý giao dịch</h1>
+          <p className="mt-1 text-sm font-bold text-slate-600">
+            {pendingCount > 0 && <span className="text-amber-700">{pendingCount} đơn chờ xác nhận · </span>}
+            Tổng {transactions.length} giao dịch · Đã thu {formatCurrency(paidRevenue)}
           </p>
         </div>
         <button
-          onClick={fetchTransactions}
-          className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+          type="button"
+          onClick={() => fetchTransactions('refresh')}
+          disabled={refreshing}
+          className="admin-btn admin-btn-secondary"
         >
-          <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
           Làm mới
         </button>
-      </div>
+      </header>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-grow">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Tìm mã đơn hàng, user ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500"
-          />
+      <section className="admin-card p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <label className="relative block flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Tìm mã đơn hàng, user ID, tên học viên..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="admin-input pl-9"
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Filter className="h-4 w-4 text-slate-600" aria-hidden="true" />
+            {['', 'PENDING', 'PAID', 'CANCELLED'].map((status) => (
+              <button
+                key={status || 'ALL'}
+                type="button"
+                onClick={() => setStatusFilter(status)}
+                className={`admin-tab ${statusFilter === status ? 'admin-tab-active' : 'bg-admin-surface-muted text-slate-700 hover:text-admin-primary'}`}
+              >
+                {status === '' ? 'Tất cả' : STATUS_MAP[status]?.label || status}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Filter size={16} className="text-gray-500" />
-          {['', 'PENDING', 'PAID', 'CANCELLED'].map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                statusFilter === s
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-              }`}
-            >
-              {s === '' ? 'Tất cả' : STATUS_MAP[s]?.label || s}
-            </button>
-          ))}
-        </div>
-      </div>
+      </section>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-900/30 border border-red-500/30 rounded-lg text-red-300 text-sm">
-          {error}
+        <div className="admin-card flex items-start gap-3 border-red-200 bg-red-50 p-4 text-red-700">
+          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" aria-hidden="true" />
+          <div>
+            <p className="font-black">Không tải được giao dịch</p>
+            <p className="text-sm font-semibold">{error}</p>
+          </div>
         </div>
       )}
 
-      {/* Transactions table */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <section className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-800">
-                <th className="text-left text-gray-400 font-medium px-4 py-3">Mã đơn</th>
-                <th className="text-left text-gray-400 font-medium px-4 py-3">Gói</th>
-                <th className="text-right text-gray-400 font-medium px-4 py-3">Số tiền</th>
-                <th className="text-left text-gray-400 font-medium px-4 py-3">Trạng thái</th>
-                <th className="text-left text-gray-400 font-medium px-4 py-3">Thời gian</th>
-                <th className="text-center text-gray-400 font-medium px-4 py-3">Thao tác</th>
+              <tr className="border-b border-admin-border bg-slate-50">
+                <th className="px-4 py-3 text-left font-black text-slate-700">Mã đơn</th>
+                <th className="px-4 py-3 text-left font-black text-slate-700">Gói</th>
+                <th className="px-4 py-3 text-right font-black text-slate-700">Số tiền</th>
+                <th className="px-4 py-3 text-left font-black text-slate-700">Trạng thái</th>
+                <th className="px-4 py-3 text-left font-black text-slate-700">Thời gian</th>
+                <th className="px-4 py-3 text-center font-black text-slate-700">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {loading && filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-500">
-                    <Loader2 className="mx-auto animate-spin mb-2" size={24} />
-                    Đang tải...
+                  <td colSpan={6} className="px-4 py-12 text-center font-bold text-slate-600">
+                    <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin text-admin-primary" aria-hidden="true" />
+                    Đang tải giao dịch...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-500">
+                  <td colSpan={6} className="px-4 py-12 text-center font-bold text-slate-600">
                     Không có giao dịch nào
                   </td>
                 </tr>
               ) : (
-                filtered.map((t) => {
-                  const status = STATUS_MAP[t.status] || STATUS_MAP.PENDING;
+                filtered.map((transaction) => {
+                  const status = STATUS_MAP[transaction.status] || STATUS_MAP.PENDING;
                   const StatusIcon = status.icon;
+
                   return (
-                    <tr key={t.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                    <tr key={transaction.id} className="border-b border-admin-border last:border-0 hover:bg-slate-50">
                       <td className="px-4 py-3">
-                        <span className="font-mono font-bold text-purple-300">{t.order_code}</span>
+                        <span className="font-mono font-black text-admin-primary">{transaction.order_code}</span>
                       </td>
-                      <td className="px-4 py-3 text-gray-300">{t.plan_id}</td>
-                      <td className="px-4 py-3 text-right font-semibold text-white">
-                        {t.amount.toLocaleString('vi-VN')}đ
+                      <td className="px-4 py-3 font-bold text-admin-text">{transaction.plan_id}</td>
+                      <td className="px-4 py-3 text-right font-black text-admin-text">
+                        {formatCurrency(transaction.amount)}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${status.color}`}>
-                          <StatusIcon size={12} />
+                        <span className={`admin-badge ${status.badge} gap-1.5`}>
+                          <StatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
                           {status.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">
-                        <div>{new Date(t.created_at).toLocaleDateString('vi-VN')}</div>
-                        <div>{new Date(t.created_at).toLocaleTimeString('vi-VN')}</div>
+                      <td className="px-4 py-3 font-semibold text-slate-600">
+                        <div>Tạo: {formatDateTime(transaction.created_at)}</div>
+                        {transaction.paid_at && <div className="text-emerald-700">Trả: {formatDateTime(transaction.paid_at)}</div>}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {t.status === 'PENDING' ? (
+                        {transaction.status === 'PENDING' ? (
                           <button
-                            onClick={() => handleConfirm(t.order_code)}
-                            disabled={confirming === t.order_code}
-                            className="bg-green-600 hover:bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                            type="button"
+                            onClick={() => handleConfirm(String(transaction.order_code))}
+                            disabled={confirming === String(transaction.order_code)}
+                            className="admin-btn admin-btn-primary min-h-[36px] px-3 text-xs"
                           >
-                            {confirming === t.order_code ? (
-                              <Loader2 size={14} className="animate-spin" />
+                            {confirming === String(transaction.order_code) ? (
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                             ) : (
-                              '✓ Xác nhận'
+                              'Xác nhận'
                             )}
                           </button>
-                        ) : t.status === 'PAID' ? (
-                          <span className="text-green-500 text-xs">
-                            {t.paid_at ? new Date(t.paid_at).toLocaleString('vi-VN') : '✓'}
-                          </span>
+                        ) : transaction.status === 'PAID' ? (
+                          <span className="font-black text-emerald-700">Đã thu</span>
                         ) : (
-                          <span className="text-gray-600 text-xs">—</span>
+                          <span className="font-bold text-slate-500">Không có</span>
                         )}
                       </td>
                     </tr>
@@ -225,7 +265,7 @@ export default function AdminTransactionsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertCircle,
@@ -15,6 +15,7 @@ import {
   RefreshCw,
   TrendingUp,
 } from 'lucide-react';
+import { authFetch } from '@/lib/admin-auth-client';
 
 interface RevenueSummary {
   totalRevenue: number;
@@ -79,7 +80,7 @@ export default function AdminRevenuePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRevenue = async (mode: 'initial' | 'refresh' = 'initial') => {
+  const fetchRevenue = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     if (mode === 'refresh') {
       setRefreshing(true);
     } else {
@@ -88,7 +89,7 @@ export default function AdminRevenuePage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/admin/revenue', { cache: 'no-store' });
+      const response = await authFetch('/api/admin/revenue', { cache: 'no-store' });
       const payload = await response.json();
 
       if (!response.ok) {
@@ -103,11 +104,19 @@ export default function AdminRevenuePage() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchRevenue();
-  }, []);
+  }, [fetchRevenue]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      fetchRevenue('refresh');
+    }, 30_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [fetchRevenue]);
 
   const maxDailyRevenue = useMemo(() => {
     if (!data?.dailyRevenue.length) return 0;
@@ -171,7 +180,7 @@ export default function AdminRevenuePage() {
           <p className="text-xs font-black uppercase tracking-[0.18em] text-admin-primary">Dashboard</p>
           <h1 className="mt-1 text-2xl font-black text-admin-text">Thống kê doanh thu</h1>
           <p className="mt-1 text-sm text-admin-text-muted">
-            Theo dõi doanh thu gói Premium, đơn chờ thanh toán và xu hướng 14 ngày gần nhất.
+            Dữ liệu thật từ giao dịch PayOS đã ghi nhận, tự cập nhật mỗi 30 giây.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

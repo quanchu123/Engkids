@@ -1,44 +1,28 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import type { NextRequest } from 'next/server';
+import { getAdminAuthUser } from '@/lib/api-auth';
 
 /**
  * GET /api/payment/transactions
  * Admin-only: list all transactions with user info.
  * Query params: ?status=PENDING (optional filter)
  */
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const statusFilter = searchParams.get('status');
 
-    // Verify admin
-    const cookieStore = cookies();
+    const admin = await getAdminAuthUser(req);
+    if (!admin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 401 });
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
     if (!supabaseServiceKey) {
       return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
-    }
-
-    const supabase = createServerClient(supabaseUrl, supabaseKey, {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    });
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-    if (!adminEmails.includes(user.email?.toLowerCase() || '')) {
-      return NextResponse.json({ error: 'Forbidden: admin only' }, { status: 403 });
     }
 
     // Use service role to read all transactions
