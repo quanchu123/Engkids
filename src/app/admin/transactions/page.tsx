@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { AlertCircle, CheckCircle, Clock, Filter, Loader2, RefreshCw, Search, XCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Filter, Loader2, RefreshCw, Search, Trash2, XCircle } from 'lucide-react';
 import { authFetch } from '@/lib/admin-auth-client';
 
 interface Transaction {
@@ -39,6 +39,7 @@ export default function AdminTransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [search, setSearch] = useState('');
@@ -106,6 +107,31 @@ export default function AdminTransactionsPage() {
       alert(`Lỗi: ${message}`);
     } finally {
       setConfirming(null);
+    }
+  };
+
+  const handleDeletePending = async (orderCode: string) => {
+    if (!confirm(`Xóa giao dịch chờ thanh toán ${orderCode}?`)) return;
+
+    setDeleting(orderCode);
+    try {
+      const params = new URLSearchParams({ orderCode });
+      const response = await authFetch(`/api/payment/transactions?${params}`, {
+        method: 'DELETE',
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.error || 'Không thể xóa giao dịch');
+      }
+
+      setTransactions((current) => current.filter((transaction) => String(transaction.order_code) !== orderCode));
+      await fetchTransactions('refresh');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Lỗi xóa giao dịch';
+      alert(`Lỗi: ${message}`);
+    } finally {
+      setDeleting(null);
     }
   };
 
@@ -240,18 +266,36 @@ export default function AdminTransactionsPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         {transaction.status === 'PENDING' ? (
-                          <button
-                            type="button"
-                            onClick={() => handleConfirm(String(transaction.order_code))}
-                            disabled={confirming === String(transaction.order_code)}
-                            className="admin-btn admin-btn-primary min-h-[36px] px-3 text-xs"
-                          >
-                            {confirming === String(transaction.order_code) ? (
-                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                            ) : (
-                              'Xác nhận'
-                            )}
-                          </button>
+                          <div className="flex flex-wrap justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleConfirm(String(transaction.order_code))}
+                              disabled={confirming === String(transaction.order_code) || deleting === String(transaction.order_code)}
+                              className="admin-btn admin-btn-primary min-h-[36px] px-3 text-xs"
+                            >
+                              {confirming === String(transaction.order_code) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                              ) : (
+                                'Xác nhận'
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePending(String(transaction.order_code))}
+                              disabled={deleting === String(transaction.order_code) || confirming === String(transaction.order_code)}
+                              className="admin-btn admin-btn-danger min-h-[36px] px-3 text-xs"
+                              title="Xóa giao dịch chờ thanh toán"
+                            >
+                              {deleting === String(transaction.order_code) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                              ) : (
+                                <>
+                                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                                  Xóa
+                                </>
+                              )}
+                            </button>
+                          </div>
                         ) : transaction.status === 'PAID' ? (
                           <span className="font-black text-emerald-700">Đã thu</span>
                         ) : (
