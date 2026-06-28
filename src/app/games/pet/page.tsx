@@ -7,7 +7,7 @@ import Header from '@/components/layout/Header';
 import UiIcon from '@/components/common/UiIcon';
 import Fireworks from '@/components/common/Fireworks';
 import { useAppStore } from '@/store/useAppStore';
-import { getCurrentUser } from '@/lib/auth-client';
+import { getCurrentAdmin } from '@/lib/admin-auth-client';
 import {
   PET_ACTIONS,
   PetActionKey,
@@ -38,7 +38,6 @@ import {
 import { loadWordBank, DEFAULT_WORD_BANK, WordPair } from '@/lib/word-bank';
 
 const PET_MAX_LEVEL = 10;
-const PET_LEVEL_CONTROL_EMAILS = new Set(['viet@ultra.com']);
 
 const STAT_META: Record<PetStatKey, { labelVi: string; emoji: string; bar: string; soft: string }> = {
   hunger: { labelVi: 'No bụng', emoji: '🍎', bar: 'from-orange-400 to-amber-500', soft: 'bg-orange-50 text-orange-700' },
@@ -142,7 +141,7 @@ export default function PetGamePage() {
   const [starBursts, setStarBursts] = useState<Array<{ id: number; tone: 'correct' | 'combo' | 'battle' }>>([]);
   const [tapRipples, setTapRipples] = useState<number[]>([]);
   const [learnedWords, setLearnedWords] = useState<Set<string>>(new Set());
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [canControlPetLevel, setCanControlPetLevel] = useState(false);
   const questDoneRef = useRef(false);
 
   const [quizAction, setQuizAction] = useState<PetActionKey | null>(null);
@@ -180,16 +179,14 @@ export default function PetGamePage() {
   const lvl = pet ? levelFromExp(pet.exp) : null;
   const species = pet ? getSpecies(pet.species) : undefined;
   const stageIdx = species && lvl ? stageIndexForLevel(species, lvl.level) : 0;
-  const canControlPetLevel = Boolean(userEmail && PET_LEVEL_CONTROL_EMAILS.has(userEmail));
-
   useEffect(() => {
     let alive = true;
-    getCurrentUser()
-      .then((user) => {
-        if (alive) setUserEmail(user?.email?.toLowerCase() || null);
+    getCurrentAdmin()
+      .then((admin) => {
+        if (alive) setCanControlPetLevel(Boolean(admin));
       })
       .catch(() => {
-        if (alive) setUserEmail(null);
+        if (alive) setCanControlPetLevel(false);
       });
     return () => {
       alive = false;

@@ -23,6 +23,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const adminEmail = process.env.ADMIN_EMAIL || 'admin@comiclingua.com';
 const adminPassword = process.env.ADMIN_PASSWORD || 'nhom4exe201';
 const adminName = process.env.ADMIN_NAME || 'Super Admin';
+const adminPremiumUntil = '9999-12-31T23:59:59Z';
 
 async function createAdmin() {
   console.log('\n🔐 CREATING ADMIN USER\n');
@@ -54,6 +55,21 @@ async function createAdmin() {
       
       if (profile) {
         console.log(`   Profile exists: ${profile.id}`);
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({
+            role: profile.role === 'god' ? 'god' : 'admin',
+            account_type: 'admin',
+            is_premium: true,
+            premium_until: adminPremiumUntil,
+          })
+          .eq('auth_id', existingAdmin.id);
+
+        if (updateError) {
+          console.log(`   ⚠️  Profile update warning: ${updateError.message}`);
+        } else {
+          console.log(`   ✅ Profile upgraded to unlimited admin!`);
+        }
       } else {
         console.log(`   ⚠️  Creating profile...`);
         const { error: profileError } = await supabase
@@ -62,7 +78,10 @@ async function createAdmin() {
             auth_id: existingAdmin.id,
             email: adminEmail,
             name: adminName,
-            account_type: 'premium'
+            role: 'admin',
+            account_type: 'admin',
+            is_premium: true,
+            premium_until: adminPremiumUntil
           });
         
         if (profileError) {
@@ -71,6 +90,16 @@ async function createAdmin() {
           console.log(`   ✅ Profile created!`);
         }
       }
+
+      await supabase.auth.admin.updateUserById(existingAdmin.id, {
+        app_metadata: {
+          ...(existingAdmin.app_metadata || {}),
+          role: existingAdmin.app_metadata?.role === 'god' ? 'god' : 'admin',
+          admin_role: existingAdmin.app_metadata?.admin_role === 'super_admin' ? 'super_admin' : 'admin',
+          account_type: 'admin',
+          premium_until: adminPremiumUntil,
+        },
+      });
     } else {
       // Step 2: Create admin user
       console.log('\n📝 Step 2: Creating admin user...');
@@ -80,6 +109,12 @@ async function createAdmin() {
         email_confirm: true, // Auto-confirm email
         user_metadata: {
           name: adminName
+        },
+        app_metadata: {
+          role: 'admin',
+          admin_role: 'admin',
+          account_type: 'admin',
+          premium_until: adminPremiumUntil
         }
       });
 
@@ -100,7 +135,10 @@ async function createAdmin() {
           auth_id: newUser.user.id,
           email: adminEmail,
           name: adminName,
-          account_type: 'premium' // Give admin premium account
+          role: 'admin',
+          account_type: 'admin',
+          is_premium: true,
+          premium_until: adminPremiumUntil
         });
 
       if (profileError) {

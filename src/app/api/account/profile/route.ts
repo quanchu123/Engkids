@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { resolveSupabaseAdminUser } from '@/lib/admin-access';
+import { ADMIN_UNLIMITED_UNTIL, isAdminRole } from '@/lib/admin-roles';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,6 +19,7 @@ interface ProfileRow {
   account_type: string | null;
   is_premium: boolean | null;
   premium_until: string | null;
+  role: string | null;
 }
 
 function getSupabaseServerClient() {
@@ -52,12 +55,33 @@ function normalizeAge(value: unknown, min: number, max: number): number | null {
   return parsed;
 }
 
-function isPremiumActive(profile: Pick<ProfileRow, 'account_type' | 'is_premium' | 'premium_until'>): boolean {
+function isPremiumActive(
+  profile: Pick<ProfileRow, 'account_type' | 'is_premium' | 'premium_until' | 'role'>,
+  isAdminUser = false,
+): boolean {
+  if (isAdminUser || isAdminRole(profile.role) || profile.account_type === 'admin') {
+    return true;
+  }
+
   return (
-    (profile.is_premium === true || profile.account_type === 'premium' || profile.account_type === 'admin') &&
+    (profile.is_premium === true || profile.account_type === 'premium') &&
     !!profile.premium_until &&
     new Date(profile.premium_until) > new Date()
   );
+}
+
+function premiumPayload(
+  profile: Pick<ProfileRow, 'account_type' | 'is_premium' | 'premium_until' | 'role'> | null,
+  isAdminUser: boolean,
+) {
+  const active = profile ? isPremiumActive(profile, isAdminUser) : isAdminUser;
+  const isUnlimitedAdmin = isAdminUser || isAdminRole(profile?.role) || profile?.account_type === 'admin';
+
+  return {
+    active,
+    until: isUnlimitedAdmin ? ADMIN_UNLIMITED_UNTIL : profile?.premium_until ?? null,
+    accountType: isUnlimitedAdmin ? 'admin' : profile?.account_type ?? 'free',
+  };
 }
 
 export async function GET() {
@@ -69,9 +93,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const admin = await resolveSupabaseAdminUser(supabase, user);
+
     const { data: profile, error } = await supabase
       .from('user_profiles')
-      .select('auth_id, email, name, parent_name, child_age, parent_age, gender, address, account_type, is_premium, premium_until')
+      .select('auth_id, email, name, parent_name, child_age, parent_age, gender, address, account_type, is_premium, premium_until, role')
       .eq('auth_id', user.id)
       .maybeSingle<ProfileRow>();
 
@@ -92,14 +118,9 @@ export async function GET() {
         account_type: 'free',
         is_premium: false,
         premium_until: null,
+        role: admin?.role ?? 'user',
       },
-      premium: profile
-        ? {
-            active: isPremiumActive(profile),
-            until: profile.premium_until,
-            accountType: profile.account_type,
-          }
-        : { active: false, until: null, accountType: 'free' },
+      premium: premiumPayload(profile, Boolean(admin)),
       email: user.email ?? profile?.email ?? null,
     }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {
@@ -116,6 +137,8 @@ export async function PUT(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const admin = await resolveSupabaseAdminUser(supabase, user);
 
     const body = await request.json().catch(() => ({}));
     const name = normalizeText(body.name, 80);
@@ -143,7 +166,7 @@ export async function PUT(request: Request) {
     const { data: profile, error } = await supabase
       .from('user_profiles')
       .upsert(payload, { onConflict: 'auth_id' })
-      .select('auth_id, email, name, parent_name, child_age, parent_age, gender, address, account_type, is_premium, premium_until')
+      .select('auth_id, email, name, parent_name, child_age, parent_age, gender, address, account_type, is_premium, premium_until, role')
       .single<ProfileRow>();
 
     if (error) {
@@ -163,11 +186,7 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({
       profile,
-      premium: {
-        active: isPremiumActive(profile),
-        until: profile.premium_until,
-        accountType: profile.account_type,
-      },
+      premium: premiumPayload(profile, Boolean(admin)),
     }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {
     console.error('Account profile PUT error:', error);

@@ -1,6 +1,8 @@
 'use client';
 
 import { getSupabaseClient } from '@/lib/auth-client';
+import { isAdminAuthenticated } from '@/lib/admin-auth-client';
+import { ADMIN_UNLIMITED_UNTIL, isAdminRole } from '@/lib/admin-roles';
 import { FREEMIUM_DAILY_MINUTES } from '@/lib/payment';
 
 // ── localStorage keys ───────────────────────────────────────────────────
@@ -88,6 +90,10 @@ export async function checkPremiumStatus(): Promise<{ isPremium: boolean; premiu
     const supabase = getSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
+      const isAdmin = await isAdminAuthenticated().catch(() => false);
+      if (isAdmin) {
+        return { isPremium: true, premiumUntil: ADMIN_UNLIMITED_UNTIL };
+      }
       return { isPremium: false, premiumUntil: null };
     }
 
@@ -97,9 +103,21 @@ export async function checkPremiumStatus(): Promise<{ isPremium: boolean; premiu
 
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('account_type, is_premium, premium_until')
+      .select('account_type, is_premium, premium_until, role')
       .eq('auth_id', user.id)
       .maybeSingle();
+
+    const isAdmin =
+      isAdminRole(user.app_metadata?.role) ||
+      isAdminRole(user.app_metadata?.admin_role) ||
+      isAdminRole(profile?.role) ||
+      profile?.account_type === 'admin' ||
+      (await isAdminAuthenticated().catch(() => false));
+
+    if (isAdmin) {
+      setCachedPremiumStatus(user.id, true, ADMIN_UNLIMITED_UNTIL);
+      return { isPremium: true, premiumUntil: ADMIN_UNLIMITED_UNTIL };
+    }
 
     if (!profile) {
       setCachedPremiumStatus(user.id, false, null);

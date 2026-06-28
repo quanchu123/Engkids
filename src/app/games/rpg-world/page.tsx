@@ -35,6 +35,8 @@ const BOSS_ROAR_FRAME_SIZE = 627;
 const BOSS_SPRITE_SCALE = 0.88;
 const SAFE_FLOOR_BOUNDS = { left: 62, right: 1192, top: 84, bottom: 1168 } as const;
 const TREASURE_CHEST = { x: 1008, y: 288, width: 240, height: 210 } as const;
+const PRINCESS_WIN_VIDEO_SRC = `${BASE}/cong_chua.mp4`;
+const PRINCESS_WIN_VIDEO_SECONDS = 3;
 const POWER_UPS = {
   sword: { x: 566, y: 1032, label: 'KIẾM +1', icon: '⚔️', color: 0x60a5fa },
   shield: { x: 690, y: 1032, label: 'KHIÊN', icon: '🛡️', color: 0x22d3ee },
@@ -130,6 +132,7 @@ export default function RpgWorldPage() {
   const [isAdminTester, setIsAdminTester] = useState(false);
   const [bossCinematic, setBossCinematic] = useState(false);
   const [bossReviveVideo, setBossReviveVideo] = useState<{ id: number; src: string } | null>(null);
+  const [bossWinVideo, setBossWinVideo] = useState<{ id: number; src: string } | null>(null);
 
   const battleRef = useRef<BattleState | null>(null);
   const bossQuestionRef = useRef<BossQuestionState | null>(null);
@@ -140,6 +143,7 @@ export default function RpgWorldPage() {
   const shieldChargesRef = useRef(0);
   const angelReviveUsedRef = useRef(false);
   const bossReviveVideoDoneRef = useRef<(() => void) | null>(null);
+  const bossWinVideoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // On-screen D-pad state, read every frame by the Phaser update loop.
   const moveRef = useRef({ up: false, down: false, left: false, right: false });
 
@@ -241,6 +245,24 @@ export default function RpgWorldPage() {
     bossReviveVideoDoneRef.current = null;
     setBossReviveVideo(null);
     done?.();
+  }, []);
+
+  const finishBossWinVideo = useCallback(() => {
+    if (bossWinVideoTimeoutRef.current) {
+      clearTimeout(bossWinVideoTimeoutRef.current);
+      bossWinVideoTimeoutRef.current = null;
+    }
+    setBossWinVideo(null);
+    setBossCinematic(false);
+    setGameOver('win');
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (bossWinVideoTimeoutRef.current) {
+        clearTimeout(bossWinVideoTimeoutRef.current);
+      }
+    };
   }, []);
 
   const handleAdminSkipBoss = useCallback(() => {
@@ -837,10 +859,10 @@ export default function RpgWorldPage() {
           cbRef.current.bossWin = () => {
             scoreRef.current += 500;
             setScore(scoreRef.current);
-            setBossCinematic(false);
             setBossReviveVideo(null);
             bossReviveVideoDoneRef.current = null;
-            setGameOver('win');
+            setBossCinematic(true);
+            setBossWinVideo({ id: Date.now(), src: PRINCESS_WIN_VIDEO_SRC });
           };
 
           // ── Keyboard ──
@@ -2294,6 +2316,42 @@ export default function RpgWorldPage() {
               transform: 'translate3d(0,0,0)',
               willChange: 'transform',
             }}
+          />
+        </div>
+      )}
+
+      {/* Princess victory video */}
+      {bossWinVideo && !gameOver && (
+        <div className="absolute inset-0 z-[90] flex items-center justify-center bg-black">
+          <video
+            key={bossWinVideo.id}
+            src={bossWinVideo.src}
+            autoPlay
+            muted
+            playsInline
+            preload="auto"
+            controls={false}
+            disablePictureInPicture
+            onLoadedMetadata={(event) => {
+              const video = event.currentTarget;
+              video.currentTime = 0;
+              video.muted = true;
+              video.play().catch(() => {});
+              bossWinVideoTimeoutRef.current = setTimeout(finishBossWinVideo, PRINCESS_WIN_VIDEO_SECONDS * 1000);
+            }}
+            onCanPlay={(event) => {
+              event.currentTarget.muted = true;
+              event.currentTarget.play().catch(() => {});
+            }}
+            onTimeUpdate={(event) => {
+              if (event.currentTarget.currentTime >= PRINCESS_WIN_VIDEO_SECONDS) {
+                event.currentTarget.pause();
+                finishBossWinVideo();
+              }
+            }}
+            onEnded={finishBossWinVideo}
+            onError={finishBossWinVideo}
+            className="block h-full w-full select-none object-contain"
           />
         </div>
       )}
