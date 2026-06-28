@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, BookOpen, ChevronLeft, ChevronRight, Clapperboard, ExternalLink, Gamepad2, LogOut, Music2, PawPrint, Plus } from 'lucide-react';
+import { BarChart3, BookOpen, ChevronLeft, ChevronRight, CircleDollarSign, Clapperboard, ExternalLink, Gamepad2, LogOut, Music2, PawPrint, Plus } from 'lucide-react';
 import { signOut } from '@/lib/auth-client';
 import AdminIcon from '@/components/admin/AdminIcon';
 import type { AdminIconKey } from '@/config/admin-icons';
 
 const menuItems: { name: string; path: string; icon: typeof BookOpen; iconKey: AdminIconKey }[] = [
   { name: 'Truyện', path: '/admin', icon: BookOpen, iconKey: 'stories' },
+  { name: 'Doanh thu', path: '/admin/revenue', icon: CircleDollarSign, iconKey: 'dashboard' },
   { name: 'Video & Nhạc', path: '/admin/videos', icon: Clapperboard, iconKey: 'videos' },
   { name: 'Game', path: '/admin/games', icon: Gamepad2, iconKey: 'games' },
   { name: 'Pet user', path: '/admin/pets', icon: PawPrint, iconKey: 'pets' },
