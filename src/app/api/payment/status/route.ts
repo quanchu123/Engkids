@@ -5,6 +5,13 @@ import { createClient } from '@supabase/supabase-js';
 import { payos } from '@/lib/payos';
 import { markTransactionPaidAndUpgrade } from '@/lib/server/subscriptions';
 
+function hasPremiumTrackingColumns(transaction: Record<string, unknown>): boolean {
+  return (
+    Object.prototype.hasOwnProperty.call(transaction, 'premium_applied_at') ||
+    Object.prototype.hasOwnProperty.call(transaction, 'premium_until_after')
+  );
+}
+
 /**
  * GET /api/payment/status?orderCode=EK123ABC
  * Check the current status of a transaction. Used for polling from the checkout page.
@@ -37,7 +44,7 @@ export async function GET(req: Request) {
 
     let { data: transaction, error } = await supabase
       .from('transactions')
-      .select('order_code, amount, plan_id, status, created_at, paid_at, premium_applied_at')
+      .select('*')
       .eq('order_code', orderCode)
       .eq('user_id', user.id)
       .single();
@@ -46,7 +53,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
     }
 
-    if (transaction.status === 'PENDING' || (transaction.status === 'PAID' && !transaction.premium_applied_at)) {
+    const canTrackPremium = hasPremiumTrackingColumns(transaction);
+    const needsPremiumSync =
+      transaction.status === 'PENDING' ||
+      (transaction.status === 'PAID' && canTrackPremium && !transaction.premium_applied_at);
+
+    if (needsPremiumSync) {
       const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
       if (supabaseServiceKey) {
@@ -56,7 +68,7 @@ export async function GET(req: Request) {
             ? await payos.paymentRequests.get(Number(orderCode))
             : null;
 
-          if (transaction.status === 'PAID' || payosPayment?.status === 'PAID') {
+          if ((transaction.status === 'PAID' && canTrackPremium) || payosPayment?.status === 'PAID') {
             const { data: adminTransaction, error: adminFetchError } = await supabaseAdmin
               .from('transactions')
               .select('*')
@@ -79,7 +91,7 @@ export async function GET(req: Request) {
 
           const { data: refreshed } = await supabase
             .from('transactions')
-            .select('order_code, amount, plan_id, status, created_at, paid_at, premium_applied_at')
+            .select('*')
             .eq('order_code', orderCode)
             .eq('user_id', user.id)
             .single();

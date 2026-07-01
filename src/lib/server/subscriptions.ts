@@ -13,7 +13,9 @@ export interface TransactionRow {
   user_id: string;
   plan_id: string;
   status: string;
+  paid_at?: string | null;
   premium_applied_at?: string | null;
+  premium_until_after?: string | null;
 }
 
 function addPlanDuration(from: Date, planId: PlanId): Date {
@@ -81,6 +83,68 @@ export async function applyPremiumUpgrade(
   return premiumUntil;
 }
 
+function hasPremiumTrackingColumns(transaction: TransactionRow): boolean {
+  return (
+    Object.prototype.hasOwnProperty.call(transaction, 'premium_applied_at') ||
+    Object.prototype.hasOwnProperty.call(transaction, 'premium_until_after')
+  );
+}
+
+function isMissingColumnError(error: unknown): boolean {
+  const candidate = error as { code?: string; message?: string } | null;
+  return candidate?.code === '42703' || /column .* does not exist/i.test(candidate?.message ?? '');
+}
+
+async function updateTransactionPaid(
+  supabaseAdmin: SupabaseClient,
+  transaction: TransactionRow,
+  now: string,
+  premiumUntil: string,
+): Promise<void> {
+  const shouldMarkPaid = transaction.status !== 'PAID';
+  const shouldTrackPremium = hasPremiumTrackingColumns(transaction);
+
+  const basePayload = shouldMarkPaid
+    ? {
+        status: 'PAID',
+        paid_at: transaction.paid_at ?? now,
+      }
+    : {};
+
+  const trackingPayload = shouldTrackPremium
+    ? {
+        premium_applied_at: now,
+        premium_until_after: premiumUntil,
+      }
+    : {};
+
+  const payload = { ...basePayload, ...trackingPayload };
+  if (Object.keys(payload).length === 0) {
+    return;
+  }
+
+  const { error } = await supabaseAdmin
+    .from('transactions')
+    .update(payload)
+    .eq('id', transaction.id);
+
+  if (!error) {
+    return;
+  }
+
+  if (shouldTrackPremium && isMissingColumnError(error)) {
+    const { error: fallbackError } = await supabaseAdmin
+      .from('transactions')
+      .update(basePayload)
+      .eq('id', transaction.id);
+
+    if (fallbackError) throw fallbackError;
+    return;
+  }
+
+  throw error;
+}
+
 export async function markTransactionPaidAndUpgrade(
   supabaseAdmin: SupabaseClient,
   transaction: TransactionRow,
@@ -91,26 +155,13 @@ export async function markTransactionPaidAndUpgrade(
     return null;
   }
 
-  if (transaction.status !== 'PAID') {
-    const { error } = await supabaseAdmin
-      .from('transactions')
-      .update({ status: 'PAID', paid_at: now })
-      .eq('id', transaction.id);
-
-    if (error) throw error;
+  if (transaction.status === 'PAID' && !hasPremiumTrackingColumns(transaction)) {
+    return null;
   }
 
   const premiumUntil = await applyPremiumUpgrade(supabaseAdmin, transaction.user_id, transaction.plan_id);
   if (!premiumUntil) return null;
 
-  const { error } = await supabaseAdmin
-    .from('transactions')
-    .update({
-      premium_applied_at: now,
-      premium_until_after: premiumUntil,
-    })
-    .eq('id', transaction.id);
-
-  if (error) throw error;
+  await updateTransactionPaid(supabaseAdmin, transaction, now, premiumUntil);
   return premiumUntil;
 }
