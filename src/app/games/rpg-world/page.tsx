@@ -1788,7 +1788,7 @@ export default function RpgWorldPage() {
             .setDisplaySize(84, 108);
           dialogueObjects.push(portrait);
 
-          const name = this.add.text(boxX + 156, boxY + 28, 'Nữ thần Thảo Hiền:', {
+          const name = this.add.text(boxX + 156, boxY + 28, 'Nữ thần:', {
             fontFamily: 'Arial',
             fontStyle: 'bold',
             fontSize: `${Math.round(Math.min(30, Math.max(21, vp.width * 0.017)))}px`,
