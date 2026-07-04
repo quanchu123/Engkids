@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { authFetch } from '@/lib/admin-auth-client';
+import { formatVietnamShortDateTime } from '@/lib/vietnam-time';
 
 interface RevenueSummary {
   totalRevenue: number;
@@ -68,10 +69,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatDateTime(value: string): string {
-  return new Intl.DateTimeFormat('vi-VN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
+  return formatVietnamShortDateTime(value);
 }
 
 export default function AdminRevenuePage() {

@@ -363,46 +363,131 @@ export async function getAuthUserIdFromRequest(request: NextRequest): Promise<st
   }
 }
 
+function toNullableText(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function toNullableInteger(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function profilePatchFromAuthUser(user: {
+  email?: string | null;
+  user_metadata?: Record<string, unknown> | null;
+}) {
+  const metadata = user.user_metadata || {};
+  return {
+    email: user.email ?? toNullableText(metadata.email),
+    name: toNullableText(metadata.name) || toNullableText(metadata.full_name) || toNullableText(metadata.display_name),
+    parent_name: toNullableText(metadata.parent_name),
+    child_age: toNullableInteger(metadata.child_age),
+    parent_age: toNullableInteger(metadata.parent_age),
+    gender: toNullableText(metadata.gender),
+    address: toNullableText(metadata.address),
+  };
+}
+
+function compactProfilePatch(patch: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(patch).filter(([, value]) => value !== null && value !== undefined && value !== ''),
+  );
+}
+
+function missingProfileDetails(profile: Record<string, unknown>): boolean {
+  return ['name', 'parent_name', 'child_age', 'parent_age', 'gender', 'address'].some((key) => (
+    profile[key] === null || profile[key] === undefined || profile[key] === ''
+  ));
+}
+
 export async function getOrCreateProfileId(authUserId: string | null): Promise<string | null> {
   if (!authUserId) return null;
   const admin = getSupabaseAdmin();
   if (!admin) return null;
 
-  const { data: existing } = await admin
-    .from('user_profiles')
-    .select('id')
-    .eq('auth_id', authUserId)
-    .maybeSingle();
-
-  if (existing && typeof (existing as { id?: unknown }).id === 'string') return (existing as { id: string }).id;
-
-  let email: string | null = null;
+  let authProfilePatch: Record<string, unknown> = {};
   try {
     const { data } = await admin.auth.admin.getUserById(authUserId);
-    email = data.user?.email ?? null;
+    if (data.user) authProfilePatch = compactProfilePatch(profilePatchFromAuthUser(data.user));
   } catch {
-    email = null;
+    authProfilePatch = {};
   }
+
+    const { data: existing } = await admin
+      .from('user_profiles')
+      .select('id, email, name, parent_name, child_age, parent_age, gender, address')
+      .eq('auth_id', authUserId)
+      .maybeSingle();
+
+  if (existing && typeof (existing as { id?: unknown }).id === 'string') {
+    const profile = existing as Record<string, unknown> & { id: string };
+    if (missingProfileDetails(profile) && Object.keys(authProfilePatch).length > 0) {
+      const patch = Object.fromEntries(
+        Object.entries(authProfilePatch).filter(([key]) => (
+          profile[key] === null || profile[key] === undefined || profile[key] === ''
+        )),
+      );
+      if (Object.keys(patch).length > 0) {
+        await admin.from('user_profiles').update(patch).eq('id', profile.id);
+      }
+    }
+    return profile.id;
+  }
+
+  const email = typeof authProfilePatch.email === 'string' ? authProfilePatch.email : null;
 
   if (email) {
     const { data: byEmail } = await admin
       .from('user_profiles')
-      .select('id')
+      .select('id, email, name, parent_name, child_age, parent_age, gender, address')
       .eq('email', email)
       .is('auth_id', null)
       .limit(1)
       .maybeSingle();
 
     if (byEmail && typeof (byEmail as { id?: unknown }).id === 'string') {
-      const profileId = (byEmail as { id: string }).id;
-      await admin.from('user_profiles').update({ auth_id: authUserId }).eq('id', profileId);
-      return profileId;
+      const profile = byEmail as Record<string, unknown> & { id: string };
+      const patch = {
+        auth_id: authUserId,
+        ...Object.fromEntries(
+          Object.entries(authProfilePatch).filter(([key]) => (
+            profile[key] === null || profile[key] === undefined || profile[key] === ''
+          )),
+        ),
+      };
+      await admin.from('user_profiles').update(patch).eq('id', profile.id);
+      return profile.id;
+    }
+  }
+
+  if (email) {
+    const { data: byEmailWithAuth } = await admin
+      .from('user_profiles')
+      .select('id, email, name, parent_name, child_age, parent_age, gender, address')
+      .eq('email', email)
+      .limit(1)
+      .maybeSingle();
+
+    if (byEmailWithAuth && typeof (byEmailWithAuth as { id?: unknown }).id === 'string') {
+      const profile = byEmailWithAuth as Record<string, unknown> & { id: string };
+      if (missingProfileDetails(profile) && Object.keys(authProfilePatch).length > 0) {
+        const patch = Object.fromEntries(
+          Object.entries(authProfilePatch).filter(([key]) => (
+            profile[key] === null || profile[key] === undefined || profile[key] === ''
+          )),
+        );
+        if (Object.keys(patch).length > 0) {
+          await admin.from('user_profiles').update(patch).eq('id', profile.id);
+        }
+      }
+      return profile.id;
     }
   }
 
   const { data: inserted, error } = await admin
     .from('user_profiles')
-    .insert({ auth_id: authUserId, email })
+    .insert({ auth_id: authUserId, ...authProfilePatch })
     .select('id')
     .single();
 

@@ -32,6 +32,11 @@ type StoredEnvelope = {
   payload?: AccountPayload;
 };
 
+type AuthTimeline = {
+  registeredAt: string | null;
+  lastSignInAt: string | null;
+};
+
 type AccountPayload = {
   progress?: unknown;
   settings?: unknown;
@@ -166,7 +171,23 @@ async function getPetForProfile(profile: ProfileRow, progressPets: Map<string, P
   };
 }
 
-function mapUser(profile: ProfileRow, pet: PetState | null, updatedAt: string | null) {
+async function getAuthTimeline(admin: SupabaseClient, authUserId: string | null): Promise<AuthTimeline> {
+  if (!authUserId) return { registeredAt: null, lastSignInAt: null };
+
+  try {
+    const { data, error } = await admin.auth.admin.getUserById(authUserId);
+    if (error || !data.user) return { registeredAt: null, lastSignInAt: null };
+
+    return {
+      registeredAt: data.user.created_at ?? null,
+      lastSignInAt: data.user.last_sign_in_at ?? null,
+    };
+  } catch {
+    return { registeredAt: null, lastSignInAt: null };
+  }
+}
+
+function mapUser(profile: ProfileRow, pet: PetState | null, updatedAt: string | null, timeline?: AuthTimeline) {
   return {
     id: profile.id,
     authId: profile.auth_id,
@@ -175,6 +196,8 @@ function mapUser(profile: ProfileRow, pet: PetState | null, updatedAt: string | 
     parentName: profile.parent_name ?? null,
     childAge: profile.child_age ?? null,
     createdAt: profile.created_at ?? null,
+    registeredAt: timeline?.registeredAt ?? profile.created_at ?? null,
+    lastSignInAt: timeline?.lastSignInAt ?? null,
     updatedAt,
     pet: mapPet(pet),
   };
@@ -221,8 +244,11 @@ export async function GET(request: NextRequest) {
     const progressPets = await fetchProgressPets(admin, profiles.map((profile) => profile.id));
     const users = await Promise.all(
       profiles.map(async (profile) => {
-        const { pet, updatedAt } = await getPetForProfile(profile, progressPets);
-        return mapUser(profile, pet, updatedAt);
+        const [{ pet, updatedAt }, timeline] = await Promise.all([
+          getPetForProfile(profile, progressPets),
+          getAuthTimeline(admin, profile.auth_id),
+        ]);
+        return mapUser(profile, pet, updatedAt, timeline);
       }),
     );
 
@@ -272,9 +298,10 @@ export async function PATCH(request: NextRequest) {
     await writePetToAccountFile(profileRow, nextPet);
     await mirrorPetToSupabase(admin, profileId, nextPet);
 
+    const timeline = await getAuthTimeline(admin, profileRow.auth_id);
     return NextResponse.json({
       maxLevel: PET_MAX_LEVEL,
-      user: mapUser(profileRow, nextPet, new Date().toISOString()),
+      user: mapUser(profileRow, nextPet, new Date().toISOString(), timeline),
     }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {
     console.error('Admin pets PATCH error:', error);

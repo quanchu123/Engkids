@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { AlertCircle, CheckCircle, Clock, Filter, Loader2, RefreshCw, Search, Trash2, XCircle } from 'lucide-react';
 import { authFetch } from '@/lib/admin-auth-client';
+import { formatVietnamShortDateTime } from '@/lib/vietnam-time';
 
 interface Transaction {
   id: string;
@@ -28,10 +29,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatDateTime(value: string): string {
-  return new Intl.DateTimeFormat('vi-VN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
+  return formatVietnamShortDateTime(value);
 }
 
 export default function AdminTransactionsPage() {

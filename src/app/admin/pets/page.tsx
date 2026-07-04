@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { ChevronsUp, Loader2, PawPrint, RefreshCw, Search, UserRound } from 'lucide-react';
+import { formatVietnamDateTime } from '@/lib/vietnam-time';
 
 type SpeciesOption = {
   id: string;
@@ -28,6 +29,9 @@ type AdminPetUser = {
   name: string | null;
   parentName: string | null;
   childAge: number | null;
+  createdAt: string | null;
+  registeredAt: string | null;
+  lastSignInAt: string | null;
   updatedAt: string | null;
   pet: AdminPet | null;
 };
@@ -36,13 +40,8 @@ function userLabel(user: AdminPetUser): string {
   return user.name || user.email || user.authId || user.id;
 }
 
-function formatTime(value: string | null): string {
-  if (!value) return 'Chưa đồng bộ';
-  try {
-    return new Date(value).toLocaleString('vi-VN');
-  } catch {
-    return value;
-  }
+function formatAdminTime(value: string | null): string {
+  return formatVietnamDateTime(value, 'Chưa có dữ liệu');
 }
 
 export default function AdminPetsPage() {
@@ -213,7 +212,11 @@ export default function AdminPetsPage() {
                       <p className="mt-2 text-xs font-bold text-admin-text-muted">
                         {user.pet ? `${user.pet.speciesName} · ${user.pet.stageName || 'Đang lớn'} · ${user.pet.exp} EXP` : 'Tài khoản chưa ấp pet. Admin có thể tạo pet khi set level.'}
                       </p>
-                      <p className="mt-1 text-xs font-bold text-admin-text-muted">Đồng bộ: {formatTime(user.updatedAt)}</p>
+                      <div className="mt-2 grid gap-1 text-xs font-bold text-admin-text-muted sm:grid-cols-3">
+                        <p>Đăng ký: {formatAdminTime(user.registeredAt || user.createdAt)}</p>
+                        <p>Đăng nhập: {formatAdminTime(user.lastSignInAt)}</p>
+                        <p>Đồng bộ: {formatAdminTime(user.updatedAt)}</p>
+                      </div>
                     </div>
                   </div>
 

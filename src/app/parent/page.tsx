@@ -38,6 +38,7 @@ import {
   type ActivityKind,
 } from '@/lib/parent-stats';
 import { CURRICULUM_STAGES, type CurriculumStageId } from '@/lib/curriculum';
+import { formatVietnamShortDateTime } from '@/lib/vietnam-time';
 import type { LearnerCurriculumState } from '@/services/curriculum-content';
 import type { ParentProgressSummary } from '@/services/learning-intelligence';
 
@@ -594,13 +595,6 @@ function formatDayLabel(dateKey: string): string {
 }
 
 function formatDateTime(at: string): string {
-  const date = new Date(at);
-  if (Number.isNaN(date.getTime())) return at;
-  return date.toLocaleString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatVietnamShortDateTime(at);
 }
 

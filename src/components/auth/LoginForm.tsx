@@ -70,6 +70,28 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
       isMounted = false;
     };
   }, [safeNext]);
+
+  const saveSignupProfile = async () => {
+    const response = await fetch('/api/account/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        name,
+        parentName,
+        childAge,
+        parentAge,
+        gender,
+        address,
+      }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload?.error || 'Không lưu được thông tin tài khoản.');
+    }
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -83,7 +105,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
           setLoading(false);
           return;
         }
-        
+
         const data = await signUp(email, password, {
           name,
           parentName,
@@ -95,6 +117,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
 
         if (data?.user) {
           if (data.session) {
+            await saveSignupProfile();
             router.push(safeNext);
             return;
           }
@@ -102,6 +125,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
           // Try to sign in manually if session is missing (in case of specific Supabase settings)
           try {
             await signIn(email, password);
+            await saveSignupProfile();
             router.push(safeNext);
             return;
           } catch (err) {
@@ -173,6 +197,9 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
                   <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">Họ tên trẻ</label>
                   <input id="name" type="text" data-testid="signup-name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Họ tên trẻ" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="childAge" className="block text-sm font-medium text-gray-300 mb-2">Tuổi của trẻ</label>
                   <select id="childAge" required value={childAge} onChange={(e) => setChildAge(e.target.value)} className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
@@ -182,13 +209,13 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
                     ))}
                   </select>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="parentName" className="block text-sm font-medium text-gray-300 mb-2">Họ tên Bố mẹ</label>
                   <input id="parentName" type="text" value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="Họ tên Bố mẹ" className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition" />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="parentAge" className="block text-sm font-medium text-gray-300 mb-2">Tuổi của Bố mẹ</label>
                   <select id="parentAge" value={parentAge} onChange={(e) => setParentAge(e.target.value)} className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">

@@ -56,7 +56,13 @@
         "storage:audit": "node scripts/storage-audit.mjs",
         "storage:cleanup": "node scripts/cleanup-uploads.mjs",
         "storage:cleanup:apply": "node scripts/storage-cleanup-apply.mjs --apply",
-        "user:create-test-premium": "node scripts/create-test-premium-user.mjs"
+        "user:create-test-premium": "node scripts/create-test-premium-user.mjs",
+        "users:anonymize": "node scripts/anonymize-user-profiles.mjs",
+        "users:anonymize:apply": "node scripts/anonymize-user-profiles.mjs --apply --sync-auth",
+        "users:demo-registrations": "node scripts/ensure-demo-registrations.mjs",
+        "users:demo-registrations:apply": "node scripts/ensure-demo-registrations.mjs --apply",
+        "users:demo-append-june-28-29": "node scripts/ensure-demo-registrations.mjs --append-june-28-29",
+        "users:demo-append-june-28-29:apply": "node scripts/ensure-demo-registrations.mjs --append-june-28-29 --apply"
     },
     "dependencies": {
         "@emoji-mart/data": "^1.2.1",

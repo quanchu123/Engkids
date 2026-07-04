@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, Crown, Loader2, Save, UserRound } from 'lucide-react';
 import Header from '@/components/layout/Header';
+import { formatVietnamShortDateTime } from '@/lib/vietnam-time';
 
 const NAME_KEY = 'engkids.childName';
 
@@ -60,14 +61,7 @@ function toForm(profile: AccountProfile): FormState {
 }
 
 function formatPremiumDate(value: string | null): string {
-  if (!value) return 'Chưa có hạn Premium';
-  return new Intl.DateTimeFormat('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
+  return formatVietnamShortDateTime(value, 'Chưa có hạn Premium');
 }
 
 export default function AccountPage() {
