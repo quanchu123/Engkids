@@ -102,14 +102,8 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
         window.location.replace(safeNext);
       };
 
-      const syncSignupProfile = async () => {
-        try {
-          await saveSignupProfile();
-        } catch (profileError) {
-          // The database trigger already creates the profile row. Treat this as
-          // best-effort so a transient auth/cookie race does not block signup.
-          console.warn('Signup profile sync failed:', profileError);
-        }
+      const redirectAfterSignup = () => {
+        window.location.replace(authConfig.redirects.afterSignup);
       };
 
       if (isSignup) {
@@ -130,16 +124,14 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
 
         if (data?.user) {
           if (data.session) {
-            await syncSignupProfile();
-            redirectToUserDestination();
+            redirectAfterSignup();
             return;
           }
 
           // Try to sign in manually if session is missing (in case of specific Supabase settings)
           try {
             await signIn(email, password);
-            await syncSignupProfile();
-            redirectToUserDestination();
+            redirectAfterSignup();
             return;
           } catch (err) {
             // If it fails, it usually means email confirmation is required by Supabase

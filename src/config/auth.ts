@@ -17,7 +17,7 @@ export const authConfig = {
   redirects: {
     afterLogin: '/progress',  // User dashboard after login
     afterLogout: '/',
-    afterSignup: '/progress',  // User dashboard after signup
+    afterSignup: '/',  // Home page after signup
   },
 
   // Protected routes (require authentication)
