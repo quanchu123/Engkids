@@ -44,7 +44,11 @@ jobs:
             NODE
             rm -rf .next
             npm install
-            npm run db:push:supabase
+            if grep -Eq '^(SUPABASE_DB_URL|DATABASE_URL)=' .env.local; then
+              npm run db:push:supabase
+            else
+              echo "Skipping Supabase DB push: SUPABASE_DB_URL/DATABASE_URL is not set in .env.local"
+            fi
             npm run build
             pm2 delete engkids || true
             pm2 start npm --name engkids -- start
