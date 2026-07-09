@@ -136,7 +136,7 @@ export default function LevelOnboardingPage() {
                 <p className="mt-3 rounded-lg bg-rose-500/15 px-3 py-2 text-sm font-bold text-rose-100">{error}</p>
               )}
               {error.includes('đăng nhập') && (
-                <Link href="/login" className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-500 px-4 py-3 text-sm font-black text-white">
+                <Link href="/login" prefetch={false} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-500 px-4 py-3 text-sm font-black text-white">
                   <LockKeyhole className="h-4 w-4" aria-hidden="true" /> Đăng nhập
                 </Link>
               )}

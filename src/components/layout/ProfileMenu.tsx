@@ -210,6 +210,7 @@ export default function ProfileMenu({ user, onLogout }: ProfileMenuProps) {
             ) : (
               <Link
                 href="/login"
+                prefetch={false}
                 onClick={() => setOpen(false)}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-2.5 text-sm font-black text-white"
               >

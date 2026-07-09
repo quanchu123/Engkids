@@ -1,4 +1,19 @@
 /** @type {import('next').NextConfig} */
+const authNoStoreHeaders = [
+  {
+    key: 'Cache-Control',
+    value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  },
+  {
+    key: 'Pragma',
+    value: 'no-cache',
+  },
+  {
+    key: 'Expires',
+    value: '0',
+  },
+];
+
 const nextConfig = {
   // Standalone output: produces a minimal self-contained server bundle.
   // Ideal for Docker / DigitalOcean (App Platform or Droplet) deployments.
@@ -61,6 +76,18 @@ const nextConfig = {
   // Headers for security and caching
   async headers() {
     return [
+      {
+        source: '/login',
+        headers: authNoStoreHeaders,
+      },
+      {
+        source: '/signup',
+        headers: authNoStoreHeaders,
+      },
+      {
+        source: '/auth/:path*',
+        headers: authNoStoreHeaders,
+      },
       {
         source: '/:path*',
         headers: [

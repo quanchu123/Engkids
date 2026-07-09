@@ -748,6 +748,7 @@ function SrsCard({
           </div>
           <Link
             href="/login"
+            prefetch={false}
             className="inline-flex flex-shrink-0 items-center justify-center rounded-2xl bg-white/15 px-5 py-3 text-sm font-black text-white"
           >
             Đăng nhập để bật

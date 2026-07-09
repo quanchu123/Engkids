@@ -380,6 +380,7 @@ export default function ReviewPage() {
             </p>
             <Link
               href="/login"
+              prefetch={false}
               className="text-sm font-medium px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors whitespace-nowrap"
             >
               Đăng nhập

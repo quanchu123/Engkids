@@ -891,6 +891,7 @@ function CelebrationCard({ lesson, saving, totalSteps, savedRemotely }: { lesson
           </p>
           <Link
             href="/login"
+            prefetch={false}
             className="mt-2.5 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-black text-emerald-700 shadow-md transition hover:-translate-y-0.5"
           >
             <LogIn className="h-3.5 w-3.5" aria-hidden="true" /> Đăng nhập để lưu

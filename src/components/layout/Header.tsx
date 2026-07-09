@@ -143,6 +143,7 @@ function Header() {
           {!user && (
             <Link
               href="/login"
+              prefetch={false}
               className="flex min-h-[44px] items-center gap-2 rounded-full bg-white px-4 text-sm font-black text-purple-600 transition-all hover:scale-105 hover:shadow-lg"
               aria-label="Đăng nhập"
             >
@@ -232,6 +233,7 @@ function Header() {
             ) : (
               <Link
                 href="/login"
+                prefetch={false}
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-black text-white"
                 aria-label="Đăng nhập"
