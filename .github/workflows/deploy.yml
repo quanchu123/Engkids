@@ -15,15 +15,7 @@ jobs:
 
       - name: Package source
         run: |
-          echo "${GITHUB_SHA}" > public/deploy-commit.txt
-          tar \
-            --exclude='.git' \
-            --exclude='.next' \
-            --exclude='node_modules' \
-            --exclude='.env' \
-            --exclude='.env.*' \
-            --exclude='engkids-source.tgz' \
-            -czf engkids-source.tgz .
+          git archive --format=tar.gz --output=engkids-source.tgz HEAD
 
       - name: Copy source to server
         uses: appleboy/scp-action@v0.1.7
@@ -51,6 +43,7 @@ jobs:
             mkdir -p /root/Engkids
             tar -xzf /tmp/engkids-source.tgz -C /root/Engkids
             cd /root/Engkids
+            echo "${DEPLOY_SHA}" > public/deploy-commit.txt
             node <<'NODE'
             const fs = require('fs');
             const envPath = '.env.local';
