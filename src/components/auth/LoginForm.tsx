@@ -2,7 +2,7 @@
 
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, signUp, onAuthStateChange, getSupabaseClient, getCurrentUser } from '@/lib/auth-client';
+import { signIn, signUp, getCurrentUser } from '@/lib/auth-client';
 import { adminLogin, isAdminAuthenticated } from '@/lib/admin-auth-client';
 import { authConfig } from '@/config/auth';
 
@@ -30,9 +30,9 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
   // Where to send a regular user after login. Honor ?next= but only for
   // same-site absolute paths (must start with a single "/"), so a crafted
   // ?next=//evil.com or ?next=https://evil.com can't turn this into an
-  // open redirect. Anything else falls back to the home page.
+  // open redirect. Anything else falls back to the dashboard.
   const nextParam = searchParams?.get('next') || '';
-  const safeNext = /^\/(?!\/)/.test(nextParam) ? nextParam : '/';
+  const safeNext = /^\/(?!\/)/.test(nextParam) ? nextParam : authConfig.redirects.afterLogin;
 
   // Translate common Supabase auth errors to friendly Vietnamese messages.
   const translateError = (raw: string): string => {
@@ -57,12 +57,11 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
 
   useEffect(() => {
     let isMounted = true;
-    const supabase = getSupabaseClient();
 
     // Verify token against server to avoid redirecting with expired cached token
     getCurrentUser().then((user) => {
       if (isMounted && user) {
-        window.location.href = safeNext;
+        window.location.replace(safeNext);
       }
     });
 
@@ -99,6 +98,20 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
     setLoading(true);
 
     try {
+      const redirectToUserDestination = () => {
+        window.location.replace(safeNext);
+      };
+
+      const syncSignupProfile = async () => {
+        try {
+          await saveSignupProfile();
+        } catch (profileError) {
+          // The database trigger already creates the profile row. Treat this as
+          // best-effort so a transient auth/cookie race does not block signup.
+          console.warn('Signup profile sync failed:', profileError);
+        }
+      };
+
       if (isSignup) {
         if (password !== confirmPassword) {
           setError('Mật khẩu xác nhận không khớp.');
@@ -117,16 +130,16 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
 
         if (data?.user) {
           if (data.session) {
-            await saveSignupProfile();
-            router.push(safeNext);
+            await syncSignupProfile();
+            redirectToUserDestination();
             return;
           }
 
           // Try to sign in manually if session is missing (in case of specific Supabase settings)
           try {
             await signIn(email, password);
-            await saveSignupProfile();
-            router.push(safeNext);
+            await syncSignupProfile();
+            redirectToUserDestination();
             return;
           } catch (err) {
             // If it fails, it usually means email confirmation is required by Supabase
@@ -167,7 +180,7 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
           return;
         }
 
-        router.push(safeNext);
+        redirectToUserDestination();
       }
 
       onSuccess?.();
