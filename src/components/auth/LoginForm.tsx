@@ -70,27 +70,6 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
     };
   }, [safeNext]);
 
-  const saveSignupProfile = async () => {
-    const response = await fetch('/api/account/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        name,
-        parentName,
-        childAge,
-        parentAge,
-        gender,
-        address,
-      }),
-    });
-
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      throw new Error(payload?.error || 'Không lưu được thông tin tài khoản.');
-    }
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -102,7 +81,21 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
         window.location.replace(safeNext);
       };
 
-      const redirectAfterSignup = () => {
+      const waitForUserSession = async (timeoutMs = 1500) => {
+        const startedAt = Date.now();
+
+        while (Date.now() - startedAt < timeoutMs) {
+          const user = await getCurrentUser();
+          if (user) return user;
+
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        return null;
+      };
+
+      const redirectAfterSignup = async () => {
+        await waitForUserSession();
         window.location.replace(authConfig.redirects.afterSignup);
       };
 
@@ -124,14 +117,14 @@ export default function LoginForm({ mode = 'signin', onSuccess }: LoginFormProps
 
         if (data?.user) {
           if (data.session) {
-            redirectAfterSignup();
+            await redirectAfterSignup();
             return;
           }
 
           // Try to sign in manually if session is missing (in case of specific Supabase settings)
           try {
             await signIn(email, password);
-            redirectAfterSignup();
+            await redirectAfterSignup();
             return;
           } catch (err) {
             // If it fails, it usually means email confirmation is required by Supabase
