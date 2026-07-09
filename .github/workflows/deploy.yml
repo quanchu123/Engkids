@@ -10,6 +10,30 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout current commit
+        uses: actions/checkout@v4
+
+      - name: Package source
+        run: |
+          echo "${GITHUB_SHA}" > public/deploy-commit.txt
+          tar \
+            --exclude='.git' \
+            --exclude='.next' \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='engkids-source.tgz' \
+            -czf engkids-source.tgz .
+
+      - name: Copy source to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          source: engkids-source.tgz
+          target: /tmp
+
       - name: SSH vào server và deploy
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -17,16 +41,16 @@ jobs:
           PAYOS_API_KEY: ${{ secrets.PAYOS_API_KEY }}
           PAYOS_CHECKSUM_KEY: ${{ secrets.PAYOS_CHECKSUM_KEY }}
           NEXT_PUBLIC_SITE_URL: https://engkidstienganhchobe.tech
+          DEPLOY_SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.DROPLET_HOST }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: PAYOS_CLIENT_ID,PAYOS_API_KEY,PAYOS_CHECKSUM_KEY,NEXT_PUBLIC_SITE_URL
+          envs: PAYOS_CLIENT_ID,PAYOS_API_KEY,PAYOS_CHECKSUM_KEY,NEXT_PUBLIC_SITE_URL,DEPLOY_SHA
           script: |
+            mkdir -p /root/Engkids
+            tar -xzf /tmp/engkids-source.tgz -C /root/Engkids
             cd /root/Engkids
-            git fetch origin master
-            git reset --hard origin/master
-            git clean -fd
             node <<'NODE'
             const fs = require('fs');
             const envPath = '.env.local';
@@ -52,4 +76,8 @@ jobs:
             npm run build
             pm2 delete engkids || true
             pm2 start npm --name engkids -- start
+            sleep 5
+            served_commit="$(curl -fsS http://127.0.0.1:3000/deploy-commit.txt || true)"
+            echo "Served commit: ${served_commit}"
+            test "${served_commit}" = "${DEPLOY_SHA}"
             pm2 save
