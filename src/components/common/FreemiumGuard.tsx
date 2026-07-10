@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { useFreemium } from '@/hooks/useFreemium';
 import { Clock, Crown, Sparkles, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -9,13 +10,27 @@ interface FreemiumGuardProps {
   children: React.ReactNode;
 }
 
+const EXEMPT_PREFIXES = [
+  '/learn/placement',
+  '/learn/checkpoint',
+];
+
+function isExemptRoute(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
 /**
  * Wraps learning pages. For freemium users it shows a countdown timer
  * and blocks access with an upgrade overlay when the daily limit expires.
  * Premium users see no restrictions.
  */
 export default function FreemiumGuard({ children }: FreemiumGuardProps) {
-  const { loading, isPremium, remainingSeconds, remainingFormatted, isExpired, dailyLimitMinutes } = useFreemium();
+  const pathname = usePathname();
+  const exemptRoute = isExemptRoute(pathname);
+  const { loading, isPremium, remainingSeconds, remainingFormatted, isExpired, dailyLimitMinutes } = useFreemium({ trackUsage: !exemptRoute });
+
+  if (exemptRoute) return <>{children}</>;
 
   // Don't block while loading premium status
   if (loading) return <>{children}</>;

@@ -30,12 +30,18 @@ export interface FreemiumState {
   refreshPremium: () => Promise<void>;
 }
 
+export interface UseFreemiumOptions {
+  trackUsage?: boolean;
+}
+
 /**
  * React hook to manage Freemium state.
- * Counts down usage every second while the component is mounted.
+ * Counts down usage every second while the component is mounted unless
+ * `trackUsage` is set to false for exempt routes such as assessments.
  * Call `refreshPremium()` after a payment is confirmed to clear the cache.
  */
-export function useFreemium(): FreemiumState {
+export function useFreemium(options: UseFreemiumOptions = {}): FreemiumState {
+  const { trackUsage = true } = options;
   const [loading, setLoading] = useState(true);
   const [isPremium, setIsPremium] = useState(false);
   const [premiumUntil, setPremiumUntil] = useState<string | null>(null);
@@ -67,10 +73,13 @@ export function useFreemium(): FreemiumState {
 
   // Tick timer every second for freemium users
   useEffect(() => {
-    if (isPremium || loading) {
+    if (isPremium || loading || !trackUsage) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
+      }
+      if (!trackUsage) {
+        setRemainingSeconds(getRemainingSeconds());
       }
       return;
     }
@@ -90,7 +99,7 @@ export function useFreemium(): FreemiumState {
         timerRef.current = null;
       }
     };
-  }, [isPremium, loading]);
+  }, [isPremium, loading, trackUsage]);
 
   return {
     loading,
