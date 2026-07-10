@@ -10,6 +10,7 @@ const EXCLUDED_PREFIXES = [
   '/auth',
   '/login',
   '/onboarding/level',
+  '/learn/placement',
 ];
 
 export default function LevelOnboardingGate() {
