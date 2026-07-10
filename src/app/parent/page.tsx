@@ -426,35 +426,36 @@ function ActivityIcon({ kind }: { kind: ActivityKind }) {
 function InternationalProgressPanel({ progress }: { progress: ParentProgressSummary }) {
   const lessonPercent = progress.totalLessons > 0 ? Math.round((progress.lessonsCompleted / progress.totalLessons) * 100) : 0;
   const maxWeekly = Math.max(1, ...progress.weeklyActivity.map((day) => day.count));
+  const learningModeLabel = progress.learningMode === 'kid' ? 'Chế độ trẻ em' : 'Chế độ thiếu niên';
   return (
     <section className="toy-panel mt-6 rounded-3xl p-6">
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black uppercase text-indigo-700">{progress.cefr}</span>
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase text-emerald-700">{progress.learningMode} mode</span>
-            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-black uppercase text-sky-700">CEFR aligned</span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase text-emerald-700">{learningModeLabel}</span>
+            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-black uppercase text-sky-700">Phù hợp CEFR</span>
           </div>
-          <h2 className="text-xl font-black text-slate-900">International learning summary</h2>
+          <h2 className="text-xl font-black text-slate-900">Tổng quan học tập</h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-            Current path: {progress.stageId}. Lessons completed: {progress.lessonsCompleted}/{progress.totalLessons}. Review due: {progress.dueWords} words.
+            Lộ trình hiện tại: {progress.stageId}. Bài đã hoàn thành: {progress.lessonsCompleted}/{progress.totalLessons}. Từ đến hạn ôn lại: {progress.dueWords} từ.
           </p>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
             <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-400" style={{ width: `${Math.max(lessonPercent, 4)}%` }} />
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <MiniParentStat label="Mastered words" value={progress.wordsMastered} />
-            <MiniParentStat label="Strongest skill" value={progress.strongestSkill || 'n/a'} />
-            <MiniParentStat label="Weakest skill" value={progress.weakestSkill || 'n/a'} />
+            <MiniParentStat label="Từ đã nắm vững" value={progress.wordsMastered} />
+            <MiniParentStat label="Kỹ năng mạnh nhất" value={progress.strongestSkill || 'Chưa có'} />
+            <MiniParentStat label="Kỹ năng yếu nhất" value={progress.weakestSkill || 'Chưa có'} />
           </div>
         </div>
         <div className="rounded-2xl bg-slate-950 p-5 text-white">
-          <p className="text-xs font-black uppercase tracking-wide text-white/50">What to do next</p>
+          <p className="text-xs font-black uppercase tracking-wide text-white/50">Tiếp theo nên làm gì</p>
           <h3 className="mt-2 text-xl font-black">{progress.nextAction.title}</h3>
           <p className="mt-2 text-sm font-semibold leading-6 text-white/70">{progress.nextAction.description}</p>
           <p className="mt-3 rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white/70">{progress.nextAction.reason}</p>
           <Link href={progress.nextAction.href} className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-black text-slate-950">
-            Open next action
+            Mở gợi ý tiếp theo
           </Link>
         </div>
       </div>
