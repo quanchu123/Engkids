@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
@@ -35,6 +35,7 @@ function mistakeKindForSkill(skillId: string): MistakeKind {
 }
 
 interface AssessmentPayload {
+  variantId: string;
   blueprint: AssessmentBlueprint;
   items: AssessmentItemPublic[];
 }
@@ -83,6 +84,8 @@ export default function AssessmentRunner({ kind, stageId, titleVi, subtitleVi, b
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<AssessmentAttemptResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [variantId, setVariantId] = useState('');
+  const variantSeedRef = useRef('');
 
   const items = useMemo(() => payload?.items ?? [], [payload?.items]);
   const currentItem = items[currentIndex];
@@ -91,17 +94,22 @@ export default function AssessmentRunner({ kind, stageId, titleVi, subtitleVi, b
   const percent = items.length > 0 ? Math.round((answeredCount / items.length) * 100) : 0;
   const passPercent = payload?.blueprint.passPercent ?? 70;
   const minSkillPercent = payload?.blueprint.minSkillPercent ?? 60;
-  const stageQuery = stageId ? `?stage=${stageId}` : '';
-
   useEffect(() => {
     let active = true;
+    const nextVariantId = crypto.randomUUID();
+    variantSeedRef.current = nextVariantId;
     setLoading(true);
     setError(null);
     setResult(null);
     setAnswers({});
     setCurrentIndex(0);
+    setVariantId(nextVariantId);
 
-    fetch(`/api/assessments/${kind}${stageQuery}`, { credentials: 'include', cache: 'no-store' })
+    const params = new URLSearchParams();
+    if (stageId) params.set('stage', stageId);
+    params.set('variant', nextVariantId);
+
+    fetch(`/api/assessments/${kind}?${params.toString()}`, { credentials: 'include', cache: 'no-store' })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Không tải được bài kiểm tra');
@@ -117,7 +125,7 @@ export default function AssessmentRunner({ kind, stageId, titleVi, subtitleVi, b
     return () => {
       active = false;
     };
-  }, [kind, stageQuery]);
+  }, [kind, stageId]);
 
   const skillCounts = useMemo(() => {
     return items.reduce<Record<string, number>>((acc, item) => {
@@ -158,6 +166,7 @@ export default function AssessmentRunner({ kind, stageId, titleVi, subtitleVi, b
         body: JSON.stringify({
           blueprintId: payload.blueprint.id,
           stageId,
+          variantId: variantId || variantSeedRef.current,
           responses: items.map((item) => ({ itemId: item.id, answer: answers[item.id] })),
         }),
       });

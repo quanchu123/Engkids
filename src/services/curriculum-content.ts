@@ -79,6 +79,12 @@ export interface AssessmentAttemptResult {
   wrongItems: AssessmentWrongItem[];
 }
 
+export interface AssessmentPayload {
+  variantId: string;
+  blueprint: AssessmentBlueprint;
+  items: AssessmentItemPublic[];
+}
+
 export interface LearnerCurriculumState {
   currentStageId: CurriculumStageId;
   unlockedStageIds: CurriculumStageId[];
@@ -730,7 +736,7 @@ async function ensureAssessmentItems(kind: AssessmentKind, stageId: CurriculumSt
     .select('id, stage_id, skill_id, topic, item_type, prompt, prompt_vi, choices, correct_answer, explanation_vi, source_word_en')
     .eq('stage_id', stageId)
     .eq('active', true)
-    .limit(count);
+    .order('sort_order', { ascending: true });
 
   if (!existingError && Array.isArray(existing) && existing.length >= count) return existing as AssessmentItemRow[];
   if (existingError && !missingTable(existingError, 'assessment_items')) console.warn('Assessment items fallback:', existingError.message);
@@ -758,7 +764,7 @@ async function ensureAssessmentItems(kind: AssessmentKind, stageId: CurriculumSt
     .select('id, stage_id, skill_id, topic, item_type, prompt, prompt_vi, choices, correct_answer, explanation_vi, source_word_en')
     .eq('stage_id', stageId)
     .eq('active', true)
-    .limit(count);
+    .order('sort_order', { ascending: true });
 
   return Array.isArray(data) ? (data as AssessmentItemRow[]) : null;
 }
@@ -773,19 +779,58 @@ function buildFallbackAssessmentRows(kind: AssessmentKind, stageId: CurriculumSt
   });
 }
 
-export async function getAssessment(kind: AssessmentKind, stageId?: CurriculumStageId): Promise<{ blueprint: AssessmentBlueprint; items: AssessmentItemPublic[] }> {
+function hashSeed(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function seededRandom(seed: string): () => number {
+  let state = hashSeed(seed) || 1;
+  return () => {
+    state += 0x6D2B79F5;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffleWithSeed<T>(items: T[], seed: string): T[] {
+  const result = [...items];
+  const random = seededRandom(seed);
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+  }
+  return result;
+}
+
+export async function getAssessment(kind: AssessmentKind, stageId?: CurriculumStageId, variantId = 'default'): Promise<AssessmentPayload> {
   const catalog = await getCurriculumCatalog();
   const blueprint = catalog.blueprints.find((item) => item.kind === kind && (!item.stageId || item.stageId === stageId))
     || DEFAULT_BLUEPRINTS.find((item) => item.kind === kind)
     || DEFAULT_BLUEPRINTS[0];
   const resolvedStage = stageId || blueprint.stageId || 'a2-key';
-  const items = await ensureAssessmentItems(kind, resolvedStage, blueprint.itemCount);
+  const pool = await ensureAssessmentItems(kind, resolvedStage, Math.max(blueprint.itemCount * 3, blueprint.itemCount));
+  const seed = `${kind}:${resolvedStage}:${variantId}`;
 
-  if (items && items.length > 0) {
-    return { blueprint, items: items.slice(0, blueprint.itemCount).map(publicItem) };
+  if (pool && pool.length > 0) {
+    return {
+      variantId,
+      blueprint,
+      items: shuffleWithSeed(pool, seed).slice(0, blueprint.itemCount).map(publicItem),
+    };
   }
 
-  return { blueprint, items: buildFallbackAssessmentRows(kind, resolvedStage, blueprint.itemCount).map(publicItem) };
+  return {
+    variantId,
+    blueprint,
+    items: shuffleWithSeed(buildFallbackAssessmentRows(kind, resolvedStage, blueprint.itemCount), seed).slice(0, blueprint.itemCount).map(publicItem),
+  };
 }
 
 function recommendStageFromScore(kind: AssessmentKind, stageId: CurriculumStageId, score: number): CurriculumStageId {
@@ -803,9 +848,9 @@ function recommendStageFromScore(kind: AssessmentKind, stageId: CurriculumStageI
   return stageId;
 }
 
-export async function saveAssessmentAttempt(profileId: string | null, input: AssessmentAttemptInput): Promise<AssessmentAttemptResult> {
+export async function saveAssessmentAttempt(profileId: string | null, input: AssessmentAttemptInput & { variantId?: string }): Promise<AssessmentAttemptResult> {
   const stageId = input.stageId || 'a2-key';
-  const assessment = await getAssessment(input.kind, stageId);
+  const assessment = await getAssessment(input.kind, stageId, input.variantId || 'default');
   const itemById = new Map<string, AssessmentItemRow>();
 
   for (const item of assessment.items) {

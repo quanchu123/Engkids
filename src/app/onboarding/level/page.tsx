@@ -144,6 +144,29 @@ export default function LevelOnboardingPage() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-7xl px-4 pt-5">
+          <div className="rounded-lg border border-violet-200 bg-gradient-to-r from-violet-50 via-white to-sky-50 p-5 shadow-sm md:p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-xs font-black uppercase tracking-wide text-violet-700">Tuỳ chọn khác</p>
+                <h2 className="mt-2 text-2xl font-black text-slate-950">
+                  Nếu chưa chắc trình độ, có thể làm bài đầu vào để hệ thống tự xếp chặng cho bé
+                </h2>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                  Bài đầu vào sẽ dựa trên bộ câu hỏi phân cấp, rồi lưu kết quả để Engkids tự chọn chặng học phù hợp.
+                </p>
+              </div>
+              <Link
+                href="/learn/placement?next=/onboarding/level"
+                prefetch={false}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5"
+              >
+                Làm bài đầu vào <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
         <section className="mx-auto max-w-7xl px-4 py-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {CURRICULUM_STAGES.map((stage) => {

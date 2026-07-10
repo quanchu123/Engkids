@@ -26,9 +26,10 @@ export async function GET(
   if (!kind) return NextResponse.json({ error: 'Unsupported assessment kind' }, { status: 404 });
 
   const stage = normalizeStageId(request.nextUrl.searchParams.get('stage') || undefined);
+  const variantId = request.nextUrl.searchParams.get('variant') || crypto.randomUUID();
 
   try {
-    const assessment = await getAssessment(kind, stage);
+    const assessment = await getAssessment(kind, stage, variantId);
     return NextResponse.json(assessment, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
   } catch (error) {
     console.error('Assessment load error:', error);
@@ -54,6 +55,7 @@ export async function POST(
   const payload = body as {
     blueprintId?: unknown;
     stageId?: unknown;
+    variantId?: unknown;
     responses?: unknown;
   };
 
@@ -79,6 +81,7 @@ export async function POST(
       blueprintId: typeof payload.blueprintId === 'string' ? payload.blueprintId : undefined,
       kind,
       stageId,
+      variantId: typeof payload.variantId === 'string' ? payload.variantId : undefined,
       responses,
     });
     return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
