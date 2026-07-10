@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { onAuthStateChange, signOut, User } from '@/lib/auth-client';
+import { getCurrentAdmin } from '@/lib/admin-auth-client';
 import ProfileMenu from '@/components/layout/ProfileMenu';
 
 const NAV_ITEMS = [
@@ -37,6 +38,7 @@ function Header() {
   const totalStars = useAppStore((state) => state.progress.totalStars);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -48,6 +50,20 @@ function Header() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getCurrentAdmin()
+      .then((admin) => {
+        if (!cancelled) setIsAdmin(Boolean(admin));
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const handleLogout = async () => {
     await signOut('/');
@@ -140,6 +156,18 @@ function Header() {
             <span>Premium</span>
           </Link>
 
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-black text-white shadow-sm transition-all hover:scale-105 hover:shadow-lg"
+              aria-label="Vào trang quản trị"
+              title="Trang quản trị"
+            >
+              <Route size={17} strokeWidth={2.6} aria-hidden="true" />
+              <span>Admin</span>
+            </Link>
+          )}
+
           {!user && (
             <Link
               href="/login"
@@ -218,6 +246,16 @@ function Header() {
               <Sparkles size={17} fill="currentColor" aria-hidden="true" />
               <span>Premium</span>
             </Link>
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-black text-white"
+              >
+                <Route size={17} strokeWidth={2.6} aria-hidden="true" />
+                <span>Admin</span>
+              </Link>
+            )}
             {user ? (
               <button
                 onClick={() => {
