@@ -58,11 +58,60 @@ const SKILL_LABELS: Record<CurriculumSkillId, string> = {
 };
 
 const KIND_LABELS: Record<AssessmentKind, string> = {
-  placement: 'Placement',
-  'daily-check': 'Daily Check',
-  'weekly-checkpoint': 'Checkpoint',
-  'stage-exit': 'Stage Exit',
+  placement: 'Đầu vào',
+  'daily-check': 'Kiểm tra ngày',
+  'weekly-checkpoint': 'Mốc tuần',
+  'stage-exit': 'Kết chặng',
 };
+
+const TOPIC_LABELS_VI: Record<string, string> = {
+  general: 'Tổng quát',
+  greetings: 'Chào hỏi',
+  colors: 'Màu sắc',
+  numbers: 'Số đếm',
+  family: 'Gia đình',
+  toys: 'Đồ chơi',
+  animals: 'Động vật',
+  school: 'Trường lớp',
+  food: 'Thức ăn',
+  body: 'Cơ thể',
+  home: 'Nhà cửa',
+  weather: 'Thời tiết',
+  nature: 'Thiên nhiên',
+  actions: 'Hành động',
+  'daily routines': 'Sinh hoạt hằng ngày',
+  places: 'Địa điểm',
+  transport: 'Phương tiện',
+  hobbies: 'Sở thích',
+  feelings: 'Cảm xúc',
+  adventure: 'Phiêu lưu',
+  science: 'Khoa học',
+  health: 'Sức khỏe',
+  'teen life': 'Cuộc sống tuổi teen',
+  environment: 'Môi trường',
+  culture: 'Văn hóa',
+  media: 'Truyền thông',
+  'problem solving': 'Giải quyết vấn đề',
+  'future plans': 'Kế hoạch tương lai',
+  'global issues': 'Vấn đề toàn cầu',
+  education: 'Giáo dục',
+  technology: 'Công nghệ',
+  creativity: 'Sáng tạo',
+  careers: 'Nghề nghiệp',
+  literature: 'Văn học',
+  descriptions: 'Từ miêu tả',
+  'qualities and descriptions': 'Tính chất & miêu tả',
+  'manner words': 'Từ chỉ cách thức',
+  'states and being': 'Trạng thái',
+  'things and objects': 'Đồ vật',
+  'social actions': 'Hành động xã hội',
+  'thinking and ideas': 'Suy nghĩ & ý tưởng',
+};
+
+function topicLabelVi(topic: string): string {
+  const normalized = topic.trim().toLowerCase();
+  return TOPIC_LABELS_VI[normalized] || topic;
+}
 
 const SKILL_COLORS: Record<string, string> = {
   vocabulary: 'bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-100',
@@ -214,7 +263,7 @@ export default function AssessmentRunner({ kind, stageId, titleVi, subtitleVi, b
               <div className="rounded-lg border border-slate-200 bg-gradient-to-br from-sky-50 via-white to-amber-50 p-5 shadow-sm md:p-6">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black uppercase tracking-wide text-violet-700 shadow-sm ring-1 ring-violet-100">
-                    <Sparkles className="h-4 w-4" aria-hidden="true" /> Mission Quiz
+                    <Sparkles className="h-4 w-4" aria-hidden="true" /> Bài kiểm tra
                   </span>
                   <span className="rounded-full bg-white px-3 py-1.5 text-xs font-black text-slate-500 ring-1 ring-slate-100">{KIND_LABELS[kind]}</span>
                 </div>
@@ -272,14 +321,14 @@ function HeaderProgressCard({ loading, total, answered, percent, passPercent, mi
       <div className="grid grid-cols-3 gap-2 text-center">
         <Stat label="Câu" value={loading ? '--' : total} />
         <Stat label="Đã làm" value={`${answered}/${total || 0}`} />
-        <Stat label="Pass" value={`${passPercent}%`} />
+        <Stat label="Đạt" value={`${passPercent}%`} />
       </div>
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
         <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-violet-500 transition-all" style={{ width: `${Math.max(percent, loading ? 8 : 0)}%` }} />
       </div>
       <div className="mt-3 flex items-center justify-between gap-3 text-xs font-black text-slate-400">
         <span>Hoàn thành {percent}%</span>
-        <span>Min skill {minSkillPercent}%</span>
+        <span>Kỹ năng tối thiểu {minSkillPercent}%</span>
       </div>
     </div>
   );
@@ -318,7 +367,7 @@ function QuestionWorkspace({
         <span className={`rounded-full px-3 py-1.5 text-xs font-black ring-1 ${SKILL_COLORS[item.skillId] ?? 'bg-slate-100 text-slate-600 ring-slate-200'}`}>
           {SKILL_LABELS[item.skillId] ?? item.skillId}
         </span>
-        <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700 ring-1 ring-amber-100">{item.topic}</span>
+        <span className="rounded-full bg-amber-50 px-3 py-1.5 text-xs font-black text-amber-700 ring-1 ring-amber-100">{topicLabelVi(item.topic)}</span>
       </div>
 
       <div className="mt-5 rounded-lg bg-gradient-to-br from-sky-50 to-violet-50 p-5 ring-1 ring-sky-100">

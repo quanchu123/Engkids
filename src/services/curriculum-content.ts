@@ -667,7 +667,7 @@ function itemFromWord(word: WordPair, bank: WordPair[], skillId: CurriculumSkill
       topic: word.topic || 'general',
       item_type: itemType,
       prompt: blankExample(word),
-      prompt_vi: 'Dien tu con thieu trong cau.',
+      prompt_vi: 'Điền từ còn thiếu trong câu.',
       choices,
       correct_answer: correct,
       explanation_vi: `${word.en} = ${word.vi}`,
