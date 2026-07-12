@@ -63,7 +63,7 @@ type MutationMessage = {
 
 const TEXT_COLLATOR = new Intl.Collator('vi', { sensitivity: 'base', numeric: true });
 const ADMIN_ROLE_VALUES = new Set(['admin', 'super_admin', 'god']);
-const TEST_PATTERNS = [/test/i, /demo/i, /sample/i, /fake/i, /qa/i, /sandbox/i, /staging/i, /temp/i, /bot/i];
+const TEST_PATTERNS = [/test/i, /demo/i, /sample/i, /qa/i, /sandbox/i, /staging/i, /temp/i, /bot/i];
 
 function formatTime(value: string | null): string {
   return formatVietnamShortDateTime(value, 'Chưa có');
