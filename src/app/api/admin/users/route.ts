@@ -11,7 +11,7 @@ const MAX_USERS = 5000;
 
 type AuthUserRow = {
   id: string;
-  email: string | null;
+  email?: string | null;
   created_at: string;
   last_sign_in_at?: string | null;
   email_confirmed_at?: string | null;
@@ -35,6 +35,7 @@ type ProfileRow = {
   is_premium?: boolean | null;
   avatar_url?: string | null;
   address?: string | null;
+  role?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -60,8 +61,15 @@ type AdminUserRow = {
   hasProfile: boolean;
 };
 
+type AdminUsersPatchBody = {
+  authId?: unknown;
+  updates?: Record<string, unknown>;
+};
+
 const PROFILE_SELECTS = [
+  'auth_id, email, name, parent_name, child_age, account_type, premium_until, is_premium, avatar_url, address, role, created_at, updated_at',
   'auth_id, email, name, parent_name, child_age, account_type, premium_until, is_premium, avatar_url, address, created_at, updated_at',
+  'auth_id, email, name, account_type, premium_until, is_premium, avatar_url, address, role, created_at, updated_at',
   'auth_id, email, name, account_type, premium_until, is_premium, avatar_url, address, created_at, updated_at',
 ];
 
@@ -106,6 +114,24 @@ function getNumber(value: unknown): number | null {
   return null;
 }
 
+function normalizeText(value: unknown, maxLength: number): string | null {
+  const text = getString(value);
+  if (!text) return null;
+  return text.slice(0, maxLength);
+}
+
+function normalizeEmail(value: unknown): string | null {
+  const text = normalizeText(value, 320);
+  return text ? text.toLowerCase() : null;
+}
+
+function normalizeChildAge(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const age = getNumber(value);
+  if (age === null) return null;
+  return Math.max(1, Math.min(18, age));
+}
+
 function getShortLabel(value: string): string {
   const cleaned = value
     .split('@')[0]
@@ -113,7 +139,7 @@ function getShortLabel(value: string): string {
     .replace(/[._-]+/g, ' ')
     .trim();
 
-  const firstToken = cleaned.split(/\s+/).filter(Boolean)[0] || 'Khach';
+  const firstToken = cleaned.split(/\s+/).find(Boolean) || 'Khach';
   return firstToken.charAt(0).toUpperCase() + firstToken.slice(1).toLowerCase();
 }
 
@@ -138,6 +164,10 @@ function getProvider(user: AuthUserRow): string | null {
   return getString(user.user_metadata?.provider) || getString(user.user_metadata?.auth_provider);
 }
 
+function getProfileRole(profile: ProfileRow | null): string | null {
+  return getString(profile?.role)?.toLowerCase() || null;
+}
+
 function getDisplayName(user: AuthUserRow, profile: ProfileRow | null): string {
   return (
     getString(profile?.name) ||
@@ -149,11 +179,22 @@ function getDisplayName(user: AuthUserRow, profile: ProfileRow | null): string {
 }
 
 function getParentName(user: AuthUserRow, profile: ProfileRow | null): string {
-  const actual = getString(profile?.parent_name) || getString(user.user_metadata?.parent_name) || getString(user.user_metadata?.parentName);
+  const actual =
+    getString(profile?.parent_name) ||
+    getString(user.user_metadata?.parent_name) ||
+    getString(user.user_metadata?.parentName);
   if (actual) return actual;
 
   const seed = getString(user.email)?.split('@')[0] || user.id;
   return `Phụ huynh ${getShortLabel(seed)}`;
+}
+
+function getStoredParentName(user: AuthUserRow, profile: ProfileRow | null): string | null {
+  return (
+    getString(profile?.parent_name) ||
+    getString(user.user_metadata?.parent_name) ||
+    getString(user.user_metadata?.parentName)
+  );
 }
 
 function getChildAge(user: AuthUserRow, profile: ProfileRow | null): number | null {
@@ -167,7 +208,7 @@ function getChildAge(user: AuthUserRow, profile: ProfileRow | null): number | nu
 }
 
 function getAccountType(profile: ProfileRow | null): string {
-  const accountType = getString(profile?.account_type);
+  const accountType = getString(profile?.account_type)?.toLowerCase();
   if (accountType) return accountType;
 
   if (profile?.is_premium) return 'premium';
@@ -177,13 +218,16 @@ function getAccountType(profile: ProfileRow | null): string {
 
 function isPremiumAccount(profile: ProfileRow | null): boolean {
   if (profile?.is_premium) return true;
-  if (getString(profile?.account_type) === 'premium') return true;
+  if (getString(profile?.account_type)?.toLowerCase() === 'premium') return true;
   if (!profile?.premium_until) return false;
   return new Date(profile.premium_until).getTime() > Date.now();
 }
 
 function getLocation(user: AuthUserRow, profile: ProfileRow | null): string {
-  const actual = getString(profile?.address) || getString(user.user_metadata?.address) || getString(user.user_metadata?.location);
+  const actual =
+    getString(profile?.address) ||
+    getString(user.user_metadata?.address) ||
+    getString(user.user_metadata?.location);
   if (actual) return actual;
 
   const seed = [
@@ -191,10 +235,20 @@ function getLocation(user: AuthUserRow, profile: ProfileRow | null): string {
     getString(user.user_metadata?.parent_name),
     getString(user.email),
     user.id,
-  ].filter((value): value is string => Boolean(value)).join('|');
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join('|');
 
   const index = hashSeed(seed || user.id) % FALLBACK_LOCATIONS.length;
   return FALLBACK_LOCATIONS[index];
+}
+
+function getStoredLocation(user: AuthUserRow, profile: ProfileRow | null): string | null {
+  return (
+    getString(profile?.address) ||
+    getString(user.user_metadata?.address) ||
+    getString(user.user_metadata?.location)
+  );
 }
 
 function mapUser(user: AuthUserRow, profile: ProfileRow | null): AdminUserRow {
@@ -205,10 +259,10 @@ function mapUser(user: AuthUserRow, profile: ProfileRow | null): AdminUserRow {
   return {
     id: user.id,
     authId: user.id,
-    email: getString(profile?.email) || user.email,
+    email: getString(profile?.email) || user.email || null,
     name: getDisplayName(user, profile),
     provider: getProvider(user),
-    role: getString(user.role) || 'authenticated',
+    role: getProfileRole(profile) || getString(user.role)?.toLowerCase() || 'authenticated',
     parentName: getParentName(user, profile),
     childAge: getChildAge(user, profile),
     accountType: isPremium && accountType !== 'premium' ? 'premium' : accountType,
@@ -304,6 +358,144 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Admin users GET error:', error);
     const message = error instanceof Error ? error.message : 'Failed to load users';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    if (!(await checkAdminAuth(request))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const admin = getAdminClient();
+    if (!admin) {
+      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+    }
+
+    const body = (await request.json().catch(() => ({}))) as AdminUsersPatchBody;
+    const authId = getString(body.authId);
+    const updates = body.updates && typeof body.updates === 'object' ? body.updates : {};
+
+    if (!authId) {
+      return NextResponse.json({ error: 'authId is required' }, { status: 400 });
+    }
+
+    const hasName = Object.prototype.hasOwnProperty.call(updates, 'name');
+    const hasEmail = Object.prototype.hasOwnProperty.call(updates, 'email');
+    const hasParentName = Object.prototype.hasOwnProperty.call(updates, 'parentName');
+    const hasChildAge = Object.prototype.hasOwnProperty.call(updates, 'childAge');
+    const hasLocation = Object.prototype.hasOwnProperty.call(updates, 'location');
+
+    const nextName = hasName ? normalizeText(updates.name, 120) : null;
+    const nextEmail = hasEmail ? normalizeEmail(updates.email) : null;
+    const nextParentName = hasParentName ? normalizeText(updates.parentName, 120) : null;
+    const nextChildAge = hasChildAge ? normalizeChildAge(updates.childAge) : null;
+    const nextLocation = hasLocation ? normalizeText(updates.location, 200) : null;
+
+    if (hasName && !nextName) {
+      return NextResponse.json({ error: 'Tên không được để trống' }, { status: 400 });
+    }
+
+    if (hasEmail && !nextEmail) {
+      return NextResponse.json({ error: 'Email không được để trống' }, { status: 400 });
+    }
+
+    if (hasChildAge) {
+      const rawChildAge = typeof updates.childAge === 'string' ? updates.childAge.trim() : String(updates.childAge ?? '').trim();
+      if (rawChildAge && nextChildAge === null) {
+        return NextResponse.json({ error: 'Tuổi không hợp lệ' }, { status: 400 });
+      }
+    }
+
+    const { data: currentUserData, error: currentUserError } = await admin.auth.admin.getUserById(authId);
+    if (currentUserError || !currentUserData?.user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const currentUser = currentUserData.user;
+    const currentProfile = (await fetchProfilesForUsers(admin, [authId])).get(authId) || null;
+    const currentEmail = getString(currentUser.email);
+
+    const metadata = currentUser.user_metadata && typeof currentUser.user_metadata === 'object'
+      ? { ...currentUser.user_metadata }
+      : {};
+
+    const resolvedName = hasName && nextName ? nextName : getDisplayName(currentUser, currentProfile);
+    const resolvedEmail = hasEmail && nextEmail ? nextEmail : currentEmail;
+    const resolvedParentName = hasParentName ? nextParentName : getStoredParentName(currentUser, currentProfile);
+    const resolvedChildAge = hasChildAge ? nextChildAge : getChildAge(currentUser, currentProfile);
+    const resolvedLocation = hasLocation ? nextLocation : getStoredLocation(currentUser, currentProfile);
+
+    if (hasName) {
+      metadata.name = nextName;
+      metadata.full_name = nextName;
+    }
+
+    if (hasParentName) {
+      metadata.parent_name = nextParentName;
+      metadata.parentName = nextParentName;
+    }
+
+    if (hasChildAge) {
+      metadata.child_age = nextChildAge === null ? null : String(nextChildAge);
+      metadata.childAge = nextChildAge === null ? null : String(nextChildAge);
+    }
+
+    if (hasLocation) {
+      metadata.address = nextLocation;
+      metadata.location = nextLocation;
+    }
+
+    if (hasEmail) {
+      metadata.email = nextEmail;
+    }
+
+    const authUpdate: Parameters<typeof admin.auth.admin.updateUserById>[1] = {
+      user_metadata: metadata,
+    };
+
+    if (nextEmail && nextEmail !== currentEmail) {
+      authUpdate.email = nextEmail;
+      authUpdate.email_confirm = true;
+    }
+
+    const { error: updateError } = await admin.auth.admin.updateUserById(authId, authUpdate);
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message || 'Failed to update user' }, { status: 400 });
+    }
+
+    const profilePayload = {
+      auth_id: authId,
+      email: resolvedEmail,
+      name: resolvedName,
+      parent_name: resolvedParentName,
+      child_age: resolvedChildAge,
+      address: resolvedLocation,
+    };
+
+    const { error: profileError } = await admin
+      .from('user_profiles')
+      .upsert(profilePayload, { onConflict: 'auth_id' });
+
+    if (profileError) {
+      return NextResponse.json({ error: profileError.message || 'Failed to update profile' }, { status: 400 });
+    }
+
+    const { data: refreshedUserData, error: refreshedUserError } = await admin.auth.admin.getUserById(authId);
+    if (refreshedUserError || !refreshedUserData?.user) {
+      return NextResponse.json({ error: 'Failed to reload user after update' }, { status: 500 });
+    }
+
+    const refreshedProfile = (await fetchProfilesForUsers(admin, [authId])).get(authId) || null;
+
+    return NextResponse.json(
+      { user: mapUser(refreshedUserData.user, refreshedProfile) },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+    );
+  } catch (error) {
+    console.error('Admin users PATCH error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to update user';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
