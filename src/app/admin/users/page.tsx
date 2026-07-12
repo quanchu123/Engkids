@@ -35,6 +35,7 @@ type AdminUserRow = {
   location: string;
   emailConfirmedAt: string | null;
   createdAt: string;
+  authCreatedAt: string;
   lastSignInAt: string | null;
   updatedAt: string | null;
   isAnonymous: boolean;
@@ -67,6 +68,11 @@ const TEST_PATTERNS = [/test/i, /demo/i, /sample/i, /qa/i, /sandbox/i, /staging/
 
 function formatTime(value: string | null): string {
   return formatVietnamShortDateTime(value, 'Chưa có');
+}
+
+function isSameTimestamp(a: string | null, b: string | null): boolean {
+  if (!a || !b) return false;
+  return new Date(a).getTime() === new Date(b).getTime();
 }
 
 function isRecentSignIn(value: string | null): boolean {
@@ -775,8 +781,15 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
 
-                      <td className="px-4 py-3 align-top font-semibold text-slate-600">
-                        {formatTime(user.createdAt)}
+                      <td className="px-4 py-3 align-top">
+                        <div className="flex min-w-[150px] flex-col gap-1">
+                          <span className="font-bold text-slate-700">{formatTime(user.createdAt)}</span>
+                          {!isSameTimestamp(user.createdAt, user.authCreatedAt) ? (
+                            <span className="text-[11px] font-semibold text-admin-text-muted">
+                              Auth: {formatTime(user.authCreatedAt)}
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
 
                       <td className="px-4 py-3 align-top">

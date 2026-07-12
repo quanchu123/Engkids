@@ -62,7 +62,11 @@
         "users:demo-registrations": "node scripts/ensure-demo-registrations.mjs",
         "users:demo-registrations:apply": "node scripts/ensure-demo-registrations.mjs --apply",
         "users:demo-append-june-28-29": "node scripts/ensure-demo-registrations.mjs --append-june-28-29",
-        "users:demo-append-june-28-29:apply": "node scripts/ensure-demo-registrations.mjs --append-june-28-29 --apply"
+        "users:demo-append-june-28-29:apply": "node scripts/ensure-demo-registrations.mjs --append-june-28-29 --apply",
+        "users:demo-append-last-week": "node scripts/ensure-demo-registrations.mjs --append-last-week",
+        "users:demo-append-last-week:apply": "node scripts/ensure-demo-registrations.mjs --append-last-week --apply",
+        "users:naturalize-registration-times": "node scripts/naturalize-registration-times.mjs",
+        "users:naturalize-registration-times:apply": "node scripts/naturalize-registration-times.mjs --apply"
     },
     "dependencies": {
         "@emoji-mart/data": "^1.2.1",

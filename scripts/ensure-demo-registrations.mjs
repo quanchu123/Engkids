@@ -13,6 +13,7 @@ const args = new Set(process.argv.slice(2));
 const apply = args.has('--apply');
 const syncAuth = !args.has('--no-sync-auth');
 const appendJune2829 = args.has('--append-june-28-29');
+const appendLastWeek = args.has('--append-last-week');
 const targetCountArg = process.argv.find((arg) => arg.startsWith('--target-count='));
 const targetCount = targetCountArg ? Number(targetCountArg.split('=')[1]) : 154;
 const registrationWindow = {
@@ -217,6 +218,17 @@ function formatVietnamDateLabel({ year, month, day }) {
   return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
 }
 
+function getVietnamDateParts(value) {
+  const [year, month, day] = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(value)).split('-').map(Number);
+
+  return { year, month, day };
+}
+
 function toUtcIsoFromVietnamTime(year, month, day, hourVn, minute, second = 0) {
   return new Date(Date.UTC(year, month - 1, day, hourVn - 7, minute, second)).toISOString();
 }
@@ -337,6 +349,16 @@ function makeVietnamCreatedAt(year, month, day, index, total) {
 
 function makeCreatedAt(index) {
   return registrationSchedulePlan.schedule[index];
+}
+
+function buildVietnamDateCountMap(rows) {
+  const counts = new Map();
+  for (const row of rows) {
+    if (!row.created_at) continue;
+    const dateKey = getVietnamDateKey(row.created_at);
+    counts.set(dateKey, (counts.get(dateKey) || 0) + 1);
+  }
+  return counts;
 }
 
 function makeEmailBases({ familyName, parentMiddle, parentGiven, parentBirthYear, parentBirthDay, parentBirthMonth }, index) {
@@ -627,6 +649,45 @@ function writeAppendOutputs({ plan, createdUsers }) {
   return { planPath, authSqlPath };
 }
 
+function writeRecentWeekOutputs({ plan, createdUsers, daySummaries, minPerDay, start, end }) {
+  const outDir = path.join(process.cwd(), 'output');
+  fs.mkdirSync(outDir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const planPath = path.join(outDir, `demo-registrations-append-recent-week-${stamp}.json`);
+  const authSqlPath = path.join(outDir, `demo-auth-users-append-recent-week-created-at-update-${stamp}.sql`);
+
+  fs.writeFileSync(
+    planPath,
+    JSON.stringify({
+      created_at: new Date().toISOString(),
+      apply,
+      mode: 'append-recent-week',
+      minPerDay,
+      start,
+      end,
+      daySummaries,
+      createdUsers,
+      rows: plan,
+    }, null, 2),
+  );
+
+  fs.writeFileSync(
+    authSqlPath,
+    [
+      '-- Optional: run this in Supabase SQL Editor if auth.users timestamps must match user_profiles.',
+      '-- This recent-week batch does not update existing users.',
+      'begin;',
+      ...plan
+        .filter((item) => item.auth_id)
+        .map((item) => `update auth.users set created_at = ${sqlString(item.fake.created_at)}, updated_at = ${sqlString(item.fake.updated_at)} where id = ${sqlString(item.auth_id)};`),
+      'commit;',
+      '',
+    ].join('\n'),
+  );
+
+  return { planPath, authSqlPath };
+}
+
 function writeOutputs({ plan, createdUsers }) {
   const outDir = path.join(process.cwd(), 'output');
   fs.mkdirSync(outDir, { recursive: true });
@@ -747,6 +808,65 @@ function buildAppendPlan(profiles) {
   return { plan, protectedRows, normalRows, existingByDate };
 }
 
+function buildRecentWeekAppendPlan(profiles, minPerDay = 5) {
+  const protectedRows = profiles.filter(isProtectedProfile);
+  const normalRows = profiles.filter((profile) => !isProtectedProfile(profile));
+  const usedEmails = new Set();
+  for (const profile of profiles) {
+    if (profile.email) rememberEmail(profile.email, usedEmails);
+  }
+
+  const existingByDate = buildVietnamDateCountMap(normalRows);
+  const end = getVietnamDateParts(new Date());
+  const start = shiftVietnamDate(end, -6);
+  const dates = enumerateVietnamDates(start, end);
+  const plan = [];
+  const daySummaries = [];
+
+  for (const date of dates) {
+    const dateKey = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
+    const existing = existingByDate.get(dateKey) || 0;
+    const createCount = Math.max(0, minPerDay - existing);
+
+    daySummaries.push({
+      ...date,
+      dateKey,
+      existing,
+      createCount,
+    });
+
+    for (let offset = 0; offset < createCount; offset += 1) {
+      const personIndex = normalRows.length + plan.length;
+      const createdAt = makeVietnamCreatedAt(date.year, date.month, date.day, offset, createCount);
+      const fake = makePerson(personIndex, usedEmails, {
+        created_at: createdAt,
+        updated_at: makeUpdatedAtAfter(createdAt, personIndex),
+        address: personIndex % 9 === 0
+          ? pick(innerHanoiAddresses, personIndex, 0)
+          : pick(targetAreaAddresses, personIndex, 5),
+      });
+
+      plan.push({
+        date: dateKey,
+        sequence: existing + offset + 1,
+        auth_id: null,
+        fake,
+      });
+    }
+  }
+
+  return {
+    plan,
+    protectedRows,
+    normalRows,
+    existingByDate,
+    daySummaries,
+    start,
+    end,
+    minPerDay,
+  };
+}
+
 function printAppendPreview({ plan, protectedRows, normalRows, existingByDate }) {
   console.log('Mode: append 2026-06-28/29 only');
   console.log(`Protected/admin rows: ${protectedRows.length}`);
@@ -766,6 +886,34 @@ function printAppendPreview({ plan, protectedRows, normalRows, existingByDate })
     console.log(`  date=${item.date} created_at_vn=${createdAtVn}`);
     console.log(`  parent=${item.fake.parent_name} child=${item.fake.name} (${item.fake.child_age}) address=${item.fake.address}`);
   }
+}
+
+function printRecentWeekPreview({ plan, protectedRows, normalRows, daySummaries, minPerDay, start, end }) {
+  console.log(`Mode: append recent week (minimum ${minPerDay} users/day)`);
+  console.log(`Protected/admin rows: ${protectedRows.length}`);
+  console.log(`Current normal users: ${normalRows.length}`);
+  console.log(`Recent window: ${formatVietnamDateLabel(start)} -> ${formatVietnamDateLabel(end)}`);
+  console.log('');
+
+  for (const day of daySummaries) {
+    console.log(`${formatVietnamDateLabel(day)}: existing=${day.existing}, create=${day.createCount}`);
+  }
+
+  console.log('');
+  console.log(`Will create new users: ${plan.length}`);
+  console.log(`Mode: ${apply ? 'APPLY' : 'DRY RUN'}`);
+  console.log('');
+
+  for (const item of plan.slice(0, 12)) {
+    const createdAtVn = new Date(item.fake.created_at).toLocaleString('en-GB', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour12: false,
+    });
+    console.log(`${item.fake.email}`);
+    console.log(`  date=${item.date} sequence=${item.sequence} created_at_vn=${createdAtVn}`);
+    console.log(`  parent=${item.fake.parent_name} child=${item.fake.name} (${item.fake.child_age}) address=${item.fake.address}`);
+  }
+  if (plan.length > 12) console.log(`...and ${plan.length - 12} more`);
 }
 
 async function createAppendUser(item, columns) {
@@ -835,7 +983,52 @@ async function appendJune2829Users() {
   console.log('Done.');
 }
 
+async function appendRecentWeekUsers() {
+  const profiles = await fetchProfiles();
+  const columns = profiles[0] ? Object.keys(profiles[0]) : [];
+  const context = buildRecentWeekAppendPlan(profiles, 5);
+
+  printRecentWeekPreview(context);
+  let createdUsers = [];
+
+  if (apply && context.plan.length > 0) {
+    console.log('');
+    console.log('Creating recent-week demo users...');
+    for (const [index, item] of context.plan.entries()) {
+      const created = await createAppendUser(item, columns);
+      createdUsers.push(created);
+      console.log(`[${index + 1}/${context.plan.length}] ${created.email}`);
+    }
+  }
+
+  const { planPath, authSqlPath } = writeRecentWeekOutputs({
+    plan: context.plan,
+    createdUsers,
+    daySummaries: context.daySummaries,
+    minPerDay: context.minPerDay,
+    start: context.start,
+    end: context.end,
+  });
+
+  console.log('');
+  console.log(`Recent-week plan written: ${planPath}`);
+  console.log(`Optional auth timestamp SQL written: ${authSqlPath}`);
+
+  if (!apply) {
+    console.log('');
+    console.log('Dry run only. Add --apply to create recent-week users.');
+    return;
+  }
+
+  console.log('Done.');
+}
+
 async function main() {
+  if (appendLastWeek) {
+    await appendRecentWeekUsers();
+    return;
+  }
+
   if (appendJune2829) {
     await appendJune2829Users();
     return;

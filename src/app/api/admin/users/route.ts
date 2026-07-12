@@ -55,6 +55,7 @@ type AdminUserRow = {
   location: string;
   emailConfirmedAt: string | null;
   createdAt: string;
+  authCreatedAt: string;
   lastSignInAt: string | null;
   updatedAt: string | null;
   isAnonymous: boolean;
@@ -270,7 +271,8 @@ function mapUser(user: AuthUserRow, profile: ProfileRow | null): AdminUserRow {
     premiumUntil,
     location: getLocation(user, profile),
     emailConfirmedAt: getString(user.email_confirmed_at) || getString(user.confirmed_at),
-    createdAt: user.created_at,
+    createdAt: getString(profile?.created_at) || user.created_at,
+    authCreatedAt: user.created_at,
     lastSignInAt: getString(user.last_sign_in_at),
     updatedAt: getString(profile?.updated_at) || getString(user.updated_at),
     isAnonymous: Boolean(user.is_anonymous),

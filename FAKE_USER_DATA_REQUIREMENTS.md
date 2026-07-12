@@ -140,3 +140,52 @@ After applying changes, verify:
 - Registration dates run from `25/06/2026` through `10/07/2026`.
 - Daily counts stay between `9` and `10` users for the current `154`-user target.
 - Supabase Auth email matches `public.user_profiles.email` for normal users.
+
+## Recent Week Append Added 2026-07-13
+
+- Appended `21` extra normal/demo accounts to bring underfilled recent-week days up to `5` users/day.
+- Days updated:
+  - `07/07/2026`: added `3` users.
+  - `08/07/2026`: added `4` users.
+  - `09/07/2026`: added `4` users.
+  - `11/07/2026`: added `5` users.
+  - `13/07/2026`: added `5` users.
+- `10/07/2026` already had `14` normal users, so it was left unchanged.
+- Verified counts after apply:
+  - `231` normal users.
+  - `5` admin/protected users.
+  - `236` total rows.
+  - Recent-week daily counts: `5`, `5`, `5`, `14`, `5`, `5`, `5`.
+- Generated files:
+  - `output/demo-registrations-append-recent-week-2026-07-12T17-55-46-940Z.json`
+  - `output/demo-auth-users-append-recent-week-created-at-update-2026-07-12T17-55-46-940Z.sql`
+- NPM commands:
+  - Dry run: `npm run users:demo-append-last-week`
+  - Apply: `npm run users:demo-append-last-week:apply`
+
+## Natural Registration Times Applied 2026-07-13
+
+- Re-randomized `public.user_profiles.created_at` and `updated_at` for all `231` normal users.
+- Kept `5` admin/protected rows unchanged.
+- Registration window uses Vietnam time from `18/06/2026` through `13/07/2026 19:00`.
+- Times are spaced apart and biased toward realistic usage windows:
+  - Morning before school/work.
+  - Lunch break.
+  - Late afternoon.
+  - Evening and limited late-night activity.
+- Premium users:
+  - `15` normal premium users were linked to first `PAID` transaction.
+  - Each premium registration was moved to `2-6` days before purchase.
+  - Verified final premium registration-to-purchase deltas are `2.66` to `6.49` days.
+- Verification after apply:
+  - `236` total `public.user_profiles` rows.
+  - `231` normal users.
+  - `5` admin/protected users.
+  - Latest `13/07/2026` registration is `18:49:46` Vietnam time.
+  - No premium user registered after purchase or less than 2 days before purchase.
+- Generated files:
+  - `output/natural-registration-times-2026-07-12T18-05-11-563Z.json`
+  - `output/natural-registration-auth-users-created-at-update-2026-07-12T18-05-11-563Z.sql`
+- NPM commands:
+  - Dry run: `npm run users:naturalize-registration-times`
+  - Apply: `npm run users:naturalize-registration-times:apply`
