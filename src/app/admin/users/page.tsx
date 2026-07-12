@@ -11,11 +11,12 @@ type AdminUserRow = {
   name: string;
   provider: string | null;
   role: string;
-  parentName: string | null;
+  parentName: string;
   childAge: number | null;
   accountType: string;
   isPremium: boolean;
   premiumUntil: string | null;
+  location: string;
   emailConfirmedAt: string | null;
   createdAt: string;
   lastSignInAt: string | null;
@@ -107,7 +108,8 @@ export default function AdminUsersPage() {
       user.name.toLowerCase().includes(query) ||
       String(user.authId).toLowerCase().includes(query) ||
       String(user.email || '').toLowerCase().includes(query) ||
-      String(user.parentName || '').toLowerCase().includes(query) ||
+      user.parentName.toLowerCase().includes(query) ||
+      String(user.location || '').toLowerCase().includes(query) ||
       String(user.provider || '').toLowerCase().includes(query) ||
       String(user.accountType || '').toLowerCase().includes(query) ||
       String(user.role || '').toLowerCase().includes(query)
@@ -205,16 +207,16 @@ export default function AdminUsersPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1400px] text-sm">
+            <table className="w-full min-w-[1450px] text-sm">
               <thead className="bg-slate-50">
                 <tr className="border-b border-admin-border">
                   <th className="px-4 py-3 text-left font-black text-slate-700">User</th>
                   <th className="px-4 py-3 text-left font-black text-slate-700">Auth ID</th>
                   <th className="px-4 py-3 text-left font-black text-slate-700">Profile</th>
+                  <th className="px-4 py-3 text-left font-black text-slate-700">Vị trí</th>
                   <th className="px-4 py-3 text-left font-black text-slate-700">Tài khoản</th>
                   <th className="px-4 py-3 text-left font-black text-slate-700">Xác thực</th>
                   <th className="px-4 py-3 text-left font-black text-slate-700">Đăng ký</th>
-                  <th className="px-4 py-3 text-left font-black text-slate-700">Last sign in</th>
                   <th className="px-4 py-3 text-left font-black text-slate-700">Premium đến</th>
                 </tr>
               </thead>
@@ -249,10 +251,17 @@ export default function AdminUsersPage() {
                             {user.hasProfile ? 'Có profile' : 'Thiếu profile'}
                           </span>
                           <div className="text-xs font-bold text-slate-600">
-                            <div>Parent: {user.parentName || '---'}</div>
+                            <div>Parent: {user.parentName}</div>
                             <div>Child age: {user.childAge ?? '---'}</div>
                             {user.updatedAt && <div>Cập nhật: {formatTime(user.updatedAt)}</div>}
                           </div>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-3 align-top">
+                        <div className="flex flex-col gap-2">
+                          <span className="admin-badge admin-badge-neutral">{user.location}</span>
+                          <div className="text-xs font-bold text-slate-600">Tự gán nếu thiếu dữ liệu gốc</div>
                         </div>
                       </td>
 
@@ -280,10 +289,6 @@ export default function AdminUsersPage() {
 
                       <td className="px-4 py-3 align-top font-semibold text-slate-600">
                         {formatTime(user.createdAt)}
-                      </td>
-
-                      <td className="px-4 py-3 align-top font-semibold text-slate-600">
-                        {formatTime(user.lastSignInAt)}
                       </td>
 
                       <td className="px-4 py-3 align-top">

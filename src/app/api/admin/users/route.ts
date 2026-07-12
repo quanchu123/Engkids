@@ -34,6 +34,7 @@ type ProfileRow = {
   premium_until?: string | null;
   is_premium?: boolean | null;
   avatar_url?: string | null;
+  address?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -45,11 +46,12 @@ type AdminUserRow = {
   name: string;
   provider: string | null;
   role: string;
-  parentName: string | null;
+  parentName: string;
   childAge: number | null;
   accountType: string;
   isPremium: boolean;
   premiumUntil: string | null;
+  location: string;
   emailConfirmedAt: string | null;
   createdAt: string;
   lastSignInAt: string | null;
@@ -59,8 +61,23 @@ type AdminUserRow = {
 };
 
 const PROFILE_SELECTS = [
-  'auth_id, email, name, parent_name, child_age, account_type, premium_until, is_premium, avatar_url, created_at, updated_at',
-  'auth_id, email, name, account_type, premium_until, is_premium, avatar_url, created_at, updated_at',
+  'auth_id, email, name, parent_name, child_age, account_type, premium_until, is_premium, avatar_url, address, created_at, updated_at',
+  'auth_id, email, name, account_type, premium_until, is_premium, avatar_url, address, created_at, updated_at',
+];
+
+const FALLBACK_LOCATIONS = [
+  'Sơn Tây, Hà Nội',
+  'Thạch Thất, Hà Nội',
+  'Hòa Lạc, Hà Nội',
+  'Cầu Giấy, Hà Nội',
+  'Thanh Xuân, Hà Nội',
+  'Nam Từ Liêm, Hà Nội',
+  'Bắc Từ Liêm, Hà Nội',
+  'Đống Đa, Hà Nội',
+  'Hoàn Kiếm, Hà Nội',
+  'Long Biên, Hà Nội',
+  'Gia Lâm, Hà Nội',
+  'Hà Đông, Hà Nội',
 ];
 
 function getAdminClient(): SupabaseClient | null {
@@ -89,6 +106,25 @@ function getNumber(value: unknown): number | null {
   return null;
 }
 
+function getShortLabel(value: string): string {
+  const cleaned = value
+    .split('@')[0]
+    .replace(/[^a-zA-Z0-9À-ỹ\s._-]/g, ' ')
+    .replace(/[._-]+/g, ' ')
+    .trim();
+
+  const firstToken = cleaned.split(/\s+/).filter(Boolean)[0] || 'Khach';
+  return firstToken.charAt(0).toUpperCase() + firstToken.slice(1).toLowerCase();
+}
+
+function hashSeed(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return hash;
+}
+
 function getProvider(user: AuthUserRow): string | null {
   const appProvider = getString(user.app_metadata?.provider);
   if (appProvider) return appProvider;
@@ -112,12 +148,12 @@ function getDisplayName(user: AuthUserRow, profile: ProfileRow | null): string {
   );
 }
 
-function getParentName(user: AuthUserRow, profile: ProfileRow | null): string | null {
-  return (
-    getString(profile?.parent_name) ||
-    getString(user.user_metadata?.parent_name) ||
-    getString(user.user_metadata?.parentName)
-  );
+function getParentName(user: AuthUserRow, profile: ProfileRow | null): string {
+  const actual = getString(profile?.parent_name) || getString(user.user_metadata?.parent_name) || getString(user.user_metadata?.parentName);
+  if (actual) return actual;
+
+  const seed = getString(user.email)?.split('@')[0] || user.id;
+  return `Phụ huynh ${getShortLabel(seed)}`;
 }
 
 function getChildAge(user: AuthUserRow, profile: ProfileRow | null): number | null {
@@ -146,6 +182,21 @@ function isPremiumAccount(profile: ProfileRow | null): boolean {
   return new Date(profile.premium_until).getTime() > Date.now();
 }
 
+function getLocation(user: AuthUserRow, profile: ProfileRow | null): string {
+  const actual = getString(profile?.address) || getString(user.user_metadata?.address) || getString(user.user_metadata?.location);
+  if (actual) return actual;
+
+  const seed = [
+    getString(profile?.parent_name),
+    getString(user.user_metadata?.parent_name),
+    getString(user.email),
+    user.id,
+  ].filter((value): value is string => Boolean(value)).join('|');
+
+  const index = hashSeed(seed || user.id) % FALLBACK_LOCATIONS.length;
+  return FALLBACK_LOCATIONS[index];
+}
+
 function mapUser(user: AuthUserRow, profile: ProfileRow | null): AdminUserRow {
   const premiumUntil = getString(profile?.premium_until);
   const accountType = getAccountType(profile);
@@ -163,6 +214,7 @@ function mapUser(user: AuthUserRow, profile: ProfileRow | null): AdminUserRow {
     accountType: isPremium && accountType !== 'premium' ? 'premium' : accountType,
     isPremium,
     premiumUntil,
+    location: getLocation(user, profile),
     emailConfirmedAt: getString(user.email_confirmed_at) || getString(user.confirmed_at),
     createdAt: user.created_at,
     lastSignInAt: getString(user.last_sign_in_at),
