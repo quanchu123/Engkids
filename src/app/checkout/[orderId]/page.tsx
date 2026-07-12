@@ -101,7 +101,7 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
           </p>
           {plan && (
             <p className="text-gray-500 text-sm mb-6">
-              {plan.name} – {plan.price.toLocaleString('vi-VN')}đ
+              {plan.name} – {amount.toLocaleString('vi-VN')}đ
             </p>
           )}
           {isConfirmed ? (
@@ -190,7 +190,7 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
                   </div>
                   <div className="flex justify-between border-t border-gray-800 pt-2 mt-2">
                     <span className="text-gray-400 font-medium">Tổng thanh toán</span>
-                    <span className="text-2xl font-black text-white">{plan.price.toLocaleString('vi-VN')}đ</span>
+                    <span className="text-2xl font-black text-white">{amount.toLocaleString('vi-VN')}đ</span>
                   </div>
                 </div>
               </div>

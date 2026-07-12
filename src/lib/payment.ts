@@ -20,9 +20,9 @@ export const SUBSCRIPTION_PLANS = {
   '1_month': {
     id: '1_month',
     name: 'Gói 1 Tháng',
-    price: 49000,
+    price: 39000,
     durationMonths: 1,
-    pricePerMonth: 49000,
+    pricePerMonth: 39000,
   },
   '3_months': {
     id: '3_months',
