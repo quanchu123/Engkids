@@ -749,7 +749,6 @@ export default function AdminUsersPage() {
                         ) : (
                           <div className="flex flex-col gap-2">
                             <span className="admin-badge admin-badge-neutral">{user.location}</span>
-                            <div className="text-xs font-bold text-slate-600">Tự gán nếu thiếu dữ liệu gốc</div>
                           </div>
                         )}
                       </td>
