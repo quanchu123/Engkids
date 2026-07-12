@@ -8,6 +8,8 @@ import Link from 'next/link';
 
 const PLAN_ORDER: (keyof typeof SUBSCRIPTION_PLANS)[] = ['1_month', '3_months', '6_months'];
 
+const formatPrice = (value: number) => value.toLocaleString('vi-VN');
+
 const FEATURES_FREE = [
   { text: 'Tất cả tính năng học tập', included: true },
   { text: 'Mini-games & trò chơi', included: true },
@@ -168,6 +170,7 @@ export default function PricingPage() {
           {PLAN_ORDER.map((planId) => {
             const plan = SUBSCRIPTION_PLANS[planId];
             const isPopular = planId === '6_months';
+            const originalPrice = planId === '1_month' ? SUBSCRIPTION_PLANS['1_month'].compareAtPrice : undefined;
 
             // Calculate savings vs 1-month plan
             const monthlyRate1 = SUBSCRIPTION_PLANS['1_month'].price;
@@ -191,12 +194,27 @@ export default function PricingPage() {
                 )}
 
                 <h3 className="text-lg font-bold text-white mb-1">{plan.name}</h3>
-                <div className="text-3xl font-black text-white mb-1">
-                  {plan.price.toLocaleString('vi-VN')}đ
-                </div>
+                {originalPrice && (
+                  <div className="mb-1 text-sm font-semibold text-gray-500 line-through">
+                    {formatPrice(originalPrice)}đ
+                  </div>
+                )}
+                {originalPrice ? (
+                  <div className="mb-1 flex items-end gap-1 font-black text-4xl text-pink-400">
+                    <span>{formatPrice(plan.price)}đ</span>
+                    <span className="pb-1 text-sm font-semibold text-gray-300">/tháng</span>
+                  </div>
+                ) : (
+                  <div className="mb-1 font-black text-3xl text-white">
+                    {formatPrice(plan.price)}đ
+                  </div>
+                )}
                 <p className="text-gray-500 text-sm mb-4">
-                  ~{plan.pricePerMonth.toLocaleString('vi-VN')}đ/tháng
-                  {savings > 0 && (
+                  {originalPrice ? `Giảm ${formatPrice(originalPrice - plan.price)}đ so với giá cũ` : `~${formatPrice(plan.pricePerMonth)}đ/tháng`}
+                  {originalPrice && (
+                    <span className="ml-2 text-green-400 font-semibold">Ưu đãi tháng đầu</span>
+                  )}
+                  {!originalPrice && savings > 0 && (
                     <span className="ml-1 text-green-400 font-semibold">(-{savings}%)</span>
                   )}
                 </p>

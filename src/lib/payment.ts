@@ -20,6 +20,7 @@ export const SUBSCRIPTION_PLANS = {
   '1_month': {
     id: '1_month',
     name: 'Gói 1 Tháng',
+    compareAtPrice: 49000,
     price: 39000,
     durationMonths: 1,
     pricePerMonth: 39000,

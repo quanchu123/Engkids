@@ -16,6 +16,8 @@ interface TransactionData {
   paid_at: string | null;
 }
 
+const formatPrice = (value: number) => value.toLocaleString('vi-VN');
+
 export default function CheckoutPage({ params }: { params: { orderId: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -85,6 +87,7 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
   const amount = transaction?.amount || 0;
   const planId = transaction?.plan_id as PlanId | undefined;
   const plan = planId ? SUBSCRIPTION_PLANS[planId] : null;
+  const originalPrice = planId === '1_month' ? SUBSCRIPTION_PLANS['1_month'].compareAtPrice : undefined;
   const qrUrl = buildVietQrUrl(amount, orderCode);
 
   // ─── Success screen ──────────────────────────────────────────────────
@@ -101,7 +104,7 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
           </p>
           {plan && (
             <p className="text-gray-500 text-sm mb-6">
-              {plan.name} – {amount.toLocaleString('vi-VN')}đ
+              {plan.name} – {formatPrice(amount)}đ
             </p>
           )}
           {isConfirmed ? (
@@ -180,6 +183,12 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
                   Thông tin đơn hàng
                 </h3>
                 <div className="space-y-2 text-sm">
+                  {originalPrice && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Giá gốc</span>
+                      <span className="text-gray-500 line-through">{formatPrice(originalPrice)}đ</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-400">Gói</span>
                     <span className="text-white font-medium">{plan.name}</span>
@@ -190,7 +199,7 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
                   </div>
                   <div className="flex justify-between border-t border-gray-800 pt-2 mt-2">
                     <span className="text-gray-400 font-medium">Tổng thanh toán</span>
-                    <span className="text-2xl font-black text-white">{amount.toLocaleString('vi-VN')}đ</span>
+                    <span className="text-2xl font-black text-white">{formatPrice(amount)}đ</span>
                   </div>
                 </div>
               </div>
@@ -214,7 +223,7 @@ export default function CheckoutPage({ params }: { params: { orderId: string } }
                 <InfoRow label="Chủ tài khoản" value={BANK_CONFIG.accountName} />
                 <InfoRow
                   label="Số tiền"
-                  value={`${amount.toLocaleString('vi-VN')}đ`}
+                  value={`${formatPrice(amount)}đ`}
                   copiable
                   copied={copied === 'amount'}
                   onCopy={() => copyToClipboard(String(amount), 'amount')}
