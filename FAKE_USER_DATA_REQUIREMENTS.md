@@ -38,12 +38,11 @@ This file records the user's requirements for generating/faking Supabase user da
 ## Registration Time Rules
 
 - Among the 154 normal users:
-  - `47` users must have registration date `14/06/2026`.
-  - These 47 users must be in Son Tay.
-  - These 47 users must register in the evening, around `20:00-22:00` Vietnam time.
-  - The remaining `107` users should be distributed from `15/06/2026` to `27/06/2026`.
+  - Spread the registrations as close to `10/07/2026` as possible while keeping each day between `5` and `10` users.
+  - For the current `154`-user target, the actual window becomes `25/06/2026` through `10/07/2026`.
+  - That window yields `9-10` users per day.
 - Use Vietnam timezone (`Asia/Ho_Chi_Minh`) when reasoning about display times.
-- Supabase stores timestamps as UTC, so `20:00` Vietnam time is `13:00Z`.
+- Supabase stores timestamps as UTC, so convert Vietnam-local times before writing `created_at`.
 
 ## Email Rules
 
@@ -104,7 +103,7 @@ This file records the user's requirements for generating/faking Supabase user da
   - `TX Sơn Tây`
   - `Phường Trung Hưng, Sơn Tây`
   - `son tay ha noi`
-- For the 47 users on `14/06/2026`, all addresses must be Son Tay variants.
+- Keep the distribution mixed across Sơn Tây, Thạch Thất, and Hòa Lạc variants.
 
 ## Existing Scripts
 
@@ -138,8 +137,6 @@ After applying changes, verify:
   - Some with two-digit birth year.
   - Some with full birth year.
   - Some with birth day/month.
-- `47` users are on `14/06/2026` Vietnam date.
-- Those 47 users are all in Son Tay.
-- Those 47 users are all registered between `20:00` and `22:00` Vietnam time.
-- Remaining `107` users are from `15/06/2026` through `27/06/2026`.
+- Registration dates run from `25/06/2026` through `10/07/2026`.
+- Daily counts stay between `9` and `10` users for the current `154`-user target.
 - Supabase Auth email matches `public.user_profiles.email` for normal users.

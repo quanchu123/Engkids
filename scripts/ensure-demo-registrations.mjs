@@ -14,17 +14,24 @@ const apply = args.has('--apply');
 const syncAuth = !args.has('--no-sync-auth');
 const appendJune2829 = args.has('--append-june-28-29');
 const targetCountArg = process.argv.find((arg) => arg.startsWith('--target-count='));
-const sonTayCountArg = process.argv.find((arg) => arg.startsWith('--son-tay-14-count='));
 const targetCount = targetCountArg ? Number(targetCountArg.split('=')[1]) : 154;
-const sonTay14Count = sonTayCountArg ? Number(sonTayCountArg.split('=')[1]) : 47;
+const registrationWindow = {
+  end: { year: 2026, month: 7, day: 10 },
+  minPerDay: 5,
+  maxPerDay: 10,
+  dayStartHourVn: 8,
+  dayStartMinuteVn: 15,
+  dayEndHourVn: 21,
+  dayEndMinuteVn: 45,
+};
 
 if (!supabaseUrl || !serviceKey) {
   console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local');
   process.exit(1);
 }
 
-if (!Number.isInteger(targetCount) || targetCount < 1 || !Number.isInteger(sonTay14Count) || sonTay14Count < 0 || sonTay14Count > targetCount) {
-  console.error('Invalid target count. Example: --target-count=154 --son-tay-14-count=47');
+if (!Number.isInteger(targetCount) || targetCount < 1) {
+  console.error('Invalid target count. Example: --target-count=154');
   process.exit(1);
 }
 
@@ -184,25 +191,6 @@ function isProtectedProfile(profile) {
   );
 }
 
-function makeCreatedAt(index) {
-  if (index < sonTay14Count) {
-    const minuteOffset = Math.floor((index * 120) / sonTay14Count);
-    const hour = 20 + Math.floor(minuteOffset / 60);
-    const minute = minuteOffset % 60;
-    const second = (index * 17) % 60;
-    return new Date(Date.UTC(2026, 5, 14, hour - 7, minute, second)).toISOString();
-  }
-
-  const remainingIndex = index - sonTay14Count;
-  const remainingCount = targetCount - sonTay14Count;
-  const dayOffset = Math.floor((remainingIndex * 13) / remainingCount);
-  const day = 15 + Math.min(dayOffset, 12);
-  const hourVn = 7 + ((remainingIndex * 5) % 15);
-  const minute = (remainingIndex * 19 + 7) % 60;
-  const second = (remainingIndex * 23) % 60;
-  return new Date(Date.UTC(2026, 5, day, hourVn - 7, minute, second)).toISOString();
-}
-
 function makeUpdatedAt(createdAt, index) {
   const created = new Date(createdAt);
   const bumpMinutes = 20 + ((index * 37) % (48 * 60));
@@ -225,6 +213,109 @@ function getVietnamDateKey(value) {
   }).format(new Date(value));
 }
 
+function formatVietnamDateLabel({ year, month, day }) {
+  return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+}
+
+function toUtcIsoFromVietnamTime(year, month, day, hourVn, minute, second = 0) {
+  return new Date(Date.UTC(year, month - 1, day, hourVn - 7, minute, second)).toISOString();
+}
+
+function shiftVietnamDate(date, offsetDays) {
+  const cursor = new Date(Date.UTC(date.year, date.month - 1, date.day));
+  cursor.setUTCDate(cursor.getUTCDate() + offsetDays);
+  return {
+    year: cursor.getUTCFullYear(),
+    month: cursor.getUTCMonth() + 1,
+    day: cursor.getUTCDate(),
+  };
+}
+
+function enumerateVietnamDates(start, end) {
+  const dates = [];
+  const cursor = new Date(Date.UTC(start.year, start.month - 1, start.day));
+  const last = new Date(Date.UTC(end.year, end.month - 1, end.day));
+
+  while (cursor <= last) {
+    dates.push({
+      year: cursor.getUTCFullYear(),
+      month: cursor.getUTCMonth() + 1,
+      day: cursor.getUTCDate(),
+    });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return dates;
+}
+
+function spreadExtraIndices(dayCount, extraCount) {
+  if (extraCount <= 0) return [];
+  if (dayCount <= 0) return [];
+  if (extraCount >= dayCount) {
+    return Array.from({ length: dayCount }, (_, index) => index);
+  }
+
+  const indices = [];
+  const used = new Set();
+
+  for (let i = 0; i < extraCount; i += 1) {
+    let index = Math.round((i * (dayCount - 1)) / Math.max(extraCount - 1, 1));
+    while (used.has(index)) {
+      index = (index + 1) % dayCount;
+    }
+    used.add(index);
+    indices.push(index);
+  }
+
+  return indices.sort((a, b) => a - b);
+}
+
+function buildRegistrationSchedule(total) {
+  const dayCount = Math.ceil(total / registrationWindow.maxPerDay);
+  const start = shiftVietnamDate(registrationWindow.end, -(dayCount - 1));
+  const dates = enumerateVietnamDates(start, registrationWindow.end);
+  const baseCount = Math.floor(total / dayCount);
+  const extraCount = total - (baseCount * dayCount);
+
+  if (baseCount < registrationWindow.minPerDay) {
+    throw new Error(
+      `Cannot distribute ${total} users across ${dayCount} days within ${registrationWindow.minPerDay}-${registrationWindow.maxPerDay} per day`,
+    );
+  }
+
+  const counts = Array.from({ length: dayCount }, () => baseCount);
+  for (const index of spreadExtraIndices(dayCount, extraCount)) {
+    counts[index] += 1;
+  }
+
+  const schedule = [];
+  for (let dayIndex = 0; dayIndex < dates.length; dayIndex += 1) {
+    const { year, month, day } = dates[dayIndex];
+    const count = counts[dayIndex];
+    const startMinute = (registrationWindow.dayStartHourVn * 60) + registrationWindow.dayStartMinuteVn;
+    const endMinute = (registrationWindow.dayEndHourVn * 60) + registrationWindow.dayEndMinuteVn;
+
+    for (let slot = 0; slot < count; slot += 1) {
+      const ratio = count === 1 ? 0.5 : slot / (count - 1);
+      const rawMinute = Math.round(startMinute + ((endMinute - startMinute) * ratio));
+      const jitter = ((dayIndex * 13) + (slot * 7)) % 5 - 2;
+      const minuteOfDay = Math.max(startMinute, Math.min(endMinute, rawMinute + jitter));
+      const hourVn = Math.floor(minuteOfDay / 60);
+      const minute = minuteOfDay % 60;
+      const second = (dayIndex * 17 + slot * 13) % 60;
+      schedule.push(toUtcIsoFromVietnamTime(year, month, day, hourVn, minute, second));
+    }
+  }
+
+  if (schedule.length !== total) {
+    throw new Error(`Registration schedule size mismatch: expected ${total}, got ${schedule.length}`);
+  }
+
+  return { start, end: registrationWindow.end, counts, schedule };
+}
+
+const registrationSchedulePlan = buildRegistrationSchedule(targetCount);
+
 function makeVietnamCreatedAt(year, month, day, index, total) {
   const datePlans = {
     '2026-06-28': [
@@ -241,7 +332,11 @@ function makeVietnamCreatedAt(year, month, day, index, total) {
     (index * 17 + 11) % 60,
   ];
   const second = (index * 19 + total) % 60;
-  return new Date(Date.UTC(year, month - 1, day, hourVn - 7, minute, second)).toISOString();
+  return toUtcIsoFromVietnamTime(year, month, day, hourVn, minute, second);
+}
+
+function makeCreatedAt(index) {
+  return registrationSchedulePlan.schedule[index];
 }
 
 function makeEmailBases({ familyName, parentMiddle, parentGiven, parentBirthYear, parentBirthDay, parentBirthMonth }, index) {
@@ -347,9 +442,9 @@ function makePerson(index, usedEmails, overrides = {}) {
   const childBirthDay = String((index % 27) + 1).padStart(2, '0');
   const createdAt = overrides.created_at || makeCreatedAt(index);
   const address = overrides.address || (
-    index < sonTay14Count
-      ? pick(sonTayAddresses, index, 0)
-      : (index % 17 === 0 ? pick(innerHanoiAddresses, index, 0) : pick(targetAreaAddresses, index, 3))
+    index % 17 === 0
+      ? pick(innerHanoiAddresses, index, 0)
+      : pick(targetAreaAddresses, index, 3)
   );
 
   const email = makeUniqueEmail(
@@ -541,7 +636,21 @@ function writeOutputs({ plan, createdUsers }) {
 
   fs.writeFileSync(
     backupPath,
-    JSON.stringify({ created_at: new Date().toISOString(), apply, syncAuth, targetCount, sonTay14Count, createdUsers, rows: plan }, null, 2),
+    JSON.stringify({
+      created_at: new Date().toISOString(),
+      apply,
+      syncAuth,
+      targetCount,
+      registrationWindow: {
+        start: registrationSchedulePlan.start,
+        end: registrationSchedulePlan.end,
+        minPerDay: registrationWindow.minPerDay,
+        maxPerDay: registrationWindow.maxPerDay,
+        counts: registrationSchedulePlan.counts,
+      },
+      createdUsers,
+      rows: plan,
+    }, null, 2),
   );
 
   fs.writeFileSync(
@@ -561,11 +670,26 @@ function writeOutputs({ plan, createdUsers }) {
 }
 
 function printPreview(plan, protectedRows, missingCount) {
+  const dailyCounts = new Map();
+  for (const item of plan) {
+    const dateKey = getVietnamDateKey(item.fake.created_at);
+    dailyCounts.set(dateKey, (dailyCounts.get(dateKey) || 0) + 1);
+  }
+
+  const counts = [...dailyCounts.values()];
+  const minDaily = counts.length ? Math.min(...counts) : 0;
+  const maxDaily = counts.length ? Math.max(...counts) : 0;
+  const previewDays = [...dailyCounts.entries()].slice(0, 5).map(([date, count]) => `${date}: ${count}`);
+
   console.log(`Target normal users: ${targetCount}`);
   console.log(`Protected/admin rows: ${protectedRows.length}`);
   console.log(`Will create missing users: ${missingCount}`);
   console.log(`Will update normal users: ${plan.length}`);
-  console.log(`14/06 Son Tay evening users: ${sonTay14Count}`);
+  console.log(`Registration window: ${formatVietnamDateLabel(registrationSchedulePlan.start)} -> ${formatVietnamDateLabel(registrationSchedulePlan.end)}`);
+  console.log(`Daily distribution: ${minDaily}-${maxDaily} users/day`);
+  if (previewDays.length) {
+    console.log(`By day: ${previewDays.join(', ')}${dailyCounts.size > previewDays.length ? ' ...' : ''}`);
+  }
   console.log(`Mode: ${apply ? 'APPLY' : 'DRY RUN'}`);
   console.log(`Auth email sync: ${syncAuth ? 'yes' : 'no'}`);
   console.log('');

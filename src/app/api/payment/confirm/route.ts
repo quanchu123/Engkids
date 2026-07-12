@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Already confirmed', transaction });
     }
 
-    const premiumUntil = await markTransactionPaidAndUpgrade(supabaseAdmin, transaction);
+    const paymentTime = transaction.created_at || new Date().toISOString();
+    const premiumUntil = await markTransactionPaidAndUpgrade(supabaseAdmin, transaction, paymentTime);
 
     return NextResponse.json({ success: true, orderCode, premiumUntil });
   } catch (error: unknown) {

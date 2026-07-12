@@ -2,18 +2,37 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, BookOpen, ChevronLeft, ChevronRight, CircleDollarSign, Clapperboard, ExternalLink, Gamepad2, LogOut, Music2, PawPrint, Plus } from 'lucide-react';
+import {
+  type LucideIcon,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  CircleDollarSign,
+  Clapperboard,
+  ExternalLink,
+  Gamepad2,
+  LogOut,
+  Music2,
+  Plus,
+  Users,
+} from 'lucide-react';
 import { signOut } from '@/lib/auth-client';
 import AdminIcon from '@/components/admin/AdminIcon';
 import type { AdminIconKey } from '@/config/admin-icons';
 
-const menuItems: { name: string; path: string; icon: typeof BookOpen; iconKey: AdminIconKey }[] = [
+type AdminMenuItem = {
+  name: string;
+  path: string;
+  icon: LucideIcon;
+  iconKey?: AdminIconKey;
+};
+
+const menuItems: AdminMenuItem[] = [
   { name: 'Truyện', path: '/admin', icon: BookOpen, iconKey: 'stories' },
   { name: 'Doanh thu', path: '/admin/revenue', icon: CircleDollarSign, iconKey: 'dashboard' },
   { name: 'Video & Nhạc', path: '/admin/videos', icon: Clapperboard, iconKey: 'videos' },
   { name: 'Game', path: '/admin/games', icon: Gamepad2, iconKey: 'games' },
-  { name: 'Pet user', path: '/admin/pets', icon: PawPrint, iconKey: 'pets' },
-  { name: 'Standards', path: '/admin/standards', icon: BarChart3, iconKey: 'standards' },
+  { name: 'Người dùng', path: '/admin/users', icon: Users },
   { name: 'Nhạc nền', path: '/admin/music', icon: Music2, iconKey: 'music' },
 ];
 
@@ -93,7 +112,11 @@ export default function AdminSidebar({ collapsed = false, onCollapsedChange }: A
               aria-label={collapsed ? item.name : undefined}
               title={collapsed ? item.name : undefined}
             >
-              <AdminIcon name={item.iconKey} fallback={Icon} className="h-4 w-4 flex-shrink-0" />
+              {item.iconKey ? (
+                <AdminIcon name={item.iconKey} fallback={Icon} className="h-4 w-4 flex-shrink-0" />
+              ) : (
+                <Icon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+              )}
               {!collapsed && <span>{item.name}</span>}
             </Link>
           );

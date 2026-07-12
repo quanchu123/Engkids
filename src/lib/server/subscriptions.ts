@@ -98,7 +98,7 @@ function isMissingColumnError(error: unknown): boolean {
 async function updateTransactionPaid(
   supabaseAdmin: SupabaseClient,
   transaction: TransactionRow,
-  now: string,
+  paidAt: string,
   premiumUntil: string,
 ): Promise<void> {
   const shouldMarkPaid = transaction.status !== 'PAID';
@@ -107,13 +107,13 @@ async function updateTransactionPaid(
   const basePayload = shouldMarkPaid
     ? {
         status: 'PAID',
-        paid_at: transaction.paid_at ?? now,
+        paid_at: paidAt,
       }
     : {};
 
   const trackingPayload = shouldTrackPremium
     ? {
-        premium_applied_at: now,
+        premium_applied_at: paidAt,
         premium_until_after: premiumUntil,
       }
     : {};
@@ -148,9 +148,8 @@ async function updateTransactionPaid(
 export async function markTransactionPaidAndUpgrade(
   supabaseAdmin: SupabaseClient,
   transaction: TransactionRow,
+  paidAt: string = new Date().toISOString(),
 ): Promise<string | null> {
-  const now = new Date().toISOString();
-
   if (transaction.premium_applied_at) {
     return null;
   }
@@ -162,6 +161,6 @@ export async function markTransactionPaidAndUpgrade(
   const premiumUntil = await applyPremiumUpgrade(supabaseAdmin, transaction.user_id, transaction.plan_id);
   if (!premiumUntil) return null;
 
-  await updateTransactionPaid(supabaseAdmin, transaction, now, premiumUntil);
+  await updateTransactionPaid(supabaseAdmin, transaction, paidAt, premiumUntil);
   return premiumUntil;
 }
