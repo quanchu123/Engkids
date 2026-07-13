@@ -70,6 +70,28 @@ function formatTime(value: string | null): string {
   return formatVietnamShortDateTime(value, 'Chưa có');
 }
 
+function formatTimeParts(value: string | null): { time: string; date: string } {
+  if (!value) return { time: '--:--', date: 'Chưa có' };
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return { time: value, date: '' };
+
+  const parts = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+  const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+
+  return {
+    time: `${getPart('hour')}:${getPart('minute')}`,
+    date: `${getPart('day')}/${getPart('month')}/${getPart('year')}`,
+  };
+}
+
 function isSameTimestamp(a: string | null, b: string | null): boolean {
   if (!a || !b) return false;
   return new Date(a).getTime() === new Date(b).getTime();
@@ -488,8 +510,8 @@ export default function AdminUsersPage() {
       </section>
 
       <section className="admin-card overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-admin-border p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
+        <div className="grid gap-4 border-b border-admin-border bg-white p-4 lg:grid-cols-[1fr_minmax(360px,520px)] lg:items-center">
+          <div className="min-w-0">
             <h2 className="font-black text-admin-text">Danh sách users</h2>
             <p className="text-sm text-admin-text-muted">
               {sortedUsers.length} kết quả · {users.length} tài khoản đã tải
@@ -498,15 +520,26 @@ export default function AdminUsersPage() {
               Nhấp đúp vào một dòng để sửa nhanh. Bấm tiêu đề cột để sort.
             </p>
           </div>
-          <label className="relative block w-full lg:w-96">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-text-muted" aria-hidden="true" />
+          <label className="relative block w-full">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-text-muted" aria-hidden="true" />
             <input
               type="text"
               placeholder="Tìm theo email, tên, auth ID, provider, phụ huynh..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              className="admin-input pl-9"
+              className="admin-input h-12 rounded-2xl bg-white text-[15px] shadow-sm"
+              style={{ paddingLeft: '2.75rem', paddingRight: search ? '2.75rem' : '0.9rem' }}
             />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-admin-text-muted transition hover:bg-slate-100 hover:text-admin-text"
+                aria-label="Xóa tìm kiếm"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            ) : null}
           </label>
         </div>
 
@@ -547,9 +580,22 @@ export default function AdminUsersPage() {
             <p className="mt-1 text-sm text-admin-text-muted">Thử xoá bớt từ khoá tìm kiếm hoặc làm mới dữ liệu.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1900px] text-sm">
-              <thead className="bg-slate-50">
+          <div className="max-h-[72vh] overflow-auto">
+            <table className="w-full min-w-[1680px] table-fixed text-sm">
+              <colgroup>
+                <col className="w-[220px]" />
+                <col className="w-[250px]" />
+                <col className="w-[170px]" />
+                <col className="w-[180px]" />
+                <col className="w-[76px]" />
+                <col className="w-[220px]" />
+                <col className="w-[145px]" />
+                <col className="w-[170px]" />
+                <col className="w-[170px]" />
+                <col className="w-[150px]" />
+                <col className="w-[150px]" />
+              </colgroup>
+              <thead className="sticky top-0 z-20 bg-slate-50/95 backdrop-blur">
                 <tr className="border-b border-admin-border">
                   <th className="px-4 py-3 text-left font-black text-slate-700">
                     <SortHeader
@@ -642,7 +688,7 @@ export default function AdminUsersPage() {
                       onSort={handleSort}
                     />
                   </th>
-                  <th className="px-4 py-3 text-left font-black text-slate-700">Thao tác</th>
+                  <th className="sticky right-0 bg-slate-50/95 px-4 py-3 text-left font-black text-slate-700 shadow-[-10px_0_16px_rgba(15,23,42,0.04)]">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-admin-border">
@@ -652,11 +698,13 @@ export default function AdminUsersPage() {
                   const profileBadge = getProfileBadgeClass(user.hasProfile);
                   const isEditing = editingAuthId === user.authId;
                   const isSaving = savingAuthId === user.authId;
+                  const createdParts = formatTimeParts(user.createdAt);
+                  const authCreatedParts = formatTimeParts(user.authCreatedAt);
 
                   return (
                     <tr
                       key={user.id}
-                      className={`border-b border-admin-border last:border-0 ${isEditing ? 'bg-sky-50/70' : 'hover:bg-slate-50'}`}
+                      className={`group border-b border-admin-border transition-colors last:border-0 ${isEditing ? 'bg-sky-50/80' : 'odd:bg-white even:bg-slate-50/35 hover:bg-indigo-50/45'}`}
                       onDoubleClick={() => beginEdit(user)}
                       title="Nhấp đúp để sửa nhanh"
                     >
@@ -673,7 +721,7 @@ export default function AdminUsersPage() {
                               className="admin-input bg-white text-sm font-black"
                             />
                           ) : (
-                            <div className="truncate font-black text-admin-text">{user.name}</div>
+                            <div className="truncate font-black text-admin-text" title={user.name}>{user.name}</div>
                           )}
                           <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-admin-text-muted">
                             <span>Provider: {getProviderLabel(user.provider)}</span>
@@ -699,12 +747,14 @@ export default function AdminUsersPage() {
                             className="admin-input bg-white text-sm font-semibold"
                           />
                         ) : (
-                          <span className="truncate font-semibold text-slate-700">{user.email || 'Chưa có email'}</span>
+                          <span className="block truncate font-semibold text-slate-700" title={user.email || 'Chưa có email'}>
+                            {user.email || 'Chưa có email'}
+                          </span>
                         )}
                       </td>
 
                       <td className="px-4 py-3 align-top">
-                        <span className="font-mono text-xs font-bold text-admin-primary">{user.authId}</span>
+                        <span className="block break-all font-mono text-[11px] font-bold leading-5 text-admin-primary">{user.authId}</span>
                       </td>
 
                       <td className="px-4 py-3 align-top">
@@ -754,7 +804,7 @@ export default function AdminUsersPage() {
                           />
                         ) : (
                           <div className="flex flex-col gap-2">
-                            <span className="admin-badge admin-badge-neutral">{user.location}</span>
+                            <span className="admin-badge admin-badge-neutral max-w-full justify-start truncate" title={user.location}>{user.location}</span>
                           </div>
                         )}
                       </td>
@@ -782,11 +832,12 @@ export default function AdminUsersPage() {
                       </td>
 
                       <td className="px-4 py-3 align-top">
-                        <div className="flex min-w-[150px] flex-col gap-1">
-                          <span className="font-bold text-slate-700">{formatTime(user.createdAt)}</span>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-base font-black leading-none text-admin-text">{createdParts.time}</span>
+                          <span className="text-xs font-bold text-slate-600">{createdParts.date}</span>
                           {!isSameTimestamp(user.createdAt, user.authCreatedAt) ? (
-                            <span className="text-[11px] font-semibold text-admin-text-muted">
-                              Auth: {formatTime(user.authCreatedAt)}
+                            <span className="mt-1 rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold leading-4 text-admin-text-muted">
+                              Auth {authCreatedParts.time} {authCreatedParts.date}
                             </span>
                           ) : null}
                         </div>
@@ -803,7 +854,7 @@ export default function AdminUsersPage() {
                         )}
                       </td>
 
-                      <td className="px-4 py-3 align-top">
+                      <td className="sticky right-0 bg-inherit px-4 py-3 align-top shadow-[-10px_0_16px_rgba(15,23,42,0.04)]">
                         {isEditing ? (
                           <div className="flex flex-col gap-2">
                             <div className="flex flex-wrap gap-2">
