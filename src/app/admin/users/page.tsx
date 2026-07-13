@@ -6,7 +6,6 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  Clock3,
   Crown,
   FileUser,
   Loader2,
@@ -95,14 +94,6 @@ function formatTimeParts(value: string | null): { time: string; date: string } {
 function isSameTimestamp(a: string | null, b: string | null): boolean {
   if (!a || !b) return false;
   return new Date(a).getTime() === new Date(b).getTime();
-}
-
-function isRecentSignIn(value: string | null): boolean {
-  if (!value) return false;
-  const signInAt = new Date(value);
-  if (Number.isNaN(signInAt.getTime())) return false;
-  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  return signInAt.getTime() >= sevenDaysAgo;
 }
 
 function normalizeAccountType(value: string): string {
@@ -337,14 +328,12 @@ export default function AdminUsersPage() {
     const withProfile = statsUsers.filter((user) => user.hasProfile).length;
     const verified = statsUsers.filter((user) => Boolean(user.emailConfirmedAt)).length;
     const premium = statsUsers.filter((user) => user.isPremium || user.accountType === 'premium').length;
-    const active7d = statsUsers.filter((user) => isRecentSignIn(user.lastSignInAt)).length;
 
     return [
       { label: 'Tổng users', value: total, icon: Users },
       { label: 'Có profile', value: withProfile, icon: FileUser },
       { label: 'Đã xác thực', value: verified, icon: MailCheck },
       { label: 'Premium', value: premium, icon: Crown },
-      { label: 'Hoạt động 7 ngày', value: active7d, icon: Clock3 },
     ];
   }, [statsUsers]);
 
@@ -494,7 +483,7 @@ export default function AdminUsersPage() {
         </button>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
