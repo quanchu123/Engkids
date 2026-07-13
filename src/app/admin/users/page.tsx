@@ -7,6 +7,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   Crown,
+  Download,
   FileUser,
   Loader2,
   MailCheck,
@@ -64,6 +65,7 @@ type MutationMessage = {
 const TEXT_COLLATOR = new Intl.Collator('vi', { sensitivity: 'base', numeric: true });
 const ADMIN_ROLE_VALUES = new Set(['admin', 'super_admin', 'god']);
 const TEST_PATTERNS = [/test/i, /demo/i, /sample/i, /qa/i, /sandbox/i, /staging/i, /temp/i, /bot/i];
+const EXCEL_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 function formatTime(value: string | null): string {
   return formatVietnamShortDateTime(value, 'Chưa có');
@@ -89,6 +91,18 @@ function formatTimeParts(value: string | null): { time: string; date: string } {
     time: `${getPart('hour')}:${getPart('minute')}`,
     date: `${getPart('day')}/${getPart('month')}/${getPart('year')}`,
   };
+}
+
+function formatFilenameDate(value: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(value);
+  const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+
+  return `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
 }
 
 function isSameTimestamp(a: string | null, b: string | null): boolean {
@@ -230,6 +244,7 @@ export default function AdminUsersPage() {
   const [editingAuthId, setEditingAuthId] = useState<string | null>(null);
   const [draft, setDraft] = useState<UserDraft | null>(null);
   const [savingAuthId, setSavingAuthId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const loadUsers = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     if (mode === 'refresh') {
@@ -322,6 +337,103 @@ export default function AdminUsersPage() {
 
   const statsUsers = useMemo(() => users.filter((user) => !shouldExcludeFromStats(user)), [users]);
   const excludedFromStats = users.length - statsUsers.length;
+
+  const handleExportExcel = useCallback(async () => {
+    if (exporting || sortedUsers.length === 0) return;
+
+    setExporting(true);
+    setMutationMessage(null);
+
+    try {
+      const XLSX = await import('xlsx');
+      const rows = [
+        [
+          'STT',
+          'User',
+          'Email',
+          'Auth ID',
+          'Provider',
+          'Role',
+          'Phụ huynh',
+          'Tuổi',
+          'Vị trí',
+          'Tài khoản',
+          'Xác thực email',
+          'Đăng ký',
+          'Đăng nhập cuối',
+          'Premium đến',
+          'Cập nhật',
+          'Anonymous',
+          'Có profile',
+        ],
+        ...sortedUsers.map((user, index) => [
+          index + 1,
+          user.name,
+          user.email || '',
+          user.authId,
+          getProviderLabel(user.provider),
+          user.role,
+          user.parentName,
+          user.childAge ?? '',
+          user.location,
+          getAccountLabel(user.accountType),
+          formatTime(user.emailConfirmedAt),
+          formatTime(user.createdAt),
+          formatTime(user.lastSignInAt),
+          formatTime(user.premiumUntil),
+          formatTime(user.updatedAt),
+          user.isAnonymous ? 'Có' : 'Không',
+          user.hasProfile ? 'Có' : 'Không',
+        ]),
+      ];
+
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+      worksheet['!cols'] = [
+        { wch: 6 },
+        { wch: 28 },
+        { wch: 32 },
+        { wch: 36 },
+        { wch: 14 },
+        { wch: 16 },
+        { wch: 24 },
+        { wch: 8 },
+        { wch: 28 },
+        { wch: 14 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 10 },
+        { wch: 10 },
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
+
+      const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([buffer], { type: EXCEL_MIME });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `engkids-users-${formatFilenameDate()}.xlsx`;
+      link.rel = 'noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+      setMutationMessage({
+        type: 'success',
+        text: `Đã xuất ${sortedUsers.length} user ra file Excel.`,
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Không thể xuất file Excel';
+      setMutationMessage({ type: 'error', text: message });
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, sortedUsers]);
 
   const stats = useMemo(() => {
     const total = statsUsers.length;
@@ -472,15 +584,26 @@ export default function AdminUsersPage() {
             Bảng thông tin người dùng kiểu Supabase, gộp dữ liệu từ Auth và `user_profiles` để xem, sort và sửa nhanh.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => loadUsers('refresh')}
-          disabled={refreshing}
-          className="admin-btn admin-btn-secondary"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-          Làm mới
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void handleExportExcel()}
+            disabled={loading || refreshing || exporting || sortedUsers.length === 0}
+            className="admin-btn admin-btn-secondary"
+          >
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
+            {exporting ? 'Đang xuất...' : 'Xuất Excel'}
+          </button>
+          <button
+            type="button"
+            onClick={() => loadUsers('refresh')}
+            disabled={refreshing}
+            className="admin-btn admin-btn-secondary"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+            Làm mới
+          </button>
+        </div>
       </header>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
