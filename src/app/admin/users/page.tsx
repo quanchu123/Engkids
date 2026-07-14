@@ -17,6 +17,7 @@ import {
   RefreshCw,
   Save,
   Search,
+  TrendingUp,
   Users,
   X,
 } from 'lucide-react';
@@ -69,8 +70,30 @@ type RegistrationChartPoint = {
   shortLabel: string;
   count: number;
 };
+type RegistrationChartMode = 'line' | 'bar';
+type RegistrationChartGeometryPoint = RegistrationChartPoint & { x: number; y: number };
+type RegistrationChartTick = { value: number; y: number };
+type RegistrationChartGeometry = {
+  width: number;
+  height: number;
+  padding: { top: number; right: number; bottom: number; left: number };
+  drawableWidth: number;
+  drawableHeight: number;
+  baselineY: number;
+  axisStartX: number;
+  axisEndX: number;
+  points: RegistrationChartGeometryPoint[];
+  ticks: RegistrationChartTick[];
+};
+
+type RegistrationChartProps = {
+  data: RegistrationChartPoint[];
+  maxCount: number;
+};
 
 const TEXT_COLLATOR = new Intl.Collator('vi', { sensitivity: 'base', numeric: true });
+const CHART_NUMBER_FORMAT = new Intl.NumberFormat('vi-VN');
+const CHART_DECIMAL_FORMAT = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 });
 const ADMIN_ROLE_VALUES = new Set(['admin', 'super_admin', 'god']);
 const TEST_PATTERNS = [/test/i, /demo/i, /sample/i, /qa/i, /sandbox/i, /staging/i, /temp/i, /bot/i];
 const EXCEL_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -148,6 +171,241 @@ function formatVietnamChartShortDate(dateKey: string): string {
     day: '2-digit',
     month: '2-digit',
   }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function formatChartCount(value: number): string {
+  return CHART_NUMBER_FORMAT.format(value);
+}
+
+function formatChartAverage(value: number): string {
+  return CHART_DECIMAL_FORMAT.format(value);
+}
+
+function getRegistrationChartTicks(maxCount: number): number[] {
+  return Array.from(
+    new Set([0, 0.25, 0.5, 0.75, 1].map((fraction) => Math.round(maxCount * fraction))),
+  ).sort((a, b) => a - b);
+}
+
+function buildRegistrationChartGeometry(
+  data: RegistrationChartPoint[],
+  maxCount: number,
+  width: number,
+  height = 360,
+): RegistrationChartGeometry {
+  const padding = { top: 28, right: 28, bottom: 76, left: 72 };
+  const drawableWidth = width - padding.left - padding.right;
+  const drawableHeight = height - padding.top - padding.bottom;
+  const baselineY = height - padding.bottom;
+  const axisStartX = padding.left;
+  const axisEndX = width - padding.right;
+  const safeMax = Math.max(1, maxCount);
+  const points = data.map((point, index) => {
+    const x = data.length > 1
+      ? padding.left + (drawableWidth * index) / (data.length - 1)
+      : padding.left + drawableWidth / 2;
+    const y = padding.top + drawableHeight * (1 - point.count / safeMax);
+    return { ...point, x, y };
+  });
+  const ticks = getRegistrationChartTicks(safeMax).map((value) => ({
+    value,
+    y: baselineY - drawableHeight * (value / safeMax),
+  })).reverse();
+
+  return {
+    width,
+    height,
+    padding,
+    drawableWidth,
+    drawableHeight,
+    baselineY,
+    axisStartX,
+    axisEndX,
+    points,
+    ticks,
+  };
+}
+
+function RegistrationLineChart({ data, maxCount }: RegistrationChartProps) {
+  const width = Math.max(820, data.length * 76);
+  const geometry = buildRegistrationChartGeometry(data, maxCount, width);
+  const linePath = geometry.points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ');
+  const areaPath = geometry.points.length > 0
+    ? `${linePath} L ${geometry.points[geometry.points.length - 1].x.toFixed(2)} ${geometry.baselineY} L ${geometry.points[0].x.toFixed(2)} ${geometry.baselineY} Z`
+    : '';
+
+  return (
+    <div className="overflow-x-auto p-4">
+      <svg
+        viewBox={`0 0 ${geometry.width} ${geometry.height}`}
+        className="block h-[360px] w-full min-w-[820px]"
+        role="img"
+        aria-label="Biểu đồ đăng ký theo ngày dạng đường"
+      >
+        <defs>
+          <linearGradient id="registration-line-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="#6366f1" stopOpacity="0.02" />
+          </linearGradient>
+          <linearGradient id="registration-line-stroke" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#6366f1" />
+            <stop offset="55%" stopColor="#4f46e5" />
+            <stop offset="100%" stopColor="#111827" />
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width={geometry.width} height={geometry.height} rx="24" fill="#ffffff" />
+
+        {geometry.ticks.map((tick) => (
+          <g key={tick.value}>
+            <line
+              x1={geometry.axisStartX}
+              x2={geometry.axisEndX}
+              y1={tick.y}
+              y2={tick.y}
+              stroke="#e2e8f0"
+              strokeDasharray="4 6"
+            />
+            <text
+              x={geometry.padding.left - 12}
+              y={tick.y + 4}
+              textAnchor="end"
+              fill="#64748b"
+              fontSize="12"
+              fontWeight="700"
+            >
+              {formatChartCount(tick.value)}
+            </text>
+          </g>
+        ))}
+
+        {areaPath && <path d={areaPath} fill="url(#registration-line-fill)" />}
+        {linePath && (
+          <path
+            d={linePath}
+            fill="none"
+            stroke="url(#registration-line-stroke)"
+            strokeWidth="4"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        )}
+
+        {geometry.points.map((point) => (
+          <circle
+            key={point.key}
+            cx={point.x}
+            cy={point.y}
+            r="6"
+            fill="#ffffff"
+            stroke="#6366f1"
+            strokeWidth="4"
+          />
+        ))}
+
+        {geometry.points.map((point) => (
+          <text
+            key={`${point.key}-x`}
+            x={point.x}
+            y={geometry.baselineY + 28}
+            textAnchor="middle"
+            fill="#64748b"
+            fontSize="11"
+            fontWeight="700"
+          >
+            {point.shortLabel}
+          </text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function RegistrationBarChart({ data, maxCount }: RegistrationChartProps) {
+  const width = Math.max(820, data.length * 56);
+  const geometry = buildRegistrationChartGeometry(data, maxCount, width);
+  const cellWidth = geometry.drawableWidth / Math.max(1, data.length);
+  const barWidth = Math.max(16, Math.min(28, cellWidth * 0.68));
+
+  return (
+    <div className="overflow-x-auto p-4">
+      <svg
+        viewBox={`0 0 ${geometry.width} ${geometry.height}`}
+        className="block h-[360px] w-full min-w-[820px]"
+        role="img"
+        aria-label="Biểu đồ đăng ký theo ngày dạng cột"
+      >
+        <defs>
+          <linearGradient id="registration-bar-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#6366f1" />
+            <stop offset="100%" stopColor="#4f46e5" />
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width={geometry.width} height={geometry.height} rx="24" fill="#ffffff" />
+
+        {geometry.ticks.map((tick) => (
+          <g key={tick.value}>
+            <line
+              x1={geometry.axisStartX}
+              x2={geometry.axisEndX}
+              y1={tick.y}
+              y2={tick.y}
+              stroke="#e2e8f0"
+              strokeDasharray="4 6"
+            />
+            <text
+              x={geometry.padding.left - 12}
+              y={tick.y + 4}
+              textAnchor="end"
+              fill="#64748b"
+              fontSize="12"
+              fontWeight="700"
+            >
+              {formatChartCount(tick.value)}
+            </text>
+          </g>
+        ))}
+
+        {geometry.points.map((point, index) => {
+          const barHeight = Math.max(12, geometry.drawableHeight * (point.count / Math.max(1, maxCount)));
+          const barX = geometry.padding.left + cellWidth * index + (cellWidth - barWidth) / 2;
+          const barY = geometry.baselineY - barHeight;
+
+          return (
+            <g key={point.key}>
+              <rect
+                x={barX}
+                y={barY}
+                width={barWidth}
+                height={barHeight}
+                rx="10"
+                fill="url(#registration-bar-fill)"
+              />
+              <text
+                x={point.x}
+                y={Math.max(18, barY - 8)}
+                textAnchor="middle"
+                fill="#334155"
+                fontSize="12"
+                fontWeight="800"
+              >
+                {formatChartCount(point.count)}
+              </text>
+              <text
+                x={point.x}
+                y={geometry.baselineY + 28}
+                textAnchor="middle"
+                fill="#64748b"
+                fontSize="11"
+                fontWeight="700"
+              >
+                {point.shortLabel}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
 }
 
 function isSameTimestamp(a: string | null, b: string | null): boolean {
@@ -291,6 +549,7 @@ export default function AdminUsersPage() {
   const [savingAuthId, setSavingAuthId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [showRegistrationChart, setShowRegistrationChart] = useState(false);
+  const [registrationChartView, setRegistrationChartView] = useState<RegistrationChartMode>('line');
 
   const loadUsers = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     if (mode === 'refresh') {
@@ -401,14 +660,24 @@ export default function AdminUsersPage() {
         count,
       }));
   }, [statsUsers]);
-  const maxRegistrationCount = useMemo(
-    () => Math.max(1, ...registrationChartData.map((point) => point.count)),
-    [registrationChartData],
-  );
-  const totalChartRegistrations = useMemo(
-    () => registrationChartData.reduce((sum, point) => sum + point.count, 0),
-    [registrationChartData],
-  );
+  const registrationChartStats = useMemo(() => {
+    const total = registrationChartData.reduce((sum, point) => sum + point.count, 0);
+    const maxCount = Math.max(1, ...registrationChartData.map((point) => point.count));
+    const peak = registrationChartData.reduce<RegistrationChartPoint | null>(
+      (best, point) => {
+        if (!best) return point;
+        return point.count > best.count ? point : best;
+      },
+      null,
+    );
+
+    return {
+      total,
+      average: registrationChartData.length ? total / registrationChartData.length : 0,
+      maxCount,
+      peak,
+    };
+  }, [registrationChartData]);
 
   const handleExportExcel = useCallback(async () => {
     if (exporting || sortedUsers.length === 0) return;
@@ -664,7 +933,7 @@ export default function AdminUsersPage() {
             className={showRegistrationChart ? 'admin-btn admin-btn-primary' : 'admin-btn admin-btn-secondary'}
           >
             <BarChart3 className="h-4 w-4" aria-hidden="true" />
-            {showRegistrationChart ? 'Ẩn biểu đồ' : 'Biểu đồ đăng ký'}
+            {showRegistrationChart ? 'Ẩn thống kê' : 'Thống kê đăng ký'}
           </button>
           <button
             type="button"
@@ -704,22 +973,58 @@ export default function AdminUsersPage() {
 
       {showRegistrationChart && (
         <section className="admin-card overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-admin-border bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="admin-stat-icon">
-                  <CalendarDays className="h-5 w-5" aria-hidden="true" />
+          <div className="border-b border-admin-border bg-white p-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <div className="admin-stat-icon">
+                    <CalendarDays className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h2 className="font-black text-admin-text">Thống kê đăng ký theo ngày</h2>
+                    <p className="text-sm font-semibold text-admin-text-muted">
+                      {formatChartCount(registrationChartStats.total)} tài khoản thật trong {registrationChartData.length} ngày
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-black text-admin-text">Biểu đồ đăng ký theo ngày</h2>
-                  <p className="text-sm font-semibold text-admin-text-muted">
-                    {totalChartRegistrations} tài khoản thật trong {registrationChartData.length} ngày
-                  </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="admin-badge admin-badge-neutral">
+                    TB {formatChartAverage(registrationChartStats.average)} / ngày
+                  </span>
+                  {registrationChartStats.peak && (
+                    <span className="admin-badge admin-badge-info">
+                      Đỉnh {registrationChartStats.peak.shortLabel} · {formatChartCount(registrationChartStats.peak.count)}
+                    </span>
+                  )}
+                  <span className="admin-badge admin-badge-success">
+                    {registrationChartView === 'line' ? 'Xem xu hướng' : 'Xem ngày sát nhau'}
+                  </span>
                 </div>
               </div>
+
+              <div className="inline-flex flex-wrap gap-1 rounded-xl bg-admin-surface-muted p-1">
+                <button
+                  type="button"
+                  onClick={() => setRegistrationChartView('line')}
+                  className={`admin-tab ${registrationChartView === 'line' ? 'admin-tab-active' : ''}`}
+                  aria-pressed={registrationChartView === 'line'}
+                >
+                  <TrendingUp className="h-4 w-4" aria-hidden="true" />
+                  Đường
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRegistrationChartView('bar')}
+                  className={`admin-tab ${registrationChartView === 'bar' ? 'admin-tab-active' : ''}`}
+                  aria-pressed={registrationChartView === 'bar'}
+                >
+                  <BarChart3 className="h-4 w-4" aria-hidden="true" />
+                  Cột
+                </button>
+              </div>
             </div>
-            <p className="text-xs font-bold text-admin-text-muted">
-              Đã loại tài khoản admin/test khỏi biểu đồ.
+            <p className="mt-3 text-xs font-bold text-admin-text-muted">
+              Đã loại tài khoản admin/test khỏi thống kê. Chọn “Đường” để xem xu hướng, hoặc “Cột” để so sánh từng ngày sát nhau.
             </p>
           </div>
 
@@ -729,28 +1034,11 @@ export default function AdminUsersPage() {
               <p className="font-bold">Chưa có dữ liệu đăng ký để vẽ biểu đồ.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto p-4">
-              <div className="flex min-h-[280px] min-w-max items-end gap-3 border-l border-b border-admin-border px-4 pt-4">
-                {registrationChartData.map((point) => {
-                  const height = Math.max(16, Math.round((point.count / maxRegistrationCount) * 210));
-
-                  return (
-                    <div key={point.key} className="flex w-16 shrink-0 flex-col items-center justify-end gap-2">
-                      <div className="text-xs font-black text-admin-text">{point.count}</div>
-                      <div
-                        className="w-10 rounded-t-xl bg-admin-primary shadow-sm transition hover:opacity-85"
-                        style={{ height }}
-                        title={`${point.label}: ${point.count} tài khoản`}
-                        aria-label={`${point.label}: ${point.count} tài khoản`}
-                      />
-                      <div className="h-10 text-center text-[11px] font-bold leading-4 text-admin-text-muted">
-                        <span className="block">{point.shortLabel}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            registrationChartView === 'line' ? (
+              <RegistrationLineChart data={registrationChartData} maxCount={registrationChartStats.maxCount} />
+            ) : (
+              <RegistrationBarChart data={registrationChartData} maxCount={registrationChartStats.maxCount} />
+            )
           )}
         </section>
       )}
