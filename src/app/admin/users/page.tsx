@@ -200,9 +200,10 @@ function buildRegistrationChartGeometry(
   const axisStartX = padding.left;
   const axisEndX = width - padding.right;
   const safeMax = Math.max(1, maxCount);
+  const cellWidth = drawableWidth / Math.max(1, data.length);
   const points = data.map((point, index) => {
-    const x = data.length > 1
-      ? padding.left + (drawableWidth * index) / (data.length - 1)
+    const x = data.length > 0
+      ? padding.left + cellWidth * index + cellWidth / 2
       : padding.left + drawableWidth / 2;
     const y = padding.top + drawableHeight * (1 - point.count / safeMax);
     return { ...point, x, y };
@@ -367,7 +368,7 @@ function RegistrationBarChart({ data, maxCount }: RegistrationChartProps) {
 
         {geometry.points.map((point, index) => {
           const barHeight = Math.max(12, geometry.drawableHeight * (point.count / Math.max(1, maxCount)));
-          const barX = geometry.padding.left + cellWidth * index + (cellWidth - barWidth) / 2;
+          const barX = point.x - barWidth / 2;
           const barY = geometry.baselineY - barHeight;
 
           return (
