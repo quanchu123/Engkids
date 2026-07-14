@@ -18,6 +18,10 @@ const appendDatesArg = process.argv.find((arg) => arg.startsWith('--append-dates
 const appendDates = appendDatesArg
   ? appendDatesArg.split('=')[1].split(',').map((value) => value.trim()).filter(Boolean)
   : [];
+const dateTargetsArg = process.argv.find((arg) => arg.startsWith('--date-targets='));
+const dateTargets = dateTargetsArg
+  ? dateTargetsArg.split('=')[1].split(',').map((value) => value.trim()).filter(Boolean)
+  : [];
 const targetCountArg = process.argv.find((arg) => arg.startsWith('--target-count='));
 const targetCount = targetCountArg ? Number(targetCountArg.split('=')[1]) : 154;
 const registrationWindow = {
@@ -380,7 +384,17 @@ function parseVietnamDateKey(value) {
   };
 }
 
-function buildDateAppendPlan(profiles, dateTargets, minPerDay = 5) {
+function parseDateTarget(value) {
+  const match = /^(\d{4}-\d{2}-\d{2})[:=](\d+)$/.exec(String(value).trim());
+  if (!match) {
+    throw new Error(`Invalid date target "${value}". Use YYYY-MM-DD:COUNT.`);
+  }
+
+  const [, dateKey, target] = match;
+  return { ...parseVietnamDateKey(dateKey), target: Number(target) };
+}
+
+function buildDateAppendPlan(profiles, dateTargets, defaultTarget = 5) {
   const protectedRows = profiles.filter(isProtectedProfile);
   const normalRows = profiles.filter((profile) => !isProtectedProfile(profile));
   const usedEmails = new Set();
@@ -395,7 +409,8 @@ function buildDateAppendPlan(profiles, dateTargets, minPerDay = 5) {
   for (const target of dateTargets) {
     const dateKey = target.dateKey || `${target.year}-${String(target.month).padStart(2, '0')}-${String(target.day).padStart(2, '0')}`;
     const existing = existingByDate.get(dateKey) || 0;
-    const createCount = Math.max(0, minPerDay - existing);
+    const desiredCount = Number.isInteger(target.target) ? target.target : defaultTarget;
+    const createCount = Math.max(0, desiredCount - existing);
 
     daySummaries.push({
       year: target.year,
@@ -403,6 +418,7 @@ function buildDateAppendPlan(profiles, dateTargets, minPerDay = 5) {
       day: target.day,
       dateKey,
       existing,
+      target: desiredCount,
       createCount,
     });
 
@@ -1099,7 +1115,8 @@ function printSpecificDatesPreview({ plan, protectedRows, normalRows, daySummari
   console.log('');
 
   for (const day of daySummaries) {
-    console.log(`${formatVietnamDateLabel(day)} [${day.dateKey}]: existing=${day.existing}, create=${day.createCount}`);
+    const target = Number.isInteger(day.target) ? day.target : minPerDay;
+    console.log(`${formatVietnamDateLabel(day)} [${day.dateKey}]: existing=${day.existing}, target=${target}, create=${day.createCount}`);
   }
 
   console.log('');
@@ -1123,7 +1140,10 @@ function writeSpecificDateOutputs({ plan, createdUsers, daySummaries, minPerDay,
   const outDir = path.join(process.cwd(), 'output');
   fs.mkdirSync(outDir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const label = dateKeys.join('-');
+  const label = dateKeys
+    .map((value) => String(value).split(/[:=]/, 1)[0])
+    .join('-')
+    .replace(/[^0-9-]/g, '');
   const planPath = path.join(outDir, `demo-registrations-append-${label}-${stamp}.json`);
   const authSqlPath = path.join(outDir, `demo-auth-users-append-${label}-created-at-update-${stamp}.sql`);
 
@@ -1207,7 +1227,63 @@ async function appendSpecificDatesUsers(dateKeys) {
   console.log('Done.');
 }
 
+async function appendDateTargetsUsers(targetStrings) {
+  const profiles = await fetchProfiles();
+  const columns = profiles[0] ? Object.keys(profiles[0]) : [];
+  const normalizedTargets = [...new Set(targetStrings.map((value) => value.trim()).filter(Boolean))];
+
+  if (normalizedTargets.length === 0) {
+    throw new Error('Provide at least one date target with --date-targets=YYYY-MM-DD:COUNT');
+  }
+
+  const targets = normalizedTargets.map(parseDateTarget);
+  const context = buildDateAppendPlan(profiles, targets);
+
+  console.log(`Mode: append specific date targets (${normalizedTargets.join(', ')})`);
+  printSpecificDatesPreview({
+    ...context,
+    dateKeys: normalizedTargets.map((value) => value.split(/[:=]/, 1)[0]),
+    minPerDay: 0,
+  });
+
+  let createdUsers = [];
+  if (apply && context.plan.length > 0) {
+    console.log('');
+    console.log('Creating specific-target demo users...');
+    for (const [index, item] of context.plan.entries()) {
+      const created = await createAppendUser(item, columns);
+      createdUsers.push(created);
+      console.log(`[${index + 1}/${context.plan.length}] ${created.email}`);
+    }
+  }
+
+  const { planPath, authSqlPath } = writeSpecificDateOutputs({
+    plan: context.plan,
+    createdUsers,
+    daySummaries: context.daySummaries,
+    minPerDay: 0,
+    dateKeys: normalizedTargets,
+  });
+
+  console.log('');
+  console.log(`Specific-target plan written: ${planPath}`);
+  console.log(`Optional auth timestamp SQL written: ${authSqlPath}`);
+
+  if (!apply) {
+    console.log('');
+    console.log('Dry run only. Add --apply to create specific-target users.');
+    return;
+  }
+
+  console.log('Done.');
+}
+
 async function main() {
+  if (dateTargets.length > 0) {
+    await appendDateTargetsUsers(dateTargets);
+    return;
+  }
+
   if (appendDates.length > 0) {
     await appendSpecificDatesUsers(appendDates);
     return;
