@@ -1140,10 +1140,8 @@ function writeSpecificDateOutputs({ plan, createdUsers, daySummaries, minPerDay,
   const outDir = path.join(process.cwd(), 'output');
   fs.mkdirSync(outDir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const label = dateKeys
-    .map((value) => String(value).split(/[:=]/, 1)[0])
-    .join('-')
-    .replace(/[^0-9-]/g, '');
+  const labelSeed = dateKeys.map((value) => String(value).split(/[:=]/, 1)[0]).join('|');
+  const label = `targets-${dateKeys.length}-${crypto.createHash('sha1').update(labelSeed).digest('hex').slice(0, 10)}`;
   const planPath = path.join(outDir, `demo-registrations-append-${label}-${stamp}.json`);
   const authSqlPath = path.join(outDir, `demo-auth-users-append-${label}-created-at-update-${stamp}.sql`);
 
