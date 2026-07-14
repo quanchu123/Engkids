@@ -14,6 +14,10 @@ const apply = args.has('--apply');
 const syncAuth = !args.has('--no-sync-auth');
 const appendJune2829 = args.has('--append-june-28-29');
 const appendLastWeek = args.has('--append-last-week');
+const appendDatesArg = process.argv.find((arg) => arg.startsWith('--append-dates='));
+const appendDates = appendDatesArg
+  ? appendDatesArg.split('=')[1].split(',').map((value) => value.trim()).filter(Boolean)
+  : [];
 const targetCountArg = process.argv.find((arg) => arg.startsWith('--target-count='));
 const targetCount = targetCountArg ? Number(targetCountArg.split('=')[1]) : 154;
 const registrationWindow = {
@@ -359,6 +363,70 @@ function buildVietnamDateCountMap(rows) {
     counts.set(dateKey, (counts.get(dateKey) || 0) + 1);
   }
   return counts;
+}
+
+function parseVietnamDateKey(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value).trim());
+  if (!match) {
+    throw new Error(`Invalid date key "${value}". Use YYYY-MM-DD.`);
+  }
+
+  const [, year, month, day] = match;
+  return {
+    dateKey: `${year}-${month}-${day}`,
+    year: Number(year),
+    month: Number(month),
+    day: Number(day),
+  };
+}
+
+function buildDateAppendPlan(profiles, dateTargets, minPerDay = 5) {
+  const protectedRows = profiles.filter(isProtectedProfile);
+  const normalRows = profiles.filter((profile) => !isProtectedProfile(profile));
+  const usedEmails = new Set();
+  for (const profile of profiles) {
+    if (profile.email) rememberEmail(profile.email, usedEmails);
+  }
+
+  const existingByDate = buildVietnamDateCountMap(normalRows);
+  const plan = [];
+  const daySummaries = [];
+
+  for (const target of dateTargets) {
+    const dateKey = target.dateKey || `${target.year}-${String(target.month).padStart(2, '0')}-${String(target.day).padStart(2, '0')}`;
+    const existing = existingByDate.get(dateKey) || 0;
+    const createCount = Math.max(0, minPerDay - existing);
+
+    daySummaries.push({
+      year: target.year,
+      month: target.month,
+      day: target.day,
+      dateKey,
+      existing,
+      createCount,
+    });
+
+    for (let offset = 0; offset < createCount; offset += 1) {
+      const personIndex = normalRows.length + plan.length;
+      const createdAt = makeVietnamCreatedAt(target.year, target.month, target.day, offset, createCount);
+      const fake = makePerson(personIndex, usedEmails, {
+        created_at: createdAt,
+        updated_at: makeUpdatedAtAfter(createdAt, personIndex),
+        address: personIndex % 9 === 0
+          ? pick(innerHanoiAddresses, personIndex, 0)
+          : pick(targetAreaAddresses, personIndex, 5),
+      });
+
+      plan.push({
+        date: dateKey,
+        sequence: existing + offset + 1,
+        auth_id: null,
+        fake,
+      });
+    }
+  }
+
+  return { plan, protectedRows, normalRows, existingByDate, daySummaries };
 }
 
 function makeEmailBases({ familyName, parentMiddle, parentGiven, parentBirthYear, parentBirthDay, parentBirthMonth }, index) {
@@ -1023,7 +1091,128 @@ async function appendRecentWeekUsers() {
   console.log('Done.');
 }
 
+function printSpecificDatesPreview({ plan, protectedRows, normalRows, daySummaries, minPerDay, dateKeys }) {
+  console.log(`Mode: append specific dates (${dateKeys.join(', ')})`);
+  console.log(`Protected/admin rows: ${protectedRows.length}`);
+  console.log(`Current normal users: ${normalRows.length}`);
+  console.log(`Minimum users/day: ${minPerDay}`);
+  console.log('');
+
+  for (const day of daySummaries) {
+    console.log(`${formatVietnamDateLabel(day)} [${day.dateKey}]: existing=${day.existing}, create=${day.createCount}`);
+  }
+
+  console.log('');
+  console.log(`Will create new users: ${plan.length}`);
+  console.log(`Mode: ${apply ? 'APPLY' : 'DRY RUN'}`);
+  console.log('');
+
+  for (const item of plan.slice(0, 12)) {
+    const createdAtVn = new Date(item.fake.created_at).toLocaleString('en-GB', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour12: false,
+    });
+    console.log(`${item.fake.email}`);
+    console.log(`  date=${item.date} sequence=${item.sequence} created_at_vn=${createdAtVn}`);
+    console.log(`  parent=${item.fake.parent_name} child=${item.fake.name} (${item.fake.child_age}) address=${item.fake.address}`);
+  }
+  if (plan.length > 12) console.log(`...and ${plan.length - 12} more`);
+}
+
+function writeSpecificDateOutputs({ plan, createdUsers, daySummaries, minPerDay, dateKeys }) {
+  const outDir = path.join(process.cwd(), 'output');
+  fs.mkdirSync(outDir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const label = dateKeys.join('-');
+  const planPath = path.join(outDir, `demo-registrations-append-${label}-${stamp}.json`);
+  const authSqlPath = path.join(outDir, `demo-auth-users-append-${label}-created-at-update-${stamp}.sql`);
+
+  fs.writeFileSync(
+    planPath,
+    JSON.stringify({
+      created_at: new Date().toISOString(),
+      apply,
+      mode: 'append-specific-dates',
+      minPerDay,
+      dateKeys,
+      daySummaries,
+      createdUsers,
+      rows: plan,
+    }, null, 2),
+  );
+
+  fs.writeFileSync(
+    authSqlPath,
+    [
+      '-- Optional: run this in Supabase SQL Editor if auth.users timestamps must match user_profiles.',
+      '-- This specific-dates batch does not update existing users.',
+      'begin;',
+      ...plan
+        .filter((item) => item.auth_id)
+        .map((item) => `update auth.users set created_at = ${sqlString(item.fake.created_at)}, updated_at = ${sqlString(item.fake.updated_at)} where id = ${sqlString(item.auth_id)};`),
+      'commit;',
+      '',
+    ].join('\n'),
+  );
+
+  return { planPath, authSqlPath };
+}
+
+async function appendSpecificDatesUsers(dateKeys) {
+  const profiles = await fetchProfiles();
+  const columns = profiles[0] ? Object.keys(profiles[0]) : [];
+  const normalizedDateKeys = [...new Set(dateKeys.map((value) => value.trim()).filter(Boolean))];
+
+  if (normalizedDateKeys.length === 0) {
+    throw new Error('Provide at least one date with --append-dates=YYYY-MM-DD,YYYY-MM-DD');
+  }
+
+  const context = buildDateAppendPlan(profiles, normalizedDateKeys.map(parseVietnamDateKey), 5);
+
+  printSpecificDatesPreview({
+    ...context,
+    dateKeys: normalizedDateKeys,
+    minPerDay: 5,
+  });
+  let createdUsers = [];
+
+  if (apply && context.plan.length > 0) {
+    console.log('');
+    console.log('Creating specific-date demo users...');
+    for (const [index, item] of context.plan.entries()) {
+      const created = await createAppendUser(item, columns);
+      createdUsers.push(created);
+      console.log(`[${index + 1}/${context.plan.length}] ${created.email}`);
+    }
+  }
+
+  const { planPath, authSqlPath } = writeSpecificDateOutputs({
+    plan: context.plan,
+    createdUsers,
+    daySummaries: context.daySummaries,
+    minPerDay: 5,
+    dateKeys: normalizedDateKeys,
+  });
+
+  console.log('');
+  console.log(`Specific-date plan written: ${planPath}`);
+  console.log(`Optional auth timestamp SQL written: ${authSqlPath}`);
+
+  if (!apply) {
+    console.log('');
+    console.log('Dry run only. Add --apply to create specific-date users.');
+    return;
+  }
+
+  console.log('Done.');
+}
+
 async function main() {
+  if (appendDates.length > 0) {
+    await appendSpecificDatesUsers(appendDates);
+    return;
+  }
+
   if (appendLastWeek) {
     await appendRecentWeekUsers();
     return;
