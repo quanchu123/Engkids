@@ -6,6 +6,8 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  BarChart3,
+  CalendarDays,
   Crown,
   Download,
   FileUser,
@@ -61,6 +63,12 @@ type MutationMessage = {
   type: 'success' | 'error';
   text: string;
 };
+type RegistrationChartPoint = {
+  key: string;
+  label: string;
+  shortLabel: string;
+  count: number;
+};
 
 const TEXT_COLLATOR = new Intl.Collator('vi', { sensitivity: 'base', numeric: true });
 const ADMIN_ROLE_VALUES = new Set(['admin', 'super_admin', 'god']);
@@ -103,6 +111,43 @@ function formatFilenameDate(value: Date = new Date()): string {
   const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
 
   return `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+}
+
+function getVietnamDateKey(value: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+
+  return `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+}
+
+function formatVietnamChartDate(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  if (!year || !month || !day) return dateKey;
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+function formatVietnamChartShortDate(dateKey: string): string {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  if (!year || !month || !day) return dateKey;
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+  }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
 function isSameTimestamp(a: string | null, b: string | null): boolean {
@@ -245,6 +290,7 @@ export default function AdminUsersPage() {
   const [draft, setDraft] = useState<UserDraft | null>(null);
   const [savingAuthId, setSavingAuthId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [showRegistrationChart, setShowRegistrationChart] = useState(false);
 
   const loadUsers = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
     if (mode === 'refresh') {
@@ -337,6 +383,32 @@ export default function AdminUsersPage() {
 
   const statsUsers = useMemo(() => users.filter((user) => !shouldExcludeFromStats(user)), [users]);
   const excludedFromStats = users.length - statsUsers.length;
+  const registrationChartData = useMemo<RegistrationChartPoint[]>(() => {
+    const counts = new Map<string, number>();
+
+    for (const user of statsUsers) {
+      const key = getVietnamDateKey(user.createdAt);
+      if (!key) continue;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+
+    return Array.from(counts.entries())
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .map(([key, count]) => ({
+        key,
+        label: formatVietnamChartDate(key),
+        shortLabel: formatVietnamChartShortDate(key),
+        count,
+      }));
+  }, [statsUsers]);
+  const maxRegistrationCount = useMemo(
+    () => Math.max(1, ...registrationChartData.map((point) => point.count)),
+    [registrationChartData],
+  );
+  const totalChartRegistrations = useMemo(
+    () => registrationChartData.reduce((sum, point) => sum + point.count, 0),
+    [registrationChartData],
+  );
 
   const handleExportExcel = useCallback(async () => {
     if (exporting || sortedUsers.length === 0) return;
@@ -587,6 +659,15 @@ export default function AdminUsersPage() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={() => setShowRegistrationChart((current) => !current)}
+            disabled={loading && users.length === 0}
+            className={showRegistrationChart ? 'admin-btn admin-btn-primary' : 'admin-btn admin-btn-secondary'}
+          >
+            <BarChart3 className="h-4 w-4" aria-hidden="true" />
+            {showRegistrationChart ? 'Ẩn biểu đồ' : 'Biểu đồ đăng ký'}
+          </button>
+          <button
+            type="button"
             onClick={() => void handleExportExcel()}
             disabled={loading || refreshing || exporting || sortedUsers.length === 0}
             className="admin-btn admin-btn-secondary"
@@ -620,6 +701,59 @@ export default function AdminUsersPage() {
           );
         })}
       </section>
+
+      {showRegistrationChart && (
+        <section className="admin-card overflow-hidden">
+          <div className="flex flex-col gap-3 border-b border-admin-border bg-white p-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <div className="admin-stat-icon">
+                  <CalendarDays className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <h2 className="font-black text-admin-text">Biểu đồ đăng ký theo ngày</h2>
+                  <p className="text-sm font-semibold text-admin-text-muted">
+                    {totalChartRegistrations} tài khoản thật trong {registrationChartData.length} ngày
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs font-bold text-admin-text-muted">
+              Đã loại tài khoản admin/test khỏi biểu đồ.
+            </p>
+          </div>
+
+          {registrationChartData.length === 0 ? (
+            <div className="p-10 text-center text-admin-text-muted">
+              <BarChart3 className="mx-auto mb-3 h-10 w-10" aria-hidden="true" />
+              <p className="font-bold">Chưa có dữ liệu đăng ký để vẽ biểu đồ.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto p-4">
+              <div className="flex min-h-[280px] min-w-max items-end gap-3 border-l border-b border-admin-border px-4 pt-4">
+                {registrationChartData.map((point) => {
+                  const height = Math.max(16, Math.round((point.count / maxRegistrationCount) * 210));
+
+                  return (
+                    <div key={point.key} className="flex w-16 shrink-0 flex-col items-center justify-end gap-2">
+                      <div className="text-xs font-black text-admin-text">{point.count}</div>
+                      <div
+                        className="w-10 rounded-t-xl bg-admin-primary shadow-sm transition hover:opacity-85"
+                        style={{ height }}
+                        title={`${point.label}: ${point.count} tài khoản`}
+                        aria-label={`${point.label}: ${point.count} tài khoản`}
+                      />
+                      <div className="h-10 text-center text-[11px] font-bold leading-4 text-admin-text-muted">
+                        <span className="block">{point.shortLabel}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="admin-card overflow-hidden">
         <div className="grid gap-4 border-b border-admin-border bg-white p-4 lg:grid-cols-[1fr_minmax(360px,520px)] lg:items-center">
