@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertCircle,
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { authFetch } from '@/lib/admin-auth-client';
 import { formatVietnamShortDateTime } from '@/lib/vietnam-time';
+
+const REVENUE_RANGE_OPTIONS = [14, 30, 60] as const;
 
 interface RevenueSummary {
   totalRevenue: number;
@@ -56,6 +58,7 @@ interface RecentPaidTransaction {
 
 interface RevenueDashboardData {
   summary: RevenueSummary;
+  rangeDays: number;
   dailyRevenue: DailyRevenuePoint[];
   planBreakdown: PlanRevenuePoint[];
   recentPaidTransactions: RecentPaidTransaction[];
@@ -72,7 +75,14 @@ function formatDateTime(value: string): string {
   return formatVietnamShortDateTime(value);
 }
 
-const DAILY_CHART_WIDTH = 760;
+interface DailyRevenueChartProps {
+  points: DailyRevenuePoint[];
+  rangeDays: number;
+  formatCurrency: (value: number) => string;
+}
+
+const DAILY_CHART_MIN_WIDTH = 760;
+const DAILY_CHART_POINT_SPACING = 40;
 const DAILY_CHART_HEIGHT = 260;
 const DAILY_CHART_PADDING = {
   top: 20,
@@ -81,22 +91,21 @@ const DAILY_CHART_PADDING = {
   left: 56,
 };
 
-interface DailyRevenueChartProps {
-  points: DailyRevenuePoint[];
-  formatCurrency: (value: number) => string;
-}
-
-function DailyRevenueChart({ points, formatCurrency }: DailyRevenueChartProps) {
+function DailyRevenueChart({ points, rangeDays, formatCurrency }: DailyRevenueChartProps) {
   const chart = useMemo(() => {
     const maxRevenue = Math.max(1, ...points.map((point) => point.revenue));
     const totalRevenue = points.reduce((sum, point) => sum + point.revenue, 0);
     const averageRevenue = points.length > 0 ? totalRevenue / points.length : 0;
+    const chartWidth = Math.max(
+      DAILY_CHART_MIN_WIDTH,
+      DAILY_CHART_PADDING.left + DAILY_CHART_PADDING.right + Math.max(0, (points.length - 1) * DAILY_CHART_POINT_SPACING),
+    );
     const peakPoint = points.reduce<DailyRevenuePoint | null>((peak, point) => {
       if (!peak || point.revenue > peak.revenue) return point;
       return peak;
     }, null);
 
-    const innerWidth = DAILY_CHART_WIDTH - DAILY_CHART_PADDING.left - DAILY_CHART_PADDING.right;
+    const innerWidth = chartWidth - DAILY_CHART_PADDING.left - DAILY_CHART_PADDING.right;
     const innerHeight = DAILY_CHART_HEIGHT - DAILY_CHART_PADDING.top - DAILY_CHART_PADDING.bottom;
     const chartBottom = DAILY_CHART_HEIGHT - DAILY_CHART_PADDING.bottom;
 
@@ -125,6 +134,7 @@ function DailyRevenueChart({ points, formatCurrency }: DailyRevenueChartProps) {
     return {
       averageRevenue,
       maxRevenue,
+      chartWidth,
       peakPoint,
       scaledPoints,
       ticks,
@@ -147,7 +157,7 @@ function DailyRevenueChart({ points, formatCurrency }: DailyRevenueChartProps) {
     <div className="rounded-2xl border border-admin-border bg-gradient-to-br from-white via-slate-50 to-white p-4 shadow-admin-sm">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-admin-primary">Xu hướng 14 ngày</p>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-admin-primary">Xu hướng {rangeDays} ngày</p>
           <h3 className="mt-1 text-lg font-black text-admin-text">Đồ thị doanh thu theo ngày</h3>
           <p className="mt-1 text-sm font-semibold text-admin-text-muted">
             Nhìn nhanh ngày đỉnh, doanh thu trung bình và số ngày có phát sinh giao dịch.
@@ -172,12 +182,13 @@ function DailyRevenueChart({ points, formatCurrency }: DailyRevenueChartProps) {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-admin-border bg-white">
+      <div className="overflow-x-auto rounded-2xl border border-admin-border bg-white">
         <svg
-          viewBox={`0 0 ${DAILY_CHART_WIDTH} ${DAILY_CHART_HEIGHT}`}
+          viewBox={`0 0 ${chart.chartWidth} ${DAILY_CHART_HEIGHT}`}
           role="img"
-          aria-label="Biểu đồ doanh thu 14 ngày"
-          className="block h-[260px] w-full"
+          aria-label={`Biểu đồ doanh thu ${rangeDays} ngày`}
+          className="block h-[260px]"
+          style={{ width: chart.chartWidth }}
           preserveAspectRatio="none"
         >
           <defs>
@@ -195,7 +206,7 @@ function DailyRevenueChart({ points, formatCurrency }: DailyRevenueChartProps) {
             <g key={`tick-${tick.y}`}>
               <line
                 x1={DAILY_CHART_PADDING.left}
-                x2={DAILY_CHART_WIDTH - DAILY_CHART_PADDING.right}
+                x2={chart.chartWidth - DAILY_CHART_PADDING.right}
                 y1={tick.y}
                 y2={tick.y}
                 stroke="rgba(148, 163, 184, 0.18)"
@@ -253,9 +264,14 @@ export default function AdminRevenuePage() {
   const [data, setData] = useState<RevenueDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedRangeDays, setSelectedRangeDays] = useState<(typeof REVENUE_RANGE_OPTIONS)[number]>(30);
   const [error, setError] = useState<string | null>(null);
+  const isFirstLoadRef = useRef(true);
+  const requestIdRef = useRef(0);
 
-  const fetchRevenue = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
+  const fetchRevenue = useCallback(async (mode: 'initial' | 'refresh', days: number) => {
+    const requestId = ++requestIdRef.current;
+
     if (mode === 'refresh') {
       setRefreshing(true);
     } else {
@@ -264,34 +280,49 @@ export default function AdminRevenuePage() {
     setError(null);
 
     try {
-      const response = await authFetch('/api/admin/revenue', { cache: 'no-store' });
+      const params = new URLSearchParams({ days: String(days) });
+      const response = await authFetch(`/api/admin/revenue?${params.toString()}`, { cache: 'no-store' });
       const payload = await response.json();
 
       if (!response.ok) {
         throw new Error(payload.error || 'Không thể tải thống kê doanh thu');
       }
 
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       setData(payload);
     } catch (err: unknown) {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       const message = err instanceof Error ? err.message : 'Không thể tải thống kê doanh thu';
       setError(message);
     } finally {
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchRevenue();
-  }, [fetchRevenue]);
+    void fetchRevenue(isFirstLoadRef.current ? 'initial' : 'refresh', selectedRangeDays);
+    isFirstLoadRef.current = false;
+  }, [fetchRevenue, selectedRangeDays]);
 
   useEffect(() => {
+    const currentDays = selectedRangeDays;
     const intervalId = window.setInterval(() => {
-      fetchRevenue('refresh');
+      void fetchRevenue('refresh', currentDays);
     }, 30_000);
 
     return () => window.clearInterval(intervalId);
-  }, [fetchRevenue]);
+  }, [fetchRevenue, selectedRangeDays]);
 
   const maxDailyRevenue = useMemo(() => {
     if (!data?.dailyRevenue.length) return 0;
@@ -361,7 +392,7 @@ export default function AdminRevenuePage() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => fetchRevenue('refresh')}
+            onClick={() => fetchRevenue('refresh', selectedRangeDays)}
             disabled={refreshing}
             className="admin-btn admin-btn-secondary"
           >
@@ -409,17 +440,32 @@ export default function AdminRevenuePage() {
 
           <section className="grid gap-6 xl:grid-cols-[1.45fr_1fr]">
             <div className="admin-card p-5">
-              <div className="mb-5 flex items-center justify-between gap-3">
+              <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <h2 className="text-lg font-black text-admin-text">Doanh thu 14 ngày</h2>
+                  <h2 className="text-lg font-black text-admin-text">Doanh thu {data.rangeDays} ngày</h2>
                   <p className="text-sm font-semibold text-admin-text-muted">Chỉ tính đơn đã thanh toán</p>
                 </div>
-                <div className="admin-stat-icon">
-                  <LineChart className="h-5 w-5" aria-hidden="true" />
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex flex-wrap gap-1 rounded-xl bg-admin-surface-muted p-1">
+                    {REVENUE_RANGE_OPTIONS.map((days) => (
+                      <button
+                        key={days}
+                        type="button"
+                        onClick={() => setSelectedRangeDays(days)}
+                        className={`admin-tab ${selectedRangeDays === days ? 'admin-tab-active' : ''}`}
+                        aria-pressed={selectedRangeDays === days}
+                      >
+                        {days} ngày
+                      </button>
+                    ))}
+                  </div>
+                  <div className="admin-stat-icon">
+                    <LineChart className="h-5 w-5" aria-hidden="true" />
+                  </div>
                 </div>
               </div>
 
-              <DailyRevenueChart points={data.dailyRevenue} formatCurrency={formatCurrency} />
+              <DailyRevenueChart points={data.dailyRevenue} rangeDays={data.rangeDays} formatCurrency={formatCurrency} />
 
               <div className="mt-5 space-y-3">
                 {data.dailyRevenue.map((point) => {

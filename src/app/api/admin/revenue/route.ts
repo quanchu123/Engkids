@@ -7,6 +7,9 @@ export const dynamic = 'force-dynamic';
 
 const TIME_ZONE = 'Asia/Ho_Chi_Minh';
 const MAX_TRANSACTIONS = 10000;
+const DEFAULT_RANGE_DAYS = 30;
+const MIN_RANGE_DAYS = 1;
+const MAX_RANGE_DAYS = 365;
 
 interface TransactionRow {
   id: string;
@@ -82,6 +85,16 @@ function toAmount(value: number | null): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
+function parseRangeDays(request: NextRequest): number {
+  const requestedDays = Number.parseInt(request.nextUrl.searchParams.get('days') || '', 10);
+
+  if (!Number.isFinite(requestedDays)) {
+    return DEFAULT_RANGE_DAYS;
+  }
+
+  return Math.min(MAX_RANGE_DAYS, Math.max(MIN_RANGE_DAYS, requestedDays));
+}
+
 export async function GET(request: NextRequest) {
   try {
     const admin = await getAdminAuthUser(request);
@@ -98,6 +111,7 @@ export async function GET(request: NextRequest) {
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const rangeDays = parseRangeDays(request);
     const { data, error } = await supabaseAdmin
       .from('transactions')
       .select('id, user_id, order_code, amount, plan_id, status, created_at, paid_at')
@@ -127,7 +141,7 @@ export async function GET(request: NextRequest) {
     }, 0);
     const pendingRevenue = pendingTransactions.reduce((sum, transaction) => sum + toAmount(transaction.amount), 0);
 
-    const dateKeys = getRecentDateKeys(14);
+    const dateKeys = getRecentDateKeys(rangeDays);
     const dailyMap = new Map<string, DailyRevenuePoint>(
       dateKeys.map((dateKey) => [
         dateKey,
@@ -198,6 +212,7 @@ export async function GET(request: NextRequest) {
         averageOrderValue: paidTransactions.length > 0 ? Math.round(totalRevenue / paidTransactions.length) : 0,
         conversionRate,
       },
+      rangeDays,
       dailyRevenue: Array.from(dailyMap.values()),
       planBreakdown,
       recentPaidTransactions,
