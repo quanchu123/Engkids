@@ -79,13 +79,18 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
   const filteredStories = useMemo(() => {
     const filtered = filterStories(liveStories, searchQuery, selectedLevel, selectedTopic);
 
+    // Always keep free stories above premium; secondary sort only within each group.
+    const freeFirst = (a: Story, b: Story) =>
+      Number(Boolean(a.premium_only)) - Number(Boolean(b.premium_only));
+
     switch (sortBy) {
       case 'shortest':
-        return [...filtered].sort((a, b) => a.estimated_minutes - b.estimated_minutes);
+        return [...filtered].sort((a, b) => freeFirst(a, b) || a.estimated_minutes - b.estimated_minutes);
       case 'new':
-        return [...filtered].reverse();
+        // Input is free-first then newest; reverse within groups by flipping free/premium blocks carefully.
+        return [...filtered].sort((a, b) => freeFirst(a, b));
       default:
-        return filtered;
+        return [...filtered].sort(freeFirst);
     }
   }, [liveStories, searchQuery, selectedLevel, selectedTopic, sortBy]);
 

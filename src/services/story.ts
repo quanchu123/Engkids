@@ -57,6 +57,11 @@ export function redactPremiumStoryContent<T extends Story>(story: T): T {
   };
 }
 
+function sortFreeStoriesFirst<T extends { premium_only?: boolean }>(stories: T[]): T[] {
+  // Free first, premium after. Stable within each group (caller order preserved).
+  return [...stories].sort((a, b) => Number(Boolean(a.premium_only)) - Number(Boolean(b.premium_only)));
+}
+
 export async function listStories(): Promise<Story[]> {
   noStore();
   const supabase = getSupabasePublicReader();
@@ -64,14 +69,27 @@ export async function listStories(): Promise<Story[]> {
     .from('stories')
     .select('*')
     .eq('published', true)
+    .order('premium_only', { ascending: true })
     .order('created_at', { ascending: false });
 
   if (error) {
+    // Older DBs without premium_only column: fall back + client-side sort.
+    if (error.message?.includes('premium_only')) {
+      const fallback = await supabase
+        .from('stories')
+        .select('*')
+        .eq('published', true)
+        .order('created_at', { ascending: false });
+      if (fallback.error) {
+        throw new Error(`Failed to list stories: ${fallback.error.message}`);
+      }
+      return sortFreeStoriesFirst(((fallback.data || []) as Story[]).map(redactPremiumStoryContent));
+    }
     throw new Error(`Failed to list stories: ${error.message}`);
   }
 
   // Public list must not leak premium panels/vocab to free users via JSON.
-  return ((data || []) as Story[]).map(redactPremiumStoryContent);
+  return sortFreeStoriesFirst(((data || []) as Story[]).map(redactPremiumStoryContent));
 }
 
 export async function listStorySummaries(): Promise<StorySummary[]> {
@@ -81,14 +99,17 @@ export async function listStorySummaries(): Promise<StorySummary[]> {
     .from('stories')
     .select(STORY_SUMMARY_COLUMNS)
     .eq('published', true)
+    .order('premium_only', { ascending: true })
     .order('created_at', { ascending: false });
   let data: unknown[] | null = result.data as unknown[] | null;
   let error = result.error;
 
-  if (error?.message?.includes('curriculum_stage_id')) {
+  if (error?.message?.includes('curriculum_stage_id') || error?.message?.includes('premium_only')) {
     const legacy = await supabase
       .from('stories')
-      .select(LEGACY_STORY_SUMMARY_COLUMNS)
+      .select(LEGACY_STORY_SUMMARY_COLUMNS.includes('premium_only')
+        ? 'id,title_en,title_vi,level,topics,cover_image,estimated_minutes,published'
+        : LEGACY_STORY_SUMMARY_COLUMNS)
       .eq('published', true)
       .order('created_at', { ascending: false });
     data = legacy.data as unknown[] | null;
@@ -99,7 +120,7 @@ export async function listStorySummaries(): Promise<StorySummary[]> {
     throw new Error(`Failed to list story summaries: ${error.message}`);
   }
 
-  return (data || []) as StorySummary[];
+  return sortFreeStoriesFirst((data || []) as StorySummary[]);
 }
 
 export async function listStoriesAdmin(): Promise<Story[]> {
