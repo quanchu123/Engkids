@@ -277,6 +277,8 @@ export interface Video {
   topics: string[];
   ageGroup?: '3-5' | '6-8' | '9-12';
   category: 'video' | 'music'; // Distinguish between educational videos and music
+  /** When true, only premium/admin may open full player. */
+  premium_only?: boolean;
   
   // Status
   status: 'uploading' | 'processing' | 'ready' | 'error';

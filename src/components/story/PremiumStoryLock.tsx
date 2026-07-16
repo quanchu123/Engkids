@@ -44,7 +44,7 @@ export default function PremiumStoryLock({ titleEn, titleVi, coverImage }: Premi
         <h1 className="text-2xl font-black text-slate-900">{titleEn}</h1>
         <p className="mt-1 text-slate-600">{titleVi}</p>
         <p className="mt-4 text-sm font-semibold text-slate-500">
-          Truyện này chỉ dành cho tài khoản Premium. Nâng cấp để đọc song ngữ đầy đủ, học từ vựng và chơi game kèm truyện.
+          Nội dung này chỉ dành cho tài khoản Premium. Nâng cấp để mở khóa truyện, video và bài hát premium.
         </p>
 
         <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">

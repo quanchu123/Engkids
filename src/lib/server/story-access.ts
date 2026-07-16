@@ -7,10 +7,15 @@ import { isAdminRole } from '@/lib/admin-roles';
 import { getRequestAuthUserId } from '@/lib/server/request-auth';
 
 /**
- * True when the request may open full premium story content.
+ * True when the request may open full premium content (stories / music / videos).
  * Admin JWT / admin role / active premium subscription.
  */
 export async function canAccessPremiumStories(request?: NextRequest): Promise<boolean> {
+  return canAccessPremiumContent(request);
+}
+
+/** Alias used by video/music routes. */
+export async function canAccessPremiumContent(request?: NextRequest): Promise<boolean> {
   if (request && (await checkAdminAuth(request).catch(() => false))) {
     return true;
   }

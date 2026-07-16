@@ -71,6 +71,7 @@ interface VideoRow {
   category: 'video' | 'music';
   feature: string | null;
   status: string;
+  premium_only?: boolean | null;
   quiz: VideoQuizQuestion[] | null;
   created_at: string;
   updated_at: string;
@@ -158,6 +159,7 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
     ageGroup: row.age_group || undefined,
     category: row.category,
     feature: row.feature || undefined,
+    premium_only: Boolean(row.premium_only),
     status,
     subtitles: subtitles
       .sort((a, b) => a.cue_index - b.cue_index)

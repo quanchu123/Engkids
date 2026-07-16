@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getVideoById, updateVideo, deleteVideo } from '@/services/video';
 import { deleteVideoObject } from '@/services/storage';
 import { checkAdminAuth } from '@/lib/api-auth';
+import { canAccessPremiumContent } from '@/lib/server/story-access';
 import { apiCache, CACHE_KEYS } from '@/lib/cache';
 import { revalidatePath } from 'next/cache';
 
@@ -33,7 +34,27 @@ export async function GET(
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ video }, { headers: NO_STORE_HEADERS });
+    if (video.premium_only && !includeUnavailable) {
+      const allowed = await canAccessPremiumContent(request);
+      if (!allowed) {
+        return NextResponse.json(
+          {
+            locked: true,
+            error: 'premium_required',
+            video: {
+              ...video,
+              objectKey: undefined,
+              videoUrl: undefined,
+              subtitles: [],
+              quiz: [],
+            },
+          },
+          { headers: NO_STORE_HEADERS },
+        );
+      }
+    }
+
+    return NextResponse.json({ video, locked: false }, { headers: NO_STORE_HEADERS });
   } catch (error) {
     console.error('Error fetching video:', error);
     return NextResponse.json(
@@ -58,7 +79,7 @@ export async function PATCH(
     const body = await request.json();
 
     // Whitelist allowed fields to prevent mass assignment
-    const allowedFields = ['title', 'titleVi', 'description', 'thumbnailUrl', 'level', 'topics', 'ageGroup', 'status', 'category', 'feature'];
+    const allowedFields = ['title', 'titleVi', 'description', 'thumbnailUrl', 'level', 'topics', 'ageGroup', 'status', 'category', 'feature', 'objectKey', 'duration', 'premium_only'];
     const sanitizedBody: Record<string, unknown> = {};
     for (const key of allowedFields) {
       if (key in body) {

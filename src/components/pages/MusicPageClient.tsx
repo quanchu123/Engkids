@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Music, Search } from 'lucide-react';
+import { Crown, Music, Search } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { Video } from '@/types';
 import { DEFAULT_FEATURE } from '@/config/constants';
@@ -151,6 +151,12 @@ export default function MusicPageClient({ videos }: MusicPageClientProps) {
                           <Image src={video.thumbnailUrl} alt={video.title} fill className="object-cover transition-transform group-hover:scale-105" sizes="(max-width: 768px) 100vw, 25vw" />
                         ) : (
                           <VideoFallbackArtwork video={video} />
+                        )}
+                        {video.premium_only && (
+                          <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-1 text-xs font-black text-white shadow-md">
+                            <Crown size={12} aria-hidden />
+                            Premium
+                          </div>
                         )}
                       </div>
                       <div className="p-4">
