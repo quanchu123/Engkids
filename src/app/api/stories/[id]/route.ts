@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Story } from '@/types';
 import { checkAdminAuth } from '@/lib/api-auth';
-import { deleteStoryById, getStory, updateStoryById } from '@/services/story';
+import { deleteStoryById, getStory, redactPremiumStoryContent, updateStoryById } from '@/services/story';
+import { canAccessPremiumStories } from '@/lib/server/story-access';
 import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +29,7 @@ function normalizeStory(value: unknown): Story | null {
     cover_image: story.cover_image || '',
     estimated_minutes: story.estimated_minutes || Math.max(1, Math.ceil((story.panels || []).length * 0.5)),
     published: typeof story.published === 'boolean' ? story.published : true,
+    premium_only: typeof story.premium_only === 'boolean' ? story.premium_only : false,
     panels: story.panels || [],
     vocabulary: story.vocabulary || [],
     games: story.games || { match: [], fill_blank: [] },
@@ -49,8 +51,29 @@ export async function GET(
     }
 
     const story = await getStory(id, includeDraft);
+    if (!story) {
+      return NextResponse.json(
+        { story: null },
+        { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+      );
+    }
+
+    if (story.premium_only && !includeDraft) {
+      const allowed = await canAccessPremiumStories(request);
+      if (!allowed) {
+        return NextResponse.json(
+          {
+            story: redactPremiumStoryContent(story),
+            locked: true,
+            error: 'premium_required',
+          },
+          { headers: { 'Cache-Control': 'no-store, max-age=0' } },
+        );
+      }
+    }
+
     return NextResponse.json(
-      { story: story as Story | null },
+      { story: story as Story, locked: false },
       { headers: { 'Cache-Control': 'no-store, max-age=0' } },
     );
   } catch (error) {

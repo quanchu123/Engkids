@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { BookOpen, Search } from 'lucide-react';
+import { BookOpen, Crown, Search } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import { Story } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
@@ -197,6 +197,7 @@ export default function StoriesPageClient({ stories }: StoriesPageClientProps) {
 function StoryGridCard({ story, completed }: { story: Story; completed: boolean }) {
   const [imageError, setImageError] = useState(false);
   const isImageUrl = !imageError && (story.cover_image?.startsWith('http') || story.cover_image?.startsWith('data:'));
+  const isPremium = Boolean(story.premium_only);
   return (
               <Link href={`/stories/${story.id}`} className="playful-card group overflow-hidden rounded-[20px] border border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
@@ -211,6 +212,12 @@ function StoryGridCard({ story, completed }: { story: Story; completed: boolean 
           />
         ) : (
           <StoryFallbackArtwork story={story} />
+        )}
+        {isPremium && (
+          <div className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-1 text-xs font-black text-white shadow-md">
+            <Crown size={12} aria-hidden />
+            Premium
+          </div>
         )}
         {completed && (
           <div className="absolute right-3 top-3 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-md">

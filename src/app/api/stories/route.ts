@@ -28,6 +28,7 @@ function normalizeStory(value: unknown): Story | null {
     cover_image: story.cover_image || '',
     estimated_minutes: story.estimated_minutes || Math.max(1, Math.ceil((story.panels || []).length * 0.5)),
     published: typeof story.published === 'boolean' ? story.published : true,
+    premium_only: typeof story.premium_only === 'boolean' ? story.premium_only : false,
     panels: story.panels || [],
     vocabulary: story.vocabulary || [],
     games: story.games || { match: [], fill_blank: [] },

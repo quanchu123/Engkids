@@ -58,6 +58,8 @@ export interface Story {
   cover_image: string;
   estimated_minutes: number;
   published: boolean;
+  /** When true, only premium/admin may read full panels. */
+  premium_only?: boolean;
   panels: Panel[];
   vocabulary: VocabWord[];
   games: StoryGames;

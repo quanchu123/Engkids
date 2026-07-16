@@ -40,11 +40,22 @@ function getSupabasePublicReader() {
 
 export type StorySummary = Pick<
   Story,
-  'id' | 'title_en' | 'title_vi' | 'level' | 'curriculum_stage_id' | 'topics' | 'cover_image' | 'estimated_minutes' | 'published'
+  'id' | 'title_en' | 'title_vi' | 'level' | 'curriculum_stage_id' | 'topics' | 'cover_image' | 'estimated_minutes' | 'published' | 'premium_only'
 >;
 
-const STORY_SUMMARY_COLUMNS = 'id,title_en,title_vi,level,curriculum_stage_id,topics,cover_image,estimated_minutes,published';
-const LEGACY_STORY_SUMMARY_COLUMNS = 'id,title_en,title_vi,level,topics,cover_image,estimated_minutes,published';
+const STORY_SUMMARY_COLUMNS = 'id,title_en,title_vi,level,curriculum_stage_id,topics,cover_image,estimated_minutes,published,premium_only';
+const LEGACY_STORY_SUMMARY_COLUMNS = 'id,title_en,title_vi,level,topics,cover_image,estimated_minutes,published,premium_only';
+
+/** Hide full content of premium stories (list/cards still show cover + titles). */
+export function redactPremiumStoryContent<T extends Story>(story: T): T {
+  if (!story.premium_only) return story;
+  return {
+    ...story,
+    panels: [],
+    vocabulary: [],
+    games: { match: [], fill_blank: [] },
+  };
+}
 
 export async function listStories(): Promise<Story[]> {
   noStore();
@@ -59,7 +70,8 @@ export async function listStories(): Promise<Story[]> {
     throw new Error(`Failed to list stories: ${error.message}`);
   }
 
-  return (data || []) as Story[];
+  // Public list must not leak premium panels/vocab to free users via JSON.
+  return ((data || []) as Story[]).map(redactPremiumStoryContent);
 }
 
 export async function listStorySummaries(): Promise<StorySummary[]> {
