@@ -8,7 +8,6 @@ import {
   BookOpen,
   Clapperboard,
   Gamepad2,
-  Gift,
   Home,
   LogIn,
   LogOut,
@@ -24,9 +23,13 @@ import { onAuthStateChange, signOut, User } from '@/lib/auth-client';
 import { getCurrentAdmin } from '@/lib/admin-auth-client';
 import ProfileMenu from '@/components/layout/ProfileMenu';
 
+/**
+ * Primary header nav = content discovery only.
+ * Learning hub (Lộ trình) and economy (Cửa hàng) live in ProfileMenu + home/progress CTAs
+ * so the top bar stays short on mobile and desktop.
+ */
 const NAV_ITEMS = [
   { name: 'Trang chủ', path: '/', icon: Home, tone: 'text-sky-600 bg-sky-50 border-sky-100' },
-  { name: 'Lộ trình', path: '/roadmap', icon: Route, tone: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
   { name: 'Truyện', path: '/stories', icon: BookOpen, tone: 'text-violet-600 bg-violet-50 border-violet-100' },
   { name: 'Video', path: '/videos', icon: Clapperboard, tone: 'text-orange-600 bg-orange-50 border-orange-100' },
   { name: 'Nhạc', path: '/music', icon: Music, tone: 'text-rose-600 bg-rose-50 border-rose-100' },
@@ -74,7 +77,6 @@ function Header() {
     return pathname === path || pathname.startsWith(`${path}/`);
   }, [pathname]);
 
-  const shopActive = isActive('/shop');
   return (
     <header
       className="sticky top-0 z-50 bg-gradient-to-r from-violet-600 via-pink-500 to-orange-400 shadow-xl"
@@ -127,23 +129,11 @@ function Header() {
           <Link
             href="/progress"
             className="flex min-h-[44px] items-center gap-2 rounded-full bg-white px-3 text-sm font-black text-purple-600 shadow-sm transition-all hover:scale-105 hover:shadow-lg"
-            aria-label={`Bạn có ${totalStars} sao`}
+            aria-label={`Bạn có ${totalStars} sao — mở tiến trình`}
+            title="Tiến trình"
           >
             <Star size={17} fill="currentColor" aria-hidden="true" />
             <span>{totalStars}</span>
-          </Link>
-
-          <Link
-            href="/shop"
-            className={`flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-white px-3 text-sm font-black text-fuchsia-600 shadow-sm transition-all hover:scale-105 hover:shadow-lg ${
-              shopActive ? 'ring-2 ring-fuchsia-200' : ''
-            }`}
-            aria-label="Mở cửa hàng"
-            aria-current={shopActive ? 'page' : undefined}
-            title="Cửa hàng"
-          >
-            <Gift size={17} strokeWidth={2.6} aria-hidden="true" />
-            <span className="hidden lg:inline">Cửa hàng</span>
           </Link>
 
           <Link
@@ -183,14 +173,17 @@ function Header() {
           <ProfileMenu user={user} onLogout={handleLogout} />
         </div>
 
-        <button
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/25 bg-white/20 text-white shadow-sm md:hidden"
-          onClick={() => setMobileMenuOpen((current) => !current)}
-          aria-label={mobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
-          aria-expanded={mobileMenuOpen}
-        >
-          {mobileMenuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <ProfileMenu user={user} onLogout={handleLogout} />
+          <button
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/25 bg-white/20 text-white shadow-sm"
+            onClick={() => setMobileMenuOpen((current) => !current)}
+            aria-label={mobileMenuOpen ? 'Đóng menu' : 'Mở menu'}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
+          </button>
+        </div>
       </div>
 
       {mobileMenuOpen && (
@@ -216,7 +209,7 @@ function Header() {
             })}
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
             <Link
               href="/progress"
               onClick={() => setMobileMenuOpen(false)}
@@ -224,19 +217,6 @@ function Header() {
             >
               <Star size={17} fill="currentColor" aria-hidden="true" />
               <span>{totalStars} sao</span>
-            </Link>
-            <Link
-              href="/shop"
-              onClick={() => setMobileMenuOpen(false)}
-              className={`flex min-h-[44px] items-center justify-center gap-2 rounded-xl border px-4 text-sm font-black ${
-                shopActive
-                  ? 'border-fuchsia-100 bg-fuchsia-50 text-fuchsia-700'
-                  : 'border-slate-100 bg-slate-50 text-slate-700 hover:bg-slate-100'
-              }`}
-              aria-current={shopActive ? 'page' : undefined}
-            >
-              <Gift size={17} strokeWidth={2.6} aria-hidden="true" />
-              <span>Cửa hàng</span>
             </Link>
             <Link
               href="/pricing"
@@ -281,6 +261,9 @@ function Header() {
               </Link>
             )}
           </div>
+          <p className="mt-3 text-center text-[11px] font-semibold text-slate-400">
+            Lộ trình &amp; Cửa hàng nằm trong menu avatar
+          </p>
         </nav>
       )}
     </header>
