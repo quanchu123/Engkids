@@ -216,7 +216,16 @@ export async function getAllVideos(category?: 'video' | 'music'): Promise<Video[
     query = query.eq('category', category);
   }
 
-  const { data: videos, error } = await query.order('created_at', { ascending: false });
+  // Free first, then premium; newest within each group.
+  let result = await query
+    .order('premium_only', { ascending: true })
+    .order('created_at', { ascending: false });
+
+  if (result.error?.message?.includes('premium_only')) {
+    result = await query.order('created_at', { ascending: false });
+  }
+
+  const { data: videos, error } = result;
 
   if (error) {
     if (isNetworkError(error)) {
@@ -231,10 +240,15 @@ export async function getAllVideos(category?: 'video' | 'music'): Promise<Video[
   }
 
   supabaseUnavailableWarned = false; // reset on success
-  return videos
+  const list = videos
     .map(v => rowToVideo(v, []))
     .filter(v => v.status === 'ready')
     .map(toPublicVideoCard);
+
+  // Extra safety if DB order unsupported.
+  return [...list].sort(
+    (a, b) => Number(Boolean(a.premium_only)) - Number(Boolean(b.premium_only)),
+  );
 }
 
 /**

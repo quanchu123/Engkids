@@ -4,7 +4,7 @@
 
 import { memo, useState } from 'react';
 import Link from 'next/link';
-import { Play } from 'lucide-react';
+import { Crown, Play } from 'lucide-react';
 import { ROUTES } from '@/config/constants';
 import { VideoFallbackArtwork } from '@/components/common/FallbackArtwork';
 import { Video } from '@/types';
@@ -110,6 +110,13 @@ export default memo(function VideoCard({
           {video.duration > 0 && (
             <div className="absolute bottom-2 right-2 rounded-lg bg-black/70 px-2 py-0.5 text-xs font-medium text-white">
               {formatDuration(video.duration)}
+            </div>
+          )}
+
+          {video.premium_only && (
+            <div className="absolute left-2 bottom-2 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-black text-white shadow-md">
+              <Crown size={11} aria-hidden />
+              Premium
             </div>
           )}
 
