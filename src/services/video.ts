@@ -177,6 +177,26 @@ function rowToVideo(row: VideoRow, subtitles: SubtitleRow[] = []): Video {
 }
 
 /**
+ * Catalog-safe video payload: cards only need metadata + thumbnail.
+ * Never expose playable URLs or empty-object hints for premium items in lists.
+ */
+export function toPublicVideoCard(video: Video): Video {
+  return {
+    ...video,
+    objectKey: undefined,
+    videoUrl: undefined,
+    subtitles: [],
+    quiz: [],
+    // Keep a short public blurb only; strip internal ops notes if any slipped in.
+    description: video.premium_only
+      ? (video.category === 'music'
+          ? 'Bài hát Premium dành cho bé học tiếng Anh qua âm nhạc.'
+          : 'Video Premium dành cho bé học tiếng Anh.')
+      : video.description,
+  };
+}
+
+/**
  * Get all videos (public, read-only)
  * Only returns videos with status='ready' (successfully processed)
  * Optionally filter by category at the database level
@@ -213,7 +233,8 @@ export async function getAllVideos(category?: 'video' | 'music'): Promise<Video[
   supabaseUnavailableWarned = false; // reset on success
   return videos
     .map(v => rowToVideo(v, []))
-    .filter(v => v.status === 'ready');
+    .filter(v => v.status === 'ready')
+    .map(toPublicVideoCard);
 }
 
 /**

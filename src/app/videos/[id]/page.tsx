@@ -24,14 +24,19 @@ export default async function VideoPage({
   }
 
   if (video.premium_only && !(await canAccessPremiumContent())) {
+    const isMusic = video.category === 'music';
     return (
       <PremiumStoryLock
         titleEn={video.title}
         titleVi={video.titleVi || video.title}
         coverImage={video.thumbnailUrl}
+        backHref={isMusic ? '/music' : '/videos'}
+        backLabel={isMusic ? 'Quay lại kho nhạc' : 'Quay lại video'}
       />
     );
   }
 
-  return <VideoDetailPageClient video={video} allVideos={allVideos} />;
+  // Do not pass internal catalog cards that stripped playable fields for premium viewers.
+  const catalog = allVideos.filter((item) => item.id !== video.id);
+  return <VideoDetailPageClient video={video} allVideos={[video, ...catalog]} />;
 }

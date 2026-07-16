@@ -37,16 +37,32 @@ export async function GET(
     if (video.premium_only && !includeUnavailable) {
       const allowed = await canAccessPremiumContent(request);
       if (!allowed) {
+        // Same pattern as premium stories: summary + lock only, no playable payload.
         return NextResponse.json(
           {
             locked: true,
             error: 'premium_required',
             video: {
-              ...video,
-              objectKey: undefined,
-              videoUrl: undefined,
+              id: video.id,
+              title: video.title,
+              titleVi: video.titleVi,
+              thumbnailUrl: video.thumbnailUrl,
+              duration: video.duration,
+              level: video.level,
+              topics: video.topics,
+              ageGroup: video.ageGroup,
+              category: video.category,
+              feature: video.feature,
+              premium_only: true,
+              status: video.status,
+              description:
+                video.category === 'music'
+                  ? 'Bài hát Premium dành cho bé học tiếng Anh qua âm nhạc.'
+                  : 'Video Premium dành cho bé học tiếng Anh.',
               subtitles: [],
               quiz: [],
+              createdAt: video.createdAt,
+              updatedAt: video.updatedAt,
             },
           },
           { headers: NO_STORE_HEADERS },

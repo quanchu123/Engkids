@@ -9,9 +9,18 @@ interface PremiumStoryLockProps {
   titleEn: string;
   titleVi: string;
   coverImage?: string;
+  /** Where the secondary button goes (default: stories list). */
+  backHref?: string;
+  backLabel?: string;
 }
 
-export default function PremiumStoryLock({ titleEn, titleVi, coverImage }: PremiumStoryLockProps) {
+export default function PremiumStoryLock({
+  titleEn,
+  titleVi,
+  coverImage,
+  backHref = '/stories',
+  backLabel = 'Quay lại',
+}: PremiumStoryLockProps) {
   const hasCover = Boolean(
     coverImage && (coverImage.startsWith('http') || coverImage.startsWith('data:')),
   );
@@ -56,10 +65,10 @@ export default function PremiumStoryLock({ titleEn, titleVi, coverImage }: Premi
             Nâng cấp Premium
           </Link>
           <Link
-            href="/stories"
+            href={backHref}
             className="inline-flex min-h-[48px] items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-black text-slate-700 ring-1 ring-slate-200"
           >
-            Quay lại kho truyện
+            {backLabel}
           </Link>
         </div>
       </main>
