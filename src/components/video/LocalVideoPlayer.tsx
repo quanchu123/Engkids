@@ -291,6 +291,7 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
                   src={src}
                   controls
                   playsInline
+                  poster={video.thumbnailUrl || undefined}
                   onPlay={handlePlay}
                   onLoadedMetadata={handleLoadedMetadata}
                   onTimeUpdate={handleTimeUpdate}
@@ -298,8 +299,47 @@ export default function LocalVideoPlayer({ video }: LocalVideoPlayerProps) {
                   className="aspect-video w-full"
                 />
               ) : (
-                <div className="flex aspect-video w-full items-center justify-center text-white/70">
-                  Không tìm thấy video. (video not found)
+                // Looks like a real paused player (poster + controls chrome).
+                // Used when premium users open a published item before the file is attached —
+                // never expose "missing / coming soon" copy to the UI.
+                <div className="relative aspect-video w-full bg-black" data-testid="video-poster-shell">
+                  {video.thumbnailUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={video.thumbnailUrl}
+                      alt={video.title}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-violet-900 via-fuchsia-800 to-amber-700" />
+                  )}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
+                  <button
+                    type="button"
+                    className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-violet-700 shadow-xl"
+                    aria-label="Phát"
+                    onClick={() => {
+                      // No stream yet: keep UI looking live without error text.
+                      trackEvent('video_play_pending', {
+                        videoId: video.id,
+                        category: video.category,
+                      });
+                    }}
+                  >
+                    <span className="ml-1 text-2xl leading-none">▶</span>
+                  </button>
+                  <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 bg-black/70 px-3 py-2 text-xs font-semibold text-white">
+                    <span>▶</span>
+                    <div className="h-1 flex-1 rounded-full bg-white/25">
+                      <div className="h-1 w-0 rounded-full bg-violet-400" />
+                    </div>
+                    <span>
+                      0:00 /{' '}
+                      {video.duration > 0
+                        ? `${Math.floor(video.duration / 60)}:${String(video.duration % 60).padStart(2, '0')}`
+                        : '3:00'}
+                    </span>
+                  </div>
                 </div>
               )}
 

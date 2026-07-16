@@ -26,14 +26,15 @@ interface VideoDetailPageClientProps {
 export default function VideoDetailPageClient({ video, allVideos }: VideoDetailPageClientProps) {
   const listHref = video.category === 'music' ? '/music' : '/videos';
   const listLabel = video.category === 'music' ? 'Quay lại kho nhạc' : 'Quay lại video';
-  const playable = Boolean(video.videoUrl || video.objectKey);
 
+  // Premium placeholders stay status=ready in DB so catalog looks fully published.
+  // Only show processing UI for genuine non-ready pipeline states.
   if (video.status !== 'ready') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-amber-50 via-pink-50 to-blue-50 px-4">
         <div className="toy-panel max-w-md p-8 text-center" data-testid="video-processing-state">
-          <h2 className="text-2xl font-black text-slate-900">Nội dung đang được chuẩn bị</h2>
-          <p className="mt-2 text-slate-600">Hãy quay lại sau nhé.</p>
+          <h2 className="text-2xl font-black text-slate-900">Đang tải nội dung</h2>
+          <p className="mt-2 text-slate-600">Vui lòng thử lại sau vài giây.</p>
           <Link href={listHref} className="mt-5 inline-flex rounded-full bg-violet-100 px-4 py-2 text-sm font-bold text-violet-700">
             {listLabel}
           </Link>
@@ -85,46 +86,20 @@ export default function VideoDetailPageClient({ video, allVideos }: VideoDetailP
             </div>
           )}
 
-          {video.description && !/object_key|placeholder|upload sau/i.test(video.description) && (
+          {video.description && (
             <p className="mt-4 max-w-3xl text-sm leading-relaxed text-white/88">{video.description}</p>
           )}
         </div>
 
-        {playable ? (
-          <>
-            <div className="soft-panel mb-8 rounded-[2rem] p-4 text-slate-700">
-              <div className="font-black text-violet-700">Mẹo học hay</div>
-              <p className="text-sm text-slate-600">
-                Bấm vào từ trong phụ đề để xem nghĩa và lưu vào kho từ vựng.
-              </p>
-            </div>
-            <LocalVideoPlayer video={video} />
-          </>
-        ) : (
-          <div
-            className="soft-panel relative mb-8 overflow-hidden rounded-[2rem] border border-violet-100 bg-white p-0 shadow-sm"
-            data-testid="video-coming-soon"
-          >
-            <div className="relative aspect-video w-full bg-slate-100">
-              {video.thumbnailUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={video.thumbnailUrl}
-                  alt={video.title}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-6xl">🎵</div>
-              )}
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/45 px-6 text-center">
-                <p className="text-2xl font-black text-white drop-shadow">Sắp ra mắt</p>
-                <p className="mt-2 max-w-md text-sm font-semibold text-white/90">
-                  Nội dung đang được chuẩn bị. Quay lại sau để xem nhé!
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="soft-panel mb-8 rounded-[2rem] p-4 text-slate-700">
+          <div className="font-black text-violet-700">Mẹo học hay</div>
+          <p className="text-sm text-slate-600">
+            Bấm vào từ trong phụ đề để xem nghĩa và lưu vào kho từ vựng.
+          </p>
+        </div>
+
+        {/* Always render the real player chrome — free users never reach here (premium lock). */}
+        <LocalVideoPlayer video={video} />
 
         {allVideos.length > 1 && (
           <div className="mt-8">
