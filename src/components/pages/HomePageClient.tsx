@@ -10,6 +10,7 @@ import Header from '@/components/layout/Header';
 import BackgroundMusic from '@/components/common/BackgroundMusic';
 import { StoryFallbackArtwork, VideoFallbackArtwork } from '@/components/common/FallbackArtwork';
 import { DecorIcon } from '@/components/common/DecorIcon';
+import { PUBLIC_GAMES } from '@/data/public-games';
 
 const GAMES = [
   { id: 'rpg-world', title: 'RPG World', icon: 'game', color: 'from-emerald-400 to-teal-500', href: '/games/rpg-world' },
@@ -206,7 +207,7 @@ export default function HomePageClient({ stories, videos, musicVideos }: HomePag
               href="/games"
               icon="game"
               title="Game"
-              count={6}
+              count={PUBLIC_GAMES.length}
               unit="trò chơi"
               gradient="from-emerald-400 to-teal-500"
               bg="bg-emerald-50"
