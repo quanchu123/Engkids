@@ -347,10 +347,22 @@ function makeVietnamCreatedAt(year, month, day, index, total) {
   };
   const key = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   const plan = datePlans[key];
-  const [hourVn, minute] = plan?.[index % plan.length] ?? [
+  let [hourVn, minute] = plan?.[index % plan.length] ?? [
     8 + Math.floor((index * 12) / Math.max(total, 1)),
     (index * 17 + 11) % 60,
   ];
+
+  // For today's append batch, spread timestamps only across elapsed hours.
+  if (key === getVietnamDateKey(new Date())) {
+    const vietnamNow = new Date(Date.now() + (7 * 60 * 60 * 1000));
+    const endMinute = Math.max((7 * 60) + 15, (vietnamNow.getUTCHours() * 60) + vietnamNow.getUTCMinutes() - 8);
+    const startMinute = Math.max(6 * 60 + 45, Math.min(7 * 60 + 20, endMinute - Math.max(total - 1, 1) * 25));
+    const ratio = total <= 1 ? 0.5 : index / (total - 1);
+    const minuteOfDay = Math.round(startMinute + ((endMinute - startMinute) * ratio));
+    hourVn = Math.floor(minuteOfDay / 60);
+    minute = minuteOfDay % 60;
+  }
+
   const second = (index * 19 + total) % 60;
   return toUtcIsoFromVietnamTime(year, month, day, hourVn, minute, second);
 }
