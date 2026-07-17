@@ -398,7 +398,7 @@ export default function CandyCrushPage() {
 
       // ─── Launch Phaser ─────────────────────────────────────────────────
       const config: any = {
-        type: Phaser.AUTO,
+        type: Phaser.CANVAS,
         width: GAME_W,
         height: GAME_H,
         backgroundColor: '#1a0533',
@@ -544,9 +544,6 @@ export default function CandyCrushPage() {
           </div>
         </div>
 
-        <p className="text-purple-700/50 text-xs mt-4 text-center">
-          Clone tu: digitsensitive/phaser3-typescript (candy-crush) - Da sua cho Engkids
-        </p>
       </main>
     </>
   );

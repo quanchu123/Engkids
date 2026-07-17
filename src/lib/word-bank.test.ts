@@ -55,6 +55,14 @@ describe('normalizeWordBank', () => {
       example: 'I like Apple.',
     });
   });
+
+  it('preserves moderation metadata used by playable-word filtering', () => {
+    const normalized = normalizeWordBank([
+      { en: 'Unsafe', vi: 'Khong an toan', qualityStatus: 'blocked', viReviewStatus: 'blocked' },
+    ]);
+
+    expect(normalized?.[0]).toMatchObject({ qualityStatus: 'blocked', viReviewStatus: 'blocked' });
+  });
 });
 
 describe('filterPlayableWordBank', () => {
@@ -112,6 +120,18 @@ describe('word-bank game adapters', () => {
     expect(questions.every((question) => question.sentence.includes('___'))).toBe(true);
     expect(questions.every((question) => question.sentence !== 'I can see ___.')).toBe(true);
     expect(questions.every((question) => question.options.includes(question.answer))).toBe(true);
+  });
+
+  it('does not expose untrusted imported examples in game questions', () => {
+    const imported: WordPair[] = [
+      { en: 'Novelword', vi: 'Tu moi', example: 'to stanf novelword the fire' },
+      ...BANK,
+    ];
+    const fillQuestions = toFillBlankQuestions(imported, imported.length);
+    const scrambleItems = toSentenceScrambles(imported, imported.length);
+
+    expect(fillQuestions.find((question) => question.answer === 'novelword')?.sentence).toBe('The word for "Tu moi" is ___.');
+    expect(scrambleItems.find((item) => item.hint === 'Tu moi')?.text).toBe('I am learning the word novelword.');
   });
 
   it('creates sentence-scramble items from examples', () => {

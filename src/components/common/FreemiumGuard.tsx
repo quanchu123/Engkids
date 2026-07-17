@@ -27,7 +27,7 @@ function isExemptRoute(pathname: string | null): boolean {
  */
 export default function FreemiumGuard({ children }: FreemiumGuardProps) {
   const pathname = usePathname();
-  const exemptRoute = isExemptRoute(pathname);
+  const exemptRoute = process.env.NODE_ENV === 'development' || isExemptRoute(pathname);
   const { loading, isPremium, remainingSeconds, remainingFormatted, isExpired, dailyLimitMinutes } = useFreemium({ trackUsage: !exemptRoute });
 
   if (exemptRoute) return <>{children}</>;

@@ -378,10 +378,11 @@ function inferStage(en: string, explicit?: unknown): CurriculumStageId {
   return 'a2-key';
 }
 
-export function enrichWordPair(word: WordPair): Required<Pick<WordPair, 'en' | 'vi' | 'topic'>> & { level: CurriculumStageId; example?: string } {
+export function enrichWordPair(word: WordPair): WordPair & Required<Pick<WordPair, 'en' | 'vi' | 'topic'>> & { level: CurriculumStageId; example?: string } {
   const en = word.en.trim();
   const builtIn = WORD_LOOKUP.get(en.toLowerCase());
   return {
+    ...word,
     en,
     vi: word.vi.trim(),
     level: inferStage(en, word.level),
@@ -527,8 +528,10 @@ export function toFillBlankQuestions(bank: WordPair[], count = 20): Array<{ sent
   return shuffle(source).slice(0, Math.min(count, source.length)).map((word) => {
     const answer = word.en.toLowerCase();
     const options = shuffle([answer, ...buildDistractors(source, word.en, 3).map((item) => item.toLowerCase())]);
-    const sentence = word.example?.replace(new RegExp(`\\b${escapeRegExp(word.en)}\\b`, 'i'), '___') || `I can see ___.`;
-    return { sentence: sentence.includes('___') ? sentence : `I can see ___.`, answer, options, hint: word.vi };
+    const curatedExample = WORD_LOOKUP.get(word.en.toLowerCase())?.example;
+    const sentence = curatedExample?.replace(new RegExp(`\\b${escapeRegExp(word.en)}\\b`, 'i'), '___')
+      || `The word for "${word.vi}" is ___.`;
+    return { sentence, answer, options, hint: word.vi };
   });
 }
 
@@ -536,7 +539,7 @@ export function toSentenceScrambles(bank: WordPair[], count = 20): Array<{ id: n
   const source = filterWordBank(bank, { min: 4 });
   return shuffle(source).slice(0, Math.min(count, source.length)).map((word, index) => ({
     id: index + 1,
-    text: word.example || `I can see ${word.en.toLowerCase()}`,
+    text: WORD_LOOKUP.get(word.en.toLowerCase())?.example || `I am learning the word ${word.en.toLowerCase()}.`,
     hint: word.vi,
   }));
 }

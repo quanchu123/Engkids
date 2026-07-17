@@ -11,6 +11,7 @@ import Header from'@/components/layout/Header';
 
 export default function SpaceInvadersPage() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef({ left: false, right: false, fire: false });
 
   useEffect(() =>{
     if (!containerRef.current) return;
@@ -126,7 +127,7 @@ export default function SpaceInvadersPage() {
         }
 
         update() {
-          if (this.startKey.isDown) {
+          if (this.startKey.isDown || controlsRef.current.fire) {
             this.registry.set('points', 0);
             this.registry.set('lives', 3);
             this.scene.start('HUDScene');
@@ -214,16 +215,16 @@ export default function SpaceInvadersPage() {
 
           // ── Player movement ──────────────
           const body = this.playerSprite.body as any;
-          if (this.cursors.right.isDown && this.playerSprite.x< W - 16) {
+          if ((this.cursors.right.isDown || controlsRef.current.right) && this.playerSprite.x< W - 16) {
             body.setVelocityX(180);
-          } else if (this.cursors.left.isDown && this.playerSprite.x >16) {
+          } else if ((this.cursors.left.isDown || controlsRef.current.left) && this.playerSprite.x >16) {
             body.setVelocityX(-180);
           } else {
             body.setVelocityX(0);
           }
 
           // ── Player shoot ─────────────────
-          if (this.shootKey.isDown && time >this.lastShoot && this.playerBullets.getLength()< 1) {
+          if ((this.shootKey.isDown || controlsRef.current.fire) && time >this.lastShoot && this.playerBullets.getLength()< 1) {
             const b = this.physics.add.image(this.playerSprite.x, this.playerSprite.y - 20,'bullet').setScale(3);
             (b.body as any).setVelocityY(-400);
             this.playerBullets.add(b);
@@ -389,7 +390,7 @@ export default function SpaceInvadersPage() {
         }
 
         update() {
-          if ((this as any)._spaceKey?.isDown) {
+          if ((this as any)._spaceKey?.isDown || controlsRef.current.fire) {
             this.registry.set('points', 0);
             this.registry.set('lives', 3);
             this.scene.start('MenuScene');
@@ -401,7 +402,7 @@ export default function SpaceInvadersPage() {
       //  LAUNCH GAME
       // ══════════════════════════════════════
       game = new Phaser.Game({
-        type: Phaser.AUTO,
+        type: Phaser.CANVAS,
         backgroundColor: 0x000010,
         parent: containerRef.current!,
         physics: { default:'arcade', arcade: { gravity: { x: 0, y: 0 } } },
@@ -422,9 +423,9 @@ export default function SpaceInvadersPage() {
     };
   }, []);
 
-  return (<><Header /><main className="min-h-screen bg-[#000010] flex flex-col items-center pb-8"><div className="w-full max-w-xl px-4 pt-4"><Link href="/games" className="text-green-400 hover:text-green-300 font-bold text-sm transition-colors">← Quay lại</Link></div><div className="text-center my-4"><h1 className="text-2xl font-black text-white drop-shadow-lg">Space Invaders</h1><p className="text-green-300 text-sm mt-1">Tiêu diệt tất cả UFO để giành chiến thắng!</p></div><p className="text-green-600/70 text-xs mb-3">← → Di chuyển  |  Space Bắn</p><div
+  return (<><Header /><main className="min-h-screen bg-[#000010] flex flex-col items-center pb-8"><div className="w-full max-w-xl px-4 pt-4"><Link href="/games" className="text-green-400 hover:text-green-300 font-bold text-sm transition-colors">← Quay lại</Link></div><div className="text-center my-4"><h1 className="text-2xl font-black text-white drop-shadow-lg">Space Invaders</h1><p className="text-green-300 text-sm mt-1">Tiêu diệt tất cả UFO để giành chiến thắng!</p></div><p className="hidden text-green-600/70 text-xs mb-3 md:block">← → Di chuyển · Space bắn</p><div
           ref={containerRef}
           className="w-full max-w-2xl rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(74,222,128,0.3)] border-2 border-green-900"
           style={{ aspectRatio:'480/320'}}
-        /><p className="text-green-700/50 text-xs mt-4 text-center max-w-xs">Clone từ: digitsensitive/phaser3-typescript   |  Pixel art sprites included</p></main></>);
+        /><div className="mt-4 flex w-full max-w-sm items-center justify-between px-4 md:hidden"><div className="flex gap-2"><button type="button" aria-label="Di chuyển sang trái" onPointerDown={() => { controlsRef.current.left = true; }} onPointerUp={() => { controlsRef.current.left = false; }} onPointerCancel={() => { controlsRef.current.left = false; }} onPointerLeave={() => { controlsRef.current.left = false; }} className="h-14 w-14 touch-none rounded-2xl border-2 border-green-400/50 bg-green-950 text-2xl font-black text-green-200 active:scale-95">←</button><button type="button" aria-label="Di chuyển sang phải" onPointerDown={() => { controlsRef.current.right = true; }} onPointerUp={() => { controlsRef.current.right = false; }} onPointerCancel={() => { controlsRef.current.right = false; }} onPointerLeave={() => { controlsRef.current.right = false; }} className="h-14 w-14 touch-none rounded-2xl border-2 border-green-400/50 bg-green-950 text-2xl font-black text-green-200 active:scale-95">→</button></div><button type="button" aria-label="Bắn hoặc bắt đầu" onPointerDown={() => { controlsRef.current.fire = true; }} onPointerUp={() => { controlsRef.current.fire = false; }} onPointerCancel={() => { controlsRef.current.fire = false; }} onPointerLeave={() => { controlsRef.current.fire = false; }} className="h-16 w-16 touch-none rounded-full border-2 border-amber-200 bg-amber-400 text-sm font-black text-slate-950 shadow-lg active:scale-95">BẮN</button></div></main></>);
 }

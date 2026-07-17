@@ -38,6 +38,7 @@ export default function MarioWordPage() {
   const scoreRef     = useRef(0);
   const hpRef        = useRef(3);
   const killCountRef = useRef(0);
+  const controlsRef  = useRef({ left: false, right: false, jump: false });
 
   const cbRef = useRef({
     onCorrect: () => {},
@@ -50,7 +51,9 @@ export default function MarioWordPage() {
     let active = true;
     loadWordBank().then((bank) => {
       if (!active) return;
-      const pairs = bank.map((word) => ({ vi: word.vi, en: word.en })).filter((word) => word.vi && word.en);
+      const pairs = bank
+        .map((word) => ({ vi: word.vi.trim(), en: word.en.trim() }))
+        .filter((word) => word.vi && word.en && word.vi.length <= 24 && word.en.length <= 16 && !word.vi.includes(','));
       if (pairs.length > 0) wordPairsRef.current = pairs;
     });
     return () => {
@@ -301,11 +304,11 @@ export default function MarioWordPage() {
           const body = this.mario.body as Phaser.Physics.Arcade.Body;
           const spd = 80;
 
-          if (left.isDown) {
+          if (left.isDown || controlsRef.current.left) {
             this.mario.setVelocityX(-spd);
             this.mario.setFlipX(true);
             if (body.blocked.down) this.mario.play('mario-run', true);
-          } else if (right.isDown) {
+          } else if (right.isDown || controlsRef.current.right) {
             this.mario.setVelocityX(spd);
             this.mario.setFlipX(false);
             if (body.blocked.down) this.mario.play('mario-run', true);
@@ -314,7 +317,7 @@ export default function MarioWordPage() {
             if (body.blocked.down) this.mario.play('mario-idle', true);
           }
 
-          if ((up.isDown || Phaser.Input.Keyboard.JustDown(up)) && this.canJump && body.blocked.down) {
+          if ((up.isDown || Phaser.Input.Keyboard.JustDown(up) || controlsRef.current.jump) && this.canJump && body.blocked.down) {
             this.mario.setVelocityY(-310);
             this.canJump = false;
           }
@@ -340,7 +343,7 @@ export default function MarioWordPage() {
 
       // ─── Launch Phaser ─────────────────────────────────────────────
       const config: any = {
-        type: Phaser.AUTO,
+        type: Phaser.CANVAS,
         backgroundColor: '#87ceeb',
         parent: containerRef.current!,
         physics: {
@@ -392,7 +395,7 @@ export default function MarioWordPage() {
           {/* Target word */}
           <div className="flex flex-col items-center">
             <span className="text-white/70 text-[10px] uppercase tracking-widest">Tìm con quái có chữ</span>
-            <span className="text-yellow-300 font-black text-xl drop-shadow-lg leading-none">{targetWord}</span>
+            <span className="max-w-[42vw] truncate text-yellow-300 font-black text-xl drop-shadow-lg leading-none">{targetWord}</span>
           </div>
 
           {/* Score + Hearts */}
@@ -429,8 +432,42 @@ export default function MarioWordPage() {
 
       {/* ── Controls hint ── */}
       {!gameOver && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 text-white/40 text-[10px] pointer-events-none select-none">
+        <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 text-[10px] text-white/40 pointer-events-none select-none md:block z-10">
           ←→ di chuyển &nbsp;·&nbsp; ↑ nhảy &nbsp;·&nbsp; Giẫm đúng con quái mang từ tiếng Anh khớp với tiếng Việt ở trên!
+        </div>
+      )}
+
+      {!gameOver && (
+        <div className="absolute inset-x-3 bottom-10 z-20 flex items-end justify-between md:hidden">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              aria-label="Di chuyển sang trái"
+              onPointerDown={() => { controlsRef.current.left = true; }}
+              onPointerUp={() => { controlsRef.current.left = false; }}
+              onPointerCancel={() => { controlsRef.current.left = false; }}
+              onPointerLeave={() => { controlsRef.current.left = false; }}
+              className="h-14 w-14 touch-none rounded-2xl border-2 border-white/30 bg-black/55 text-2xl font-black text-white active:scale-95"
+            >←</button>
+            <button
+              type="button"
+              aria-label="Di chuyển sang phải"
+              onPointerDown={() => { controlsRef.current.right = true; }}
+              onPointerUp={() => { controlsRef.current.right = false; }}
+              onPointerCancel={() => { controlsRef.current.right = false; }}
+              onPointerLeave={() => { controlsRef.current.right = false; }}
+              className="h-14 w-14 touch-none rounded-2xl border-2 border-white/30 bg-black/55 text-2xl font-black text-white active:scale-95"
+            >→</button>
+          </div>
+          <button
+            type="button"
+            aria-label="Nhảy"
+            onPointerDown={() => { controlsRef.current.jump = true; }}
+            onPointerUp={() => { controlsRef.current.jump = false; }}
+            onPointerCancel={() => { controlsRef.current.jump = false; }}
+            onPointerLeave={() => { controlsRef.current.jump = false; }}
+            className="h-16 w-16 touch-none rounded-full border-2 border-yellow-200/70 bg-yellow-400/85 text-sm font-black text-slate-950 shadow-lg active:scale-95"
+          >NHẢY</button>
         </div>
       )}
 

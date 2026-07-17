@@ -149,7 +149,10 @@ export default function FillBlanksPage() {
     const stageBank = filterWordBank(wordBank, { level: stageForDifficulty(diff), min: TOTAL });
     const sharedQuestions = toFillBlankQuestions(stageBank, TOTAL);
     const picked = sharedQuestions.length >= TOTAL ? sharedQuestions : shuffleArray(pool).slice(0, TOTAL);
-    setQuestions(picked);
+    setQuestions(picked.map((question) => ({
+      ...question,
+      options: shuffleArray(question.options),
+    })));
     setCurrentIndex(0);
     setSelected(null);
     setIsCorrect(null);
@@ -202,8 +205,6 @@ export default function FillBlanksPage() {
 
   // Game screen
   const q = questions[currentIndex];
-  const shuffledOptions = shuffleArray(q.options);
-
   return (<><Header /><main className="min-h-screen bg-gradient-to-b from-purple-50 via-indigo-50 to-blue-50 pb-16"><div className="max-w-2xl mx-auto px-4 pt-6">{/* Top bar */}<div className="flex items-center justify-between mb-6"><Link href="/games" className="text-purple-600 font-bold text-sm hover:underline">← Quay lại</Link><div className="flex items-center gap-3"><span className="text-sm font-bold text-gray-600">{score}/{TOTAL}</span><span className="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full">{currentIndex + 1}/{questions.length}</span></div></div>{/* Progress bar */}<div className="w-full bg-purple-100 rounded-full h-3 mb-8"><div
               className="bg-gradient-to-r from-purple-500 to-indigo-500 h-3 rounded-full transition-all duration-500"
               style={{ width:`${((currentIndex + 1) / questions.length) * 100}%`}}
@@ -211,7 +212,7 @@ export default function FillBlanksPage() {
             {!showHint && !selected && (<button
                 onClick={() =>setShowHint(true)}
                 className="mt-4 text-purple-400 text-sm hover:text-purple-600 transition"
-              >Xem gợi ý</button>)}</div>{/* Options */}<div className="grid grid-cols-2 gap-3 mb-6">{shuffledOptions.map((option) =>{
+              >Xem gợi ý</button>)}</div>{/* Options */}<div className="grid grid-cols-2 gap-3 mb-6">{q.options.map((option) =>{
               let cls ='bg-white border-2 border-gray-200 text-gray-800 hover:border-purple-400 hover:bg-purple-50';
               if (selected) {
                 if (option === q.answer) {

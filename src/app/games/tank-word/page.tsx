@@ -30,10 +30,12 @@ export default function TankWordPage() {
   const [target,   setTarget]   = useState('');
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [gameOver, setGameOver] = useState<'win' | 'lose' | null>(null);
+  const [initError, setInitError] = useState(false);
 
   const scoreRef = useRef(0);
   const hpRef    = useRef(5);
   const killsRef = useRef(0);
+  const controlsRef = useRef({ up: false, down: false, left: false, right: false, fire: false });
 
   // ── Closure-shared game state (lives in Phaser's import closure) ──
   const cbRef = useRef({
@@ -47,12 +49,13 @@ export default function TankWordPage() {
     let destroyed = false;
 
     (async () => {
-      const loaded = await loadWordBank().catch(() => []);
-      if (destroyed || !containerRef.current) return;
-      const activeVocab = loaded
-        .map((word) => ({ en: word.en, vi: word.vi }))
-        .filter((word) => word.en && word.vi);
-      const vocab = activeVocab.length >= 12 ? activeVocab : FALLBACK_VOCAB;
+      let vocab = FALLBACK_VOCAB;
+      void loadWordBank().then((loaded) => {
+        const activeVocab = loaded
+          .map((word) => ({ en: word.en.trim(), vi: word.vi.trim() }))
+          .filter((word) => word.en && word.vi && word.en.length <= 16 && word.vi.length <= 24 && !word.vi.includes(','));
+        if (!destroyed && activeVocab.length >= 12) vocab = activeVocab;
+      }).catch(() => {});
       const Phaser = await import('phaser');
       if (destroyed || !containerRef.current) return;
 
@@ -395,25 +398,28 @@ export default function TankWordPage() {
           const pb    = this.playerBody.body as Phaser.Physics.Arcade.Body;
           const speed = 150;
 
-          if (this.cursors.up.isDown) {
+          if (this.cursors.up.isDown || controlsRef.current.up) {
             this.physics.velocityFromRotation(this.playerBody.rotation - Math.PI / 2, speed, pb.velocity);
-          } else if (this.cursors.down.isDown) {
+          } else if (this.cursors.down.isDown || controlsRef.current.down) {
             this.physics.velocityFromRotation(this.playerBody.rotation - Math.PI / 2, -speed * 0.55, pb.velocity);
           } else {
             pb.setVelocity(0, 0);
           }
-          if (this.cursors.left.isDown)  this.playerBody.rotation -= 0.032;
-          if (this.cursors.right.isDown) this.playerBody.rotation += 0.032;
+          if (this.cursors.left.isDown || controlsRef.current.left)  this.playerBody.rotation -= 0.032;
+          if (this.cursors.right.isDown || controlsRef.current.right) this.playerBody.rotation += 0.032;
 
           // ── Barrel aims at mouse ──
           const ptr = this.input.activePointer;
           const wp  = this.cameras.main.getWorldPoint(ptr.x, ptr.y);
-          const aim = Phaser.Math.Angle.Between(this.playerBody.x, this.playerBody.y, wp.x, wp.y);
+          const usingTouch = Object.values(controlsRef.current).some(Boolean);
+          const aim = usingTouch
+            ? this.playerBody.rotation - Math.PI / 2
+            : Phaser.Math.Angle.Between(this.playerBody.x, this.playerBody.y, wp.x, wp.y);
           this.playerBarrel.setPosition(this.playerBody.x, this.playerBody.y);
           this.playerBarrel.rotation = aim + Math.PI / 2;
 
           // ── Player fires (SPACE or left click) ──
-          const firing = this.keySpace.isDown || (ptr.isDown && !ptr.rightButtonDown());
+          const firing = this.keySpace.isDown || controlsRef.current.fire || (ptr.isDown && !ptr.rightButtonDown());
           if (firing && time > this.lastShoot) {
             this.lastShoot = time + 280;
             this.cameras.main.shake(16, 0.003);
@@ -473,7 +479,7 @@ export default function TankWordPage() {
 
       // ── Launch Phaser ──────────────────────────────────────────────────
       const cfg: any = {
-        type: Phaser.AUTO,
+        type: Phaser.CANVAS,
         backgroundColor: '#111827',
         parent: containerRef.current!,
         physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 0 }, debug: false } },
@@ -488,6 +494,9 @@ export default function TankWordPage() {
       };
       const game = new Phaser.Game(cfg);
       gameRef.current = game;
+    })().catch((error) => {
+      console.error('Tank Word failed to initialize', error);
+      if (!destroyed) setInitError(true);
     });
 
     return () => {
@@ -503,6 +512,16 @@ export default function TankWordPage() {
   return (
     <main className="h-screen overflow-hidden relative select-none" style={{ background: '#0d1117' }}>
       <div ref={containerRef} className="w-full h-full" />
+
+      {initError && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/95 p-6 text-center">
+          <div className="max-w-sm rounded-3xl border border-cyan-500/40 bg-slate-900 p-6 shadow-2xl">
+            <h1 className="text-2xl font-black text-cyan-300">Không tải được Tank Word</h1>
+            <p className="mt-2 text-sm text-slate-300">Hãy tải lại trang để khởi động lại game.</p>
+            <button type="button" onClick={() => window.location.reload()} className="mt-5 rounded-xl bg-cyan-400 px-6 py-3 font-black text-slate-950">Tải lại</button>
+          </div>
+        </div>
+      )}
 
       {/* ── HUD ── */}
       {!gameOver && (
@@ -521,7 +540,7 @@ export default function TankWordPage() {
             {/* Target */}
             <div className="flex flex-col items-center gap-0">
               <span className="text-white/50 text-[10px] font-bold uppercase tracking-widest">Bắn xe tăng mang từ:</span>
-              <span className="text-yellow-300 font-black text-xl leading-tight drop-shadow-[0_0_10px_rgba(253,224,71,0.8)]">
+              <span className="max-w-[44vw] truncate text-yellow-300 font-black text-xl leading-tight drop-shadow-[0_0_10px_rgba(253,224,71,0.8)]">
                 {target || '…'}
               </span>
             </div>
@@ -535,7 +554,7 @@ export default function TankWordPage() {
               <div className="flex gap-0.5">
                 {hearts.map((_, i) => (
                   <span key={i} className={`text-sm transition-all duration-300 ${i < hp ? 'opacity-100' : 'opacity-20'}`}>
-                    {i < hp ? '?' : '?'}
+                    {i < hp ? '♥' : '♡'}
                   </span>
                 ))}
               </div>
@@ -566,8 +585,22 @@ export default function TankWordPage() {
 
       {/* ── Controls hint ── */}
       {!gameOver && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 text-white/25 text-[10px] pointer-events-none">
+        <div className="absolute bottom-3 left-1/2 hidden -translate-x-1/2 text-[10px] text-white/25 pointer-events-none md:block z-10">
           ↑↓ tiến / lùi &nbsp;•&nbsp; ←→ quay thân &nbsp;•&nbsp; chuột ngắm &nbsp;•&nbsp; Space / Click bắn
+        </div>
+      )}
+
+      {!gameOver && (
+        <div className="absolute inset-x-3 bottom-8 z-20 flex items-end justify-between md:hidden">
+          <div className="grid grid-cols-3 gap-1">
+            <span />
+            <button type="button" aria-label="Tiến" onPointerDown={() => { controlsRef.current.up = true; }} onPointerUp={() => { controlsRef.current.up = false; }} onPointerCancel={() => { controlsRef.current.up = false; }} onPointerLeave={() => { controlsRef.current.up = false; }} className="h-12 w-12 touch-none rounded-xl border border-cyan-300/50 bg-black/60 text-xl font-black text-cyan-200">↑</button>
+            <span />
+            <button type="button" aria-label="Quay trái" onPointerDown={() => { controlsRef.current.left = true; }} onPointerUp={() => { controlsRef.current.left = false; }} onPointerCancel={() => { controlsRef.current.left = false; }} onPointerLeave={() => { controlsRef.current.left = false; }} className="h-12 w-12 touch-none rounded-xl border border-cyan-300/50 bg-black/60 text-xl font-black text-cyan-200">←</button>
+            <button type="button" aria-label="Lùi" onPointerDown={() => { controlsRef.current.down = true; }} onPointerUp={() => { controlsRef.current.down = false; }} onPointerCancel={() => { controlsRef.current.down = false; }} onPointerLeave={() => { controlsRef.current.down = false; }} className="h-12 w-12 touch-none rounded-xl border border-cyan-300/50 bg-black/60 text-xl font-black text-cyan-200">↓</button>
+            <button type="button" aria-label="Quay phải" onPointerDown={() => { controlsRef.current.right = true; }} onPointerUp={() => { controlsRef.current.right = false; }} onPointerCancel={() => { controlsRef.current.right = false; }} onPointerLeave={() => { controlsRef.current.right = false; }} className="h-12 w-12 touch-none rounded-xl border border-cyan-300/50 bg-black/60 text-xl font-black text-cyan-200">→</button>
+          </div>
+          <button type="button" aria-label="Bắn" onPointerDown={() => { controlsRef.current.fire = true; }} onPointerUp={() => { controlsRef.current.fire = false; }} onPointerCancel={() => { controlsRef.current.fire = false; }} onPointerLeave={() => { controlsRef.current.fire = false; }} className="h-16 w-16 touch-none rounded-full border-2 border-amber-200 bg-amber-400 text-sm font-black text-slate-950 shadow-lg active:scale-95">BẮN</button>
         </div>
       )}
 

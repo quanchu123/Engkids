@@ -169,8 +169,11 @@ export async function middleware(request: NextRequest) {
       );
     const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
     const isApiRoute = pathname.startsWith('/api/');
+    const isDevelopmentGameRoute = process.env.NODE_ENV === 'development' && (
+      pathname === '/games' || pathname.startsWith('/games/')
+    );
 
-    if (!isPublicRoute && !isAdminRoute && !isApiRoute) {
+    if (!isPublicRoute && !isAdminRoute && !isApiRoute && !isDevelopmentGameRoute) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         const loginUrl = new URL('/login', request.url);

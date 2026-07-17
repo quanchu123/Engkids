@@ -392,7 +392,7 @@ export default function WordCollectorPage() {
           <p className="text-yellow-300 text-sm mt-1">Chạm vào đồng xu có nghĩa tiếng Anh đúng!</p>
         </div>
 
-        <p className="text-yellow-600/70 text-xs mb-3">Đọc câu hỏi ở trên cùng rồi tập vào từ đúng</p>
+        <p className="text-yellow-600/70 text-xs mb-3">Đọc câu hỏi ở trên cùng rồi chạm vào từ đúng</p>
 
         <div
           ref={containerRef}
@@ -400,7 +400,6 @@ export default function WordCollectorPage() {
           style={{ aspectRatio: '768/480' }}
         />
 
-        <p className="text-yellow-700/40 text-xs mt-4 text-center max-w-sm">Clone từ digitsensitive/phaser3-typescript (coin-runner) với background 768x576 landscape</p>
       </main>
     </>
   );

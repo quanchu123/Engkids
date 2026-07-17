@@ -577,7 +577,7 @@ export default function RpgBattlePage() {
       //  LAUNCH PHASER GAME
       // ══════════════════════════════════════
       game = new Phaser.Game({
-        type: Phaser.AUTO,
+        type: Phaser.CANVAS,
         backgroundColor: '#0f0c2a',
         parent: containerRef.current!,
         render: { pixelArt: true, antialias: false },
@@ -617,7 +617,7 @@ export default function RpgBattlePage() {
           <p className="text-purple-300 text-sm mt-1">Đánh bại quái vật bằng từ vựng tiếng Anh!</p>
         </div>
 
-        <p className="text-purple-500/70 text-xs mb-3">Dung -&gt; tan cong | Sai -&gt; bi danh</p>
+        <p className="text-purple-500/70 text-xs mb-3">Đúng → tấn công · Sai → bị phản đòn</p>
 
         {/* Game canvas container */}
         <div
