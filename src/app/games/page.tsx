@@ -81,7 +81,7 @@ export default function GamesPage() {
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,rgba(255,255,255,0.65),transparent_55%)]" />
                     <DecorIcon name={game.icon} className="relative z-10 h-14 w-14 text-white" iconClassName="h-9 w-9 drop-shadow-md" imageClassName="h-12 w-12 object-contain drop-shadow-md" />
                     {game.badge && (
-                      <div className="absolute left-2 top-2 z-10 rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-black text-slate-800">
+                      <div className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] truncate rounded-full bg-white/90 px-2 py-0.5 text-[9px] font-black text-slate-800">
                         {game.badge}
                       </div>
                     )}
