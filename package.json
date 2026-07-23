@@ -69,6 +69,8 @@
         "users:demo-append-july-14-15:apply": "node scripts/ensure-demo-registrations.mjs --append-dates=2026-07-14,2026-07-15 --apply",
         "users:demo-append-july-16-17": "node scripts/ensure-demo-registrations.mjs --date-targets=2026-07-16:8,2026-07-17:5",
         "users:demo-append-july-16-17:apply": "node scripts/ensure-demo-registrations.mjs --date-targets=2026-07-16:8,2026-07-17:5 --apply",
+        "users:demo-append-july-18-23": "node scripts/append-july-18-23-demo-users.mjs",
+        "users:demo-append-july-18-23:apply": "node scripts/append-july-18-23-demo-users.mjs --apply",
         "users:space-premium-registration-times": "node scripts/space-premium-registration-times.mjs",
         "users:space-premium-registration-times:apply": "node scripts/space-premium-registration-times.mjs --apply",
         "users:rebalance-june14": "node scripts/rebalance-june14-users.mjs",

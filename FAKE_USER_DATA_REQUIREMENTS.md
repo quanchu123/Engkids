@@ -189,3 +189,31 @@ After applying changes, verify:
 - NPM commands:
   - Dry run: `npm run users:naturalize-registration-times`
   - Apply: `npm run users:naturalize-registration-times:apply`
+
+## July 18-23 Append Added 2026-07-23
+
+- Appended `7` extra normal/demo accounts to fill underfilled registration days from `18/07/2026` through `23/07/2026` to `2` users/day.
+- Days updated:
+  - `18/07/2026`: added `2` users, both premium paid.
+  - `19/07/2026`: added `2` free users.
+  - `20/07/2026`: added `1` free user.
+  - `22/07/2026`: added `1` free user.
+  - `23/07/2026`: added `1` premium paid user.
+- Premium transactions:
+  - Created `3` `PAID` transactions.
+  - Each transaction uses `plan_id = 1_month` and `amount = 39000`.
+  - Paid users: `sonlam@gmail.com`, `hoangnguyen@gmail.com`, `lanphan@gmail.com`.
+- Verified counts after apply:
+  - `373` normal users.
+  - `5` admin/protected users.
+  - `378` total `public.user_profiles` rows.
+  - Daily counts for `18/07/2026` through `23/07/2026`: `2`, `2`, `2`, `2`, `2`, `2`.
+- Note:
+  - Local `.env.local` currently uses a new `sb_secret...` key that can query tables but cannot create Auth users through Admin API.
+  - The append script falls back to public `auth.signUp`, then writes `user_profiles` and `transactions` with the service key.
+- Generated files:
+  - `output/demo-registrations-append-2026-07-18-23-2026-07-23T14-09-29-767Z.json`
+  - `output/demo-auth-users-append-2026-07-18-23-created-at-update-2026-07-23T14-09-29-767Z.sql`
+- NPM commands:
+  - Dry run: `npm run users:demo-append-july-18-23`
+  - Apply: `npm run users:demo-append-july-18-23:apply`
