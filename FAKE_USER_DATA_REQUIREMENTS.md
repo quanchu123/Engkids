@@ -217,3 +217,23 @@ After applying changes, verify:
 - NPM commands:
   - Dry run: `npm run users:demo-append-july-18-23`
   - Apply: `npm run users:demo-append-july-18-23:apply`
+
+## Premium Registration Times Adjusted 2026-07-23
+
+- Moved account registration times earlier for `8` paid users whose account registration was too close to premium purchase time.
+- Affected paid users:
+  - `vietnguyenquoc2004@gmail.com`
+  - `sonlam@gmail.com`
+  - `hoangnguyen@gmail.com`
+  - `haigls@gmail.com`
+  - `huyentranthu1404@gmail.com`
+  - `vthgiang203@gmail.com`
+  - `dominhtri9029@gmail.com`
+  - `lanphan@gmail.com`
+- Verification after apply:
+  - `32` paid users checked.
+  - `0` paid users have account registration less than `2` days before purchase.
+  - Final paid-user registration-to-purchase deltas are `3.08` to `5.60` days.
+- Generated files:
+  - `output/premium-registration-times-before-purchase-2026-07-23T14-12-23-723Z.json`
+  - `output/premium-auth-users-created-at-update-2026-07-23T14-12-23-723Z.sql`
